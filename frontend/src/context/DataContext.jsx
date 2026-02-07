@@ -118,7 +118,7 @@ export const DataProvider = ({ children }) => {
         body: JSON.stringify(palette)
       });
       setProjects(prev => 
-        prev.map(p => String(p.id) === String(projectId) ? { ...p, palette: [...p.palette, ...palette] } : p)
+        prev.map(p => String(p.id) === String(projectId) ? { ...p, palette: palette } : p)
       );
     } catch (e) { console.error(e); }
   };
