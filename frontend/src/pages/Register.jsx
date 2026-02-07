@@ -66,8 +66,8 @@ export default function Register() {
            </p>
 
            <div className="flex flex-col space-y-2 pt-4 border-l-2 border-slate-200 pl-6">
-              <p className="text-sm font-medium text-slate-800">"Un outil indispensable pour maintenir la cohérence de mes webtoons."</p>
-              <p className="text-xs text-slate-400 uppercase tracking-widest">Sarah K., Lead Artist</p>
+              <p className="text-sm font-medium text-slate-800">"Un outil indispensable pour maintenir la cohérence de mes illustrations."</p>
+              <p className="text-xs text-slate-400 uppercase tracking-widest">Alyse C., Illustratrice</p>
               <span className="text-sm text-slate-400 pt-2">
                 {userCount !== null ? `Rejoint par ${userCount} Illustrateur${userCount > 1 ? 's' : ''}` : 'Rejoint par ... Illustrateurs'}
               </span>
