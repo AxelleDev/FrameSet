@@ -97,47 +97,47 @@ export default function ProjectExport() {
   return (
     <>
       <div className="mb-8 animate-fade-in">
-        <h2 className="text-3xl font-light text-slate-900">Exporter les Standards</h2>
-        <p className="text-slate-500 mt-2">Générez une documentation ou des données brutes pour votre pipeline.</p>
+        <h2 className="text-3xl font-light text-primary">Exporter les Standards</h2>
+        <p className="text-primary mt-2">Générez une documentation ou des données brutes pour votre pipeline.</p>
       </div>
 
       {activeProject ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
-            <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-gray-300 transition">
-              <div className="h-16 w-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center mb-6">
+            <div className="bg-white p-8 rounded-xl border border-blue shadow-sm flex flex-col items-center text-center hover:border-pink transition">
+              <div className="h-16 w-16 bg-pink/10 text-pink rounded-full flex items-center justify-center mb-6">
                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Guide de Style PDF</h3>
-              <p className="text-sm text-gray-500 mb-6">Un document PDF formaté professionnellement contenant toutes les normes actives et les palettes. Idéal pour l'impression.</p>
-              <button onClick={downloadPdf} className="w-full py-3 border border-red-100 text-red-600 font-medium rounded-lg hover:bg-red-50 transition">
+              <h3 className="text-lg font-medium text-primary mb-2">Guide de Style PDF</h3>
+              <p className="text-sm text-primary mb-6">Un document PDF formaté professionnellement contenant toutes les normes actives et les palettes. Idéal pour l'impression.</p>
+              <button onClick={downloadPdf} className="w-full py-3 border border-pink text-pink font-medium rounded-lg hover:bg-pink/10 transition">
                  Télécharger le PDF
               </button>
             </div>
 
-            <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:border-gray-300 transition">
-              <div className="h-16 w-16 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center mb-6">
+            <div className="bg-white p-8 rounded-xl border border-blue shadow-sm flex flex-col items-center text-center hover:border-pink transition">
+              <div className="h-16 w-16 bg-blue/10 text-blue rounded-full flex items-center justify-center mb-6">
                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Pipeline JSON</h3>
-              <p className="text-sm text-gray-500 mb-6">Structure de données brute contenant tous les ID et valeurs. Utilisez ceci pour intégrer les normes directement dans vos logiciels créatifs.</p>
-              <button onClick={downloadJson} className="w-full py-3 border border-blue-100 text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition">
+              <h3 className="text-lg font-medium text-primary mb-2">Pipeline JSON</h3>
+              <p className="text-sm text-primary mb-6">Structure de données brute contenant tous les ID et valeurs. Utilisez ceci pour intégrer les normes directement dans vos logiciels créatifs.</p>
+              <button onClick={downloadJson} className="w-full py-3 border border-blue text-blue font-medium rounded-lg hover:bg-blue/10 transition">
                  Télécharger le JSON
               </button>
             </div>
           </div>
 
           <div className="mt-12 animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Aperçu de la sortie JSON</h4>
-            <div className="bg-gray-900 rounded-lg p-6 overflow-x-auto shadow-inner">
-              <pre className="text-xs text-green-400 font-mono leading-relaxed">{projectJson}</pre>
+            <h4 className="text-sm font-bold text-blue uppercase tracking-wider mb-4">Aperçu de la sortie JSON</h4>
+            <div className="bg-primary/90 rounded-lg p-6 overflow-x-auto shadow-inner">
+              <pre className="text-xs text-blue font-mono leading-relaxed">{projectJson}</pre>
             </div>
           </div>
         </>
       ) : (
         <div className="text-center py-20">
-          <div className="spinner border-4 border-slate-200 border-t-slate-500 rounded-full w-10 h-10 mx-auto animate-spin"></div>
-          <p className="mt-4 text-slate-400">Chargement du projet...</p>
+          <div className="spinner border-4 border-blue border-t-pink rounded-full w-10 h-10 mx-auto animate-spin"></div>
+          <p className="mt-4 text-blue">Chargement du projet...</p>
         </div>
       )}
     </>

@@ -13,7 +13,7 @@ export default function MainLayout() {
 
   const navLinkClass = ({ isActive }) =>
     `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
-      isActive ? 'bg-white/80 text-lavender-600 shadow-sm' : 'text-slate-600 hover:bg-white/50'
+      isActive ? 'bg-white/80 text-blue shadow-sm' : 'text-primary hover:text-pink hover:bg-white/50'
     }`;
 
   const getPageTitle = () => {
@@ -30,7 +30,7 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-[#F8F9FF] text-slate-800 transition-colors duration-500">
+    <div className="relative flex h-screen overflow-hidden bg-[#F8F9FF] text-primary transition-colors duration-500">
       
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-lavender-200/40 rounded-full blur-[100px] opacity-60"></div>
@@ -62,7 +62,7 @@ export default function MainLayout() {
           <div className="mb-8">
             <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Espace de Travail</p>
             <NavLink to="/app/dashboard" className={navLinkClass} onClick={closeMobileMenu}>
-              <svg className="mr-3 h-5 w-5 text-slate-400 group-hover:text-lavender-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="mr-3 h-5 w-5 text-blue group-hover:text-pink transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
               </svg>
               Tableau de bord
@@ -96,14 +96,14 @@ export default function MainLayout() {
         <Link to="/app/profile" onClick={closeMobileMenu} className="p-4 border-t border-white/20 bg-white/30 hover:bg-white/50 transition cursor-pointer group">
            <div className="flex items-center justify-between mb-0">
               <div className="flex items-center">
-                 <div className="h-9 w-9 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 border-2 border-white shadow-md flex items-center justify-center text-white text-xs font-bold group-hover:scale-105 transition-transform">
+                 <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue to-pink border-2 border-primary shadow-md flex items-center justify-center text-primary text-xs font-bold group-hover:scale-105 transition-transform">
                     {user.avatarInitials}
                  </div>
                  <div className="ml-3">
-                   <p className="text-xs font-bold text-slate-800 group-hover:text-lavender-600 transition-colors">{user.name}</p>
+                   <p className="text-xs font-bold text-primary group-hover:text-blue transition-colors">{user.name}</p>
                  </div>
               </div>
-              <svg className="w-4 h-4 text-slate-400 group-hover:text-lavender-500 transition-colors opacity-0 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+              <svg className="w-4 h-4 text-blue group-hover:text-pink transition-colors opacity-0 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
            </div>
         </Link>
       </aside>
@@ -111,18 +111,18 @@ export default function MainLayout() {
       <main className="flex-1 overflow-auto focus:outline-none relative z-10 custom-scrollbar">
         <header className="h-20 flex items-center justify-between px-8 sticky top-0 z-20 transition-all duration-300">
           <div className="flex items-center">
-             <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden mr-4 text-slate-500 hover:text-slate-800 transition-colors p-2 -ml-2 rounded-lg hover:bg-white/50">
+             <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden mr-4 text-primary hover:text-blue transition-colors p-2 -ml-2 rounded-lg hover:bg-white/50">
                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
              </button>
 
              {activeProject ? (
                <nav className="flex text-sm font-medium items-center animate-fade-in">
-                 <Link className="text-slate-400 hover:text-slate-600 transition cursor-pointer" to="/app/dashboard">Workspace</Link>
-                 <svg className="w-4 h-4 mx-2 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-                 <span className="text-slate-900 bg-white/50 px-2 py-1 rounded-md shadow-sm border border-white/20 truncate max-w-[150px] md:max-w-none">{activeProject.name}</span>
+                 <Link className="text-blue hover:text-pink transition cursor-pointer" to="/app/dashboard">Workspace</Link>
+                 <svg className="w-4 h-4 mx-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+                 <span className="text-primary bg-white/50 px-2 py-1 rounded-md shadow-sm border border-primary truncate max-w-[150px] md:max-w-none">{activeProject.name}</span>
                </nav>
              ) : (
-               <span className="text-xl font-light text-slate-900">
+               <span className="text-xl font-light text-primary">
                  {getPageTitle()}
                </span>
              )}

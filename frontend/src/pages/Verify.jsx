@@ -45,31 +45,31 @@ export default function Verify() {
     };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8F9FF]">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4 text-lavender-600">Email Verification</h2>
-        <p className="mb-6 text-slate-600">Enter the code sent to <strong>{email}</strong>.</p>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8F9FF] text-primary">
+      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md border border-primary">
+        <h2 className="text-2xl font-bold mb-4 text-blue">Email Verification</h2>
+        <p className="mb-6 text-primary">Enter the code sent to <strong>{email}</strong>.</p>
         <input
           type="text"
           value={code}
           onChange={e => setCode(e.target.value)}
           placeholder="Verification code"
-          className="w-full px-4 py-3 mb-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender-400"
+          className="w-full px-4 py-3 mb-4 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue"
         />
-        {error && <div className="text-red-500 mb-4">{error}</div>}
-        {resendMsg && <div className="text-green-500 mb-4">{resendMsg}</div>}
+        {error && <div className="text-pink mb-4">{error}</div>}
+        {resendMsg && <div className="text-blue mb-4">{resendMsg}</div>}
         <div className="flex gap-2">
           {!success && (
             <>
               <button
                 onClick={handleVerify}
-                className="w-full py-3 bg-lavender-600 text-white font-medium rounded-xl hover:bg-lavender-700 transition-all"
+                className="w-full py-3 bg-blue text-white font-medium rounded-xl hover:bg-pink transition-all"
               >
                 Verify
               </button>
               <button
                 onClick={handleResend}
-                className="w-full py-3 bg-slate-200 text-lavender-600 font-medium rounded-xl hover:bg-lavender-100 transition-all"
+                className="w-full py-3 bg-blue/10 text-blue font-medium rounded-xl hover:bg-pink/10 transition-all"
                 style={{ marginLeft: '8px' }}
               >
                 Renvoyer le code
@@ -77,7 +77,7 @@ export default function Verify() {
             </>
           )}
         </div>
-        {success && <div className="text-green-600 font-semibold">Verified! Redirecting...</div>}
+        {success && <div className="text-pink font-semibold">Verified! Redirecting...</div>}
       </div>
     </div>
   );
