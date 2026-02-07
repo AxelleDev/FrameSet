@@ -96,7 +96,7 @@ export default function ProjectPalette() {
               
               <div className="mt-4 text-center">
                  <p className="text-sm font-semibold text-primary truncate" title={color.name}>{color.name}</p>
-                 <p className="text-[10px] text-blue font-mono mt-0.5 uppercase tracking-wide opacity-70 group-hover:opacity-100 transition-opacity">{color.hex}</p>
+                 <p className="text-[10px] text-primary font-mono mt-0.5 uppercase tracking-wide opacity-70 group-hover:opacity-100 transition-opacity">{color.hex}</p>
               </div>
             </div>
           ))}
