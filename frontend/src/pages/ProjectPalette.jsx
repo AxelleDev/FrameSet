@@ -132,7 +132,7 @@ export default function ProjectPalette() {
                  Annuler
                </button>
                <button onClick={confirmAddColor} disabled={!newColorName || !newColorHex}
-                       className="flex-1 py-3 bg-primary text-white font-medium rounded-xl hover:bg-blue hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                       className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                  Ajouter
                </button>
             </div>
