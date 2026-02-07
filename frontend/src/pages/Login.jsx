@@ -66,13 +66,8 @@ export default function Login() {
            </p>
 
            <div className="flex items-center space-x-4 pt-4">
-                <div className="flex -space-x-3">
-                  <div className="w-10 h-10 rounded-full border-2 border-white bg-gray-200"></div>
-                  <div className="w-10 h-10 rounded-full border-2 border-white bg-gray-300"></div>
-                  <div className="w-10 h-10 rounded-full border-2 border-white bg-gray-400 flex items-center justify-center text-xs font-medium text-white bg-slate-800">+4</div>
-                </div>
                 <span className="text-sm text-slate-400">
-                 {userCount !== null ? `Rejoint par ${userCount} Illustrateur${userCount > 1 ? 's' : ''}` : 'Rejoint par ... Illustrateurs'}
+                  {userCount !== null ? `Rejoint par ${userCount} Illustrateur${userCount > 1 ? 's' : ''}` : 'Rejoint par ... Illustrateurs'}
                 </span>
            </div>
         </div>
