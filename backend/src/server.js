@@ -295,11 +295,12 @@ app.post('/api/projects/:id/norms', async (req, res) => {
 
 app.post('/api/projects/:id/palette', async (req, res) => {
   const { id } = req.params;
-  const colors = req.body; 
+  const colors = req.body;
   try {
+    // Insère ou remplace chaque couleur pour ce projet
     for (const color of colors) {
       await db.query(
-        'INSERT INTO project_palette (project_id, name, hex) VALUES (?, ?, ?)',
+        'REPLACE INTO project_palette (project_id, name, hex) VALUES (?, ?, ?)',
         [id, color.name, color.hex]
       );
     }
@@ -316,6 +317,22 @@ app.delete('/api/projects/:id/palette', async (req, res) => {
   const { hex } = req.body;
   try {
     await db.query('DELETE FROM project_palette WHERE project_id = ? AND hex = ?', [id, hex]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.patch('/api/projects/:id/palette', async (req, res) => {
+  const { id } = req.params;
+  const { oldHex, newName, newHex } = req.body;
+  try {
+    await db.query(
+      'UPDATE project_palette SET name = ?, hex = ? WHERE project_id = ? AND hex = ?',
+      [newName, newHex, id, oldHex]
+    );
+    await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
     res.json({ success: true });
   } catch (error) {
     console.error(error);

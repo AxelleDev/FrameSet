@@ -3,8 +3,56 @@ import { useData } from '../context/DataContext';
 import { useParams } from 'react-router-dom';
 
 export default function ProjectPalette() {
+          const [editStatus, setEditStatus] = useState(null); // null, 'success', 'error'
+        // Affichage du statut d'édition
+        const renderEditStatus = () => {
+          if (editStatus === 'error') return <div style={{color:'red',marginTop:'8px'}}>Erreur lors de la modification.</div>;
+          return null;
+        };
+    // Drag state
+    // (déclaré plus bas, à garder une seule fois)
+
+    // Edit color modal state
+    const [editIdx, setEditIdx] = useState(null);
+    const [editColorName, setEditColorName] = useState('');
+    const [editColorHex, setEditColorHex] = useState('');
+
+    const openEditModal = (idx) => {
+      setEditIdx(idx);
+      setEditColorName(palette[idx]?.name || '');
+      setEditColorHex(palette[idx]?.hex || '#');
+      setEditStatus(null);
+    };
+
+    const isValidEditHex = () => {
+      const hex = editColorHex.trim();
+      return /^#([0-9A-F]{3}){1,2}$/i.test(hex.startsWith('#') ? hex : '#' + hex);
+    };
+
+    const confirmEditColor = async () => {
+      if (editIdx === null || !editColorName || !editColorHex) return;
+      let newHex = editColorHex.trim();
+      if (!newHex.startsWith('#')) newHex = '#' + newHex;
+      const oldHex = palette[editIdx].hex;
+      try {
+        const res = await fetch(`/api/projects/${id}/palette`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ oldHex, newName: editColorName, newHex })
+        });
+        if (res.ok) {
+          setEditStatus('success');
+          await syncPalette();
+        } else {
+          setEditStatus('error');
+        }
+      } catch (e) {
+        setEditStatus('error');
+      }
+      // Ne ferme plus le popup immédiatement
+    };
   const { id } = useParams();
-  const { setActiveProjectId, activeProject, updateProjectPalette, deleteProjectPaletteColor } = useData();
+  const { setActiveProjectId, activeProject, updateProjectPalette, deleteProjectPaletteColor, user } = useData();
 
   // Drag state
   const [draggedIndex, setDraggedIndex] = useState(null);
@@ -53,7 +101,7 @@ export default function ProjectPalette() {
       setPalette(activeProject.palette);
       setPreviewPalette(activeProject.palette);
     }
-  }, [activeProject?.id]);
+  }, [activeProject]);
   
   const [isAddingColor, setIsAddingColor] = useState(false);
   const [newColorName, setNewColorName] = useState('');
@@ -74,25 +122,29 @@ export default function ProjectPalette() {
     return /^#([0-9A-F]{3}){1,2}$/i.test(hex.startsWith('#') ? hex : '#' + hex);
   };
 
-  const confirmAddColor = () => {
+  const confirmAddColor = async () => {
     if (!id || !newColorName || !newColorHex) return;
-
     let hex = newColorHex.trim();
     if (!hex.startsWith('#')) hex = '#' + hex;
-
-    updateProjectPalette(id, [{
-      name: newColorName,
-      hex: hex
-    }]);
-
+    const newPalette = [...palette, { name: newColorName, hex }];
+    await updateProjectPalette(id, newPalette);
     setIsAddingColor(false);
+    await syncPalette();
   };
 
-  const handleDeleteColor = (e, colorHex) => {
+  const handleDeleteColor = async (e, colorHex) => {
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
     if (confirm('Supprimer cette couleur ?')) {
-      deleteProjectPaletteColor(id, colorHex);
+      await deleteProjectPaletteColor(id, colorHex);
+      await syncPalette();
+    }
+  };
+
+  const syncPalette = async () => {
+    if (user && user.id) {
+      // fetchProjects est dans DataContext, mais pas exposé dans useData, donc on peut forcer un reload via window.location.reload()
+      window.location.reload();
     }
   };
 
@@ -172,6 +224,15 @@ export default function ProjectPalette() {
                           </svg>
                        </button>
 
+                       <button
+                          onClick={() => openEditModal(idx)}
+                          className="absolute top-3 left-3 w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-blue/500 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 hover:scale-110 shadow-sm"
+                          title="Modifier la couleur">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
+                          </svg>
+                        </button>
+
                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 backdrop-blur-[2px] cursor-pointer z-10"
                             onClick={e => handleCopyHex(e, color.hex, idx)}>
                           <span className="px-3 py-1 bg-white/90 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary shadow-sm transform scale-90 group-hover:scale-100 transition-transform">
@@ -213,6 +274,38 @@ export default function ProjectPalette() {
                       setTimeout(() => {
                         updateProjectPalette(id, newPalette);
                       }, 200);
+                          {editIdx !== null && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue/20 backdrop-blur-sm animate-fade-in">
+                              <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
+                                <h3 className="text-xl font-light text-primary mb-6 relative z-10">Modifier Couleur</h3>
+                                <div className="space-y-4 relative z-10">
+                                  <div>
+                                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom de la couleur</label>
+                                      <input type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="ex: Reflet Cheveux" 
+                                        className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Code Hexadécimal</label>
+                                    <div className="flex gap-3">
+                                       <div className="w-12 h-12 rounded-xl border border-blue shadow-inner flex-shrink-0" style={{ backgroundColor: isValidEditHex() ? editColorHex : '#ffffff' }}></div>
+                                       <input type="text" value={editColorHex} onChange={e => setEditColorHex(e.target.value)} placeholder="ex: #FF5500" 
+                                              className="flex-1 px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary font-mono uppercase" />
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex gap-3 mt-8 relative z-10">
+                                   <button onClick={() => setEditIdx(null)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
+                                     Annuler
+                                   </button>
+                                   <button onClick={confirmEditColor} disabled={!editColorName || !editColorHex}
+                                           className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                                     Confirmer
+                                   </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                     }
                     setDraggedIndex(null);
                     setDragOverIndex(null);
@@ -237,6 +330,15 @@ export default function ProjectPalette() {
                           </svg>
                        </button>
 
+                        <button
+                          onClick={() => openEditModal(idx)}
+                          className="absolute top-3 left-3 w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-blue/500 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 hover:scale-110 shadow-sm"
+                          title="Modifier la couleur">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
+                          </svg>
+                        </button>
+
                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 backdrop-blur-[2px] cursor-pointer z-10"
                             onClick={e => handleCopyHex(e, color.hex, idx)}>
                           <span className="px-3 py-1 bg-white/90 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary shadow-sm transform scale-90 group-hover:scale-100 transition-transform">
@@ -254,11 +356,45 @@ export default function ProjectPalette() {
       )}
       </>
 
+      {/* Popup d'édition globale */}
+      {editIdx !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue/20 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
+            <h3 className="text-xl font-light text-primary mb-6 relative z-10">Modifier Couleur</h3>
+            <div className="space-y-4 relative z-10">
+              <div>
+                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom de la couleur</label>
+                  <input type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="ex: Reflet Cheveux" 
+                    className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Code Hexadécimal</label>
+                <div className="flex gap-3">
+                   <div className="w-12 h-12 rounded-xl border border-blue shadow-inner flex-shrink-0" style={{ backgroundColor: isValidEditHex() ? editColorHex : '#ffffff' }}></div>
+                   <input type="text" value={editColorHex} onChange={e => setEditColorHex(e.target.value)} placeholder="ex: #FF5500" 
+                          className="flex-1 px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary font-mono uppercase" />
+                </div>
+              </div>
+              {renderEditStatus()}
+            </div>
+            <div className="flex gap-3 mt-8 relative z-10">
+               <button onClick={() => setEditIdx(null)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
+                 Annuler
+               </button>
+               <button onClick={confirmEditColor} disabled={!editColorName || !editColorHex}
+                       className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                 Confirmer
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isAddingColor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue/20 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
-
             <h3 className="text-xl font-light text-primary mb-6 relative z-10">Nouvelle Couleur</h3>
             
             <div className="space-y-4 relative z-10">
