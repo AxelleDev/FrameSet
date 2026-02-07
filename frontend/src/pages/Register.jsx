@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 
@@ -31,6 +31,15 @@ export default function Register() {
     }
   };
 
+  const [userCount, setUserCount] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:3000/api/users/count')
+      .then(res => res.json())
+      .then(data => setUserCount(data.count))
+      .catch(() => setUserCount(null));
+  }, []);
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center bg-[#F8F9FF]">
       
@@ -59,6 +68,9 @@ export default function Register() {
            <div className="flex flex-col space-y-2 pt-4 border-l-2 border-slate-200 pl-6">
               <p className="text-sm font-medium text-slate-800">"Un outil indispensable pour maintenir la cohérence de mes webtoons."</p>
               <p className="text-xs text-slate-400 uppercase tracking-widest">Sarah K., Lead Artist</p>
+              <span className="text-sm text-slate-400 pt-2">
+                {userCount !== null ? `Rejoint par ${userCount} Illustrateur${userCount > 1 ? 's' : ''}` : 'Rejoint par ... Illustrateurs'}
+              </span>
            </div>
         </div>
 

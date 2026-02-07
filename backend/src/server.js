@@ -1,41 +1,3 @@
-// Route pour renvoyer un nouveau code de vérification
-app.post('/api/auth/resend-code', async (req, res) => {
-  const { email } = req.body;
-  try {
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (rows.length === 0) {
-      return res.status(400).json({ error: 'Utilisateur non trouvé.' });
-    }
-    const userDb = rows[0];
-    if (userDb.is_verified) {
-      return res.status(400).json({ error: 'Utilisateur déjà vérifié.' });
-    }
-    // Génère un nouveau code et une nouvelle expiration
-    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
-    await db.query('UPDATE users SET verification_code = ?, verification_code_expires = ? WHERE email = ?', [newCode, expires, email]);
-    // Envoi du mail
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS
-      }
-    });
-    await transporter.sendMail({
-      from: process.env.MAIL_USER,
-      to: email,
-      subject: 'Nouveau code de vérification',
-      text: `Votre nouveau code de vérification est : ${newCode}\nCe code expire dans 10 minutes.`
-    });
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
 const express = require('express');
 const cors = require('cors');
 
@@ -52,6 +14,17 @@ app.use(cors());
 app.use(express.json());
 
 // --- AUTHENTICATION ---
+
+// Route pour obtenir le nombre d'utilisateurs
+app.get('/api/users/count', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT COUNT(*) as count FROM users');
+    res.json({ count: rows[0].count });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
 
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, password, role } = req.body;
@@ -158,6 +131,45 @@ app.post('/api/auth/verify', async (req, res) => {
       return res.status(400).json({ error: 'Code expiré. Veuillez en demander un nouveau.' });
     }
     await db.query('UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL WHERE email = ?', [email]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Route pour renvoyer un nouveau code de vérification
+app.post('/api/auth/resend-code', async (req, res) => {
+  const { email } = req.body;
+  try {
+    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'Utilisateur non trouvé.' });
+    }
+    const userDb = rows[0];
+    if (userDb.is_verified) {
+      return res.status(400).json({ error: 'Utilisateur déjà vérifié.' });
+    }
+    // Génère un nouveau code et une nouvelle expiration
+    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    await db.query('UPDATE users SET verification_code = ?, verification_code_expires = ? WHERE email = ?', [newCode, expires, email]);
+    // Envoi du mail
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
+      }
+    });
+    await transporter.sendMail({
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: 'Nouveau code de vérification',
+      text: `Votre nouveau code de vérification est : ${newCode}\nCe code expire dans 10 minutes.`
+    });
     res.json({ success: true });
   } catch (error) {
     console.error(error);
