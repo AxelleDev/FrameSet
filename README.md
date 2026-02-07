@@ -1,7 +1,7 @@
 
 
 <div align="center">
-	<img src="https://raw.githubusercontent.com/axelle/frameSet/main/logo.png" alt="FrameSet Logo" width="120" />
+	<img src="frontend/public/FrameSet_Logo.png" alt="FrameSet Logo" width="120" />
 	<p><b>FRAMESET — Le référentiel graphique pensé pour l’illustration digitale.</b></p>
 </div>
 
