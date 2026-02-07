@@ -74,7 +74,16 @@ export default function Login() {
               <p className="text-slate-500 text-sm mt-2">Entrez vos identifiants pour accéder à l'espace.</p>
             </div>
             
-            {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-xs rounded-lg text-center font-medium">{error}</div>}
+            {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-xs rounded-lg text-center font-medium">{error}
+              {error.includes('vérifier votre email') && (
+                <button
+                  onClick={() => navigate(`/verify?email=${encodeURIComponent(formData.email)}`)}
+                  className="mt-2 w-full py-2 bg-lavender-600 text-white rounded-xl hover:bg-lavender-700 transition-all text-sm font-medium"
+                >
+                  Vérifier mon email
+                </button>
+              )}
+            </div>}
 
             <div className="space-y-5">
               <div className="group">

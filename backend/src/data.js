@@ -3,8 +3,7 @@ const user = {
   name: 'Prénom Nom',
   role: 'Illustratrice',
   email: 'axelle.nom@gmail.com',
-  avatarInitials: 'AT',
-  license: 'Licence Pro'
+  avatarInitials: 'AT'
 };
 
 let projects = [

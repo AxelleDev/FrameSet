@@ -9,6 +9,7 @@ import ProjectNorms from './pages/ProjectNorms';
 import ProjectPalette from './pages/ProjectPalette';
 import ProjectExport from './pages/ProjectExport';
 import Profile from './pages/Profile';
+import Verify from './pages/Verify';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify" element={<Verify />} />
           
           <Route path="/app" element={<MainLayout />}>
             <Route path="dashboard" element={<Dashboard />} />

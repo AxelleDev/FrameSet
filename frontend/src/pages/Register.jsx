@@ -24,9 +24,8 @@ export default function Register() {
     }
 
     const result = await register(formData);
-    
     if (result.success) {
-      navigate('/app/dashboard');
+      navigate(`/verify?email=${encodeURIComponent(formData.email)}`);
     } else {
       setError(result.message || 'Erreur lors de l\'inscription');
     }
