@@ -50,9 +50,8 @@ export default function MainLayout() {
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'}
       `}>
         <div className="p-8 border-b border-white/20 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-lavender-DEFAULT to-purple-400 flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-lavender-DEFAULT/30">C</div>
-              <span className="font-bold tracking-tight text-slate-800">Axelle</span>
+            <div className="flex justify-center w-full">
+              <img src="/FrameSet_Logo.png" alt="FrameSet Logo" className="w-[65%] h-auto object-contain" style={{ maxWidth: '260px' }} />
             </div>
             <button onClick={closeMobileMenu} className="md:hidden text-slate-400 hover:text-slate-600">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
