@@ -41,7 +41,7 @@ export default function ProjectPalette() {
 
   const handleDeleteColor = (e, colorHex) => {
     e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation(); // Force l'arrêt de la propagation
+    e.nativeEvent.stopImmediatePropagation();
     if (confirm('Supprimer cette couleur ?')) {
       deleteProjectPaletteColor(id, colorHex);
     }
@@ -76,7 +76,7 @@ export default function ProjectPalette() {
                    
                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50 pointer-events-none"></div>
                    
-                   {/* Delete Button - Increased z-index to 30 */}
+
                    <button 
                       onClick={(e) => handleDeleteColor(e, color.hex)}
                       className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-red-500 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 hover:scale-110 shadow-sm"

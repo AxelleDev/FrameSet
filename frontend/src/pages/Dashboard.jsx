@@ -40,7 +40,7 @@ export default function Dashboard() {
   return (
     <>
       <div className="relative rounded-3xl overflow-hidden bg-white mb-12 animate-fade-in border border-white">
-          {/* Fond coloré supprimé pour un fond blanc pur */}
+
 
         <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-start justify-between">
           <div>
@@ -77,7 +77,7 @@ export default function Dashboard() {
           {projects.map((project) => (
             <div key={project.id} onClick={() => openProject(project.id)} className="group glass-card relative rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-lavender-500/10 overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-lavender-100 to-transparent rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
-              {/* Delete Button */}
+
               <button 
                   onClick={(e) => handleDeleteProject(e, project.id)}
                   className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white/40 hover:bg-pink backdrop-blur-md rounded-full text-primary hover:text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 hover:scale-110 shadow-sm"
@@ -102,7 +102,7 @@ export default function Dashboard() {
                     </div>
                   )}
                 </div>
-                {/* Badges/boutons inutiles retirés */}
+
               </div>
             </div>
           ))}

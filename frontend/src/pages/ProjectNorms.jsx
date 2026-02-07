@@ -87,7 +87,7 @@ export default function ProjectNorms() {
                   <span className="text-lg text-blue font-medium">{norm.unit}</span>
                 </div>
                 <div className="h-16 bg-blue/10 rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
-                   <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/graphy.png')] opacity-20"></div>
+
                    {(norm.category === 'Typographie' || norm.category === 'Typography') ? (
                      <span className="text-primary text-xl font-medium tracking-tight" style={{fontFamily: norm.value}}>AaBbCc</span>
                    ) : (norm.category === 'Trait' || norm.category === 'Lineart') ? (
