@@ -1,0 +1,37 @@
+import React from 'react';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { DataProvider } from './context/DataContext';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import MainLayout from './layouts/MainLayout';
+import Dashboard from './pages/Dashboard';
+import ProjectNorms from './pages/ProjectNorms';
+import ProjectPalette from './pages/ProjectPalette';
+import ProjectExport from './pages/ProjectExport';
+import Profile from './pages/Profile';
+
+export default function App() {
+  return (
+    <DataProvider>
+      <HashRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          <Route path="/app" element={<MainLayout />}>
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="profile" element={<Profile />} />
+            
+            <Route path="project/:id">
+               <Route index element={<Navigate to="norms" replace />} />
+               <Route path="norms" element={<ProjectNorms />} />
+               <Route path="palette" element={<ProjectPalette />} />
+               <Route path="export" element={<ProjectExport />} />
+            </Route>
+          </Route>
+        </Routes>
+      </HashRouter>
+    </DataProvider>
+  );
+}

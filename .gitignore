@@ -4,6 +4,3 @@ build
 .DS_Store
 .env
 .env.local
-# Anciens dossiers à ignorer ou supprimer
-FrameSet
-src
