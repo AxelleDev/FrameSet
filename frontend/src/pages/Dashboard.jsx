@@ -39,7 +39,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="relative rounded-3xl overflow-hidden bg-white mb-12 animate-fade-in border border-primary">
+      <div className="relative rounded-3xl overflow-hidden bg-white mb-12 animate-fade-in border border-white">
           {/* Fond coloré supprimé pour un fond blanc pur */}
 
         <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-start justify-between">
@@ -106,8 +106,8 @@ export default function Dashboard() {
               </div>
             </div>
           ))}
-          <div onClick={() => setIsCreatingProject(true)} className="group rounded-2xl border-2 border-dashed border-blue flex flex-col items-center justify-center p-6 cursor-pointer hover:border-pink hover:bg-pink/10 transition-all min-h-[200px]">
-            <div className="w-12 h-12 rounded-full bg-blue/10 flex items-center justify-center text-blue group-hover:bg-pink/10 group-hover:text-pink transition-colors mb-3">
+          <div onClick={() => setIsCreatingProject(true)} className="group rounded-2xl border-2 border-dashed [border-color:var(--color-secondary)] flex flex-col items-center justify-center p-6 cursor-pointer hover:![border-color:var(--color-blue)] hover:bg-pink/10 transition-all min-h-[200px]">
+            <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center [color:var(--color-secondary)] group-hover:[color:var(--color-blue)] group-hover:bg-blue/10 transition-colors mb-3">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
             </div>
             <span className="text-sm font-medium text-primary">Nouveau Projet</span>

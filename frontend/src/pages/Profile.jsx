@@ -54,7 +54,7 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">
       
-      <div className="glass-card p-8 rounded-3xl mb-8 flex flex-col md:flex-row items-center gap-8 border border-primary">
+      <div className="glass-card p-8 rounded-3xl mb-8 flex flex-col md:flex-row items-center gap-8 border border-white">
         
         <div className="w-32 h-32 rounded-full bg-blue/10 border-4 border-primary shadow-xl flex items-center justify-center text-primary text-4xl font-bold flex-shrink-0">
            {user.avatarInitials}
