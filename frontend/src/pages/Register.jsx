@@ -43,9 +43,8 @@ export default function Register() {
       <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 p-8">
         
         <div className="flex flex-col justify-center space-y-6 animate-fade-in order-2 md:order-1">
-           <div className="inline-flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-lavender-DEFAULT"></div>
-              <span className="text-sm font-semibold tracking-widest uppercase text-slate-500">Early Access</span>
+           <div className="flex items-center mb-2">
+             <img src="/FrameSet_Logo.png" alt="FrameSet Logo" className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
            </div>
            
            <h1 className="text-6xl font-light tracking-tight text-slate-900 leading-tight">
@@ -54,7 +53,7 @@ export default function Register() {
            </h1>
            
            <p className="text-lg text-slate-500 max-w-md leading-relaxed">
-             Commencez dès aujourd'hui à structurer vos assets créatifs. Axelle unifie votre vision et celle de vos équipes.
+             Commencez dès aujourd'hui à structurer vos assets créatifs. FrameSet unifie votre vision et celle de vos équipes.
            </p>
 
            <div className="flex flex-col space-y-2 pt-4 border-l-2 border-slate-200 pl-6">
