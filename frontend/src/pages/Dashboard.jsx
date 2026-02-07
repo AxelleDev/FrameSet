@@ -46,7 +46,7 @@ export default function Dashboard() {
           <div>
             <h2 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">Bonjour, {user.name.split(' ')[0]}.</h2>
             <p className="text-primary max-w-lg leading-relaxed font-medium">
-              Vous avez actuellement <strong className="text-blue">{projects.length} projet{projects.length > 1 ? 's' : ''} actif{projects.length > 1 ? 's' : ''}</strong>.
+              Vous avez actuellement <strong className="text-blue">{projects.length} projet{projects.length === 1 ? '' : 's'} actif{projects.length === 1 ? '' : 's'}</strong>.
             </p>
             <div className="mt-8 flex space-x-4">
                <button onClick={() => setIsCreatingProject(true)} className="px-6 py-3 bg-blue/10 backdrop-blur-md border border-primary text-primary rounded-xl hover:bg-white transition-all font-medium shadow-sm hover:shadow-md hover:-translate-y-0.5 transform duration-200 cursor-pointer">
@@ -61,15 +61,15 @@ export default function Dashboard() {
                 <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">Normes</div>
              </div>
              <div className="p-4 rounded-2xl w-32 text-center" style={{ backgroundColor: 'rgba(137, 148, 223, 0.10)' }}>
-                <div className="text-2xl font-bold text-pink">{projects.length}</div>
-                <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">Projets</div>
+               <div className="text-2xl font-bold text-pink">{projects.length}</div>
+               <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{projects.length === 1 ? 'Projet' : 'Projets'}</div>
              </div>
           </div>
         </div>
       </div>
 
       <div className="flex items-end justify-between mb-6">
-        <h3 className="text-xl font-medium text-primary">Projets Actifs</h3>
+        <h3 className="text-xl font-medium text-primary">{projects.length === 1 ? 'Projet Actif' : 'Projets Actifs'}</h3>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
