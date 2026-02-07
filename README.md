@@ -1,36 +1,52 @@
-# FrameSet - Axelle
 
-Application professionnelle de gestion de normes graphiques.
 
-## Nettoyage (Important)
+<div align="center">
+	<img src="https://raw.githubusercontent.com/axelle/frameSet/main/logo.png" alt="FrameSet Logo" width="120" />
+	<p><b>FRAMESET — Le référentiel graphique pensé pour l’illustration digitale.</b></p>
+</div>
 
-Si vous venez de migrer le projet, vous pouvez supprimer manuellement les dossiers suivants situés à la racine pour ne garder que l'architecture propre :
-- ❌ `src/` (Ancien dossier source)
-- ❌ `FrameSet/` (Ancien dossier dupliqué)
+---
 
-## Architecture Valide
+## ✧･ﾟ: ✧･ﾟ Fonctionnalités
 
-L'architecture propre ne doit contenir que :
+- Gérez les normes graphiques et palettes pour vos projets créatifs
+- Interface moderne et épurée (React + Vite)
+- Backend sécurisé (Node.js + Express)
+- Authentification utilisateur et organisation des projets
 
-- 📂 `backend/` : API Node.js (Express)
-- 📂 `frontend/` : Application React (Vite)
-- 📄 `index.html` : Point d'entrée web
-- 📄 `index.tsx` : Point d'entrée React
+---
 
-## Installation et Lancement
 
-### 1. Backend (API)
+## ✧･ﾟ: ✧･ﾟ Structure du projet
+
+```
+├── backend/      # API Node.js (Express)
+├── frontend/     # Application React (Vite)
+├── index.html    # Point d'entrée web
+├── index.tsx     # Point d'entrée React
+```
+
+---
+
+## ✧･ﾟ: ✧･ﾟ Démarrage rapide
+
+
+### Backend (API)
+
 ```bash
 cd backend
 npm install
 npm start
-# Le serveur écoute sur http://localhost:3000
 ```
 
-### 2. Frontend (App)
+### Frontend (App)
+
 ```bash
 cd frontend
 npm install
 npm run dev
-# L'application est accessible sur http://localhost:5173
 ```
+
+---
+
+© Axelle 2026. Tous droits réservés.
