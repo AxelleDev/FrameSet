@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, Link, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, Link, useLocation, Navigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 
 export default function MainLayout() {
-  const { activeProject, user } = useData();
+  const { activeProject, user, loading } = useData();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -11,7 +11,7 @@ export default function MainLayout() {
     setIsMobileMenuOpen(false);
   };
 
-  const navLinkClass = ({ isActive }) => 
+  const navLinkClass = ({ isActive }) =>
     `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
       isActive ? 'bg-white/80 text-lavender-600 shadow-sm' : 'text-slate-600 hover:bg-white/50'
     }`;
@@ -21,6 +21,13 @@ export default function MainLayout() {
     if (location.pathname.includes('profile')) return 'Mon Profil';
     return 'Tableau de bord';
   };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen text-lg text-slate-500">Loading...</div>;
+  }
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-[#F8F9FF] text-slate-800 transition-colors duration-500">
