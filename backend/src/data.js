@@ -6,13 +6,12 @@ const user = {
   avatarInitials: 'AT'
 };
 
-let projects = [
+const projects = [
   {
     id: 'p1',
     name: 'Alyse - Emotes Twitch',
-    client: 'Twitch Partner',
     progress: 15,
-    lastEdited: 'À l\'instant',
+    lastEdited: '\u00c0 l\'instant',
     normsCount: 4,
     norms: [
       { id: 'n1', category: 'Typographie', name: 'Police Principale', value: 'Figtree', unit: 'Bold' },

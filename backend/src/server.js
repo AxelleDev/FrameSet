@@ -72,24 +72,7 @@ app.post('/api/auth/register', async (req, res) => {
       avatarInitials: initials,
       is_verified: false
     };
-
     res.json(newUser);
-  } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
-
-app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (rows.length === 0) {
-      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
-    }
     const userDb = rows[0];
     if (!userDb.is_verified) {
       return res.status(401).json({ error: 'Veuillez vérifier votre email avant de vous connecter.' });
@@ -238,18 +221,17 @@ app.get('/api/projects', async (req, res) => {
 });
 
 app.post('/api/projects', async (req, res) => {
-  const { userId, name, client } = req.body;
+  const { userId, name } = req.body;
   try {
     const [result] = await db.query(
-      'INSERT INTO projects (user_id, name, client, progress) VALUES (?, ?, ?, 0)', 
-      [userId, name, client || 'Interne']
+      'INSERT INTO projects (user_id, name, progress) VALUES (?, ?, 0)', 
+      [userId, name]
     );
     const newId = result.insertId;
     
     const newProject = {
       id: newId,
       name,
-      client: client || 'Interne',
       progress: 0,
       lastEdited: 'À l\'instant',
       normsCount: 0,

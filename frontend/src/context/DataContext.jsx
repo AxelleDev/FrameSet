@@ -83,13 +83,13 @@ export const DataProvider = ({ children }) => {
     projects.find(p => String(p.id) === String(activeProjectId)) || null
   , [projects, activeProjectId]);
 
-  const addProject = async (name, client = 'Interne') => {
+  const addProject = async (name) => {
     if (!user) return;
     try {
       const res = await fetch(`${API_URL}/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, name, client })
+        body: JSON.stringify({ userId: user.id, name })
       });
       if (res.ok) {
         const newProject = await res.json();
