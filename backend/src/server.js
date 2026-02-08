@@ -338,5 +338,24 @@ app.patch('/api/projects/:id/palette', async (req, res) => {
   }
 });
 
+app.put('/api/projects/:projectId/norms/:normId', async (req, res) => {
+  const { projectId, normId } = req.params;
+  const { category, name, value, unit, brushName } = req.body;
+  try {
+    const [result] = await db.query(
+      'UPDATE project_norms SET category = ?, name = ?, value = ?, unit = ?, brush_name = ? WHERE id = ? AND project_id = ?',
+      [category, name, value, unit, brushName, normId, projectId]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Norme non trouvée' });
+    }
+    await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [projectId]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 app.listen(PORT, () => {
 });

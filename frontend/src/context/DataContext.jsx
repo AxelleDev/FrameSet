@@ -52,6 +52,24 @@ export const DataProvider = ({ children }) => {
     }
   };
 
+  const updateProjectNorm = async (projectId, normId, updates) => {
+    try {
+      const res = await fetch(`${API_URL}/projects/${projectId}/norms/${normId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (res.ok) {
+        setProjects(prev =>
+          prev.map(p => String(p.id) === String(projectId) ? {
+            ...p,
+            norms: p.norms.map(n => Number(n.id) === Number(normId) ? { ...n, ...updates } : n)
+          } : p)
+        );
+      }
+    } catch (e) { console.error(e); }
+  };
+
   const login = async (email, password) => {
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
@@ -205,6 +223,7 @@ export const DataProvider = ({ children }) => {
       deleteProjectPaletteColor,
       addProjectNorm,
       deleteProjectNorm,
+      updateProjectNorm,
       updateUserProfile,
       loading,
       login,
