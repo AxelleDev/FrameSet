@@ -40,7 +40,7 @@ export default function ProjectExport() {
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100);
-    doc.text(`Client: ${activeProject.client} | Version générée le ${new Date().toLocaleDateString()}`, 20, y);
+    doc.text(`Version générée le ${new Date().toLocaleDateString()}`, 20, y);
     y += 20;
     
     doc.setDrawColor(200);
