@@ -22,6 +22,25 @@ export const DataProvider = ({ children }) => {
     }
   }, []);
 
+  const deleteProjectNorm = async (projectId, normId) => {
+    try {
+      const normIdNum = Number(normId);
+      const url = `${API_URL}/projects/${projectId}/norms/${normIdNum}`;
+      console.log('DELETE norme URL:', url);
+      await fetch(url, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      setProjects(prev =>
+        prev.map(p => String(p.id) === String(projectId) ? {
+          ...p,
+          norms: p.norms.filter(n => Number(n.id) !== normIdNum),
+          normsCount: p.normsCount - 1
+        } : p)
+      );
+    } catch (e) { console.error(e); }
+  };
+
   const fetchProjects = async (userId) => {
     try {
       const res = await fetch(`${API_URL}/projects?userId=${userId}`);
@@ -141,18 +160,23 @@ export const DataProvider = ({ children }) => {
 
   const addProjectNorm = async (projectId, norm) => {
     try {
-      await fetch(`${API_URL}/projects/${projectId}/norms`, {
+      const res = await fetch(`${API_URL}/projects/${projectId}/norms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(norm)
       });
-       setProjects(prev => 
-        prev.map(p => String(p.id) === String(projectId) ? { 
-          ...p, 
-          norms: [...p.norms, norm],
-          normsCount: p.normsCount + 1 
-        } : p)
-      );
+      if (res.ok) {
+        const data = await res.json();
+        const normWithId = { ...norm, id: data.id };
+        setProjects(prev =>
+          prev.map(p => String(p.id) === String(projectId) ? {
+            ...p,
+            norms: [...p.norms, normWithId],
+            normsCount: p.normsCount + 1
+          } : p)
+        );
+        return normWithId;
+      }
     } catch (e) { console.error(e); }
   };
 
@@ -182,6 +206,7 @@ export const DataProvider = ({ children }) => {
       updateProjectPalette,
       deleteProjectPaletteColor,
       addProjectNorm,
+      deleteProjectNorm,
       updateUserProfile,
       loading,
       login,

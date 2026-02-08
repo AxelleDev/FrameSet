@@ -281,12 +281,12 @@ app.post('/api/projects/:id/norms', async (req, res) => {
   const { id } = req.params;
   const { category, name, value, unit, brushName } = req.body;
   try {
-    await db.query(
+    const [result] = await db.query(
       'INSERT INTO project_norms (project_id, category, name, value, unit, brush_name) VALUES (?, ?, ?, ?, ?, ?)',
       [id, category, name, value, unit, brushName]
     );
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
-    res.json({ success: true });
+    res.json({ success: true, id: result.insertId });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Database error' });
@@ -305,6 +305,23 @@ app.post('/api/projects/:id/palette', async (req, res) => {
       );
     }
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Suppression d'une norme par son id
+app.delete('/api/projects/:projectId/norms/:normId', async (req, res) => {
+  const { projectId, normId } = req.params;
+  try {
+    console.log('Suppression norme:', { projectId, normId });
+    const [result] = await db.query('DELETE FROM project_norms WHERE id = ? AND project_id = ?', [normId, projectId]);
+    console.log('Résultat suppression:', result);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Norme non trouvée' });
+    }
     res.json({ success: true });
   } catch (error) {
     console.error(error);
