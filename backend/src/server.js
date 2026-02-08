@@ -73,6 +73,23 @@ app.post('/api/auth/register', async (req, res) => {
       is_verified: false
     };
     res.json(newUser);
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
+    }
+    console.error(error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Route pour la connexion (login)
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
+    }
     const userDb = rows[0];
     if (!userDb.is_verified) {
       return res.status(401).json({ error: 'Veuillez vérifier votre email avant de vous connecter.' });
@@ -91,9 +108,10 @@ app.post('/api/auth/register', async (req, res) => {
     res.json(user);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
+
 // Route pour valider le code de confirmation
 app.post('/api/auth/verify', async (req, res) => {
   const { email, code } = req.body;
