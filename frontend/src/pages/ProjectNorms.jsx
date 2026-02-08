@@ -68,6 +68,7 @@ export default function ProjectNorms() {
   const handleDeleteNorm = async (e, normId, type) => {
     e.preventDefault();
     if (!id || !normId) return;
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette norme ? Cette action est irréversible.')) return;
     setLoadingDelete(normId);
     if (type === 'brush') {
       await deleteBrushNorm(id, normId);
