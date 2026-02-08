@@ -1,4 +1,3 @@
-// Simulation d'une base de données en mémoire
 const user = {
   name: 'Prénom Nom',
   role: 'Illustratrice',

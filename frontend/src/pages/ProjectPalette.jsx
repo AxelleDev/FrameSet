@@ -3,16 +3,12 @@ import { useData } from '../context/DataContext';
 import { useParams } from 'react-router-dom';
 
 export default function ProjectPalette() {
-          const [editStatus, setEditStatus] = useState(null); // null, 'success', 'error'
-        // Affichage du statut d'édition
+          const [editStatus, setEditStatus] = useState(null);
         const renderEditStatus = () => {
           if (editStatus === 'error') return <div style={{color:'red',marginTop:'8px'}}>Erreur lors de la modification.</div>;
           return null;
         };
-    // Drag state
-    // (déclaré plus bas, à garder une seule fois)
 
-    // Edit color modal state
     const [editIdx, setEditIdx] = useState(null);
     const [editColorName, setEditColorName] = useState('');
     const [editColorHex, setEditColorHex] = useState('');
@@ -49,21 +45,17 @@ export default function ProjectPalette() {
       } catch (e) {
         setEditStatus('error');
       }
-      // Ne ferme plus le popup immédiatement
     };
   const { id } = useParams();
   const { setActiveProjectId, activeProject, updateProjectPalette, deleteProjectPaletteColor, user } = useData();
 
-  // Drag state
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [palette, setPalette] = useState([]);
   const [previewPalette, setPreviewPalette] = useState([]);
 
-  // Copied feedback state
   const [copiedIdx, setCopiedIdx] = useState(null);
 
-  // Clipboard copy handler
   const handleCopyHex = async (e, hex, idx) => {
     e.preventDefault();
     e.stopPropagation();
@@ -73,7 +65,6 @@ export default function ProjectPalette() {
         await navigator.clipboard.writeText(hex);
         success = true;
       } else {
-        // fallback for older browsers
         const textarea = document.createElement('textarea');
         textarea.value = hex;
         textarea.setAttribute('readonly', '');
@@ -143,7 +134,6 @@ export default function ProjectPalette() {
 
   const syncPalette = async () => {
     if (user && user.id) {
-      // fetchProjects est dans DataContext, mais pas exposé dans useData, donc on peut forcer un reload via window.location.reload()
       window.location.reload();
     }
   };
@@ -183,7 +173,6 @@ export default function ProjectPalette() {
                     e.preventDefault();
                     if (draggedIndex !== null && idx !== draggedIndex) {
                       setDragOverIndex(idx);
-                      // Live preview
                       const tempPalette = [...palette];
                       const [moved] = tempPalette.splice(draggedIndex, 1);
                       tempPalette.splice(idx, 0, moved);
@@ -356,7 +345,6 @@ export default function ProjectPalette() {
       )}
       </>
 
-      {/* Popup d'édition globale */}
       {editIdx !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue/20 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden">

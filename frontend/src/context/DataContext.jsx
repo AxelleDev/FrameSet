@@ -10,7 +10,6 @@ export const DataProvider = ({ children }) => {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check localStorage for persisted user on load
   useEffect(() => {
     const storedUser = localStorage.getItem('frameset_user');
     if (storedUser) {
@@ -26,7 +25,6 @@ export const DataProvider = ({ children }) => {
     try {
       const normIdNum = Number(normId);
       const url = `${API_URL}/projects/${projectId}/norms/${normIdNum}`;
-      console.log('DELETE norme URL:', url);
       await fetch(url, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' }

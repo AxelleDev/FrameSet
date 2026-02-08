@@ -13,9 +13,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// --- AUTHENTICATION ---
 
-// Route pour obtenir le nombre d'utilisateurs
 app.get('/api/users/count', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT COUNT(*) as count FROM users');
@@ -29,16 +27,13 @@ app.get('/api/users/count', async (req, res) => {
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, password, role } = req.body;
 
-  // Initials generator
   const getInitials = (n) => n.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
   const initials = getInitials(name);
 
-  // Génère un code à 6 chiffres et une date d'expiration (10 min)
   const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+  const expires = new Date(Date.now() + 10 * 60 * 1000);
 
   try {
-    // Hash du mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await db.query(
@@ -46,7 +41,6 @@ app.post('/api/auth/register', async (req, res) => {
       [name, email, hashedPassword, role || 'Creative', initials, false, verificationCode, expires]
     );
 
-    // Envoi du mail
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
@@ -82,7 +76,6 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// Route pour la connexion (login)
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -112,7 +105,6 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Route pour valider le code de confirmation
 app.post('/api/auth/verify', async (req, res) => {
   const { email, code } = req.body;
   try {
@@ -127,7 +119,6 @@ app.post('/api/auth/verify', async (req, res) => {
     if (!userDb.verification_code || userDb.verification_code !== code) {
       return res.status(400).json({ error: 'Code incorrect.' });
     }
-    // Vérifie l'expiration
     if (!userDb.verification_code_expires || new Date() > new Date(userDb.verification_code_expires)) {
       return res.status(400).json({ error: 'Code expiré. Veuillez en demander un nouveau.' });
     }
@@ -139,7 +130,6 @@ app.post('/api/auth/verify', async (req, res) => {
   }
 });
 
-// Route pour renvoyer un nouveau code de vérification
 app.post('/api/auth/resend-code', async (req, res) => {
   const { email } = req.body;
   try {
@@ -151,11 +141,9 @@ app.post('/api/auth/resend-code', async (req, res) => {
     if (userDb.is_verified) {
       return res.status(400).json({ error: 'Utilisateur déjà vérifié.' });
     }
-    // Génère un nouveau code et une nouvelle expiration
     const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
     await db.query('UPDATE users SET verification_code = ?, verification_code_expires = ? WHERE email = ?', [newCode, expires, email]);
-    // Envoi du mail
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
@@ -178,10 +166,9 @@ app.post('/api/auth/resend-code', async (req, res) => {
   }
 });
 
-// --- ROUTES USER ---
 
 app.put('/api/user', async (req, res) => {
-  const { id, name, role, email } = req.body; // Expect ID in body for now
+  const { id, name, role, email } = req.body;
   try {
     await db.query('UPDATE users SET name = ?, role = ?, email = ? WHERE id = ?', [name, role, email, id]);
     res.json({ success: true, name, role, email });
@@ -191,12 +178,11 @@ app.put('/api/user', async (req, res) => {
   }
 });
 
-// --- ROUTES PROJECTS ---
 
 app.get('/api/projects', async (req, res) => {
-  const userId = req.query.userId; // Filter by User ID
+  const userId = req.query.userId;
   
-  if (!userId) return res.json([]); // Return empty if no user logged in
+  if (!userId) return res.json([]);
 
   try {
     const [projectsData] = await db.query(
@@ -275,7 +261,6 @@ app.delete('/api/projects/:id', async (req, res) => {
   }
 });
 
-// --- ROUTES NORMS & PALETTE (UNCHANGED LOGIC) ---
 
 app.post('/api/projects/:id/norms', async (req, res) => {
   const { id } = req.params;
@@ -297,7 +282,6 @@ app.post('/api/projects/:id/palette', async (req, res) => {
   const { id } = req.params;
   const colors = req.body;
   try {
-    // Insère ou remplace chaque couleur pour ce projet
     for (const color of colors) {
       await db.query(
         'REPLACE INTO project_palette (project_id, name, hex) VALUES (?, ?, ?)',
@@ -312,13 +296,10 @@ app.post('/api/projects/:id/palette', async (req, res) => {
   }
 });
 
-// Suppression d'une norme par son id
 app.delete('/api/projects/:projectId/norms/:normId', async (req, res) => {
   const { projectId, normId } = req.params;
   try {
-    console.log('Suppression norme:', { projectId, normId });
     const [result] = await db.query('DELETE FROM project_norms WHERE id = ? AND project_id = ?', [normId, projectId]);
-    console.log('Résultat suppression:', result);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Norme non trouvée' });
     }
@@ -358,6 +339,4 @@ app.patch('/api/projects/:id/palette', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log('Connected to MySQL database: frameset_db');
 });
