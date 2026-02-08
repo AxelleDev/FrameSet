@@ -181,34 +181,37 @@ app.put('/api/user', async (req, res) => {
 
 app.get('/api/projects', async (req, res) => {
   const userId = req.query.userId;
-  
   if (!userId) return res.json([]);
-
   try {
     const [projectsData] = await db.query(
-      'SELECT *, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? ORDER BY created_at DESC', 
+      'SELECT *, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? ORDER BY created_at DESC',
       [userId]
     );
-    
     const fullProjects = await Promise.all(projectsData.map(async (p) => {
-      const [norms] = await db.query('SELECT * FROM project_norms WHERE project_id = ?', [p.id]);
+      const [brushNorms] = await db.query('SELECT * FROM project_brush_norms WHERE project_id = ?', [p.id]);
+      const [typographyNorms] = await db.query('SELECT * FROM project_typography_norms WHERE project_id = ?', [p.id]);
       const [palette] = await db.query('SELECT * FROM project_palette WHERE project_id = ?', [p.id]);
-      
       return {
         id: p.id,
         name: p.name,
         client: p.client,
         progress: p.progress,
         lastEdited: p.lastEditedFormatted || 'À l\'instant',
-        normsCount: norms.length,
-        norms: norms.map(n => ({
+        brushNorms: brushNorms.map(n => ({
           id: n.id,
-          category: n.category,
           name: n.name,
           value: n.value,
           unit: n.unit,
           brushName: n.brush_name
         })),
+        typographyNorms: typographyNorms.map(n => ({
+          id: n.id,
+          fontFamily: n.font_family,
+          fontWeight: n.font_weight,
+          fontUsage: n.font_usage,
+          fontStyle: n.font_style
+        })),
+        normsCount: brushNorms.length + typographyNorms.length,
         palette: palette.map(c => ({
           name: c.name,
           hex: c.hex
@@ -216,7 +219,6 @@ app.get('/api/projects', async (req, res) => {
         characters: []
       };
     }));
-
     res.json(fullProjects);
   } catch (error) {
     console.error(error);
@@ -262,13 +264,31 @@ app.delete('/api/projects/:id', async (req, res) => {
 });
 
 
-app.post('/api/projects/:id/norms', async (req, res) => {
+// Add brush norm
+app.post('/api/projects/:id/brush-norms', async (req, res) => {
   const { id } = req.params;
-  const { category, name, value, unit, brushName } = req.body;
+  const { name, value, unit, brushName } = req.body;
   try {
     const [result] = await db.query(
-      'INSERT INTO project_norms (project_id, category, name, value, unit, brush_name) VALUES (?, ?, ?, ?, ?, ?)',
-      [id, category, name, value, unit, brushName]
+      'INSERT INTO project_brush_norms (project_id, name, value, unit, brush_name) VALUES (?, ?, ?, ?, ?)',
+      [id, name, value, unit, brushName]
+    );
+    await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
+    res.json({ success: true, id: result.insertId });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Add typography norm
+app.post('/api/projects/:id/typography-norms', async (req, res) => {
+  const { id } = req.params;
+  const { fontFamily, fontWeight, fontUsage, fontStyle } = req.body;
+  try {
+    const [result] = await db.query(
+      'INSERT INTO project_typography_norms (project_id, font_family, font_weight, font_usage, font_style) VALUES (?, ?, ?, ?, ?)',
+      [id, fontFamily, fontWeight, fontUsage, fontStyle]
     );
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
     res.json({ success: true, id: result.insertId });
@@ -296,10 +316,24 @@ app.post('/api/projects/:id/palette', async (req, res) => {
   }
 });
 
-app.delete('/api/projects/:projectId/norms/:normId', async (req, res) => {
+app.delete('/api/projects/:projectId/brush-norms/:normId', async (req, res) => {
   const { projectId, normId } = req.params;
   try {
-    const [result] = await db.query('DELETE FROM project_norms WHERE id = ? AND project_id = ?', [normId, projectId]);
+    const [result] = await db.query('DELETE FROM project_brush_norms WHERE id = ? AND project_id = ?', [normId, projectId]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Norme non trouvée' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.delete('/api/projects/:projectId/typography-norms/:normId', async (req, res) => {
+  const { projectId, normId } = req.params;
+  try {
+    const [result] = await db.query('DELETE FROM project_typography_norms WHERE id = ? AND project_id = ?', [normId, projectId]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Norme non trouvée' });
     }
@@ -338,13 +372,32 @@ app.patch('/api/projects/:id/palette', async (req, res) => {
   }
 });
 
-app.put('/api/projects/:projectId/norms/:normId', async (req, res) => {
+app.put('/api/projects/:projectId/brush-norms/:normId', async (req, res) => {
   const { projectId, normId } = req.params;
-  const { category, name, value, unit, brushName } = req.body;
+  const { name, value, unit, brushName } = req.body;
   try {
     const [result] = await db.query(
-      'UPDATE project_norms SET category = ?, name = ?, value = ?, unit = ?, brush_name = ? WHERE id = ? AND project_id = ?',
-      [category, name, value, unit, brushName, normId, projectId]
+      'UPDATE project_brush_norms SET name = ?, value = ?, unit = ?, brush_name = ? WHERE id = ? AND project_id = ?',
+      [name, value, unit, brushName, normId, projectId]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Norme non trouvée' });
+    }
+    await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [projectId]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.put('/api/projects/:projectId/typography-norms/:normId', async (req, res) => {
+  const { projectId, normId } = req.params;
+  const { fontFamily, fontWeight, fontUsage, fontStyle } = req.body;
+  try {
+    const [result] = await db.query(
+      'UPDATE project_typography_norms SET font_family = ?, font_weight = ?, font_usage = ?, font_style = ? WHERE id = ? AND project_id = ?',
+      [fontFamily, fontWeight, fontUsage, fontStyle, normId, projectId]
     );
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Norme non trouvée' });

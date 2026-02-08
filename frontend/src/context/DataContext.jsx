@@ -21,10 +21,11 @@ export const DataProvider = ({ children }) => {
     }
   }, []);
 
-  const deleteProjectNorm = async (projectId, normId) => {
+  // Delete brush norm
+  const deleteBrushNorm = async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
-      const url = `${API_URL}/projects/${projectId}/norms/${normIdNum}`;
+      const url = `${API_URL}/projects/${projectId}/brush-norms/${normIdNum}`;
       await fetch(url, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' }
@@ -32,8 +33,27 @@ export const DataProvider = ({ children }) => {
       setProjects(prev =>
         prev.map(p => String(p.id) === String(projectId) ? {
           ...p,
-          norms: p.norms.filter(n => Number(n.id) !== normIdNum),
-          normsCount: p.normsCount - 1
+          brushNorms: p.brushNorms.filter(n => Number(n.id) !== normIdNum),
+          normsCount: (p.normsCount || 0) - 1
+        } : p)
+      );
+    } catch (e) { console.error(e); }
+  };
+
+  // Delete typography norm
+  const deleteTypographyNorm = async (projectId, normId) => {
+    try {
+      const normIdNum = Number(normId);
+      const url = `${API_URL}/projects/${projectId}/typography-norms/${normIdNum}`;
+      await fetch(url, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      setProjects(prev =>
+        prev.map(p => String(p.id) === String(projectId) ? {
+          ...p,
+          typographyNorms: p.typographyNorms.filter(n => Number(n.id) !== normIdNum),
+          normsCount: (p.normsCount || 0) - 1
         } : p)
       );
     } catch (e) { console.error(e); }
@@ -52,9 +72,10 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  const updateProjectNorm = async (projectId, normId, updates) => {
+  // Update brush norm
+  const updateBrushNorm = async (projectId, normId, updates) => {
     try {
-      const res = await fetch(`${API_URL}/projects/${projectId}/norms/${normId}`, {
+      const res = await fetch(`${API_URL}/projects/${projectId}/brush-norms/${normId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
@@ -63,7 +84,26 @@ export const DataProvider = ({ children }) => {
         setProjects(prev =>
           prev.map(p => String(p.id) === String(projectId) ? {
             ...p,
-            norms: p.norms.map(n => Number(n.id) === Number(normId) ? { ...n, ...updates } : n)
+            brushNorms: p.brushNorms.map(n => Number(n.id) === Number(normId) ? { ...n, ...updates } : n)
+          } : p)
+        );
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  // Update typography norm
+  const updateTypographyNorm = async (projectId, normId, updates) => {
+    try {
+      const res = await fetch(`${API_URL}/projects/${projectId}/typography-norms/${normId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (res.ok) {
+        setProjects(prev =>
+          prev.map(p => String(p.id) === String(projectId) ? {
+            ...p,
+            typographyNorms: p.typographyNorms.map(n => Number(n.id) === Number(normId) ? { ...n, ...updates } : n)
           } : p)
         );
       }
@@ -174,9 +214,10 @@ export const DataProvider = ({ children }) => {
     } catch (e) { console.error(e); }
   };
 
-  const addProjectNorm = async (projectId, norm) => {
+  // Add brush norm
+  const addBrushNorm = async (projectId, norm) => {
     try {
-      const res = await fetch(`${API_URL}/projects/${projectId}/norms`, {
+      const res = await fetch(`${API_URL}/projects/${projectId}/brush-norms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(norm)
@@ -187,8 +228,31 @@ export const DataProvider = ({ children }) => {
         setProjects(prev =>
           prev.map(p => String(p.id) === String(projectId) ? {
             ...p,
-            norms: [...p.norms, normWithId],
-            normsCount: p.normsCount + 1
+            brushNorms: [...(p.brushNorms || []), normWithId],
+            normsCount: (p.normsCount || 0) + 1
+          } : p)
+        );
+        return normWithId;
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  // Add typography norm
+  const addTypographyNorm = async (projectId, norm) => {
+    try {
+      const res = await fetch(`${API_URL}/projects/${projectId}/typography-norms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(norm)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const normWithId = { ...norm, id: data.id };
+        setProjects(prev =>
+          prev.map(p => String(p.id) === String(projectId) ? {
+            ...p,
+            typographyNorms: [...(p.typographyNorms || []), normWithId],
+            normsCount: (p.normsCount || 0) + 1
           } : p)
         );
         return normWithId;
@@ -221,9 +285,12 @@ export const DataProvider = ({ children }) => {
       deleteProject,
       updateProjectPalette,
       deleteProjectPaletteColor,
-      addProjectNorm,
-      deleteProjectNorm,
-      updateProjectNorm,
+      addBrushNorm,
+      addTypographyNorm,
+      deleteBrushNorm,
+      deleteTypographyNorm,
+      updateBrushNorm,
+      updateTypographyNorm,
       updateUserProfile,
       loading,
       login,

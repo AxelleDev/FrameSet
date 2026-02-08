@@ -4,84 +4,126 @@ import { useParams } from 'react-router-dom';
 
 export default function ProjectNorms() {
   const { id } = useParams();
-  const { setActiveProjectId, activeProject, addProjectNorm, deleteProjectNorm, updateProjectNorm } = useData();
-    const [editingNorm, setEditingNorm] = useState(null);
-    const [editCategory, setEditCategory] = useState('Trait');
-    const [editName, setEditName] = useState('');
-    const [editValue, setEditValue] = useState('');
-    const [editUnit, setEditUnit] = useState('px');
-    const [editBrushName, setEditBrushName] = useState('');
+  const {
+    setActiveProjectId,
+    activeProject,
+    addBrushNorm,
+    addTypographyNorm,
+    deleteBrushNorm,
+    deleteTypographyNorm,
+    updateBrushNorm,
+    updateTypographyNorm
+  } = useData();
 
-    const openEditNorm = (norm) => {
-      setEditingNorm(norm);
-      setEditCategory(norm.category);
-      setEditName(norm.name);
-      setEditValue(norm.value);
-      setEditUnit(norm.unit || (norm.category === 'Trait' ? 'px' : ''));
-      setEditBrushName(norm.brushName || '');
-    };
+  const [editingNorm, setEditingNorm] = useState(null);
+  const [editingType, setEditingType] = useState('brush'); // 'brush' or 'typography'
+  // Brush norm fields
+  const [editBrushName, setEditBrushName] = useState('');
+  const [editBrushUsage, setEditBrushUsage] = useState('');
+  const [editBrushValue, setEditBrushValue] = useState('');
+  const [editBrushUnit, setEditBrushUnit] = useState('px');
+  // Typography norm fields
+  const [editFontFamily, setEditFontFamily] = useState('');
+  const [editFontWeight, setEditFontWeight] = useState('');
+  const [editFontUsage, setEditFontUsage] = useState('');
+  const [editFontStyle, setEditFontStyle] = useState('');
 
-    const handleEditNorm = async () => {
-      if (!id || !editingNorm) return;
-      const updatedNorm = {
-        category: editCategory,
-        name: editName,
-        value: editValue,
-        unit: editUnit,
-        brushName: editCategory === 'Trait' ? editBrushName : undefined
-      };
-      await updateProjectNorm(id, editingNorm.id, updatedNorm);
-      setEditingNorm(null);
-    };
+  const openEditNorm = (norm, type) => {
+    setEditingNorm(norm);
+    setEditingType(type);
+    if (type === 'brush') {
+      setEditBrushUsage(norm.name);
+      setEditBrushName(norm.brushName);
+      setEditBrushValue(norm.value);
+      setEditBrushUnit(norm.unit || 'px');
+    } else {
+      setEditFontFamily(norm.fontFamily);
+      setEditFontWeight(norm.fontWeight || '');
+      setEditFontUsage(norm.fontUsage || '');
+      setEditFontStyle(norm.fontStyle || '');
+    }
+  };
+
+  const handleEditNorm = async () => {
+    if (!id || !editingNorm) return;
+    if (editingType === 'brush') {
+      await updateBrushNorm(id, editingNorm.id, {
+        name: editBrushUsage,
+        value: editBrushValue,
+        unit: editBrushUnit,
+        brushName: editBrushName
+      });
+    } else {
+      await updateTypographyNorm(id, editingNorm.id, {
+        fontFamily: editFontFamily,
+        fontWeight: editFontWeight,
+        fontUsage: editFontUsage,
+        fontStyle: editFontStyle
+      });
+    }
+    setEditingNorm(null);
+  };
+
   const [loadingDelete, setLoadingDelete] = useState(null);
-
-  const handleDeleteNorm = async (e, normId) => {
+  const handleDeleteNorm = async (e, normId, type) => {
     e.preventDefault();
     if (!id || !normId) return;
     setLoadingDelete(normId);
-    await deleteProjectNorm(id, normId);
+    if (type === 'brush') {
+      await deleteBrushNorm(id, normId);
+    } else {
+      await deleteTypographyNorm(id, normId);
+    }
     setLoadingDelete(null);
   };
-  
+
   const [isAddingNorm, setIsAddingNorm] = useState(false);
-  const categories = ['Trait', 'Typographie'];
-  
-  const [newCategory, setNewCategory] = useState('Trait');
-  const [newName, setNewName] = useState('');
-  const [newValue, setNewValue] = useState('');
-  const [newUnit, setNewUnit] = useState('px');
+  const [addType, setAddType] = useState('brush');
+  // Add brush norm fields
+  const [newBrushUsage, setNewBrushUsage] = useState('');
   const [newBrushName, setNewBrushName] = useState('');
+  const [newBrushValue, setNewBrushValue] = useState('');
+  const [newBrushUnit, setNewBrushUnit] = useState('px');
+  // Add typography norm fields
+  const [newFontFamily, setNewFontFamily] = useState('');
+  const [newFontWeight, setNewFontWeight] = useState('');
+  const [newFontUsage, setNewFontUsage] = useState('');
+  const [newFontStyle, setNewFontStyle] = useState('');
 
   useEffect(() => {
     if (id) setActiveProjectId(id);
   }, [id, setActiveProjectId]);
 
-  const onCategoryChange = (cat) => {
-    setNewCategory(cat);
-    if (cat === 'Trait') {
-      setNewUnit('px');
-    } else {
-      setNewUnit('');
-    }
-  };
-
   const resetForm = () => {
-    setNewName('');
-    setNewValue('');
-    setNewUnit(newCategory === 'Trait' ? 'px' : '');
+    setNewBrushUsage('');
     setNewBrushName('');
+    setNewBrushValue('');
+    setNewBrushUnit('px');
+    setNewFontFamily('');
+    setNewFontWeight('');
+    setNewFontUsage('');
+    setNewFontStyle('');
   };
 
   const handleAddNorm = async () => {
-    if (!id || !newName || !newValue) return;
-    const norm = {
-      category: newCategory,
-      name: newName,
-      value: newValue,
-      unit: newUnit,
-      brushName: newCategory === 'Trait' ? newBrushName : undefined
-    };
-    await addProjectNorm(id, norm);
+    if (!id) return;
+    if (addType === 'brush') {
+      if (!newBrushUsage || !newBrushValue) return;
+      await addBrushNorm(id, {
+        name: newBrushUsage,
+        value: newBrushValue,
+        unit: newBrushUnit,
+        brushName: newBrushName
+      });
+    } else {
+      if (!newFontFamily) return;
+      await addTypographyNorm(id, {
+        fontFamily: newFontFamily,
+        fontWeight: newFontWeight,
+        fontUsage: newFontUsage,
+        fontStyle: newFontStyle
+      });
+    }
     setIsAddingNorm(false);
     resetForm();
   };
@@ -98,17 +140,18 @@ export default function ProjectNorms() {
       {activeProject && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <button onClick={() => { resetForm(); setIsAddingNorm(true); }} className="rounded-2xl border-2 border-dashed [border-color:var(--color-secondary)] flex flex-col items-center justify-center hover:![border-color:var(--color-blue)] hover:bg-pink/10 transition-all group">
+            <button onClick={() => { resetForm(); setAddType('brush'); setIsAddingNorm(true); }} className="rounded-2xl border-2 border-dashed [border-color:var(--color-secondary)] flex flex-col items-center justify-center hover:![border-color:var(--color-blue)] hover:bg-pink/10 transition-all group">
               <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mb-3 transition-transform group-hover:scale-110 group-hover:bg-blue/10 [color:var(--color-secondary)] group-hover:[color:var(--color-blue)]">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
               </div>
-              <span className="text-xs font-bold uppercase tracking-widest text-primary">Ajouter</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-primary">Ajouter une norme</span>
             </button>
-            {activeProject.norms.map((norm) => (
+            {/* Brush Norms */}
+            {activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
               <div key={norm.id} className="glass-card p-6 rounded-2xl relative group hover:bg-white/80 transition-all hover:-translate-y-1 duration-300">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <button
-                    onClick={() => openEditNorm(norm)}
+                    onClick={() => openEditNorm(norm, 'brush')}
                     className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-[var(--color-blue)] backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
                     title="Modifier la norme">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -116,7 +159,7 @@ export default function ProjectNorms() {
                     </svg>
                   </button>
                   <button
-                    onClick={(e) => handleDeleteNorm(e, norm.id)}
+                    onClick={(e) => handleDeleteNorm(e, norm.id, 'brush')}
                     className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-red-500 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
                     title="Supprimer la norme">
                     {loadingDelete === norm.id ? (
@@ -131,13 +174,7 @@ export default function ProjectNorms() {
                   </button>
                 </div>
                 <div className="flex justify-between items-start mb-6">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white border border-primary shadow-sm ${
-                    (norm.category === 'Typographie' || norm.category === 'Typography') ? 'text-pink' :
-                    norm.category === 'Layout' ? 'text-blue' :
-                    (norm.category === 'Trait' || norm.category === 'Lineart') ? 'text-primary' : ''
-                  }`}>
-                    {norm.category}
-                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white border border-primary shadow-sm text-primary">Trait</span>
                 </div>
                 <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.name}</h3>
                 <div className="flex items-baseline mb-6">
@@ -145,136 +182,181 @@ export default function ProjectNorms() {
                   <span className="text-lg text-blue font-medium">{norm.unit}</span>
                 </div>
                 <div className="h-16 bg-blue/10 rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
-                   {(norm.category === 'Typographie' || norm.category === 'Typography') ? (
-                     <span className="text-primary text-xl font-medium tracking-tight" style={{fontFamily: norm.value}}>AaBbCc</span>
-                   ) : (norm.category === 'Trait' || norm.category === 'Lineart') ? (
-                     <div className="flex flex-col items-center justify-center w-full px-4">
-                        <div className="w-16 rounded-full mb-1 bg-primary" style={{ height: `${norm.value}px`, minHeight: '1px', backgroundColor: 'var(--color-primary)' }}></div>
-                        <span className="text-[10px] text-blue font-bold uppercase tracking-wider">{norm.brushName || 'Brush'}</span>
-                     </div>
-                   ) : (
-                      <div className="w-8 h-8 rounded-full border-2 border-dashed border-blue"></div>
-                   )}
+                  <div className="flex flex-col items-center justify-center w-full px-4">
+                    <div className="w-16 rounded-full mb-1 bg-primary" style={{ height: `${norm.value}px`, minHeight: '1px', backgroundColor: 'var(--color-primary)' }}></div>
+                    <span className="text-[10px] text-blue font-bold uppercase tracking-wider">{norm.brushName || 'Brush'}</span>
+                  </div>
                 </div>
               </div>
             ))}
-                {editingNorm && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue/20 backdrop-blur-sm animate-fade-in">
-                     <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden">
-                       <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
-                       <h3 className="text-xl font-light text-primary mb-6 relative z-10">Modifier la Norme</h3>
-                       <div className="space-y-4 relative z-10">
-                          {editCategory === 'Trait' ? (
-                            <>
-                              <div>
-                                 <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage du Brush</label>
-                                 <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="ex: Hair Lineart" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom du Brush</label>
-                                <input type="text" value={editBrushName} onChange={e => setEditBrushName(e.target.value)} placeholder="ex: G-Pen" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Taille (px)</label>
-                                <input type="text" value={editValue} onChange={e => setEditValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div>
-                                 <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom de la règle</label>
-                                 <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="ex: Taille Large" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                              </div>
-                              <div className="flex gap-3">
-                                 <div className="flex-1">
-                                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Valeur</label>
-                                    <input type="text" value={editValue} onChange={e => setEditValue(e.target.value)} placeholder="ex: 112" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                                 </div>
-                                 <div className="w-1/3">
-                                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Unité</label>
-                                    <input type="text" value={editUnit} onChange={e => setEditUnit(e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                                 </div>
-                              </div>
-                            </>
-                          )}
-                       </div>
-                       <div className="flex gap-3 mt-8 relative z-10">
-                         <button onClick={() => setEditingNorm(null)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
-                           Annuler
-                         </button>
-                         <button onClick={handleEditNorm} disabled={!editName || !editValue}
-                                 className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                           Modifier
-                         </button>
-                      </div>
-                    </div>
+            {/* Typography Norms */}
+            {activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
+              <div key={norm.id} className="glass-card p-6 rounded-2xl relative group hover:bg-white/80 transition-all hover:-translate-y-1 duration-300">
+                <div className="absolute top-3 right-3 flex gap-2 z-30">
+                  <button
+                    onClick={() => openEditNorm(norm, 'typography')}
+                    className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-[var(--color-blue)] backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
+                    title="Modifier la norme">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={(e) => handleDeleteNorm(e, norm.id, 'typography')}
+                    className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-red-500 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
+                    title="Supprimer la norme">
+                    {loadingDelete === norm.id ? (
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <div className="flex justify-between items-start mb-6">
+                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white border border-pink shadow-sm text-pink">Typographie</span>
+                </div>
+                <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.fontUsage || norm.fontFamily}</h3>
+                <div className="flex items-baseline mb-2">
+                  <span className="text-2xl font-light text-primary mr-1">{norm.fontFamily}</span>
+                  <span className="text-lg text-blue font-medium">{norm.fontWeight}</span>
+                </div>
+                {norm.fontStyle && (
+                  <div className="mb-2">
+                    <span className="text-xs text-primary italic">{norm.fontStyle}</span>
                   </div>
                 )}
+                <div className="h-16 bg-blue/10 rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
+                  <span className="text-primary text-xl font-medium tracking-tight" style={{fontFamily: norm.fontFamily, fontStyle: norm.fontStyle ? norm.fontStyle.toLowerCase() : undefined}}>AaBbCc</span>
+                </div>
+              </div>
+            ))}
+          {editingNorm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue/20 backdrop-blur-sm animate-fade-in">
+              <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
+                <h3 className="text-xl font-light text-primary mb-6 relative z-10">Modifier la Norme</h3>
+                <div className="space-y-4 relative z-10">
+                  {editingType === 'brush' ? (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage du Brush</label>
+                        <input type="text" value={editBrushUsage} onChange={e => setEditBrushUsage(e.target.value)} placeholder="ex: Hair Lineart" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom du Brush</label>
+                        <input type="text" value={editBrushName} onChange={e => setEditBrushName(e.target.value)} placeholder="ex: G-Pen" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Taille (px)</label>
+                        <input type="text" value={editBrushValue} onChange={e => setEditBrushValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Unité</label>
+                        <input type="text" value={editBrushUnit} onChange={e => setEditBrushUnit(e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Famille de police</label>
+                        <input type="text" value={editFontFamily} onChange={e => setEditFontFamily(e.target.value)} placeholder="ex: Inter" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Poids</label>
+                        <input type="text" value={editFontWeight} onChange={e => setEditFontWeight(e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage</label>
+                        <input type="text" value={editFontUsage} onChange={e => setEditFontUsage(e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Style</label>
+                        <input type="text" value={editFontStyle} onChange={e => setEditFontStyle(e.target.value)} placeholder="ex: Italic" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="flex gap-3 mt-8 relative z-10">
+                  <button onClick={() => setEditingNorm(null)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
+                    Annuler
+                  </button>
+                  <button onClick={handleEditNorm} disabled={editingType === 'brush' ? !editBrushUsage || !editBrushValue : !editFontFamily}
+                          className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                    Modifier
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           </div>
         </>
       )}
 
       {isAddingNorm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue/20 backdrop-blur-sm animate-fade-in">
-           <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
-
-             <h3 className="text-xl font-light text-primary mb-6 relative z-10">Nouvelle Norme</h3>
-
-             <div className="space-y-4 relative z-10">
-                <div>
-                   <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Catégorie</label>
-                   <select value={newCategory} onChange={(e) => onCategoryChange(e.target.value)} className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary appearance-none font-medium">
-                      {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                   </select>
-                </div>
-
-                {newCategory === 'Trait' ? (
-                  <>
-                    <div>
-                       <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage du Brush</label>
-                       <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="ex: Hair Lineart" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom du Brush</label>
-                      <input type="text" value={newBrushName} onChange={e => setNewBrushName(e.target.value)} placeholder="ex: G-Pen" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Taille (px)</label>
-                      <input type="text" value={newValue} onChange={e => setNewValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                       <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom de la règle</label>
-                       <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="ex: Taille Large" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                    </div>
-
-                    <div className="flex gap-3">
-                       <div className="flex-1">
-                          <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Valeur</label>
-                          <input type="text" value={newValue} onChange={e => setNewValue(e.target.value)} placeholder="ex: 112" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                       </div>
-                       <div className="w-1/3">
-                          <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Unité</label>
-                          <input type="text" value={newUnit} onChange={e => setNewUnit(e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                       </div>
-                    </div>
-                  </>
-                )}
-             </div>
-
-             <div className="flex gap-3 mt-8 relative z-10">
-               <button onClick={() => setIsAddingNorm(false)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
-                 Annuler
-               </button>
-               <button onClick={handleAddNorm} disabled={!newName || !newValue}
-                       className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                 Ajouter
-               </button>
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
+            <h3 className="text-xl font-light text-primary mb-6 relative z-10">Nouvelle Norme</h3>
+            <div className="space-y-4 relative z-10">
+              <div>
+                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Type</label>
+                <select value={addType} onChange={e => setAddType(e.target.value)} className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary appearance-none font-medium">
+                  <option value="brush">Trait</option>
+                  <option value="typography">Typographie</option>
+                </select>
+              </div>
+              {addType === 'brush' ? (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage du Brush</label>
+                    <input type="text" value={newBrushUsage} onChange={e => setNewBrushUsage(e.target.value)} placeholder="ex: Hair Lineart" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom du Brush</label>
+                    <input type="text" value={newBrushName} onChange={e => setNewBrushName(e.target.value)} placeholder="ex: G-Pen" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Taille (px)</label>
+                    <input type="text" value={newBrushValue} onChange={e => setNewBrushValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Unité</label>
+                    <input type="text" value={newBrushUnit} onChange={e => setNewBrushUnit(e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Famille de police</label>
+                    <input type="text" value={newFontFamily} onChange={e => setNewFontFamily(e.target.value)} placeholder="ex: Inter" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Poids</label>
+                    <input type="text" value={newFontWeight} onChange={e => setNewFontWeight(e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage</label>
+                    <input type="text" value={newFontUsage} onChange={e => setNewFontUsage(e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Style</label>
+                    <input type="text" value={newFontStyle} onChange={e => setNewFontStyle(e.target.value)} placeholder="ex: Italic" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="flex gap-3 mt-8 relative z-10">
+              <button onClick={() => setIsAddingNorm(false)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
+                Annuler
+              </button>
+              <button onClick={handleAddNorm} disabled={addType === 'brush' ? !newBrushUsage || !newBrushValue : !newFontFamily}
+                      className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                Ajouter
+              </button>
             </div>
           </div>
         </div>
