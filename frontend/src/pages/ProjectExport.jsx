@@ -47,16 +47,9 @@ export default function ProjectExport() {
     doc.line(20, y - 10, 190, y - 10);
 
     if (activeProject.norms.length > 0) {
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100);
-      doc.text(`Version générée le ${new Date().toLocaleDateString()}`, 20, y);
-      y += 20;
-
       doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0);
-      
       activeProject.norms.forEach(norm => {
         if (y > 270) { doc.addPage(); y = 20; }
         const line = `• [${norm.category}] ${norm.name}: ${norm.value}${norm.unit || ''}`;
