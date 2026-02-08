@@ -44,7 +44,7 @@ export default function ProjectNorms() {
   };
   
   const [isAddingNorm, setIsAddingNorm] = useState(false);
-  const categories = ['Trait', 'Couleur'];
+  const categories = ['Trait', 'Typographie'];
   
   const [newCategory, setNewCategory] = useState('Trait');
   const [newName, setNewName] = useState('');
