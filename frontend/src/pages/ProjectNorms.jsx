@@ -109,7 +109,7 @@ export default function ProjectNorms() {
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <button
                     onClick={() => openEditNorm(norm)}
-                    className="w-8 h-8 flex items-center justify-center bg-blue/20 hover:bg-blue/80 backdrop-blur-md rounded-full text-blue hover:text-white opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
+                    className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-[var(--color-blue)] backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
                     title="Modifier la norme">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />

@@ -213,9 +213,9 @@ export default function ProjectPalette() {
                           </svg>
                        </button>
 
-                       <button
+                        <button
                           onClick={() => openEditModal(idx)}
-                          className="absolute top-3 left-3 w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-blue/500 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 hover:scale-110 shadow-sm"
+                          className="absolute top-3 left-3 w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-[var(--color-blue)] backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 hover:scale-110 shadow-sm"
                           title="Modifier la couleur">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
@@ -321,7 +321,7 @@ export default function ProjectPalette() {
 
                         <button
                           onClick={() => openEditModal(idx)}
-                          className="absolute top-3 left-3 w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-blue/500 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 hover:scale-110 shadow-sm"
+                          className="absolute top-3 left-3 w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-[var(--color-blue)] backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 hover:scale-110 shadow-sm"
                           title="Modifier la couleur">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
