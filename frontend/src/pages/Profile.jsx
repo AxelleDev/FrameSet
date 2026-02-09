@@ -189,7 +189,6 @@ export default function Profile() {
         title="Modifier le mot de passe"
         subtitle="Saisissez votre ancien mot de passe pour valider."
         showClose={false}
-        closeOnBackdrop={false}
         overlayClassName="p-4 bg-blue/20 backdrop-blur-sm animate-fade-in"
         panelClassName="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg border border-blue relative overflow-hidden"
       >

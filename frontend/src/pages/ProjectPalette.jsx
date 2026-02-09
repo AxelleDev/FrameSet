@@ -249,7 +249,6 @@ export default function ProjectPalette() {
         isOpen={editIdx !== null}
         onClose={() => setEditIdx(null)}
         showClose={false}
-        closeOnBackdrop={false}
         overlayClassName="p-4 bg-blue/20 backdrop-blur-sm animate-fade-in"
         panelClassName="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden"
       >
@@ -286,7 +285,6 @@ export default function ProjectPalette() {
         isOpen={isAddingColor}
         onClose={() => setIsAddingColor(false)}
         showClose={false}
-        closeOnBackdrop={false}
         overlayClassName="p-4 bg-blue/20 backdrop-blur-sm animate-fade-in"
         panelClassName="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden"
       >
