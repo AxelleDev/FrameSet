@@ -36,9 +36,10 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const now = new Date();
     const [result] = await db.query(
-      'INSERT INTO users (name, email, password, avatar_initials, is_verified, verification_code, verification_code_expires) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, email, hashedPassword, initials, false, verificationCode, expires]
+      'INSERT INTO users (name, email, password, avatar_initials, is_verified, verification_code, verification_code_expires, password_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, email, hashedPassword, initials, false, verificationCode, expires, now]
     );
 
     const transporter = nodemailer.createTransport({
@@ -63,7 +64,8 @@ app.post('/api/auth/register', async (req, res) => {
       name,
       email,
       avatarInitials: initials,
-      is_verified: false
+      is_verified: false,
+      passwordUpdatedAt: now
     };
     res.json(newUser);
   } catch (error) {
@@ -94,7 +96,8 @@ app.post('/api/auth/login', async (req, res) => {
       id: userDb.id,
       name: userDb.name,
       email: userDb.email,
-      avatarInitials: userDb.avatar_initials
+      avatarInitials: userDb.avatar_initials,
+      passwordUpdatedAt: userDb.password_updated_at
     };
     res.json(user);
   } catch (error) {
@@ -191,8 +194,8 @@ app.post('/api/user/password', async (req, res) => {
       return res.status(401).json({ error: 'Ancien mot de passe incorrect.' });
     }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, id]);
-    res.json({ success: true });
+    await db.query('UPDATE users SET password = ?, password_updated_at = NOW() WHERE id = ?', [hashedPassword, id]);
+    res.json({ success: true, passwordUpdatedAt: new Date() });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erreur serveur' });

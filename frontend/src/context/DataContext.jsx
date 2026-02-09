@@ -297,7 +297,16 @@ export const DataProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: user.id, currentPassword, newPassword })
       });
-      if (res.ok) return { success: true };
+      if (res.ok) {
+        const data = await res.json();
+        const updatedUser = {
+          ...user,
+          passwordUpdatedAt: data.passwordUpdatedAt || new Date().toISOString()
+        };
+        setUser(updatedUser);
+        localStorage.setItem('frameset_user', JSON.stringify(updatedUser));
+        return { success: true };
+      }
       const error = await res.json();
       return { success: false, message: error.error };
     } catch (e) {

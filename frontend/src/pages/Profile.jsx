@@ -101,6 +101,29 @@ export default function Profile() {
 
   if (!user) return null;
 
+  const formatRelativeTime = (dateValue) => {
+    if (!dateValue) return 'Jamais modifié';
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return 'Jamais modifié';
+
+    const diffMs = Date.now() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    if (diffMinutes < 1) return "À l'instant";
+    if (diffMinutes < 60) return `il y a ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 30) return `il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+
+    const diffMonths = Math.floor(diffDays / 30);
+    if (diffMonths < 12) return `il y a ${diffMonths} mois`;
+
+    const diffYears = Math.floor(diffMonths / 12);
+    return `il y a ${diffYears} an${diffYears > 1 ? 's' : ''}`;
+  };
+
   return (
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">
       
@@ -158,7 +181,7 @@ export default function Profile() {
           <div className="flex items-center justify-between py-4">
               <div>
                 <p className="text-sm font-medium text-primary">Mot de passe</p>
-                <p className="text-xs text-blue">Dernière modification il y a 3 mois</p>
+                <p className="text-xs text-blue">Dernière modification : {formatRelativeTime(user.passwordUpdatedAt)}</p>
               </div>
               <button onClick={openPasswordModal} className="text-sm text-blue font-medium hover:underline">Modifier</button>
           </div>
