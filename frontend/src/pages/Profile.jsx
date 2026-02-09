@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useNavigate, Link } from 'react-router-dom';
-import Modal from '../components/Modal';
+import AppModal from '../components/AppModal';
 
 export default function Profile() {
   const { user, updateUserProfile, logout, changePassword } = useData();
@@ -205,14 +205,13 @@ export default function Profile() {
         </section>
       </div>
 
-      <Modal
+      <AppModal
         isOpen={isPasswordModalOpen}
         onClose={closePasswordModal}
         title="Modifier le mot de passe"
         subtitle="Saisissez votre ancien mot de passe pour valider."
         showClose={false}
-        overlayClassName="p-4 bg-blue/20 backdrop-blur-sm animate-fade-in"
-        panelClassName="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg border border-blue relative overflow-hidden"
+        panelClassName="max-w-lg"
       >
         <form onSubmit={handlePasswordChange} className="space-y-4">
           <div>
@@ -263,7 +262,7 @@ export default function Profile() {
             </button>
           </div>
         </form>
-      </Modal>
+      </AppModal>
 
     </div>
   );

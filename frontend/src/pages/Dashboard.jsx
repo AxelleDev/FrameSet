@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
-import Modal from '../components/Modal';
+import AppModal from '../components/AppModal';
 
 export default function Dashboard() {
   const { user, projects, addProject, deleteProject, setActiveProjectId, updateProjectName } = useData();
@@ -138,12 +138,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <Modal
+      <AppModal
         isOpen={isCreatingProject}
         onClose={() => setIsCreatingProject(false)}
         showClose={false}
-        overlayClassName="p-4 bg-blue/20 backdrop-blur-sm animate-fade-in"
-        panelClassName="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden"
+        panelClassName="max-w-sm"
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
 
@@ -165,14 +164,13 @@ export default function Dashboard() {
            Créer
          </button>
         </div>
-      </Modal>
+      </AppModal>
 
-      <Modal
+      <AppModal
         isOpen={isEditingProject}
         onClose={() => { setIsEditingProject(false); setEditProjectId(null); }}
         showClose={false}
-        overlayClassName="p-4 bg-blue/20 backdrop-blur-sm animate-fade-in"
-        panelClassName="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden"
+        panelClassName="max-w-sm"
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
 
@@ -194,7 +192,7 @@ export default function Dashboard() {
            Modifier
          </button>
         </div>
-      </Modal>
+      </AppModal>
     </>
   );
 }

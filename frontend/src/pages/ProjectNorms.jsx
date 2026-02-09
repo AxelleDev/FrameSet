@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useParams } from 'react-router-dom';
-import Modal from '../components/Modal';
+import AppModal from '../components/AppModal';
 
 export default function ProjectNorms() {
   const { id } = useParams();
@@ -238,12 +238,11 @@ export default function ProjectNorms() {
             ))}
           </div>
 
-          <Modal
+          <AppModal
             isOpen={!!editingNorm}
             onClose={() => setEditingNorm(null)}
             showClose={false}
-            overlayClassName="p-4 bg-blue/20 backdrop-blur-sm animate-fade-in"
-            panelClassName="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden"
+            panelClassName="max-w-sm"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
             <h3 className="text-xl font-light text-primary mb-6 relative z-10">Modifier la Norme</h3>
@@ -297,16 +296,15 @@ export default function ProjectNorms() {
                 Modifier
               </button>
             </div>
-          </Modal>
+          </AppModal>
         </>
       )}
 
-      <Modal
+      <AppModal
         isOpen={isAddingNorm}
         onClose={() => setIsAddingNorm(false)}
         showClose={false}
-        overlayClassName="p-4 bg-blue/20 backdrop-blur-sm animate-fade-in"
-        panelClassName="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden"
+        panelClassName="max-w-sm"
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
         <h3 className="text-xl font-light text-primary mb-6 relative z-10">Nouvelle Norme</h3>
@@ -367,7 +365,7 @@ export default function ProjectNorms() {
             Ajouter
           </button>
         </div>
-      </Modal>
+      </AppModal>
     </>
   );
 }
