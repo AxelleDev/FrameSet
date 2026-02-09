@@ -13,7 +13,7 @@ export default function Verify() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-    const [resendMsg, setResendMsg] = useState('');
+  const [resendMsg, setResendMsg] = useState('');
 
   const handleVerify = async () => {
     setError('');
@@ -37,35 +37,35 @@ export default function Verify() {
     }
   };
 
-    const handleResend = async () => {
-      setResendMsg('');
-      setError('');
-      const endpoint = type === 'pending-email'
-        ? 'http://localhost:3000/api/user/email/resend'
-        : 'http://localhost:3000/api/auth/resend-code';
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setResendMsg('Code renvoyé ! Vérifiez votre email.');
-      } else {
-        setError(data.error || "Erreur lors de l'envoi du code.");
-      }
-    };
+  const handleResend = async () => {
+    setResendMsg('');
+    setError('');
+    const endpoint = type === 'pending-email'
+      ? 'http://localhost:3000/api/user/email/resend'
+      : 'http://localhost:3000/api/auth/resend-code';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (data.success) {
+      setResendMsg('Code renvoyé ! Vérifiez votre email.');
+    } else {
+      setError(data.error || "Erreur lors de l'envoi du code.");
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8F9FF] text-primary">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md border border-primary">
-        <h2 className="text-2xl font-bold mb-4 text-blue">Email Verification</h2>
-        <p className="mb-6 text-primary">Enter the code sent to <strong>{email}</strong>.</p>
+        <h2 className="text-2xl font-bold mb-4 text-blue">Vérification de l'email</h2>
+        <p className="mb-6 text-primary">Entrez le code envoyé à <strong>{email}</strong>.</p>
         <input
           type="text"
           value={code}
           onChange={e => setCode(e.target.value)}
-          placeholder="Verification code"
+          placeholder="Code de vérification"
           className="w-full px-4 py-3 mb-4 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue"
         />
         {error && <div className="text-pink mb-4">{error}</div>}
@@ -77,7 +77,7 @@ export default function Verify() {
                 onClick={handleVerify}
                 className="w-full py-3 bg-blue text-white font-medium rounded-xl hover:bg-pink transition-all"
               >
-                Verify
+                Vérifier
               </button>
               <button
                 onClick={handleResend}
@@ -89,7 +89,7 @@ export default function Verify() {
             </>
           )}
         </div>
-        {success && <div className="text-pink font-semibold">Verified! Redirecting...</div>}
+        {success && <div className="text-pink font-semibold">Vérifié ! Redirection...</div>}
       </div>
     </div>
   );

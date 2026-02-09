@@ -23,7 +23,7 @@ export default function MainLayout() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen text-lg text-slate-500">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen text-lg text-slate-500">Chargement...</div>;
   }
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -117,7 +117,7 @@ export default function MainLayout() {
 
              {activeProject ? (
                <nav className="flex text-sm font-medium items-center animate-fade-in">
-                 <Link className="text-blue hover:text-pink transition cursor-pointer" to="/app/dashboard">Workspace</Link>
+                 <Link className="text-blue hover:text-pink transition cursor-pointer" to="/app/dashboard">Espace de travail</Link>
                  <svg className="w-4 h-4 mx-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
                  <span className="text-primary bg-white/50 px-2 py-1 rounded-md shadow-sm border border-primary truncate max-w-[150px] md:max-w-none">{activeProject.name}</span>
                </nav>
