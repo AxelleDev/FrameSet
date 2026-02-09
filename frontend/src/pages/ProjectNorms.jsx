@@ -5,6 +5,7 @@ import AppModal from '../components/AppModal';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
+import PageHeader from '../components/PageHeader';
 
 export default function ProjectNorms() {
   const { id } = useParams();
@@ -129,12 +130,11 @@ export default function ProjectNorms() {
 
   return (
     <>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6 animate-fade-in">
-        <div>
-          <h2 className="text-3xl font-light text-primary">Normes Graphiques</h2>
-          <p className="text-primary mt-2 max-w-xl">Ensemble des règles techniques qui garantissent la cohérence visuelle.</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Normes Graphiques"
+        subtitle="Ensemble des règles techniques qui garantissent la cohérence visuelle."
+        subtitleClassName="max-w-xl"
+      />
 
       {activeProject && (
         <>

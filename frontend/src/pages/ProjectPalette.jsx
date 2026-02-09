@@ -6,6 +6,7 @@ import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CopyBadge from '../components/CopyBadge';
 import AddTile from '../components/AddTile';
+import PageHeader from '../components/PageHeader';
 import useClipboard from '../hooks/useClipboard';
 
 export default function ProjectPalette() {
@@ -125,12 +126,10 @@ export default function ProjectPalette() {
 
   return (
     <>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6 animate-fade-in">
-        <div>
-          <h2 className="text-3xl font-light text-primary">Palette de Couleurs</h2>
-          <p className="text-primary mt-2">Ensemble des couleurs de référence à utiliser pour ce projet.</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Palette de Couleurs"
+        subtitle="Ensemble des couleurs de référence à utiliser pour ce projet."
+      />
 
       {activeProject && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
