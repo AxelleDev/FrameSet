@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
 import AppModal from '../components/AppModal';
+import ActionIconButton from '../components/ActionIconButton';
 
 export default function Dashboard() {
   const { user, projects, addProject, deleteProject, setActiveProjectId, updateProjectName } = useData();
@@ -93,22 +94,24 @@ export default function Dashboard() {
             <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-br from-lavender-100 to-transparent rounded-bl-full -mr-14 -mt-14 transition-transform group-hover:scale-110"></div>
 
             <div className="absolute top-4 right-4 flex gap-2 z-30">
-              <button
+              <ActionIconButton
                 onClick={(e) => openEditProject(e, project)}
-                className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-[var(--color-blue)] backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
-                title="Modifier le projet">
+                title="Modifier le projet"
+                intent="edit"
+              >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
                 </svg>
-              </button>
-              <button 
-                  onClick={(e) => handleDeleteProject(e, project.id)}
-                  className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-red-500 backdrop-blur-md rounded-full text-white hover:text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
-                  title="Supprimer le projet">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-              </button>
+              </ActionIconButton>
+              <ActionIconButton
+                onClick={(e) => handleDeleteProject(e, project.id)}
+                title="Supprimer le projet"
+                intent="delete"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </ActionIconButton>
             </div>
             <div className="relative z-10 flex flex-col h-full min-h-[160px]">
               <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">{project.name}</h3>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useParams } from 'react-router-dom';
 import AppModal from '../components/AppModal';
+import ActionIconButton from '../components/ActionIconButton';
 
 export default function ProjectNorms() {
   const { id } = useParams();
@@ -152,18 +153,20 @@ export default function ProjectNorms() {
             {activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
               <div key={norm.id} className="glass-card p-6 rounded-2xl relative group hover:bg-white/80 transition-all hover:-translate-y-1 duration-300">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
-                  <button
+                  <ActionIconButton
                     onClick={() => openEditNorm(norm, 'brush')}
-                    className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-[var(--color-blue)] backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
-                    title="Modifier la norme">
+                    title="Modifier la norme"
+                    intent="edit"
+                  >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
                     </svg>
-                  </button>
-                  <button
+                  </ActionIconButton>
+                  <ActionIconButton
                     onClick={(e) => handleDeleteNorm(e, norm.id, 'brush')}
-                    className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-red-500 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
-                    title="Supprimer la norme">
+                    title="Supprimer la norme"
+                    intent="delete"
+                  >
                     {loadingDelete === norm.id ? (
                       <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -173,7 +176,7 @@ export default function ProjectNorms() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     )}
-                  </button>
+                  </ActionIconButton>
                 </div>
                 <div className="flex justify-between items-start mb-6">
                   <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white border border-primary shadow-sm text-primary">Trait</span>
@@ -195,18 +198,20 @@ export default function ProjectNorms() {
             {activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
               <div key={norm.id} className="glass-card p-6 rounded-2xl relative group hover:bg-white/80 transition-all hover:-translate-y-1 duration-300">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
-                  <button
+                  <ActionIconButton
                     onClick={() => openEditNorm(norm, 'typography')}
-                    className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-[var(--color-blue)] backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
-                    title="Modifier la norme">
+                    title="Modifier la norme"
+                    intent="edit"
+                  >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
                     </svg>
-                  </button>
-                  <button
+                  </ActionIconButton>
+                  <ActionIconButton
                     onClick={(e) => handleDeleteNorm(e, norm.id, 'typography')}
-                    className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-red-500 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
-                    title="Supprimer la norme">
+                    title="Supprimer la norme"
+                    intent="delete"
+                  >
                     {loadingDelete === norm.id ? (
                       <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -216,7 +221,7 @@ export default function ProjectNorms() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     )}
-                  </button>
+                  </ActionIconButton>
                 </div>
                 <div className="flex justify-between items-start mb-6">
                   <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white border border-pink shadow-sm text-pink">Typographie</span>

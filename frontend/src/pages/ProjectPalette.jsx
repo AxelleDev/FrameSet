@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useParams } from 'react-router-dom';
 import AppModal from '../components/AppModal';
+import ActionIconButton from '../components/ActionIconButton';
 
 export default function ProjectPalette() {
   const { id } = useParams();
@@ -211,23 +212,29 @@ export default function ProjectPalette() {
                    style={{ backgroundColor: color.hex }}>
                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50 pointer-events-none"></div>
 
-                   <button
+                   <ActionIconButton
                       onClick={(e) => handleDeleteColor(e, color.hex)}
-                      className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-red-500 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 hover:scale-110 shadow-sm"
-                      title="Supprimer la couleur">
+                      title="Supprimer la couleur"
+                      intent="delete"
+                      variant="light"
+                      className="absolute top-3 right-3 z-30"
+                   >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                   </button>
+                   </ActionIconButton>
 
-                    <button
+                    <ActionIconButton
                       onClick={() => openEditModal(idx)}
-                      className="absolute top-3 left-3 w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-[var(--color-blue)] backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 hover:scale-110 shadow-sm"
-                      title="Modifier la couleur">
+                      title="Modifier la couleur"
+                      intent="edit"
+                      variant="light"
+                      className="absolute top-3 left-3 z-30"
+                    >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
                       </svg>
-                    </button>
+                    </ActionIconButton>
 
                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 backdrop-blur-[2px] cursor-pointer z-10"
                         onClick={e => handleCopyHex(e, color.hex, idx)}>
