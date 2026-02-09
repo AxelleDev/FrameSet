@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ActionIconButton from '../components/ActionIconButton';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function Dashboard() {
   const { user, projects, addProject, deleteProject, setActiveProjectId, updateProjectName } = useData();
@@ -12,6 +13,7 @@ export default function Dashboard() {
   const [isEditingProject, setIsEditingProject] = useState(false);
   const [editProjectId, setEditProjectId] = useState(null);
   const [editProjectName, setEditProjectName] = useState("");
+  const [confirmDeleteProject, setConfirmDeleteProject] = useState(null);
 
   useEffect(() => {
     setActiveProjectId(null);
@@ -50,9 +52,8 @@ export default function Dashboard() {
   const handleDeleteProject = (e, id) => {
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.')) {
-      deleteProject(id);
-    }
+    const project = projects.find((p) => p.id === id);
+    setConfirmDeleteProject(project ? { id: project.id, name: project.name } : { id, name: '' });
   };
 
   return (
@@ -196,6 +197,25 @@ export default function Dashboard() {
          </button>
         </div>
       </AppModal>
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteProject}
+        title="Supprimer le projet"
+        message={
+          confirmDeleteProject?.name
+            ? `Êtes-vous sûr de vouloir supprimer « ${confirmDeleteProject.name} » ? Cette action est irréversible.`
+            : 'Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.'
+        }
+        confirmLabel="Supprimer"
+        confirmClassName="bg-pink text-primary hover:bg-pink/10"
+        onCancel={() => setConfirmDeleteProject(null)}
+        onConfirm={() => {
+          if (confirmDeleteProject?.id) {
+            deleteProject(confirmDeleteProject.id);
+          }
+          setConfirmDeleteProject(null);
+        }}
+      />
     </>
   );
 }

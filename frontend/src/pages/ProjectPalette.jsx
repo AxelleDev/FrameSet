@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import { useParams } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ActionIconButton from '../components/ActionIconButton';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function ProjectPalette() {
   const { id } = useParams();
@@ -19,6 +20,7 @@ export default function ProjectPalette() {
   const [previewPalette, setPreviewPalette] = useState([]);
 
   const [copiedIdx, setCopiedIdx] = useState(null);
+  const [confirmDeleteColor, setConfirmDeleteColor] = useState(null);
 
   const handleCopyHex = async (e, hex, idx) => {
     e.preventDefault();
@@ -134,10 +136,7 @@ export default function ProjectPalette() {
   const handleDeleteColor = async (e, colorHex) => {
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
-    if (window.confirm('Supprimer cette couleur ?')) {
-      await deleteProjectPaletteColor(id, colorHex);
-      await syncPalette();
-    }
+    setConfirmDeleteColor(colorHex);
   };
 
   const syncPalette = async () => {
@@ -323,6 +322,22 @@ export default function ProjectPalette() {
            </button>
         </div>
       </AppModal>
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteColor}
+        title="Supprimer la couleur"
+        message="Êtes-vous sûr de vouloir supprimer cette couleur ?"
+        confirmLabel="Supprimer"
+        confirmClassName="bg-pink text-primary hover:bg-pink/10"
+        onCancel={() => setConfirmDeleteColor(null)}
+        onConfirm={async () => {
+          if (confirmDeleteColor) {
+            await deleteProjectPaletteColor(id, confirmDeleteColor);
+            await syncPalette();
+          }
+          setConfirmDeleteColor(null);
+        }}
+      />
     </>
   );
 }

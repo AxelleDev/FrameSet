@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useNavigate, Link } from 'react-router-dom';
 import AppModal from '../components/AppModal';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function Profile() {
   const { user, updateUserProfile, logout, changePassword } = useData();
@@ -22,6 +23,7 @@ export default function Profile() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
+  const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -51,10 +53,7 @@ export default function Profile() {
   };
 
   const deleteAccount = () => {
-    const confirmed = confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.");
-    if (confirmed) {
-      handleLogout();
-    }
+    setIsDeleteAccountOpen(true);
   };
 
   const openPasswordModal = () => {
@@ -263,6 +262,19 @@ export default function Profile() {
           </div>
         </form>
       </AppModal>
+
+      <ConfirmDialog
+        isOpen={isDeleteAccountOpen}
+        title="Supprimer mon compte"
+        message="Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible."
+        confirmLabel="Supprimer"
+        confirmClassName="bg-pink text-primary hover:bg-pink/10"
+        onCancel={() => setIsDeleteAccountOpen(false)}
+        onConfirm={() => {
+          setIsDeleteAccountOpen(false);
+          handleLogout();
+        }}
+      />
 
     </div>
   );

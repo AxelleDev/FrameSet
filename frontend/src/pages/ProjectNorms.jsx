@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import { useParams } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ActionIconButton from '../components/ActionIconButton';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function ProjectNorms() {
   const { id } = useParams();
@@ -67,17 +68,11 @@ export default function ProjectNorms() {
   };
 
   const [loadingDelete, setLoadingDelete] = useState(null);
+  const [confirmDeleteNorm, setConfirmDeleteNorm] = useState(null);
   const handleDeleteNorm = async (e, normId, type) => {
     e.preventDefault();
     if (!id || !normId) return;
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette norme ? Cette action est irréversible.')) return;
-    setLoadingDelete(normId);
-    if (type === 'brush') {
-      await deleteBrushNorm(id, normId);
-    } else {
-      await deleteTypographyNorm(id, normId);
-    }
-    setLoadingDelete(null);
+    setConfirmDeleteNorm({ id: normId, type });
   };
 
   const [isAddingNorm, setIsAddingNorm] = useState(false);
@@ -371,6 +366,26 @@ export default function ProjectNorms() {
           </button>
         </div>
       </AppModal>
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteNorm}
+        title="Supprimer la norme"
+        message="Êtes-vous sûr de vouloir supprimer cette norme ? Cette action est irréversible."
+        confirmLabel="Supprimer"
+        confirmClassName="bg-pink text-primary hover:bg-pink/10"
+        onCancel={() => setConfirmDeleteNorm(null)}
+        onConfirm={async () => {
+          if (!confirmDeleteNorm) return;
+          setLoadingDelete(confirmDeleteNorm.id);
+          if (confirmDeleteNorm.type === 'brush') {
+            await deleteBrushNorm(id, confirmDeleteNorm.id);
+          } else {
+            await deleteTypographyNorm(id, confirmDeleteNorm.id);
+          }
+          setLoadingDelete(null);
+          setConfirmDeleteNorm(null);
+        }}
+      />
     </>
   );
 }
