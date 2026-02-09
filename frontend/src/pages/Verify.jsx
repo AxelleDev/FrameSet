@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useData } from '../context/DataContext';
 
 export default function Verify() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { applyUserUpdate } = useData();
   const params = new URLSearchParams(location.search);
   const email = params.get('email');
+  const type = params.get('type');
 
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -14,15 +17,21 @@ export default function Verify() {
 
   const handleVerify = async () => {
     setError('');
-    const res = await fetch('http://localhost:3000/api/auth/verify', {
+    const endpoint = type === 'pending-email'
+      ? 'http://localhost:3000/api/user/email/verify'
+      : 'http://localhost:3000/api/auth/verify';
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, code })
     });
     const data = await res.json();
     if (data.success) {
+      if (type === 'pending-email' && data.user) {
+        applyUserUpdate(data.user);
+      }
       setSuccess(true);
-      setTimeout(() => navigate('/login'), 2000);
+      setTimeout(() => navigate(type === 'pending-email' ? '/app/profile' : '/login'), 2000);
     } else {
       setError(data.error || 'Code incorrect');
     }
@@ -31,7 +40,10 @@ export default function Verify() {
     const handleResend = async () => {
       setResendMsg('');
       setError('');
-      const res = await fetch('http://localhost:3000/api/auth/resend-code', {
+      const endpoint = type === 'pending-email'
+        ? 'http://localhost:3000/api/user/email/resend'
+        : 'http://localhost:3000/api/auth/resend-code';
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })

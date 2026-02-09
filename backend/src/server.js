@@ -97,7 +97,8 @@ app.post('/api/auth/login', async (req, res) => {
       name: userDb.name,
       email: userDb.email,
       avatarInitials: userDb.avatar_initials,
-      passwordUpdatedAt: userDb.password_updated_at
+      passwordUpdatedAt: userDb.password_updated_at,
+      pendingEmail: userDb.pending_email
     };
     res.json(user);
   } catch (error) {
@@ -171,11 +172,132 @@ app.post('/api/auth/resend-code', async (req, res) => {
 app.put('/api/user', async (req, res) => {
   const { id, name, email } = req.body;
   try {
-    await db.query('UPDATE users SET name = ?, email = ? WHERE id = ?', [name, email, id]);
-    res.json({ success: true, name, email });
+    const [rows] = await db.query('SELECT email, pending_email FROM users WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+    }
+
+    const currentEmail = rows[0].email;
+    const isEmailChanged = email && email !== currentEmail;
+
+    if (isEmailChanged) {
+      const [existing] = await db.query(
+        'SELECT id FROM users WHERE (email = ? OR pending_email = ?) AND id <> ?',
+        [email, email, id]
+      );
+      if (existing.length > 0) {
+        return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
+      }
+
+      const pendingCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = new Date(Date.now() + 10 * 60 * 1000);
+
+      await db.query(
+        'UPDATE users SET name = ?, pending_email = ?, pending_email_code = ?, pending_email_expires = ? WHERE id = ?',
+        [name, email, pendingCode, expires, id]
+      );
+
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.MAIL_USER,
+          pass: process.env.MAIL_PASS
+        }
+      });
+
+      await transporter.sendMail({
+        from: process.env.MAIL_USER,
+        to: email,
+        subject: 'Confirmation de votre nouvel email',
+        text: `Votre code de confirmation est : ${pendingCode}\nCe code expire dans 10 minutes.`
+      });
+
+      return res.json({ success: true, name, email: currentEmail, pendingEmail: email });
+    }
+
+    await db.query('UPDATE users SET name = ? WHERE id = ?', [name, id]);
+    res.json({ success: true, name, email: currentEmail, pendingEmail: rows[0].pending_email || null });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.post('/api/user/email/verify', async (req, res) => {
+  const { email, code } = req.body;
+  try {
+    const [rows] = await db.query('SELECT * FROM users WHERE pending_email = ?', [email]);
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'Email en attente non trouvé.' });
+    }
+    const userDb = rows[0];
+    if (!userDb.pending_email_code || userDb.pending_email_code !== code) {
+      return res.status(400).json({ error: 'Code incorrect.' });
+    }
+    if (!userDb.pending_email_expires || new Date() > new Date(userDb.pending_email_expires)) {
+      return res.status(400).json({ error: 'Code expiré. Veuillez en demander un nouveau.' });
+    }
+
+    await db.query(
+      'UPDATE users SET email = pending_email, pending_email = NULL, pending_email_code = NULL, pending_email_expires = NULL WHERE id = ?',
+      [userDb.id]
+    );
+
+    const updatedUser = {
+      id: userDb.id,
+      name: userDb.name,
+      email,
+      avatarInitials: userDb.avatar_initials,
+      passwordUpdatedAt: userDb.password_updated_at,
+      pendingEmail: null
+    };
+
+    res.json({ success: true, user: updatedUser });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+app.post('/api/user/email/resend', async (req, res) => {
+  const { email } = req.body;
+  try {
+    const [rows] = await db.query('SELECT * FROM users WHERE pending_email = ?', [email]);
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'Email en attente non trouvé.' });
+    }
+    const userDb = rows[0];
+    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
+
+    await db.query(
+      'UPDATE users SET pending_email_code = ?, pending_email_expires = ? WHERE id = ?',
+      [newCode, expires, userDb.id]
+    );
+
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
+      }
+    });
+
+    await transporter.sendMail({
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: 'Nouveau code de confirmation',
+      text: `Votre nouveau code de confirmation est : ${newCode}\nCe code expire dans 10 minutes.`
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 

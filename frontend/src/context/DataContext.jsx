@@ -154,6 +154,12 @@ export const DataProvider = ({ children }) => {
     localStorage.removeItem('frameset_user');
   };
 
+  const applyUserUpdate = (userData) => {
+    if (!userData) return;
+    setUser(userData);
+    localStorage.setItem('frameset_user', JSON.stringify(userData));
+  };
+
   const activeProject = useMemo(() => 
     projects.find(p => String(p.id) === String(activeProjectId)) || null
   , [projects, activeProjectId]);
@@ -278,14 +284,22 @@ export const DataProvider = ({ children }) => {
   const updateUserProfile = async (updates) => {
     if (!user) return;
     try {
-      await fetch(`${API_URL}/user`, {
+      const res = await fetch(`${API_URL}/user`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: user.id, ...updates })
       });
-      const updatedUser = { ...user, ...updates };
-      setUser(updatedUser);
-      localStorage.setItem('frameset_user', JSON.stringify(updatedUser));
+      if (res.ok) {
+        const data = await res.json();
+        const updatedUser = {
+          ...user,
+          name: data.name ?? user.name,
+          email: data.email ?? user.email,
+          pendingEmail: data.pendingEmail ?? user.pendingEmail
+        };
+        setUser(updatedUser);
+        localStorage.setItem('frameset_user', JSON.stringify(updatedUser));
+      }
     } catch (e) { console.error(e); }
   };
 
@@ -335,6 +349,7 @@ export const DataProvider = ({ children }) => {
       updateTypographyNorm,
       updateUserProfile,
       changePassword,
+      applyUserUpdate,
       loading,
       login,
       register,

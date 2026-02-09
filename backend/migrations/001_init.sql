@@ -4,9 +4,13 @@ CREATE TABLE IF NOT EXISTS `users` (
   `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `avatar_initials` varchar(5) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pending_email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pending_email_code` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pending_email_expires` datetime DEFAULT NULL,
   `is_verified` tinyint(1) NOT NULL DEFAULT '0',
   `verification_code` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `verification_code_expires` datetime DEFAULT NULL,
+  `password_updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_email` (`email`(191))

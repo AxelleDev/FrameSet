@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Modal from '../components/Modal';
 
 export default function Profile() {
@@ -167,6 +167,15 @@ export default function Profile() {
                   <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Adresse Email</label>
                   <input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} readOnly={!isEditing}
                          className={`w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none transition ${isEditing ? 'focus:border-pink' : 'opacity-70 cursor-not-allowed'}`} />
+                  {user.pendingEmail && user.pendingEmail !== user.email && (
+                    <p className="text-xs text-blue mt-2">
+                      Email en attente de vérification : {user.pendingEmail}
+                      {' '}·{' '}
+                      <Link to={`/verify?email=${encodeURIComponent(user.pendingEmail)}&type=pending-email`} className="underline hover:text-pink">
+                        Vérifier
+                      </Link>
+                    </p>
+                  )}
                 </div>
               </div>
           </div>
