@@ -92,7 +92,7 @@ export default function Dashboard() {
         <>
           {projects.map((project) => (
             <div key={project.id} onClick={() => openProject(project.id)} className="group glass-card relative rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-lavender-500/10 overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-lavender-100 to-transparent rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
+              <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-br from-lavender-100 to-transparent rounded-bl-full -mr-14 -mt-14 transition-transform group-hover:scale-110"></div>
 
               <div className="absolute top-4 right-4 flex gap-2 z-30">
                 <button
