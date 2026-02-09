@@ -108,8 +108,8 @@ export default function MainLayout() {
         </Link>
       </aside>
 
-      <main className="flex-1 overflow-auto focus:outline-none relative z-0 custom-scrollbar">
-        <header className="h-20 flex items-center justify-between px-8 sticky top-0 z-50 bg-[#F8F9FF]/90 backdrop-blur-md border-b border-white/60 transition-all duration-300">
+      <main className="flex-1 overflow-auto focus:outline-none relative z-0 md:z-10 custom-scrollbar">
+        <header className="h-20 flex items-center justify-between px-8 sticky top-0 z-50 bg-[#F8F9FF]/90 backdrop-blur-md border-b border-white/60 md:bg-transparent md:backdrop-blur-0 md:border-b-0 transition-all duration-300">
           <div className="flex items-center">
              <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden mr-4 text-primary hover:text-blue transition-colors p-2 -ml-2 rounded-lg hover:bg-white/50">
                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
