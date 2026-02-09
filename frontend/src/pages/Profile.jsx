@@ -7,7 +7,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 export default function Profile() {
   const { user, updateUserProfile, logout, changePassword } = useData();
   const navigate = useNavigate();
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
@@ -24,6 +24,9 @@ export default function Profile() {
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
+
+  // Ajout pour la modale de confirmation de déconnexion
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -48,8 +51,17 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
+    setIsLogoutConfirmOpen(true);
+  };
+
+  const confirmLogout = () => {
     logout();
     navigate('/login');
+    setIsLogoutConfirmOpen(false);
+  };
+
+  const cancelLogout = () => {
+    setIsLogoutConfirmOpen(false);
   };
 
   const deleteAccount = () => {
@@ -203,6 +215,17 @@ export default function Profile() {
             </button>
         </section>
       </div>
+
+      <ConfirmDialog
+        isOpen={isLogoutConfirmOpen}
+        title="Confirmation de déconnexion"
+        message="Êtes-vous sûr de vouloir vous déconnecter ?"
+        confirmLabel="Déconnexion"
+        cancelLabel="Annuler"
+        onConfirm={confirmLogout}
+        onCancel={cancelLogout}
+        confirmClassName="bg-blue text-primary hover:bg-blue/10"
+      />
 
       <AppModal
         isOpen={isPasswordModalOpen}
