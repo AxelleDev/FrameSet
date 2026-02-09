@@ -198,6 +198,21 @@ export const DataProvider = ({ children }) => {
     } catch (e) { console.error(e); }
   };
 
+  const updateProjectName = async (projectId, name) => {
+    try {
+      const res = await fetch(`${API_URL}/projects/${projectId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      if (res.ok) {
+        setProjects(prev =>
+          prev.map(p => String(p.id) === String(projectId) ? { ...p, name, lastEdited: "À l'instant" } : p)
+        );
+      }
+    } catch (e) { console.error(e); }
+  };
+
   const deleteProjectPaletteColor = async (projectId, colorHex) => {
     try {
       await fetch(`${API_URL}/projects/${projectId}/palette`, {
@@ -284,6 +299,7 @@ export const DataProvider = ({ children }) => {
       addProject,
       deleteProject,
       updateProjectPalette,
+      updateProjectName,
       deleteProjectPaletteColor,
       addBrushNorm,
       addTypographyNorm,

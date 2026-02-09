@@ -3,13 +3,13 @@ import { useData } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
-  const { user, projects, addProject, deleteProject, setActiveProjectId } = useData();
+  const { user, projects, addProject, deleteProject, setActiveProjectId, updateProjectName } = useData();
   const navigate = useNavigate();
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
-               <button onClick={() => setIsCreatingProject(true)} className="px-6 py-3 bg-blue text-white border border-primary rounded-xl hover:bg-pink transition-all font-medium shadow-sm hover:shadow-md hover:-translate-y-0.5 transform duration-200 cursor-pointer">
-                 + Créer un projet
-               </button>
+  const [isEditingProject, setIsEditingProject] = useState(false);
+  const [editProjectId, setEditProjectId] = useState(null);
+  const [editProjectName, setEditProjectName] = useState("");
 
   useEffect(() => {
     setActiveProjectId(null);
@@ -23,6 +23,22 @@ export default function Dashboard() {
       setIsCreatingProject(false);
       setNewProjectName('');
     }
+  };
+
+  const openEditProject = (e, project) => {
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    setEditProjectId(project.id);
+    setEditProjectName(project.name || '');
+    setIsEditingProject(true);
+  };
+
+  const handleEditProject = async () => {
+    if (!editProjectId || !editProjectName || !editProjectName.trim()) return;
+    await updateProjectName(editProjectId, editProjectName.trim());
+    setIsEditingProject(false);
+    setEditProjectId(null);
+    setEditProjectName('');
   };
 
   const openProject = (id) => {
@@ -78,14 +94,24 @@ export default function Dashboard() {
             <div key={project.id} onClick={() => openProject(project.id)} className="group glass-card relative rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-lavender-500/10 overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-lavender-100 to-transparent rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
 
-              <button 
-                  onClick={(e) => handleDeleteProject(e, project.id)}
-                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-red-500 backdrop-blur-md rounded-full text-white hover:text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 hover:scale-110 shadow-sm"
-                  title="Supprimer le projet">
+              <div className="absolute top-4 right-4 flex gap-2 z-30">
+                <button
+                  onClick={(e) => openEditProject(e, project)}
+                  className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-[var(--color-blue)] backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
+                  title="Modifier le projet">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
                   </svg>
-              </button>
+                </button>
+                <button 
+                    onClick={(e) => handleDeleteProject(e, project.id)}
+                    className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-red-500 backdrop-blur-md rounded-full text-white hover:text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
+                    title="Supprimer le projet">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+              </div>
               <div className="relative z-10 flex flex-col h-full min-h-[160px]">
                 <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">{project.name}</h3>
                 <p className="text-sm text-primary mb-auto">Modifié {project.lastEdited}</p>
@@ -141,6 +167,33 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+        {isEditingProject && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue/20 backdrop-blur-sm animate-fade-in">
+             <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
+
+               <h3 className="text-xl font-light text-primary mb-6 relative z-10">Modifier Projet</h3>
+
+               <div className="space-y-4 relative z-10">
+                 <div>
+                   <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom du projet</label>
+                   <input type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="ex: Neo-Tokyo Editorial" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" autoFocus />
+                 </div>
+               </div>
+
+               <div className="flex gap-3 mt-8 relative z-10">
+                <button onClick={() => { setIsEditingProject(false); setEditProjectId(null); }} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
+                  Annuler
+                </button>
+                <button onClick={handleEditProject} disabled={!editProjectName}
+                      className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                  Modifier
+                </button>
+               </div>
+            </div>
+          </div>
+        )}
     </>
   );
 }

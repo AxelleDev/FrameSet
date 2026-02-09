@@ -252,6 +252,24 @@ app.post('/api/projects', async (req, res) => {
   }
 });
 
+const updateProjectName = async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Nom du projet requis.' });
+  }
+  try {
+    await db.query('UPDATE projects SET name = ?, last_edited = NOW() WHERE id = ?', [name.trim(), id]);
+    res.json({ success: true, name: name.trim() });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Database error' });
+  }
+};
+
+app.patch('/api/projects/:id', updateProjectName);
+app.put('/api/projects/:id', updateProjectName);
+
 app.delete('/api/projects/:id', async (req, res) => {
   const { id } = req.params;
   try {
