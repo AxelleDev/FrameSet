@@ -79,7 +79,7 @@ export default function Login() {
               <p className="text-primary text-sm mt-2">Entrez vos identifiants pour accéder à l'espace.</p>
             </div>
             
-            {error && <div className="mb-4 p-3 bg-pink text-pink text-xs rounded-lg text-center font-medium">{error}
+            {error && <div className="mb-4 p-3 bg-pink text-primary text-xs rounded-lg text-center font-medium">{error}
               {error.includes('vérifier votre email') && (
                 <button
                   onClick={() => navigate(`/verify?email=${encodeURIComponent(formData.email)}`)}

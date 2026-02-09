@@ -81,7 +81,7 @@ export default function Register() {
               <p className="text-primary text-sm mt-2">Rejoignez l'espace de travail.</p>
             </div>
             
-            {error && <div className="mb-4 p-3 bg-pink text-pink text-xs rounded-lg text-center font-medium">{error}</div>}
+            {error && <div className="mb-4 p-3 bg-pink text-primary text-xs rounded-lg text-center font-medium">{error}</div>}
 
             <div className="space-y-4">
               <div className="group">
