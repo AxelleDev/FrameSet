@@ -142,7 +142,7 @@ export default function ProjectNorms() {
               <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mb-3 transition-transform group-hover:scale-110 group-hover:bg-blue/10 [color:var(--color-secondary)] group-hover:[color:var(--color-blue)]">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
               </div>
-              <span className="text-xs font-bold uppercase tracking-widest text-primary">Ajouter une norme</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-primary">Ajouter</span>
             </button>
             {/* Brush Norms */}
             {activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
