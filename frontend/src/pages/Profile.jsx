@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
+import Modal from '../components/Modal';
 
 export default function Profile() {
-  const { user, updateUserProfile, logout } = useData();
+  const { user, updateUserProfile, logout, changePassword } = useData();
   const navigate = useNavigate();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -12,6 +13,16 @@ export default function Profile() {
     role: '',
     email: ''
   });
+
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [isPasswordSaving, setIsPasswordSaving] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -47,6 +58,48 @@ export default function Profile() {
     if (confirmed) {
       handleLogout();
     }
+  };
+
+  const openPasswordModal = () => {
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    setPasswordError('');
+    setPasswordSuccess('');
+    setIsPasswordModalOpen(true);
+  };
+
+  const closePasswordModal = () => {
+    if (isPasswordSaving) return;
+    setIsPasswordModalOpen(false);
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError('Veuillez remplir tous les champs.');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('La confirmation ne correspond pas au nouveau mot de passe.');
+      return;
+    }
+
+    setIsPasswordSaving(true);
+    const result = await changePassword({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword
+    });
+    setIsPasswordSaving(false);
+
+    if (!result.success) {
+      setPasswordError(result.message || 'Erreur lors de la modification.');
+      return;
+    }
+
+    setPasswordSuccess('Mot de passe modifié avec succès.');
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
   };
 
   if (!user) return null;
@@ -116,7 +169,7 @@ export default function Profile() {
                 <p className="text-sm font-medium text-primary">Mot de passe</p>
                 <p className="text-xs text-blue">Dernière modification il y a 3 mois</p>
               </div>
-              <button className="text-sm text-blue font-medium hover:underline">Modifier</button>
+              <button onClick={openPasswordModal} className="text-sm text-blue font-medium hover:underline">Modifier</button>
           </div>
         </section>
 
@@ -129,6 +182,64 @@ export default function Profile() {
             </button>
         </section>
       </div>
+
+      <Modal
+        isOpen={isPasswordModalOpen}
+        onClose={closePasswordModal}
+        title="Modifier le mot de passe"
+        subtitle="Saisissez votre ancien mot de passe pour valider."
+        closeOnBackdrop={!isPasswordSaving}
+      >
+        <form onSubmit={handlePasswordChange} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Ancien mot de passe</label>
+            <input
+              type="password"
+              value={passwordForm.currentPassword}
+              onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+              className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:border-pink transition"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Nouveau mot de passe</label>
+            <input
+              type="password"
+              value={passwordForm.newPassword}
+              onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+              className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:border-pink transition"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Confirmation du nouveau mot de passe</label>
+            <input
+              type="password"
+              value={passwordForm.confirmPassword}
+              onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+              className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:border-pink transition"
+            />
+          </div>
+
+          {passwordError && (
+            <div className="text-sm text-pink bg-pink/10 border border-pink/30 rounded-xl px-4 py-2">
+              {passwordError}
+            </div>
+          )}
+          {passwordSuccess && (
+            <div className="text-sm text-green-700 bg-green-100/60 border border-green-200 rounded-xl px-4 py-2">
+              {passwordSuccess}
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button type="button" onClick={closePasswordModal} className="px-5 py-2.5 bg-white border border-blue text-primary rounded-xl text-sm font-medium hover:bg-blue/10 transition">
+              Annuler
+            </button>
+            <button type="submit" disabled={isPasswordSaving} className="px-5 py-2.5 bg-blue text-primary rounded-xl text-sm font-medium hover:bg-pink/10 transition disabled:opacity-60">
+              {isPasswordSaving ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
     </div>
   );

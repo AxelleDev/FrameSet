@@ -289,6 +289,23 @@ export const DataProvider = ({ children }) => {
     } catch (e) { console.error(e); }
   };
 
+  const changePassword = async ({ currentPassword, newPassword }) => {
+    if (!user) return { success: false, message: 'Utilisateur non connecté.' };
+    try {
+      const res = await fetch(`${API_URL}/user/password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: user.id, currentPassword, newPassword })
+      });
+      if (res.ok) return { success: true };
+      const error = await res.json();
+      return { success: false, message: error.error };
+    } catch (e) {
+      console.error(e);
+      return { success: false, message: 'Erreur réseau.' };
+    }
+  };
+
   return (
     <DataContext.Provider value={{
       user,
@@ -308,6 +325,7 @@ export const DataProvider = ({ children }) => {
       updateBrushNorm,
       updateTypographyNorm,
       updateUserProfile,
+      changePassword,
       loading,
       login,
       register,

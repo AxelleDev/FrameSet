@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useParams } from 'react-router-dom';
+import Modal from '../components/Modal';
 
 export default function ProjectNorms() {
   const { id } = useParams();
@@ -235,133 +236,139 @@ export default function ProjectNorms() {
                 </div>
               </div>
             ))}
-          {editingNorm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue/20 backdrop-blur-sm animate-fade-in">
-              <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
-                <h3 className="text-xl font-light text-primary mb-6 relative z-10">Modifier la Norme</h3>
-                <div className="space-y-4 relative z-10">
-                  {editingType === 'brush' ? (
-                    <>
-                      <div>
-                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage du Brush</label>
-                        <input type="text" value={editBrushUsage} onChange={e => setEditBrushUsage(e.target.value)} placeholder="ex: Hair Lineart" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom du Brush</label>
-                        <input type="text" value={editBrushName} onChange={e => setEditBrushName(e.target.value)} placeholder="ex: G-Pen" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Taille (px)</label>
-                        <input type="text" value={editBrushValue} onChange={e => setEditBrushValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Unité</label>
-                        <input type="text" value={editBrushUnit} onChange={e => setEditBrushUnit(e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Famille de police</label>
-                        <input type="text" value={editFontFamily} onChange={e => setEditFontFamily(e.target.value)} placeholder="ex: Inter" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Poids</label>
-                        <input type="text" value={editFontWeight} onChange={e => setEditFontWeight(e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage</label>
-                        <input type="text" value={editFontUsage} onChange={e => setEditFontUsage(e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Style</label>
-                        <input type="text" value={editFontStyle} onChange={e => setEditFontStyle(e.target.value)} placeholder="ex: Italic" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                      </div>
-                    </>
-                  )}
-                </div>
-                <div className="flex gap-3 mt-8 relative z-10">
-                  <button onClick={() => setEditingNorm(null)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
-                    Annuler
-                  </button>
-                  <button onClick={handleEditNorm} disabled={editingType === 'brush' ? !editBrushUsage || !editBrushValue : !editFontFamily}
-                          className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                    Modifier
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          </div>
-        </>
-      )}
-
-      {isAddingNorm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue/20 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden">
+          <Modal
+            isOpen={!!editingNorm}
+            onClose={() => setEditingNorm(null)}
+            showClose={false}
+            closeOnBackdrop={false}
+            overlayClassName="p-4 bg-blue/20 backdrop-blur-sm animate-fade-in"
+            panelClassName="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden"
+          >
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
-            <h3 className="text-xl font-light text-primary mb-6 relative z-10">Nouvelle Norme</h3>
+            <h3 className="text-xl font-light text-primary mb-6 relative z-10">Modifier la Norme</h3>
             <div className="space-y-4 relative z-10">
-              <div>
-                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Type</label>
-                <select value={addType} onChange={e => setAddType(e.target.value)} className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary appearance-none font-medium">
-                  <option value="brush">Trait</option>
-                  <option value="typography">Typographie</option>
-                </select>
-              </div>
-              {addType === 'brush' ? (
+              {editingType === 'brush' ? (
                 <>
                   <div>
                     <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage du Brush</label>
-                    <input type="text" value={newBrushUsage} onChange={e => setNewBrushUsage(e.target.value)} placeholder="ex: Hair Lineart" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={editBrushUsage} onChange={e => setEditBrushUsage(e.target.value)} placeholder="ex: Hair Lineart" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom du Brush</label>
-                    <input type="text" value={newBrushName} onChange={e => setNewBrushName(e.target.value)} placeholder="ex: G-Pen" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={editBrushName} onChange={e => setEditBrushName(e.target.value)} placeholder="ex: G-Pen" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Taille (px)</label>
-                    <input type="text" value={newBrushValue} onChange={e => setNewBrushValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={editBrushValue} onChange={e => setEditBrushValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Unité</label>
-                    <input type="text" value={newBrushUnit} onChange={e => setNewBrushUnit(e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={editBrushUnit} onChange={e => setEditBrushUnit(e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </div>
                 </>
               ) : (
                 <>
                   <div>
                     <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Famille de police</label>
-                    <input type="text" value={newFontFamily} onChange={e => setNewFontFamily(e.target.value)} placeholder="ex: Inter" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={editFontFamily} onChange={e => setEditFontFamily(e.target.value)} placeholder="ex: Inter" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Poids</label>
-                    <input type="text" value={newFontWeight} onChange={e => setNewFontWeight(e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={editFontWeight} onChange={e => setEditFontWeight(e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage</label>
-                    <input type="text" value={newFontUsage} onChange={e => setNewFontUsage(e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={editFontUsage} onChange={e => setEditFontUsage(e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Style</label>
-                    <input type="text" value={newFontStyle} onChange={e => setNewFontStyle(e.target.value)} placeholder="ex: Italic" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={editFontStyle} onChange={e => setEditFontStyle(e.target.value)} placeholder="ex: Italic" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </div>
                 </>
               )}
             </div>
             <div className="flex gap-3 mt-8 relative z-10">
-              <button onClick={() => setIsAddingNorm(false)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
+              <button onClick={() => setEditingNorm(null)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
                 Annuler
               </button>
-              <button onClick={handleAddNorm} disabled={addType === 'brush' ? !newBrushUsage || !newBrushValue : !newFontFamily}
+              <button onClick={handleEditNorm} disabled={editingType === 'brush' ? !editBrushUsage || !editBrushValue : !editFontFamily}
                       className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                Ajouter
+                Modifier
               </button>
             </div>
+          </Modal>
           </div>
-        </div>
+        </>
       )}
+
+      <Modal
+        isOpen={isAddingNorm}
+        onClose={() => setIsAddingNorm(false)}
+        showClose={false}
+        closeOnBackdrop={false}
+        overlayClassName="p-4 bg-blue/20 backdrop-blur-sm animate-fade-in"
+        panelClassName="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm border border-blue relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
+        <h3 className="text-xl font-light text-primary mb-6 relative z-10">Nouvelle Norme</h3>
+        <div className="space-y-4 relative z-10">
+          <div>
+            <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Type</label>
+            <select value={addType} onChange={e => setAddType(e.target.value)} className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary appearance-none font-medium">
+              <option value="brush">Trait</option>
+              <option value="typography">Typographie</option>
+            </select>
+          </div>
+          {addType === 'brush' ? (
+            <>
+              <div>
+                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage du Brush</label>
+                <input type="text" value={newBrushUsage} onChange={e => setNewBrushUsage(e.target.value)} placeholder="ex: Hair Lineart" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom du Brush</label>
+                <input type="text" value={newBrushName} onChange={e => setNewBrushName(e.target.value)} placeholder="ex: G-Pen" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Taille (px)</label>
+                <input type="text" value={newBrushValue} onChange={e => setNewBrushValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Unité</label>
+                <input type="text" value={newBrushUnit} onChange={e => setNewBrushUnit(e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Famille de police</label>
+                <input type="text" value={newFontFamily} onChange={e => setNewFontFamily(e.target.value)} placeholder="ex: Inter" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Poids</label>
+                <input type="text" value={newFontWeight} onChange={e => setNewFontWeight(e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage</label>
+                <input type="text" value={newFontUsage} onChange={e => setNewFontUsage(e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Style</label>
+                <input type="text" value={newFontStyle} onChange={e => setNewFontStyle(e.target.value)} placeholder="ex: Italic" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+              </div>
+            </>
+          )}
+        </div>
+        <div className="flex gap-3 mt-8 relative z-10">
+          <button onClick={() => setIsAddingNorm(false)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
+            Annuler
+          </button>
+          <button onClick={handleAddNorm} disabled={addType === 'brush' ? !newBrushUsage || !newBrushValue : !newFontFamily}
+                  className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+            Ajouter
+          </button>
+        </div>
+      </Modal>
     </>
   );
 }

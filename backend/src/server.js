@@ -178,6 +178,29 @@ app.put('/api/user', async (req, res) => {
   }
 });
 
+app.post('/api/user/password', async (req, res) => {
+  const { id, currentPassword, newPassword } = req.body;
+  if (!id || !currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Champs requis manquants.' });
+  }
+  try {
+    const [rows] = await db.query('SELECT password FROM users WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+    }
+    const isMatch = await bcrypt.compare(currentPassword, rows[0].password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Ancien mot de passe incorrect.' });
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 
 app.get('/api/projects', async (req, res) => {
   const userId = req.query.userId;
