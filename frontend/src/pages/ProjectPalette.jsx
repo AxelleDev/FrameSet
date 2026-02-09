@@ -5,6 +5,7 @@ import AppModal from '../components/AppModal';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CopyBadge from '../components/CopyBadge';
+import AddTile from '../components/AddTile';
 import useClipboard from '../hooks/useClipboard';
 
 export default function ProjectPalette() {
@@ -133,12 +134,10 @@ export default function ProjectPalette() {
 
       {activeProject && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-          <button onClick={openAddModal} className="aspect-[4/5] rounded-2xl border-2 border-dashed [border-color:var(--color-secondary)] flex flex-col items-center justify-center hover:![border-color:var(--color-blue)] hover:bg-pink/10 transition-all group">
-             <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mb-3 transition-transform group-hover:scale-110 group-hover:bg-blue/10 [color:var(--color-secondary)] group-hover:[color:var(--color-blue)]">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
-             </div>
-             <span className="text-xs font-bold uppercase tracking-widest text-primary">Ajouter</span>
-          </button>
+           <AddTile
+            onClick={openAddModal}
+            className="aspect-[4/5]"
+           />
 
           {(draggedIndex !== null && dragOverIndex !== null ? previewPalette : palette).map((color, idx) => (
             <div

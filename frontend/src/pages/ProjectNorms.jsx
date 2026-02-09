@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
+import AddTile from '../components/AddTile';
 
 export default function ProjectNorms() {
   const { id } = useParams();
@@ -138,12 +139,10 @@ export default function ProjectNorms() {
       {activeProject && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <button onClick={() => { resetForm(); setAddType('brush'); setIsAddingNorm(true); }} className="rounded-2xl border-2 border-dashed [border-color:var(--color-secondary)] flex flex-col items-center justify-center hover:![border-color:var(--color-blue)] hover:bg-pink/10 transition-all group min-h-[260px]">
-              <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mb-3 transition-transform group-hover:scale-110 group-hover:bg-blue/10 [color:var(--color-secondary)] group-hover:[color:var(--color-blue)]">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
-              </div>
-              <span className="text-xs font-bold uppercase tracking-widest text-primary">Ajouter</span>
-            </button>
+            <AddTile
+              onClick={() => { resetForm(); setAddType('brush'); setIsAddingNorm(true); }}
+              className="min-h-[260px]"
+            />
             {/* Brush Norms */}
             {activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
               <div key={norm.id} className="glass-card p-6 rounded-2xl relative group hover:bg-white/80 transition-all hover:-translate-y-1 duration-300">
