@@ -236,6 +236,8 @@ export default function ProjectNorms() {
                 </div>
               </div>
             ))}
+          </div>
+
           <Modal
             isOpen={!!editingNorm}
             onClose={() => setEditingNorm(null)}
@@ -297,7 +299,6 @@ export default function ProjectNorms() {
               </button>
             </div>
           </Modal>
-          </div>
         </>
       )}
 

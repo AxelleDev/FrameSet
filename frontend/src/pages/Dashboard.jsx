@@ -57,8 +57,6 @@ export default function Dashboard() {
   return (
     <>
       <div className="relative rounded-3xl overflow-hidden bg-white mb-12 animate-fade-in border border-white">
-
-
         <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-start justify-between">
           <div>
             <h2 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">Bonjour, {user.name.split(' ')[0]}.</h2>
@@ -90,56 +88,54 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <>
-          {projects.map((project) => (
-            <div key={project.id} onClick={() => openProject(project.id)} className="group glass-card relative rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-lavender-500/10 overflow-hidden">
-              <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-br from-lavender-100 to-transparent rounded-bl-full -mr-14 -mt-14 transition-transform group-hover:scale-110"></div>
+        {projects.map((project) => (
+          <div key={project.id} onClick={() => openProject(project.id)} className="group glass-card relative rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-lavender-500/10 overflow-hidden">
+            <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-br from-lavender-100 to-transparent rounded-bl-full -mr-14 -mt-14 transition-transform group-hover:scale-110"></div>
 
-              <div className="absolute top-4 right-4 flex gap-2 z-30">
-                <button
-                  onClick={(e) => openEditProject(e, project)}
-                  className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-[var(--color-blue)] backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
-                  title="Modifier le projet">
+            <div className="absolute top-4 right-4 flex gap-2 z-30">
+              <button
+                onClick={(e) => openEditProject(e, project)}
+                className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-[var(--color-blue)] backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
+                title="Modifier le projet">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
+                </svg>
+              </button>
+              <button 
+                  onClick={(e) => handleDeleteProject(e, project.id)}
+                  className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-red-500 backdrop-blur-md rounded-full text-white hover:text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
+                  title="Supprimer le projet">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
-                </button>
-                <button 
-                    onClick={(e) => handleDeleteProject(e, project.id)}
-                    className="w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-red-500 backdrop-blur-md rounded-full text-white hover:text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm"
-                    title="Supprimer le projet">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                </button>
+              </button>
+            </div>
+            <div className="relative z-10 flex flex-col h-full min-h-[160px]">
+              <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">{project.name}</h3>
+              <p className="text-sm text-primary mb-auto">Modifié {project.lastEdited}</p>
+              <div className="mt-8 pt-4 border-t border-blue flex -space-x-2 min-h-[40px] items-center">
+                {project.palette.map((color) => (
+                  <div key={color.hex} className="w-6 h-6 rounded-full border border-white shadow-sm ring-1 ring-black/5" 
+                       style={{ backgroundColor: color.hex }} 
+                       title={color.name}></div>
+                ))}
+                {project.palette.length === 0 && (
+                  <div className="text-xs text-blue italic flex items-center">
+                    <div className="w-6 h-6 rounded-full bg-blue/10 border border-white mr-1"></div>
+                    <div className="w-6 h-6 rounded-full bg-blue/5 border border-white"></div>
+                  </div>
+                )}
               </div>
-              <div className="relative z-10 flex flex-col h-full min-h-[160px]">
-                <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">{project.name}</h3>
-                <p className="text-sm text-primary mb-auto">Modifié {project.lastEdited}</p>
-                <div className="mt-8 pt-4 border-t border-blue flex -space-x-2 min-h-[40px] items-center">
-                  {project.palette.map((color) => (
-                    <div key={color.hex} className="w-6 h-6 rounded-full border border-white shadow-sm ring-1 ring-black/5" 
-                         style={{ backgroundColor: color.hex }} 
-                         title={color.name}></div>
-                  ))}
-                  {project.palette.length === 0 && (
-                    <div className="text-xs text-blue italic flex items-center">
-                      <div className="w-6 h-6 rounded-full bg-blue/10 border border-white mr-1"></div>
-                      <div className="w-6 h-6 rounded-full bg-blue/5 border border-white"></div>
-                    </div>
-                  )}
-                </div>
 
-              </div>
             </div>
-          ))}
-          <div onClick={() => setIsCreatingProject(true)} className="group rounded-2xl border-2 border-dashed [border-color:var(--color-secondary)] flex flex-col items-center justify-center p-6 cursor-pointer hover:![border-color:var(--color-blue)] hover:bg-pink/10 transition-all min-h-[200px]">
-            <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center [color:var(--color-secondary)] group-hover:[color:var(--color-blue)] group-hover:bg-blue/10 transition-colors mb-3 transition-transform group-hover:scale-110">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
-            </div>
-            <span className="text-sm font-medium text-primary">Nouveau Projet</span>
           </div>
-        </>
+        ))}
+        <div onClick={() => setIsCreatingProject(true)} className="group rounded-2xl border-2 border-dashed [border-color:var(--color-secondary)] flex flex-col items-center justify-center p-6 cursor-pointer hover:![border-color:var(--color-blue)] hover:bg-pink/10 transition-all min-h-[200px]">
+          <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center [color:var(--color-secondary)] group-hover:[color:var(--color-blue)] group-hover:bg-blue/10 transition-colors mb-3 transition-transform group-hover:scale-110">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
+          </div>
+          <span className="text-sm font-medium text-primary">Nouveau Projet</span>
+        </div>
       </div>
 
       <Modal
