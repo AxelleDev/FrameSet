@@ -1,5 +1,4 @@
 
-
 <div align="center">
 	<img src="frontend/public/FrameSet_Logo.png" alt="FrameSet Logo" width="120" />
 	<p><b>FRAMESET — Le référentiel graphique pensé pour l’illustration digitale.</b></p>
@@ -7,15 +6,11 @@
 
 ---
 
-## ✧･ﾟ: ✧･ﾟ Fonctionnalités
+## ✧･ﾟ: ✧･ﾟ Objectif du projet
 
-- Gérez les normes graphiques et palettes pour vos projets créatifs
-- Interface moderne et épurée (React + Vite)
-- Backend sécurisé (Node.js + Express)
-- Authentification utilisateur et organisation des projets
+FrameSet est une application web destinée aux illustrateurs et créateurs digitaux. Elle permet de centraliser, structurer et exporter les référentiels graphiques liés à un projet d’illustration (palettes, typographies, brushes, etc.).
 
 ---
-
 
 ## ✧･ﾟ: ✧･ﾟ Structure du projet
 
@@ -29,7 +24,6 @@
 ---
 
 ## ✧･ﾟ: ✧･ﾟ Démarrage rapide
-
 
 ### Backend (API)
 
