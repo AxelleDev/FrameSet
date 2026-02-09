@@ -99,7 +99,7 @@ export default function Register() {
                 <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" placeholder="8+ caractères" />
               </div>
               
-              <button onClick={handleRegister} className="w-full py-4 mt-2 bg-primary text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue/20 transform hover:-translate-y-0.5 transition-all duration-200">
+              <button onClick={handleRegister} className="w-full py-4 mt-2 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg transition-all">
                 S'inscrire gratuitement
               </button>
             </div>
