@@ -62,7 +62,7 @@ export default function Login() {
            </h1>
            
            <p className="text-lg text-primary max-w-md leading-relaxed">
-             FrameSet est la source de vérité définitive pour vos projets créatifs. Gérez normes, palettes et fiches personnages avec une précision rigoureuse.
+             FrameSet centralise les fondations graphiques de vos projets créatifs, pour une direction artistique claire et maîtrisée.
            </p>
 
            <div className="flex items-center space-x-4 pt-4">
@@ -75,8 +75,8 @@ export default function Login() {
         <div className="flex items-center justify-center md:justify-end">
           <div className="glass-panel w-full max-w-md p-10 rounded-3xl shadow-2xl animate-fade-in" style={{ animationDelay: '150ms' }}>
             <div className="mb-8 text-center">
-              <h2 className="text-2xl font-medium text-primary">Bon retour</h2>
-              <p className="text-primary text-sm mt-2">Entrez vos identifiants pour accéder à l'espace.</p>
+              <h2 className="text-2xl font-medium text-primary">Connexion</h2>
+              <p className="text-primary text-sm mt-2">Reprenez là où vous vous êtes arrêté.</p>
             </div>
             
             {error && <div className="mb-4 p-3 bg-pink text-primary text-xs rounded-lg text-center font-medium">{error}
@@ -93,7 +93,7 @@ export default function Login() {
             <div className="space-y-5">
               <div className="group">
                 <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Email</label>
-                <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" placeholder="nom@studio.com" />
+                <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" placeholder="email@exemple.com" />
               </div>
               
               <div className="group">
@@ -102,7 +102,7 @@ export default function Login() {
               </div>
               
               <button onClick={handleLogin} className="w-full py-4 mt-2 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg transition-all">
-                Accéder à l'espace
+                Continuer
               </button>
             </div>
 
