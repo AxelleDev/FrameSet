@@ -136,9 +136,9 @@ export default function ProjectExport() {
           </div>
 
           <div className="mt-12 animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <h4 className="text-sm font-bold text-blue uppercase tracking-wider mb-4">Aperçu de la sortie JSON</h4>
+            <h4 className="text-sm font-bold text-primary uppercase tracking-wider mb-4">Aperçu de la sortie JSON</h4>
             <div className="bg-primary/90 rounded-lg p-6 overflow-x-auto shadow-inner">
-              <pre className="text-xs text-blue font-mono leading-relaxed">{projectJson}</pre>
+              <pre className="text-xs text-primary font-mono leading-relaxed">{projectJson}</pre>
             </div>
           </div>
         </>
