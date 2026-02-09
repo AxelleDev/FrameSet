@@ -43,7 +43,12 @@ const updateUser = async (req, res) => {
       await mailService.sendMail({
         to: email,
         subject: 'Confirmation de votre nouvel email',
-        text: `Votre code de confirmation est : ${pendingCode}\nCe code expire dans 10 minutes.`
+        text: `Votre code de confirmation est : ${pendingCode}\nCe code expire dans 10 minutes.`,
+        html: mailService.buildTemplate({
+          title: 'Confirmation de votre nouvel email',
+          message: 'Utilisez le code ci-dessous pour valider votre nouvel email.',
+          code: pendingCode
+        })
       });
 
       return res.json({ success: true, name, email: currentEmail, pendingEmail: email });
@@ -112,7 +117,12 @@ const resendPendingEmail = async (req, res) => {
     await mailService.sendMail({
       to: email,
       subject: 'Nouveau code de confirmation',
-      text: `Votre nouveau code de confirmation est : ${newCode}\nCe code expire dans 10 minutes.`
+      text: `Votre nouveau code de confirmation est : ${newCode}\nCe code expire dans 10 minutes.`,
+      html: mailService.buildTemplate({
+        title: 'Nouveau code de confirmation',
+        message: 'Voici votre nouveau code pour confirmer votre email.',
+        code: newCode
+      })
     });
 
     res.json({ success: true });

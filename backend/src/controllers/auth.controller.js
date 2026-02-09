@@ -23,7 +23,12 @@ const register = async (req, res) => {
     await mailService.sendMail({
       to: email,
       subject: 'Confirmation de votre inscription',
-      text: `Votre code de confirmation est : ${verificationCode}\nCe code expire dans 10 minutes.`
+      text: `Votre code de confirmation est : ${verificationCode}\nCe code expire dans 10 minutes.`,
+      html: mailService.buildTemplate({
+        title: 'Confirmation de votre inscription',
+        message: 'Utilisez le code ci-dessous pour confirmer votre adresse email.',
+        code: verificationCode
+      })
     });
 
     const newUser = {
@@ -117,7 +122,12 @@ const resendCode = async (req, res) => {
     await mailService.sendMail({
       to: email,
       subject: 'Nouveau code de vérification',
-      text: `Votre nouveau code de vérification est : ${newCode}\nCe code expire dans 10 minutes.`
+      text: `Votre nouveau code de vérification est : ${newCode}\nCe code expire dans 10 minutes.`,
+      html: mailService.buildTemplate({
+        title: 'Nouveau code de vérification',
+        message: 'Voici votre nouveau code de vérification.',
+        code: newCode
+      })
     });
 
     res.json({ success: true });
