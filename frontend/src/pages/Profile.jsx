@@ -133,8 +133,8 @@ export default function Profile() {
            {user.avatarInitials}
         </div>
         
-        <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1">
-           <h1 className="text-3xl font-light text-primary mb-1">{user.name}</h1>
+          <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1">
+            <h1 className="text-3xl font-light text-primary mb-4">{user.name}</h1>
 
            <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <button onClick={toggleEdit} 
