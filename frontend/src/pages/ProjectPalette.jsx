@@ -4,6 +4,8 @@ import { useParams } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
+import CopyBadge from '../components/CopyBadge';
+import useClipboard from '../hooks/useClipboard';
 
 export default function ProjectPalette() {
   const { id } = useParams();
@@ -19,38 +21,13 @@ export default function ProjectPalette() {
   const [palette, setPalette] = useState([]);
   const [previewPalette, setPreviewPalette] = useState([]);
 
-  const [copiedIdx, setCopiedIdx] = useState(null);
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null);
+  const { copy, copiedValue } = useClipboard({ timeout: 1200 });
 
-  const handleCopyHex = async (e, hex, idx) => {
+  const handleCopyHex = async (e, hex) => {
     e.preventDefault();
     e.stopPropagation();
-    let success = false;
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(hex);
-        success = true;
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = hex;
-        textarea.setAttribute('readonly', '');
-        textarea.style.position = 'absolute';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        success = document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
-    } catch (err) {
-      success = false;
-      console.error('Clipboard error:', err);
-    }
-    if (success) {
-      setCopiedIdx(idx);
-      setTimeout(() => setCopiedIdx(null), 1200);
-    } else {
-      alert('Erreur lors de la copie');
-    }
+    await copy(hex);
   };
 
   useEffect(() => {
@@ -236,10 +213,8 @@ export default function ProjectPalette() {
                     </ActionIconButton>
 
                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 backdrop-blur-[2px] cursor-pointer z-10"
-                        onClick={e => handleCopyHex(e, color.hex, idx)}>
-                      <span className="px-3 py-1 bg-white/90 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary shadow-sm transform scale-90 group-hover:scale-100 transition-transform">
-                        {copiedIdx === idx ? 'Copié !' : 'Copier'}
-                      </span>
+                        onClick={e => handleCopyHex(e, color.hex)}>
+                      <CopyBadge isCopied={copiedValue === color.hex} />
                    </div>
               </div>
               <div className="mt-4 text-center">
