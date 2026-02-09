@@ -32,6 +32,21 @@ export default function ProjectExport() {
     const doc = new jsPDF();
     let y = 20;
 
+    const norms = [
+      ...(activeProject.brushNorms || []).map(n => ({
+        category: 'Trait',
+        name: n.name,
+        value: n.value,
+        unit: n.unit || ''
+      })),
+      ...(activeProject.typographyNorms || []).map(n => ({
+        category: 'Typographie',
+        name: n.fontUsage || n.fontFamily,
+        value: n.fontFamily,
+        unit: n.fontWeight ? ` ${n.fontWeight}` : ''
+      }))
+    ];
+
     doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
     doc.text(activeProject.name, 20, y);
@@ -46,11 +61,11 @@ export default function ProjectExport() {
     doc.setDrawColor(200);
     doc.line(20, y - 10, 190, y - 10);
 
-    if (activeProject.norms.length > 0) {
+    if (norms.length > 0) {
       doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0);
-      activeProject.norms.forEach(norm => {
+      norms.forEach(norm => {
         if (y > 270) { doc.addPage(); y = 20; }
         const line = `• [${norm.category}] ${norm.name}: ${norm.value}${norm.unit || ''}`;
         doc.text(line, 25, y);
