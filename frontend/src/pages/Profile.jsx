@@ -163,12 +163,11 @@ export default function Profile() {
                   <input type="text" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} readOnly={!isEditing}
                          className={`w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none transition ${isEditing ? 'focus:border-pink' : 'opacity-70 cursor-not-allowed'}`} />
                 </div>
-              </div>
-              
-              <div>
-                <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Adresse Email</label>
-                <input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} readOnly={!isEditing}
-                       className={`w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none transition ${isEditing ? 'focus:border-pink' : 'opacity-70 cursor-not-allowed'}`} />
+                <div>
+                  <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Adresse Email</label>
+                  <input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} readOnly={!isEditing}
+                         className={`w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none transition ${isEditing ? 'focus:border-pink' : 'opacity-70 cursor-not-allowed'}`} />
+                </div>
               </div>
           </div>
         </section>
