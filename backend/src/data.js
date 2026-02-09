@@ -1,6 +1,5 @@
 const user = {
   name: 'Prénom Nom',
-  role: 'Illustratrice',
   email: 'axelle.nom@gmail.com',
   avatarInitials: 'AT'
 };

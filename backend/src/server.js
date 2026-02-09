@@ -25,7 +25,7 @@ app.get('/api/users/count', async (req, res) => {
 });
 
 app.post('/api/auth/register', async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password } = req.body;
 
   const getInitials = (n) => n.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
   const initials = getInitials(name);
@@ -37,8 +37,8 @@ app.post('/api/auth/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await db.query(
-      'INSERT INTO users (name, email, password, role, avatar_initials, is_verified, verification_code, verification_code_expires) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, email, hashedPassword, role || 'Creative', initials, false, verificationCode, expires]
+      'INSERT INTO users (name, email, password, avatar_initials, is_verified, verification_code, verification_code_expires) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, email, hashedPassword, initials, false, verificationCode, expires]
     );
 
     const transporter = nodemailer.createTransport({
@@ -62,7 +62,6 @@ app.post('/api/auth/register', async (req, res) => {
       id: result.insertId,
       name,
       email,
-      role: role || 'Creative',
       avatarInitials: initials,
       is_verified: false
     };
@@ -94,7 +93,6 @@ app.post('/api/auth/login', async (req, res) => {
     const user = {
       id: userDb.id,
       name: userDb.name,
-      role: userDb.role,
       email: userDb.email,
       avatarInitials: userDb.avatar_initials
     };
@@ -168,10 +166,10 @@ app.post('/api/auth/resend-code', async (req, res) => {
 
 
 app.put('/api/user', async (req, res) => {
-  const { id, name, role, email } = req.body;
+  const { id, name, email } = req.body;
   try {
-    await db.query('UPDATE users SET name = ?, role = ?, email = ? WHERE id = ?', [name, role, email, id]);
-    res.json({ success: true, name, role, email });
+    await db.query('UPDATE users SET name = ?, email = ? WHERE id = ?', [name, email, id]);
+    res.json({ success: true, name, email });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Database error' });

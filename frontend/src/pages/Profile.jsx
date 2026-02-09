@@ -10,7 +10,6 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
-    role: '',
     email: ''
   });
 
@@ -28,7 +27,6 @@ export default function Profile() {
     if (user) {
       setEditForm({
         name: user.name,
-        role: user.role,
         email: user.email
       });
     }
@@ -41,7 +39,6 @@ export default function Profile() {
     } else {
       setEditForm({
         name: user.name,
-        role: user.role,
         email: user.email
       });
       setIsEditing(true);
@@ -115,7 +112,6 @@ export default function Profile() {
         
         <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1">
            <h1 className="text-3xl font-light text-primary mb-1">{user.name}</h1>
-           <p className="text-blue font-medium mb-6 text-lg">{user.role}</p>
 
            <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <button onClick={toggleEdit} 
@@ -142,11 +138,6 @@ export default function Profile() {
                 <div>
                   <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Nom complet</label>
                   <input type="text" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} readOnly={!isEditing}
-                         className={`w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none transition ${isEditing ? 'focus:border-pink' : 'opacity-70 cursor-not-allowed'}`} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Rôle</label>
-                  <input type="text" value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})} readOnly={!isEditing}
                          className={`w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none transition ${isEditing ? 'focus:border-pink' : 'opacity-70 cursor-not-allowed'}`} />
                 </div>
               </div>
