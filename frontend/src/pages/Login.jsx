@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import AuthLayout from '../components/AuthLayout';
+import useUserCount from '../hooks/useUserCount';
 
 export default function Login() {
-  const API_URL = import.meta.env.VITE_API_URL || '/api';
   const navigate = useNavigate();
   const { login } = useData();
 
@@ -33,14 +33,7 @@ export default function Login() {
     }
   };
 
-  const [userCount, setUserCount] = useState(null);
-
-  useEffect(() => {
-    fetch(`${API_URL}/users/count`)
-      .then(res => res.json())
-      .then(data => setUserCount(data.count))
-      .catch(() => setUserCount(null));
-  }, [API_URL]);
+  const userCount = useUserCount();
 
   return (
     <AuthLayout
