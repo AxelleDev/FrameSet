@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useParams } from 'react-router-dom';
-import AppModal from '../components/AppModal';
+import FormModal from '../components/FormModal';
+import FormField from '../components/FormField';
+import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CopyBadge from '../components/CopyBadge';
@@ -224,77 +226,62 @@ export default function ProjectPalette() {
         </div>
       )}
 
-      <AppModal
+      <FormModal
         isOpen={editIdx !== null}
         onClose={() => setEditIdx(null)}
-        showClose={false}
-        panelClassName="max-w-sm"
+        title="Modifier Couleur"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
-        <h3 className="text-xl font-light text-primary mb-6 relative z-10">Modifier Couleur</h3>
-        <div className="space-y-4 relative z-10">
-          <div>
-            <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom de la couleur</label>
-              <input type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="ex: Reflet Cheveux" 
-                className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Code Hexadécimal</label>
+        <div className="space-y-4">
+          <FormField label="Nom de la couleur">
+            <input type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="ex: Reflet Cheveux" 
+              className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+          </FormField>
+          <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
                <div className="w-12 h-12 rounded-xl border border-blue shadow-inner flex-shrink-0" style={{ backgroundColor: isValidEditHex() ? editColorHex : '#ffffff' }}></div>
                <input type="text" value={editColorHex} onChange={e => setEditColorHex(e.target.value)} placeholder="ex: #FF5500" 
                       className="flex-1 px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary font-mono uppercase" />
             </div>
-          </div>
+          </FormField>
           {renderEditStatus()}
         </div>
-        <div className="flex gap-3 mt-8 relative z-10">
-           <button onClick={() => setEditIdx(null)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
-             Annuler
-           </button>
-           <button onClick={confirmEditColor} disabled={!editColorName || !editColorHex}
-                   className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-             Confirmer
-           </button>
-        </div>
-      </AppModal>
+        <ModalActions
+          secondaryLabel="Annuler"
+          primaryLabel="Confirmer"
+          onSecondary={() => setEditIdx(null)}
+          onPrimary={confirmEditColor}
+          primaryDisabled={!editColorName || !editColorHex}
+        />
+      </FormModal>
 
-      <AppModal
+      <FormModal
         isOpen={isAddingColor}
         onClose={() => setIsAddingColor(false)}
-        showClose={false}
-        panelClassName="max-w-sm"
+        title="Nouvelle Couleur"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
-        <h3 className="text-xl font-light text-primary mb-6 relative z-10">Nouvelle Couleur</h3>
-        
-        <div className="space-y-4 relative z-10">
-          <div>
-            <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom de la couleur</label>
-              <input type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="ex: Reflet Cheveux" 
-                className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-          </div>
+        <div className="space-y-4">
+          <FormField label="Nom de la couleur">
+            <input type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="ex: Reflet Cheveux" 
+              className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+          </FormField>
           
-          <div>
-            <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Code Hexadécimal</label>
+          <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
                <div className="w-12 h-12 rounded-xl border border-blue shadow-inner flex-shrink-0" style={{ backgroundColor: isValidHex() ? newColorHex : '#ffffff' }}></div>
                <input type="text" value={newColorHex} onChange={e => setNewColorHex(e.target.value)} placeholder="ex: #FF5500" 
                       className="flex-1 px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary font-mono uppercase" />
             </div>
-          </div>
+          </FormField>
         </div>
 
-        <div className="flex gap-3 mt-8 relative z-10">
-           <button onClick={() => setIsAddingColor(false)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
-             Annuler
-           </button>
-           <button onClick={confirmAddColor} disabled={!newColorName || !newColorHex}
-                   className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-             Ajouter
-           </button>
-        </div>
-      </AppModal>
+        <ModalActions
+          secondaryLabel="Annuler"
+          primaryLabel="Ajouter"
+          onSecondary={() => setIsAddingColor(false)}
+          onPrimary={confirmAddColor}
+          primaryDisabled={!newColorName || !newColorHex}
+        />
+      </FormModal>
 
       <ConfirmDialog
         isOpen={!!confirmDeleteColor}

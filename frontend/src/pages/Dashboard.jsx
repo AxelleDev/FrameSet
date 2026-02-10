@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
-import AppModal from '../components/AppModal';
+import FormModal from '../components/FormModal';
+import FormField from '../components/FormField';
+import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
@@ -143,61 +145,45 @@ export default function Dashboard() {
         />
       </div>
 
-      <AppModal
+      <FormModal
         isOpen={isCreatingProject}
         onClose={() => setIsCreatingProject(false)}
-        showClose={false}
-        panelClassName="max-w-sm"
+        title="Nouveau Projet"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
-
-        <h3 className="text-xl font-light text-primary mb-6 relative z-10">Nouveau Projet</h3>
-
-        <div className="space-y-4 relative z-10">
-          <div>
-            <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom du projet</label>
+        <div className="space-y-4">
+          <FormField label="Nom du projet">
             <input type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()} placeholder="ex: Neo-Tokyo Editorial" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" autoFocus />
-          </div>
+          </FormField>
         </div>
 
-        <div className="flex gap-3 mt-8 relative z-10">
-         <button onClick={() => setIsCreatingProject(false)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
-           Annuler
-         </button>
-         <button onClick={handleCreateProject} disabled={!newProjectName}
-               className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-           Créer
-         </button>
-        </div>
-      </AppModal>
+        <ModalActions
+          secondaryLabel="Annuler"
+          primaryLabel="Créer"
+          onSecondary={() => setIsCreatingProject(false)}
+          onPrimary={handleCreateProject}
+          primaryDisabled={!newProjectName}
+        />
+      </FormModal>
 
-      <AppModal
+      <FormModal
         isOpen={isEditingProject}
         onClose={() => { setIsEditingProject(false); setEditProjectId(null); }}
-        showClose={false}
-        panelClassName="max-w-sm"
+        title="Modifier Projet"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
-
-        <h3 className="text-xl font-light text-primary mb-6 relative z-10">Modifier Projet</h3>
-
-        <div className="space-y-4 relative z-10">
-          <div>
-            <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom du projet</label>
+        <div className="space-y-4">
+          <FormField label="Nom du projet">
             <input type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="ex: Neo-Tokyo Editorial" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" autoFocus />
-          </div>
+          </FormField>
         </div>
 
-        <div className="flex gap-3 mt-8 relative z-10">
-         <button onClick={() => { setIsEditingProject(false); setEditProjectId(null); }} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
-           Annuler
-         </button>
-         <button onClick={handleEditProject} disabled={!editProjectName}
-               className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-           Modifier
-         </button>
-        </div>
-      </AppModal>
+        <ModalActions
+          secondaryLabel="Annuler"
+          primaryLabel="Modifier"
+          onSecondary={() => { setIsEditingProject(false); setEditProjectId(null); }}
+          onPrimary={handleEditProject}
+          primaryDisabled={!editProjectName}
+        />
+      </FormModal>
 
       <ConfirmDialog
         isOpen={!!confirmDeleteProject}

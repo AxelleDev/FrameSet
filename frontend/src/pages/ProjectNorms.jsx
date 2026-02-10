@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useParams } from 'react-router-dom';
-import AppModal from '../components/AppModal';
+import FormModal from '../components/FormModal';
+import FormField from '../components/FormField';
+import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
@@ -237,134 +239,107 @@ export default function ProjectNorms() {
             ))}
           </div>
 
-          <AppModal
+          <FormModal
             isOpen={!!editingNorm}
             onClose={() => setEditingNorm(null)}
-            showClose={false}
-            panelClassName="max-w-sm"
+            title="Modifier la Norme"
           >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
-            <h3 className="text-xl font-light text-primary mb-6 relative z-10">Modifier la Norme</h3>
-            <div className="space-y-4 relative z-10">
+            <div className="space-y-4">
               {editingType === 'brush' ? (
                 <>
-                  <div>
-                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage du Brush</label>
+                  <FormField label="Usage du Brush">
                     <input type="text" value={editBrushUsage} onChange={e => setEditBrushUsage(e.target.value)} placeholder="ex: Hair Lineart" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom du Brush</label>
+                  </FormField>
+                  <FormField label="Nom du Brush">
                     <input type="text" value={editBrushName} onChange={e => setEditBrushName(e.target.value)} placeholder="ex: G-Pen" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Taille (px)</label>
+                  </FormField>
+                  <FormField label="Taille (px)">
                     <input type="text" value={editBrushValue} onChange={e => setEditBrushValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Unité</label>
+                  </FormField>
+                  <FormField label="Unité">
                     <input type="text" value={editBrushUnit} onChange={e => setEditBrushUnit(e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                  </div>
+                  </FormField>
                 </>
               ) : (
                 <>
-                  <div>
-                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Famille de police</label>
+                  <FormField label="Famille de police">
                     <input type="text" value={editFontFamily} onChange={e => setEditFontFamily(e.target.value)} placeholder="ex: Inter" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Poids</label>
+                  </FormField>
+                  <FormField label="Poids">
                     <input type="text" value={editFontWeight} onChange={e => setEditFontWeight(e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage</label>
+                  </FormField>
+                  <FormField label="Usage">
                     <input type="text" value={editFontUsage} onChange={e => setEditFontUsage(e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Style</label>
+                  </FormField>
+                  <FormField label="Style">
                     <input type="text" value={editFontStyle} onChange={e => setEditFontStyle(e.target.value)} placeholder="ex: Italic" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-                  </div>
+                  </FormField>
                 </>
               )}
             </div>
-            <div className="flex gap-3 mt-8 relative z-10">
-              <button onClick={() => setEditingNorm(null)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
-                Annuler
-              </button>
-              <button onClick={handleEditNorm} disabled={editingType === 'brush' ? !editBrushUsage || !editBrushValue : !editFontFamily}
-                      className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                Modifier
-              </button>
-            </div>
-          </AppModal>
+            <ModalActions
+              secondaryLabel="Annuler"
+              primaryLabel="Modifier"
+              onSecondary={() => setEditingNorm(null)}
+              onPrimary={handleEditNorm}
+              primaryDisabled={editingType === 'brush' ? !editBrushUsage || !editBrushValue : !editFontFamily}
+            />
+          </FormModal>
         </>
       )}
 
-      <AppModal
+      <FormModal
         isOpen={isAddingNorm}
         onClose={() => setIsAddingNorm(false)}
-        showClose={false}
-        panelClassName="max-w-sm"
+        title="Nouvelle Norme"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50"></div>
-        <h3 className="text-xl font-light text-primary mb-6 relative z-10">Nouvelle Norme</h3>
-        <div className="space-y-4 relative z-10">
-          <div>
-            <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Type</label>
+        <div className="space-y-4">
+          <FormField label="Type">
             <select value={addType} onChange={e => setAddType(e.target.value)} className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary appearance-none font-medium">
               <option value="brush">Trait</option>
               <option value="typography">Typographie</option>
             </select>
-          </div>
+          </FormField>
           {addType === 'brush' ? (
             <>
-              <div>
-                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage du Brush</label>
+              <FormField label="Usage du Brush">
                 <input type="text" value={newBrushUsage} onChange={e => setNewBrushUsage(e.target.value)} placeholder="ex: Hair Lineart" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Nom du Brush</label>
+              </FormField>
+              <FormField label="Nom du Brush">
                 <input type="text" value={newBrushName} onChange={e => setNewBrushName(e.target.value)} placeholder="ex: G-Pen" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Taille (px)</label>
+              </FormField>
+              <FormField label="Taille (px)">
                 <input type="text" value={newBrushValue} onChange={e => setNewBrushValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Unité</label>
+              </FormField>
+              <FormField label="Unité">
                 <input type="text" value={newBrushUnit} onChange={e => setNewBrushUnit(e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-              </div>
+              </FormField>
             </>
           ) : (
             <>
-              <div>
-                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Famille de police</label>
+              <FormField label="Famille de police">
                 <input type="text" value={newFontFamily} onChange={e => setNewFontFamily(e.target.value)} placeholder="ex: Inter" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Poids</label>
+              </FormField>
+              <FormField label="Poids">
                 <input type="text" value={newFontWeight} onChange={e => setNewFontWeight(e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Usage</label>
+              </FormField>
+              <FormField label="Usage">
                 <input type="text" value={newFontUsage} onChange={e => setNewFontUsage(e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-primary uppercase tracking-widest mb-2">Style</label>
+              </FormField>
+              <FormField label="Style">
                 <input type="text" value={newFontStyle} onChange={e => setNewFontStyle(e.target.value)} placeholder="ex: Italic" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
-              </div>
+              </FormField>
             </>
           )}
         </div>
-        <div className="flex gap-3 mt-8 relative z-10">
-          <button onClick={() => setIsAddingNorm(false)} className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors">
-            Annuler
-          </button>
-          <button onClick={handleAddNorm} disabled={addType === 'brush' ? !newBrushUsage || !newBrushValue : !newFontFamily}
-                  className="flex-1 py-3 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-            Ajouter
-          </button>
-        </div>
-      </AppModal>
+        <ModalActions
+          secondaryLabel="Annuler"
+          primaryLabel="Ajouter"
+          onSecondary={() => setIsAddingNorm(false)}
+          onPrimary={handleAddNorm}
+          primaryDisabled={addType === 'brush' ? !newBrushUsage || !newBrushValue : !newFontFamily}
+        />
+      </FormModal>
 
       <ConfirmDialog
         isOpen={!!confirmDeleteNorm}
