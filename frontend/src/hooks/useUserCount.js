@@ -1,3 +1,4 @@
+// Hook pour recuperer le nombre d'utilisateurs.
 import { useEffect, useState } from 'react';
 
 export default function useUserCount() {

@@ -1,3 +1,4 @@
+// Enveloppe de modale avec styles par defaut.
 import React from 'react';
 import Modal from './Modal';
 

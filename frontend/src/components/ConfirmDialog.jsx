@@ -1,3 +1,4 @@
+// Dialogue de confirmation standard.
 import React from 'react';
 import AppModal from './AppModal';
 

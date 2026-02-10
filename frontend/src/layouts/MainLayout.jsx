@@ -1,3 +1,4 @@
+// Layout principal de l'application.
 import React, { useState } from 'react';
 import { Outlet, NavLink, Link, useLocation, Navigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';

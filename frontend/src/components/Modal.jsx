@@ -1,3 +1,4 @@
+// Modale generique reutilisable.
 import React from 'react';
 
 export default function Modal({

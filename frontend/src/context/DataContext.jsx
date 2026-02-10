@@ -1,3 +1,4 @@
+// Contexte global pour l'etat et les appels API.
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 
 const DataContext = createContext(null);

@@ -1,3 +1,4 @@
+// Hook pour copier du texte dans le presse-papiers.
 import { useRef, useState } from 'react';
 
 export default function useClipboard({ timeout = 1200 } = {}) {

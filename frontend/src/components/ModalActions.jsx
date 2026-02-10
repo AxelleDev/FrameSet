@@ -1,3 +1,4 @@
+// Actions standard pour modales.
 import React from 'react';
 
 export default function ModalActions({

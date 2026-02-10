@@ -1,3 +1,4 @@
+// Badge d'etat pour la copie.
 import React from 'react';
 
 export default function CopyBadge({

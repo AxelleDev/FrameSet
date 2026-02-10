@@ -1,3 +1,4 @@
+// Layout pour les pages d'authentification.
 import React from 'react';
 
 export default function AuthLayout({ hero, children, variant = 'login', swapOnMobile = false }) {

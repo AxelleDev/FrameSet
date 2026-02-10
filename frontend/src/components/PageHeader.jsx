@@ -1,3 +1,4 @@
+// En-tete de page avec titre et sous-titre.
 import React from 'react';
 
 export default function PageHeader({ title, subtitle, subtitleClassName = '' }) {

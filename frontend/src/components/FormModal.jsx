@@ -1,3 +1,4 @@
+// Modale de formulaire avec decoration et titre.
 import React from 'react';
 import AppModal from './AppModal';
 

@@ -1,3 +1,4 @@
+// Tuile d'ajout pour creer un element.
 import React from 'react';
 
 export default function AddTile({

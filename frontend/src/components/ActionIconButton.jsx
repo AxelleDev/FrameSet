@@ -1,3 +1,4 @@
+// Bouton icone d'action reutilisable.
 import React from 'react';
 
 const INTENT_CLASSES = {
