@@ -34,7 +34,6 @@ export default function Dashboard() {
 
   const openEditProject = (e, project) => {
     e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
     setEditProjectId(project.id);
     setEditProjectName(project.name || '');
     setIsEditingProject(true);
@@ -54,7 +53,6 @@ export default function Dashboard() {
 
   const handleDeleteProject = (e, id) => {
     e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
     const project = projects.find((p) => p.id === id);
     setConfirmDeleteProject(project ? { id: project.id, name: project.name } : { id, name: '' });
   };
