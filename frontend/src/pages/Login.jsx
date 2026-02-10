@@ -4,6 +4,7 @@ import { useData } from '../context/DataContext';
 import AuthLayout from '../components/AuthLayout';
 
 export default function Login() {
+  const API_URL = import.meta.env.VITE_API_URL || '/api';
   const navigate = useNavigate();
   const { login } = useData();
 
@@ -35,11 +36,11 @@ export default function Login() {
   const [userCount, setUserCount] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/users/count')
+    fetch(`${API_URL}/users/count`)
       .then(res => res.json())
       .then(data => setUserCount(data.count))
       .catch(() => setUserCount(null));
-  }, []);
+  }, [API_URL]);
 
   return (
     <AuthLayout

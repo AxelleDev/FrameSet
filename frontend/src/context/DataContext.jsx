@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 
 const DataContext = createContext(null);
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const DataProvider = ({ children }) => {
   const [user, setUser] = useState(null);

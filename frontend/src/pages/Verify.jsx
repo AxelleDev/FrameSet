@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 
 export default function Verify() {
+  const API_URL = import.meta.env.VITE_API_URL || '/api';
   const navigate = useNavigate();
   const location = useLocation();
   const { applyUserUpdate } = useData();
@@ -18,8 +19,8 @@ export default function Verify() {
   const handleVerify = async () => {
     setError('');
     const endpoint = type === 'pending-email'
-      ? 'http://localhost:3000/api/user/email/verify'
-      : 'http://localhost:3000/api/auth/verify';
+      ? `${API_URL}/user/email/verify`
+      : `${API_URL}/auth/verify`;
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -41,8 +42,8 @@ export default function Verify() {
     setResendMsg('');
     setError('');
     const endpoint = type === 'pending-email'
-      ? 'http://localhost:3000/api/user/email/resend'
-      : 'http://localhost:3000/api/auth/resend-code';
+      ? `${API_URL}/user/email/resend`
+      : `${API_URL}/auth/resend-code`;
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
