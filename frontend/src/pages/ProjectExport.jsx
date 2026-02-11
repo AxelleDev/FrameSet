@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import { useParams } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import Card from '../components/Card';
+import Button from '../components/Button';
 
 export default function ProjectExport() {
   const { id } = useParams();
@@ -119,9 +120,9 @@ export default function ProjectExport() {
                 </div>
               <h3 className="text-lg font-medium text-primary mb-2">Guide de Style PDF</h3>
               <p className="text-sm text-primary mb-6">Un document PDF formaté professionnellement contenant toutes les normes actives et les palettes. Idéal pour l'impression.</p>
-              <button onClick={downloadPdf} className="w-full py-3 border border-pink text-pink font-medium rounded-lg hover:bg-pink/10 transition">
-                 Télécharger le PDF
-              </button>
+                <Button onClick={downloadPdf} variant="primary" className="px-4 py-2">
+                  Télécharger le PDF
+                </Button>
             </Card>
 
             <Card className="p-8 rounded-xl flex flex-col items-start text-left">
@@ -130,9 +131,9 @@ export default function ProjectExport() {
                 </div>
               <h3 className="text-lg font-medium text-primary mb-2">Pipeline JSON</h3>
               <p className="text-sm text-primary mb-6">Structure de données brute contenant tous les ID et valeurs. Utilisez ceci pour intégrer les normes directement dans vos logiciels créatifs.</p>
-              <button onClick={downloadJson} className="w-full py-3 border border-blue text-blue font-medium rounded-lg hover:bg-blue/10 transition">
-                 Télécharger le JSON
-              </button>
+                <Button onClick={downloadJson} variant="primary" className="px-4 py-2">
+                  Télécharger le JSON
+                </Button>
             </Card>
           </div>
 
