@@ -171,7 +171,7 @@ export const DataProvider = ({ children }) => {
     } catch (e) { console.error(e); }
   };
 
-  const updateProjectName = async (projectId, name) => {
+  const updateProjectName = async (projectId, { name }) => {
     try {
       await api.put(`/projects/${projectId}`, { name });
       setProjects(prev =>

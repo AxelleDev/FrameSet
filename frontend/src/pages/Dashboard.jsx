@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [editProjectId, setEditProjectId] = useState(null);
   const [editProjectName, setEditProjectName] = useState("");
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(null);
+  const [editProjectError, setEditProjectError] = useState("");
 
   useEffect(() => {
     setActiveProjectId(null);
@@ -44,11 +45,19 @@ export default function Dashboard() {
   };
 
   const handleEditProject = async () => {
-    if (!editProjectId || !editProjectName || !editProjectName.trim()) return;
-    await updateProject(editProjectId, { name: editProjectName.trim() });
-    setIsEditingProject(false);
-    setEditProjectId(null);
-    setEditProjectName('');
+    setEditProjectError("");
+    if (!editProjectId || !editProjectName || !editProjectName.trim()) {
+      setEditProjectError("Le nom du projet ne peut pas être vide.");
+      return;
+    }
+    try {
+      await updateProject(editProjectId, { name: editProjectName.trim() });
+      setIsEditingProject(false);
+      setEditProjectId(null);
+      setEditProjectName("");
+    } catch (e) {
+      setEditProjectError(e?.message || "Erreur lors de la modification du projet.");
+    }
   };
 
   const openProject = (id) => {
@@ -169,19 +178,22 @@ export default function Dashboard() {
 
       <FormModal
         isOpen={isEditingProject}
-        onClose={() => { setIsEditingProject(false); setEditProjectId(null); }}
+        onClose={() => { setIsEditingProject(false); setEditProjectId(null); setEditProjectError(""); }}
         title="Modifier le projet"
       >
         <div className="space-y-4">
           <FormField label="Nom du projet">
             <input type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="ex: Neo-Tokyo Editorial" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" autoFocus />
           </FormField>
+          {editProjectError && (
+            <div className="text-pink text-sm font-medium mt-2">{editProjectError}</div>
+          )}
         </div>
 
         <ModalActions
           secondaryLabel="Annuler"
           primaryLabel="Modifier"
-          onSecondary={() => { setIsEditingProject(false); setEditProjectId(null); }}
+          onSecondary={() => { setIsEditingProject(false); setEditProjectId(null); setEditProjectError(""); }}
           onPrimary={handleEditProject}
           primaryDisabled={!editProjectName}
         />
