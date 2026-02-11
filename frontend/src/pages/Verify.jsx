@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useData } from '../context/DataContext';
+import api from '../services/api';
 
 export default function Verify() {
   const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -21,20 +22,19 @@ export default function Verify() {
     const endpoint = type === 'pending-email'
       ? `${API_URL}/user/email/verify`
       : `${API_URL}/auth/verify`;
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code })
-    });
-    const data = await res.json();
-    if (data.success) {
-      if (type === 'pending-email' && data.user) {
-        applyUserUpdate(data.user);
+    try {
+      const data = await api.post(type === 'pending-email' ? '/user/email/verify' : '/auth/verify', { email, code });
+      if (data.success) {
+        if (type === 'pending-email' && data.user) {
+          applyUserUpdate(data.user);
+        }
+        setSuccess(true);
+        setTimeout(() => navigate(type === 'pending-email' ? '/app/profile' : '/login'), 2000);
+      } else {
+        setError(data.error || 'Code incorrect');
       }
-      setSuccess(true);
-      setTimeout(() => navigate(type === 'pending-email' ? '/app/profile' : '/login'), 2000);
-    } else {
-      setError(data.error || 'Code incorrect');
+    } catch (err) {
+      setError(err.data?.error || err.message || 'Erreur réseau');
     }
   };
 
@@ -44,16 +44,15 @@ export default function Verify() {
     const endpoint = type === 'pending-email'
       ? `${API_URL}/user/email/resend`
       : `${API_URL}/auth/resend-code`;
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    const data = await res.json();
-    if (data.success) {
-      setResendMsg('Code renvoyé ! Vérifiez votre email.');
-    } else {
-      setError(data.error || "Erreur lors de l'envoi du code.");
+    try {
+      const data = await api.post(type === 'pending-email' ? '/user/email/resend' : '/auth/resend-code', { email });
+      if (data.success) {
+        setResendMsg('Code renvoyé ! Vérifiez votre email.');
+      } else {
+        setError(data.error || "Erreur lors de l'envoi du code.");
+      }
+    } catch (err) {
+      setError(err.data?.error || err.message || 'Erreur réseau');
     }
   };
 

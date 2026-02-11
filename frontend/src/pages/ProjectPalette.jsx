@@ -10,6 +10,7 @@ import CopyBadge from '../components/CopyBadge';
 import AddTile from '../components/AddTile';
 import PageHeader from '../components/PageHeader';
 import useClipboard from '../hooks/useClipboard';
+import api from '../services/api';
 
 export default function ProjectPalette() {
   const { id } = useParams();
@@ -120,17 +121,9 @@ export default function ProjectPalette() {
     if (!newHex.startsWith('#')) newHex = '#' + newHex;
     const oldHex = palette[editIdx].hex;
     try {
-      const res = await fetch(`/api/projects/${id}/palette`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ oldHex, newName: editColorName, newHex })
-      });
-      if (res.ok) {
-        setEditStatus('success');
-        await syncPalette();
-      } else {
-        setEditStatus('error');
-      }
+      await api.patch(`/projects/${id}/palette`, { oldHex, newName: editColorName, newHex });
+      setEditStatus('success');
+      await syncPalette();
     } catch (e) {
       setEditStatus('error');
     }

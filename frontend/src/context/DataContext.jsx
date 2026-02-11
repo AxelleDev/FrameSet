@@ -1,5 +1,6 @@
 // Contexte global pour l'etat et les appels API.
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import api, { setToken as setApiToken, clearToken as clearApiToken } from '../services/api';
 
 const DataContext = createContext(null);
 
@@ -16,6 +17,7 @@ export const DataProvider = ({ children }) => {
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
+      if (parsedUser?.token) setApiToken(parsedUser.token);
       fetchProjects(parsedUser.id);
     } else {
       setLoading(false);
@@ -26,11 +28,7 @@ export const DataProvider = ({ children }) => {
   const deleteBrushNorm = async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
-      const url = `${API_URL}/projects/${projectId}/brush-norms/${normIdNum}`;
-      await fetch(url, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      await api.delete(`/projects/${projectId}/brush-norms/${normIdNum}`);
       setProjects(prev =>
         prev.map(p => String(p.id) === String(projectId) ? {
           ...p,
@@ -45,11 +43,7 @@ export const DataProvider = ({ children }) => {
   const deleteTypographyNorm = async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
-      const url = `${API_URL}/projects/${projectId}/typography-norms/${normIdNum}`;
-      await fetch(url, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      await api.delete(`/projects/${projectId}/typography-norms/${normIdNum}`);
       setProjects(prev =>
         prev.map(p => String(p.id) === String(projectId) ? {
           ...p,
@@ -62,10 +56,8 @@ export const DataProvider = ({ children }) => {
 
   const fetchProjects = async (userId) => {
     try {
-      const res = await fetch(`${API_URL}/projects?userId=${userId}`);
-      if (res.ok) {
-        setProjects(await res.json());
-      }
+      const data = await api.get(`/projects?userId=${userId}`);
+      setProjects(data || []);
     } catch (error) {
       console.error('Failed to fetch projects', error);
     } finally {
@@ -76,76 +68,52 @@ export const DataProvider = ({ children }) => {
   // Update brush norm
   const updateBrushNorm = async (projectId, normId, updates) => {
     try {
-      const res = await fetch(`${API_URL}/projects/${projectId}/brush-norms/${normId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
-      });
-      if (res.ok) {
-        setProjects(prev =>
-          prev.map(p => String(p.id) === String(projectId) ? {
-            ...p,
-            brushNorms: p.brushNorms.map(n => Number(n.id) === Number(normId) ? { ...n, ...updates } : n)
-          } : p)
-        );
-      }
+      await api.put(`/projects/${projectId}/brush-norms/${normId}`, updates);
+      setProjects(prev =>
+        prev.map(p => String(p.id) === String(projectId) ? {
+          ...p,
+          brushNorms: p.brushNorms.map(n => Number(n.id) === Number(normId) ? { ...n, ...updates } : n)
+        } : p)
+      );
     } catch (e) { console.error(e); }
   };
 
   // Update typography norm
   const updateTypographyNorm = async (projectId, normId, updates) => {
     try {
-      const res = await fetch(`${API_URL}/projects/${projectId}/typography-norms/${normId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
-      });
-      if (res.ok) {
-        setProjects(prev =>
-          prev.map(p => String(p.id) === String(projectId) ? {
-            ...p,
-            typographyNorms: p.typographyNorms.map(n => Number(n.id) === Number(normId) ? { ...n, ...updates } : n)
-          } : p)
-        );
-      }
+      await api.put(`/projects/${projectId}/typography-norms/${normId}`, updates);
+      setProjects(prev =>
+        prev.map(p => String(p.id) === String(projectId) ? {
+          ...p,
+          typographyNorms: p.typographyNorms.map(n => Number(n.id) === Number(normId) ? { ...n, ...updates } : n)
+        } : p)
+      );
     } catch (e) { console.error(e); }
   };
 
   const login = async (email, password) => {
-    const res = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    
-    if (res.ok) {
-      const userData = await res.json();
+    try {
+      const userData = await api.post('/auth/login', { email, password });
+      if (userData?.token) setApiToken(userData.token);
       setUser(userData);
       localStorage.setItem('frameset_user', JSON.stringify(userData));
       fetchProjects(userData.id);
       return { success: true };
-    } else {
-      const error = await res.json();
-      return { success: false, message: error.error };
+    } catch (err) {
+      return { success: false, message: err.data?.error || err.message };
     }
   };
 
   const register = async (userData) => {
-    const res = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
-    });
-
-    if (res.ok) {
-      const newUser = await res.json();
+    try {
+      const newUser = await api.post('/auth/register', userData);
+      if (newUser?.token) setApiToken(newUser.token);
       setUser(newUser);
       localStorage.setItem('frameset_user', JSON.stringify(newUser));
       setProjects([]); // New user has no projects
       return { success: true };
-    } else {
-      const error = await res.json();
-      return { success: false, message: error.error };
+    } catch (err) {
+      return { success: false, message: err.data?.error || err.message };
     }
   };
 
@@ -153,6 +121,7 @@ export const DataProvider = ({ children }) => {
     setUser(null);
     setProjects([]);
     localStorage.removeItem('frameset_user');
+    clearApiToken();
   };
 
   const applyUserUpdate = (userData) => {
@@ -168,15 +137,8 @@ export const DataProvider = ({ children }) => {
   const addProject = async (name) => {
     if (!user) return;
     try {
-      const res = await fetch(`${API_URL}/projects`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, name })
-      });
-      if (res.ok) {
-        const newProject = await res.json();
-        setProjects(prev => [newProject, ...prev]);
-      }
+      const newProject = await api.post('/projects', { userId: user.id, name });
+      setProjects(prev => [newProject, ...prev]);
     } catch (e) {
       console.error(e);
     }
@@ -184,7 +146,7 @@ export const DataProvider = ({ children }) => {
 
   const deleteProject = async (id) => {
     try {
-      await fetch(`${API_URL}/projects/${id}`, { method: 'DELETE' });
+      await api.delete(`/projects/${id}`);
       setProjects(prev => prev.filter(p => String(p.id) !== String(id)));
       if (String(activeProjectId) === String(id)) setActiveProjectId(null);
     } catch (e) {
@@ -194,11 +156,7 @@ export const DataProvider = ({ children }) => {
 
   const updateProjectPalette = async (projectId, palette) => {
     try {
-      await fetch(`${API_URL}/projects/${projectId}/palette`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(palette)
-      });
+      await api.post(`/projects/${projectId}/palette`, palette);
       setProjects(prev => 
         prev.map(p => String(p.id) === String(projectId) ? { ...p, palette: palette } : p)
       );
@@ -207,26 +165,16 @@ export const DataProvider = ({ children }) => {
 
   const updateProjectName = async (projectId, name) => {
     try {
-      const res = await fetch(`${API_URL}/projects/${projectId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      if (res.ok) {
-        setProjects(prev =>
-          prev.map(p => String(p.id) === String(projectId) ? { ...p, name, lastEdited: "À l'instant" } : p)
-        );
-      }
+      await api.put(`/projects/${projectId}`, { name });
+      setProjects(prev =>
+        prev.map(p => String(p.id) === String(projectId) ? { ...p, name, lastEdited: "À l'instant" } : p)
+      );
     } catch (e) { console.error(e); }
   };
 
   const deleteProjectPaletteColor = async (projectId, colorHex) => {
     try {
-      await fetch(`${API_URL}/projects/${projectId}/palette`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hex: colorHex })
-      });
+      await api.delete(`/projects/${projectId}/palette`, { hex: colorHex });
       setProjects(prev => 
         prev.map(p => String(p.id) === String(projectId) ? { 
           ...p, 
@@ -239,94 +187,64 @@ export const DataProvider = ({ children }) => {
   // Add brush norm
   const addBrushNorm = async (projectId, norm) => {
     try {
-      const res = await fetch(`${API_URL}/projects/${projectId}/brush-norms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(norm)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const normWithId = { ...norm, id: data.id };
-        setProjects(prev =>
-          prev.map(p => String(p.id) === String(projectId) ? {
-            ...p,
-            brushNorms: [...(p.brushNorms || []), normWithId],
-            normsCount: (p.normsCount || 0) + 1
-          } : p)
-        );
-        return normWithId;
-      }
+      const data = await api.post(`/projects/${projectId}/brush-norms`, norm);
+      const normWithId = { ...norm, id: data.id };
+      setProjects(prev =>
+        prev.map(p => String(p.id) === String(projectId) ? {
+          ...p,
+          brushNorms: [...(p.brushNorms || []), normWithId],
+          normsCount: (p.normsCount || 0) + 1
+        } : p)
+      );
+      return normWithId;
     } catch (e) { console.error(e); }
   };
 
   // Add typography norm
   const addTypographyNorm = async (projectId, norm) => {
     try {
-      const res = await fetch(`${API_URL}/projects/${projectId}/typography-norms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(norm)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const normWithId = { ...norm, id: data.id };
-        setProjects(prev =>
-          prev.map(p => String(p.id) === String(projectId) ? {
-            ...p,
-            typographyNorms: [...(p.typographyNorms || []), normWithId],
-            normsCount: (p.normsCount || 0) + 1
-          } : p)
-        );
-        return normWithId;
-      }
+      const data = await api.post(`/projects/${projectId}/typography-norms`, norm);
+      const normWithId = { ...norm, id: data.id };
+      setProjects(prev =>
+        prev.map(p => String(p.id) === String(projectId) ? {
+          ...p,
+          typographyNorms: [...(p.typographyNorms || []), normWithId],
+          normsCount: (p.normsCount || 0) + 1
+        } : p)
+      );
+      return normWithId;
     } catch (e) { console.error(e); }
   };
 
   const updateUserProfile = async (updates) => {
     if (!user) return;
     try {
-      const res = await fetch(`${API_URL}/user`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: user.id, ...updates })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const updatedUser = {
-          ...user,
-          name: data.name ?? user.name,
-          email: data.email ?? user.email,
-          pendingEmail: data.pendingEmail ?? user.pendingEmail
-        };
-        setUser(updatedUser);
-        localStorage.setItem('frameset_user', JSON.stringify(updatedUser));
-      }
+      const data = await api.put('/user', { id: user.id, ...updates });
+      const updatedUser = {
+        ...user,
+        name: data.name ?? user.name,
+        email: data.email ?? user.email,
+        pendingEmail: data.pendingEmail ?? user.pendingEmail
+      };
+      setUser(updatedUser);
+      localStorage.setItem('frameset_user', JSON.stringify(updatedUser));
     } catch (e) { console.error(e); }
   };
 
   const changePassword = async ({ currentPassword, newPassword }) => {
     if (!user) return { success: false, message: 'Utilisateur non connecté.' };
     try {
-      const res = await fetch(`${API_URL}/user/password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: user.id, currentPassword, newPassword })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const updatedUser = {
-          ...user,
-          passwordUpdatedAt: data.passwordUpdatedAt || new Date().toISOString()
-        };
-        setUser(updatedUser);
-        localStorage.setItem('frameset_user', JSON.stringify(updatedUser));
-        return { success: true };
-      }
-      const error = await res.json();
-      return { success: false, message: error.error };
+      const data = await api.post('/user/password', { id: user.id, currentPassword, newPassword });
+      const updatedUser = {
+        ...user,
+        passwordUpdatedAt: data.passwordUpdatedAt || new Date().toISOString()
+      };
+      setUser(updatedUser);
+      localStorage.setItem('frameset_user', JSON.stringify(updatedUser));
+      return { success: true };
     } catch (e) {
       console.error(e);
-      return { success: false, message: 'Erreur réseau.' };
+      return { success: false, message: e.data?.error || e.message || 'Erreur réseau.' };
     }
   };
 
