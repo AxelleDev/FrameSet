@@ -109,7 +109,7 @@ export default function ProjectExport() {
     <>
       <PageHeader
         title="Exporter les Standards"
-        subtitle="Générez une documentation ou des données brutes pour votre pipeline."
+        subtitle="Exportez l’essentiel de votre direction artistique."
       />
 
       {activeProject ? (
@@ -120,7 +120,7 @@ export default function ProjectExport() {
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                 </div>
               <h3 className="text-lg font-medium text-primary mb-2">Guide de Style PDF</h3>
-              <p className="text-sm text-primary mb-6">Un document PDF formaté professionnellement contenant toutes les normes actives et les palettes. Idéal pour l'impression.</p>
+              <p className="text-sm text-primary mb-6">Un document PDF structuré regroupant l’ensemble des normes actives et des palettes du projet. Idéal pour l’impression ou le partage.</p>
                 <Button onClick={downloadPdf} variant="primary">
                   Télécharger le PDF
                 </Button>
@@ -131,7 +131,7 @@ export default function ProjectExport() {
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
                 </div>
               <h3 className="text-lg font-medium text-primary mb-2">Pipeline JSON</h3>
-              <p className="text-sm text-primary mb-6">Structure de données brute contenant tous les ID et valeurs. Utilisez ceci pour intégrer les normes directement dans vos logiciels créatifs.</p>
+              <p className="text-sm text-primary mb-6">Structure de données brute regroupant l’ensemble du projet : normes, palettes, identifiants et paramètres. Prête à être intégrée dans vos outils.</p>
                 <Button onClick={downloadJson} variant="primary">
                   Télécharger le JSON
                 </Button>

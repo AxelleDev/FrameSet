@@ -15,8 +15,6 @@ const listProjects = async (req, res) => {
       return {
         id: p.id,
         name: p.name,
-        client: p.client,
-        progress: p.progress,
         lastEdited: p.lastEditedFormatted || 'À l\'instant',
         brushNorms: brushNorms.map(n => ({
           id: n.id,
@@ -59,7 +57,6 @@ const createProject = async (req, res) => {
     const newProject = {
       id: newId,
       name,
-      progress: 0,
       lastEdited: 'À l\'instant',
       normsCount: 0,
       norms: [],
