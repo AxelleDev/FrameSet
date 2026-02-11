@@ -225,7 +225,7 @@ export default function Profile() {
         cancelLabel="Annuler"
         onConfirm={confirmLogout}
         onCancel={cancelLogout}
-        confirmClassName="bg-blue text-primary hover:bg-blue/10"
+        confirmClassName="bg-blue text-white hover:bg-blue/10"
       />
 
       <AppModal
@@ -277,12 +277,12 @@ export default function Profile() {
           )}
 
           <div className="flex items-center justify-end gap-3 pt-2">
-            <button type="button" onClick={closePasswordModal} className="px-5 py-2.5 bg-white border border-blue text-primary rounded-xl text-sm font-medium hover:bg-blue/10 transition">
+            <Button type="button" onClick={closePasswordModal} variant="ghost" className="px-5 py-2.5 text-sm">
               Annuler
-            </button>
-            <button type="submit" disabled={isPasswordSaving} className="px-5 py-2.5 bg-blue text-primary rounded-xl text-sm font-medium hover:bg-pink/10 transition disabled:opacity-60">
+            </Button>
+            <Button type="submit" disabled={isPasswordSaving} variant="primary" className="px-5 py-2.5 text-sm">
               {isPasswordSaving ? 'Enregistrement...' : 'Enregistrer'}
-            </button>
+            </Button>
           </div>
         </form>
       </AppModal>
@@ -292,7 +292,7 @@ export default function Profile() {
         title="Supprimer mon compte"
         message="Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible."
         confirmLabel="Supprimer"
-        confirmClassName="bg-pink text-primary hover:bg-pink/10"
+        confirmClassName="bg-pink text-white hover:bg-pink/10"
         onCancel={() => setIsDeleteAccountOpen(false)}
         onConfirm={() => {
           setIsDeleteAccountOpen(false);

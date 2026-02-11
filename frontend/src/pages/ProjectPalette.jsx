@@ -288,7 +288,7 @@ export default function ProjectPalette() {
         title="Supprimer la couleur"
         message="Êtes-vous sûr de vouloir supprimer cette couleur ?"
         confirmLabel="Supprimer"
-        confirmClassName="bg-pink text-primary hover:bg-pink/10"
+        confirmClassName="bg-pink text-white hover:bg-pink/10"
         onCancel={() => setConfirmDeleteColor(null)}
         onConfirm={async () => {
           if (confirmDeleteColor) {

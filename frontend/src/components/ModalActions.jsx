@@ -12,14 +12,16 @@ export default function ModalActions({
   secondaryClassName = '',
   primaryType = 'button',
   secondaryType = 'button',
+  primaryVariant = 'primary',
+  secondaryVariant = 'ghost',
   className = ''
 }) {
   return (
     <div className={`flex gap-3 mt-8 justify-end ${className}`.trim()}>
-      <Button type={secondaryType} onClick={onSecondary} variant="ghost" className={secondaryClassName}>
+      <Button type={secondaryType} onClick={onSecondary} variant={secondaryVariant} className={secondaryClassName}>
         {secondaryLabel}
       </Button>
-      <Button type={primaryType} onClick={onPrimary} disabled={primaryDisabled} variant="primary" className={primaryClassName}>
+      <Button type={primaryType} onClick={onPrimary} disabled={primaryDisabled} variant={primaryVariant} className={primaryClassName}>
         {primaryLabel}
       </Button>
     </div>

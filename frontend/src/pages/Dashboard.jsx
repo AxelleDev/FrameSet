@@ -194,7 +194,7 @@ export default function Dashboard() {
             : 'Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.'
         }
         confirmLabel="Supprimer"
-        confirmClassName="bg-pink text-primary hover:bg-pink/10"
+        confirmClassName="bg-pink text-white hover:bg-pink/10"
         onCancel={() => setConfirmDeleteProject(null)}
         onConfirm={() => {
           if (confirmDeleteProject?.id) {

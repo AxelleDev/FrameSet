@@ -347,7 +347,7 @@ export default function ProjectNorms() {
         title="Supprimer la norme"
         message="Êtes-vous sûr de vouloir supprimer cette norme ? Cette action est irréversible."
         confirmLabel="Supprimer"
-        confirmClassName="bg-pink text-primary hover:bg-pink/10"
+        confirmClassName="bg-pink text-white hover:bg-pink/10"
         onCancel={() => setConfirmDeleteNorm(null)}
         onConfirm={async () => {
           if (!confirmDeleteNorm) return;

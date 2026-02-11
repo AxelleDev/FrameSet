@@ -1,6 +1,7 @@
 // Dialogue de confirmation standard.
 import React from 'react';
 import AppModal from './AppModal';
+import ModalActions from './ModalActions';
 
 export default function ConfirmDialog({
   isOpen,
@@ -10,7 +11,7 @@ export default function ConfirmDialog({
   cancelLabel = 'Annuler',
   onConfirm,
   onCancel,
-  confirmClassName = 'bg-pink text-primary hover:bg-pink/10'
+  confirmClassName = 'bg-pink text-white hover:bg-pink/10'
 }) {
   return (
     <AppModal
@@ -23,21 +24,16 @@ export default function ConfirmDialog({
       <h3 className="text-xl font-light text-primary mb-3 relative z-10">{title}</h3>
       <p className="text-sm text-primary mb-6 relative z-10">{message}</p>
 
-      <div className="flex gap-3 mt-4 relative z-10">
-        <button
-          onClick={onCancel}
-          className="flex-1 py-3 text-primary font-medium hover:bg-blue/10 rounded-xl transition-colors"
-          type="button"
-        >
-          {cancelLabel}
-        </button>
-        <button
-          onClick={onConfirm}
-          className={`flex-1 py-3 font-medium rounded-xl hover:shadow-lg transition-all ${confirmClassName}`}
-          type="button"
-        >
-          {confirmLabel}
-        </button>
+      <div className="relative z-10">
+        <ModalActions
+          secondaryLabel={cancelLabel}
+          primaryLabel={confirmLabel}
+          onSecondary={onCancel}
+          onPrimary={onConfirm}
+          primaryDisabled={false}
+          primaryClassName={confirmClassName}
+          primaryVariant="secondary"
+        />
       </div>
     </AppModal>
   );
