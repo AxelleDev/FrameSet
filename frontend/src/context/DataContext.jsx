@@ -24,6 +24,14 @@ export const DataProvider = ({ children }) => {
     }
   }, []);
 
+  const setAuthenticatedUser = (userData) => {
+    if (!userData) return;
+    setUser(userData);
+    if (userData?.token) setApiToken(userData.token);
+    localStorage.setItem('frameset_user', JSON.stringify(userData));
+    if (userData.id) fetchProjects(userData.id);
+  };
+
   // Delete brush norm
   const deleteBrushNorm = async (projectId, normId) => {
     try {
@@ -269,6 +277,7 @@ export const DataProvider = ({ children }) => {
       updateUserProfile,
       changePassword,
       applyUserUpdate,
+      setAuthenticatedUser,
       loading,
       login,
       register,

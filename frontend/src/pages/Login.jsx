@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useData } from '../context/DataContext';
+import useAuthApi from '../hooks/useAuth';
 import AuthLayout from '../components/AuthLayout';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -8,7 +8,7 @@ import useUserCount from '../hooks/useUserCount';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useData();
+  const { login } = useAuthApi();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -27,7 +27,6 @@ export default function Login() {
     }
 
     const result = await login(formData.email, formData.password);
-    
     if (result.success) {
       navigate('/app/dashboard');
     } else {

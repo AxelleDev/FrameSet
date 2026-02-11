@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useData } from '../context/DataContext';
+import useAuthApi from '../hooks/useAuth';
 import AuthLayout from '../components/AuthLayout';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -8,7 +8,7 @@ import useUserCount from '../hooks/useUserCount';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register } = useData();
+  const { register } = useAuthApi();
   
   const [formData, setFormData] = useState({
     name: '',

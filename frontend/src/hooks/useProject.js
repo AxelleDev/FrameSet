@@ -1,23 +1,21 @@
-import api from '../services/api';
 import { useCallback } from 'react';
+import { useData } from '../context/DataContext';
 
-// Hook regroupant les appels API liés aux projets et normes.
-// Renvoie des fonctions memoïses pour être utilisées dans les composants.
 export const useProjectApi = () => {
-  const fetchProjects = useCallback((userId) => api.get(`/projects?userId=${userId}`), []);
-  const addProject = useCallback((payload) => api.post('/projects', payload), []);
-  const deleteProject = useCallback((id) => api.delete(`/projects/${id}`), []);
-  const updateProject = useCallback((id, payload) => api.put(`/projects/${id}`, payload), []);
-  const updatePalette = useCallback((projectId, palette) => api.post(`/projects/${projectId}/palette`, palette), []);
-  const deletePaletteColor = useCallback((projectId, body) => api.delete(`/projects/${projectId}/palette`, body), []);
+  const data = useData();
+  const fetchProjects = useCallback((userId) => data && data.fetchProjects ? data.fetchProjects(userId) : null, [data]);
+  const addProject = useCallback((...args) => data.addProject(...args), [data]);
+  const deleteProject = useCallback((...args) => data.deleteProject(...args), [data]);
+  const updateProject = useCallback((...args) => data.updateProject ? data.updateProject(...args) : data.updateProjectName(...args), [data]);
+  const updatePalette = useCallback((...args) => data.updateProjectPalette(...args), [data]);
+  const deletePaletteColor = useCallback((...args) => data.deleteProjectPaletteColor(...args), [data]);
 
-  // norms
-  const addBrushNorm = useCallback((projectId, norm) => api.post(`/projects/${projectId}/brush-norms`, norm), []);
-  const addTypographyNorm = useCallback((projectId, norm) => api.post(`/projects/${projectId}/typography-norms`, norm), []);
-  const deleteBrushNorm = useCallback((projectId, id) => api.delete(`/projects/${projectId}/brush-norms/${id}`), []);
-  const deleteTypographyNorm = useCallback((projectId, id) => api.delete(`/projects/${projectId}/typography-norms/${id}`), []);
-  const updateBrushNorm = useCallback((projectId, id, body) => api.put(`/projects/${projectId}/brush-norms/${id}`, body), []);
-  const updateTypographyNorm = useCallback((projectId, id, body) => api.put(`/projects/${projectId}/typography-norms/${id}`, body), []);
+  const addBrushNorm = useCallback((...args) => data.addBrushNorm(...args), [data]);
+  const addTypographyNorm = useCallback((...args) => data.addTypographyNorm(...args), [data]);
+  const deleteBrushNorm = useCallback((...args) => data.deleteBrushNorm(...args), [data]);
+  const deleteTypographyNorm = useCallback((...args) => data.deleteTypographyNorm(...args), [data]);
+  const updateBrushNorm = useCallback((...args) => data.updateBrushNorm(...args), [data]);
+  const updateTypographyNorm = useCallback((...args) => data.updateTypographyNorm(...args), [data]);
 
   return {
     fetchProjects,

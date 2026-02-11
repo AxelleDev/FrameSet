@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
+import useProjectApi from '../hooks/useProject';
 import { useNavigate } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
@@ -11,7 +12,8 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 
 export default function Dashboard() {
-  const { user, projects, addProject, deleteProject, setActiveProjectId, updateProjectName } = useData();
+  const { user, projects, setActiveProjectId } = useData();
+  const { addProject, deleteProject, updateProject } = useProjectApi();
   const navigate = useNavigate();
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -43,7 +45,7 @@ export default function Dashboard() {
 
   const handleEditProject = async () => {
     if (!editProjectId || !editProjectName || !editProjectName.trim()) return;
-    await updateProjectName(editProjectId, editProjectName.trim());
+    await updateProject(editProjectId, { name: editProjectName.trim() });
     setIsEditingProject(false);
     setEditProjectId(null);
     setEditProjectName('');
