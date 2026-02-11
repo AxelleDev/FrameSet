@@ -1,5 +1,6 @@
 // Actions standard pour modales.
 import React from 'react';
+import Button from './Button';
 
 export default function ModalActions({
   primaryLabel,
@@ -7,29 +8,20 @@ export default function ModalActions({
   onPrimary,
   onSecondary,
   primaryDisabled = false,
-  primaryClassName = 'bg-blue text-primary hover:bg-pink/10 hover:shadow-lg',
-  secondaryClassName = 'text-primary hover:bg-blue/10',
+  primaryClassName = '',
+  secondaryClassName = '',
   primaryType = 'button',
   secondaryType = 'button',
   className = ''
 }) {
   return (
-    <div className={`flex gap-3 mt-8 ${className}`.trim()}>
-      <button
-        type={secondaryType}
-        onClick={onSecondary}
-        className={`flex-1 py-3 font-medium rounded-xl transition-colors ${secondaryClassName}`.trim()}
-      >
+    <div className={`flex gap-3 mt-8 justify-end ${className}`.trim()}>
+      <Button type={secondaryType} onClick={onSecondary} variant="ghost" className={secondaryClassName}>
         {secondaryLabel}
-      </button>
-      <button
-        type={primaryType}
-        onClick={onPrimary}
-        disabled={primaryDisabled}
-        className={`flex-1 py-3 font-medium rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed ${primaryClassName}`.trim()}
-      >
+      </Button>
+      <Button type={primaryType} onClick={onPrimary} disabled={primaryDisabled} variant="primary" className={primaryClassName}>
         {primaryLabel}
-      </button>
+      </Button>
     </div>
   );
 }

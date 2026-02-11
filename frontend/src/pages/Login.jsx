@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import AuthLayout from '../components/AuthLayout';
+import Button from '../components/Button';
 import useUserCount from '../hooks/useUserCount';
 
 export default function Login() {
@@ -89,9 +90,9 @@ export default function Login() {
             <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" placeholder="••••••••" />
           </div>
           
-          <button onClick={handleLogin} className="w-full py-4 mt-2 bg-blue text-primary font-medium rounded-xl hover:bg-pink/10 hover:shadow-lg transition-all">
+          <Button onClick={handleLogin} fullWidth className="mt-2">
             Continuer
-          </button>
+          </Button>
         </div>
 
         <div className="mt-8 text-center flex flex-col gap-2">

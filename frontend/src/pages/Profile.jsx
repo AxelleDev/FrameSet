@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Card from '../components/Card';
+import Button from '../components/Button';
 
 export default function Profile() {
   const { user, updateUserProfile, logout, changePassword } = useData();
@@ -149,20 +150,19 @@ export default function Profile() {
             <h1 className="text-3xl font-light text-primary mb-4">{user.name}</h1>
 
            <div className="flex flex-wrap justify-center md:justify-start gap-4">
-              <button onClick={toggleEdit} 
-                      className={`px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-lg min-w-[140px] transform active:scale-95 ${isEditing ? 'bg-pink text-primary hover:bg-blue/10' : 'bg-blue text-primary hover:bg-pink/10'}`}>
-                 {isEditing ? 'Enregistrer' : 'Éditer le profil'}
-              </button>
-              
-              <button onClick={handleLogout} className="px-6 py-2.5 bg-white border border-blue text-primary rounded-xl text-sm font-medium hover:bg-blue/10 hover:text-blue transition shadow-sm min-w-[140px] transform active:scale-95">
-                  Déconnexion
-              </button>
+              <Button onClick={toggleEdit} variant="primary" className="min-w-[140px]">
+                {isEditing ? 'Enregistrer' : 'Éditer le profil'}
+              </Button>
+
+              <Button onClick={handleLogout} variant="ghost" className="min-w-[140px]">
+                Déconnexion
+              </Button>
            </div>
         </div>
       </Card>
 
       <div className="space-y-8">
-        <section className="glass-panel p-8 rounded-2xl">
+        <Card className="p-8 rounded-2xl">
           <h3 className="text-lg font-medium text-primary mb-6 flex items-center">
             <svg className="w-5 h-5 mr-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             Informations Personnelles
@@ -191,9 +191,9 @@ export default function Profile() {
                 </div>
               </div>
           </div>
-        </section>
+        </Card>
 
-        <section className="glass-panel p-8 rounded-2xl">
+        <Card className="p-8 rounded-2xl">
           <h3 className="text-lg font-medium text-primary mb-6 flex items-center">
             <svg className="w-5 h-5 mr-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
             Sécurité & Connexion
@@ -203,18 +203,18 @@ export default function Profile() {
                 <p className="text-sm font-medium text-primary">Mot de passe</p>
                 <p className="text-xs text-blue">Dernière modification : {formatRelativeTime(user.passwordUpdatedAt)}</p>
               </div>
-              <button onClick={openPasswordModal} className="text-sm text-blue font-medium hover:underline">Modifier</button>
+              <Button onClick={openPasswordModal} variant="ghost" className="px-0 py-0 text-sm font-medium">Modifier</Button>
           </div>
-        </section>
+        </Card>
 
-          <section className="glass-panel p-8 rounded-2xl border-l-4 border-l-pink">
+          <Card className="p-8 rounded-2xl border-l-4 border-l-pink">
             <h3 className="text-lg font-medium text-primary mb-2">Zone de Danger</h3>
             <p className="text-sm text-primary mb-6">La suppression de votre compte est irréversible. Toutes vos données seront perdues.</p>
            
-            <button onClick={deleteAccount} className="px-5 py-2.5 bg-white border border-pink text-pink rounded-xl text-sm font-medium hover:bg-pink/10 hover:border-pink transition-colors">
+            <Button onClick={deleteAccount} variant="secondary" className="px-5 py-2.5 text-sm">
               Supprimer mon compte
-            </button>
-        </section>
+            </Button>
+        </Card>
       </div>
 
       <ConfirmDialog
