@@ -45,6 +45,38 @@ export default function ProjectPalette() {
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('');
 
+  const normalizeHexInput = (val) => {
+    if (val == null) return '#';
+    let v = String(val).trim();
+    if (!v.startsWith('#')) v = '#' + v;
+    v = '#' + v.slice(1).replace(/[^0-9a-fA-F]/g, '').toUpperCase();
+    return v;
+  };
+
+  const handleEditHexChange = (e) => {
+    setEditColorHex(normalizeHexInput(e.target.value));
+  };
+
+  const handleNewHexChange = (e) => {
+    setNewColorHex(normalizeHexInput(e.target.value));
+  };
+
+  const handleHexKeyDown = (e) => {
+    const el = e.target;
+    const selStart = el.selectionStart || 0;
+    const selEnd = el.selectionEnd || 0;
+    if ((e.key === 'Backspace' && selStart <= 1 && selEnd <= 1) || (e.key === 'Delete' && selStart === 0)) {
+      e.preventDefault();
+    }
+  };
+
+  const handleHexPaste = (setter) => (e) => {
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData('text') || '';
+    const cleaned = normalizeHexInput(paste);
+    setter(cleaned);
+  };
+
   useEffect(() => {
     if (id) setActiveProjectId(id);
   }, [id, setActiveProjectId]);
@@ -239,8 +271,15 @@ export default function ProjectPalette() {
           <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
                <div className="w-12 h-12 rounded-xl border border-blue shadow-inner flex-shrink-0" style={{ backgroundColor: isValidEditHex() ? editColorHex : '#ffffff' }}></div>
-               <input type="text" value={editColorHex} onChange={e => setEditColorHex(e.target.value)} placeholder="ex: #FF5500" 
-                      className="flex-1 px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary font-mono uppercase" />
+               <input
+                 type="text"
+                 value={editColorHex}
+                 onChange={handleEditHexChange}
+                 onKeyDown={handleHexKeyDown}
+                 onPaste={handleHexPaste(setEditColorHex)}
+                 placeholder="ex: #FF5500"
+                 className="flex-1 px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary font-mono uppercase"
+               />
             </div>
           </FormField>
           {renderEditStatus()}
@@ -268,8 +307,15 @@ export default function ProjectPalette() {
           <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
                <div className="w-12 h-12 rounded-xl border border-blue shadow-inner flex-shrink-0" style={{ backgroundColor: isValidHex() ? newColorHex : '#ffffff' }}></div>
-               <input type="text" value={newColorHex} onChange={e => setNewColorHex(e.target.value)} placeholder="ex: #FF5500" 
-                      className="flex-1 px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary font-mono uppercase" />
+               <input
+                 type="text"
+                 value={newColorHex}
+                 onChange={handleNewHexChange}
+                 onKeyDown={handleHexKeyDown}
+                 onPaste={handleHexPaste(setNewColorHex)}
+                 placeholder="ex: #FF5500"
+                 className="flex-1 px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary font-mono uppercase"
+               />
             </div>
           </FormField>
         </div>
