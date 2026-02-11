@@ -8,6 +8,7 @@ import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
 import Card from '../components/Card';
+import Button from '../components/Button';
 
 export default function Dashboard() {
   const { user, projects, addProject, deleteProject, setActiveProjectId, updateProjectName } = useData();
@@ -68,9 +69,9 @@ export default function Dashboard() {
               Vous avez actuellement <strong className="text-blue">{projects.length} projet{projects.length === 1 ? '' : 's'} actif{projects.length === 1 ? '' : 's'}</strong>.
             </p>
             <div className="mt-8 flex space-x-4">
-               <button onClick={() => setIsCreatingProject(true)} className="px-6 py-3 bg-blue/10 backdrop-blur-md border border-primary text-primary rounded-xl hover:bg-white transition-all font-medium shadow-sm hover:shadow-md hover:-translate-y-0.5 transform duration-200 cursor-pointer">
+               <Button onClick={() => setIsCreatingProject(true)} variant="primary" className="px-6 py-3">
                  + Créer un projet
-               </button>
+               </Button>
             </div>
           </div>
           
@@ -80,7 +81,7 @@ export default function Dashboard() {
                 <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">Normes</div>
              </div>
              <div className="p-4 rounded-2xl w-32 text-center" style={{ backgroundColor: 'rgba(137, 148, 223, 0.10)' }}>
-               <div className="text-2xl font-bold text-pink">{projects.length}</div>
+               <div className="text-2xl font-bold text-primary">{projects.length}</div>
                <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{projects.length === 1 ? 'Projet' : 'Projets'}</div>
              </div>
           </div>
