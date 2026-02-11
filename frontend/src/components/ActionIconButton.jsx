@@ -21,15 +21,26 @@ export default function ActionIconButton({
 }) {
   const intentClass = INTENT_CLASSES[intent] || INTENT_CLASSES.edit;
   const variantClass = VARIANT_CLASSES[variant] || VARIANT_CLASSES.dark;
+  let icon = children;
+  if (React.isValidElement(children)) {
+    try {
+      const type = children.type;
+      if (typeof type === 'string' && type.toLowerCase() === 'svg') {
+        icon = React.cloneElement(children, { 'aria-hidden': true, focusable: false });
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
 
   return (
     <button
       onClick={onClick}
       title={title}
       aria-label={title}
-      className={`w-8 h-8 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm ${className}`.trim()}
+      className={`w-8 h-8 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-pink focus-visible:ring-offset-2 ${className}`.trim()}
     >
-      {children}
+      {icon}
     </button>
   );
 }
