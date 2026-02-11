@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import AuthLayout from '../components/AuthLayout';
 import Button from '../components/Button';
+import Card from '../components/Card';
 import useUserCount from '../hooks/useUserCount';
 
 export default function Register() {
@@ -65,7 +66,7 @@ export default function Register() {
         </>
       }
     >
-      <div className="glass-panel w-full max-w-md p-10 rounded-3xl shadow-2xl animate-fade-in" style={{ animationDelay: '150ms' }}>
+      <Card variant="card" className="w-full max-w-md p-10 rounded-3xl shadow-2xl animate-fade-in" style={{ animationDelay: '150ms' }}>
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Inscription</h2>
           <p className="text-primary text-sm mt-2">Votre référence graphique commence ici.</p>
@@ -98,7 +99,7 @@ export default function Register() {
           <span className="text-sm text-primary">Vous avez déjà un compte ? </span>
           <Link to="/login" className="text-sm font-medium text-blue hover:text-pink transition-colors">Se connecter</Link>
         </div>
-      </div>
+      </Card>
     </AuthLayout>
   );
 }
