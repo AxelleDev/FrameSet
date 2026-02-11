@@ -229,7 +229,7 @@ export default function ProjectPalette() {
       <FormModal
         isOpen={editIdx !== null}
         onClose={() => setEditIdx(null)}
-        title="Modifier Couleur"
+        title="Modifier la couleur"
       >
         <div className="space-y-4">
           <FormField label="Nom de la couleur">

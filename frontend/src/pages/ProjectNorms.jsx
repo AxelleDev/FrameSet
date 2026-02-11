@@ -243,7 +243,7 @@ export default function ProjectNorms() {
           <FormModal
             isOpen={!!editingNorm}
             onClose={() => setEditingNorm(null)}
-            title="Modifier la Norme"
+            title="Modifier la norme"
           >
             <div className="space-y-4">
               {editingType === 'brush' ? (

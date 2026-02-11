@@ -168,7 +168,7 @@ export default function Dashboard() {
       <FormModal
         isOpen={isEditingProject}
         onClose={() => { setIsEditingProject(false); setEditProjectId(null); }}
-        title="Modifier Projet"
+        title="Modifier le projet"
       >
         <div className="space-y-4">
           <FormField label="Nom du projet">
