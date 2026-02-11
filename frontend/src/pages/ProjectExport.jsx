@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import { useParams } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
+import Card from '../components/Card';
 
 export default function ProjectExport() {
   const { id } = useParams();
@@ -112,7 +113,7 @@ export default function ProjectExport() {
       {activeProject ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
-            <div className="bg-white p-8 rounded-xl border border-blue shadow-sm flex flex-col items-center text-center hover:border-pink transition">
+            <Card className="p-8 rounded-xl flex flex-col items-center text-center">
               <div className="h-16 w-16 bg-[rgba(255,146,146,0.15)] text-pink rounded-full flex items-center justify-center mb-6">
                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
               </div>
@@ -121,9 +122,9 @@ export default function ProjectExport() {
               <button onClick={downloadPdf} className="w-full py-3 border border-pink text-pink font-medium rounded-lg hover:bg-pink/10 transition">
                  Télécharger le PDF
               </button>
-            </div>
+            </Card>
 
-            <div className="bg-white p-8 rounded-xl border border-blue shadow-sm flex flex-col items-center text-center hover:border-pink transition">
+            <Card className="p-8 rounded-xl flex flex-col items-center text-center">
               <div className="h-16 w-16 bg-[rgba(137,148,223,0.15)] text-blue rounded-full flex items-center justify-center mb-6">
                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
               </div>
@@ -132,7 +133,7 @@ export default function ProjectExport() {
               <button onClick={downloadJson} className="w-full py-3 border border-blue text-blue font-medium rounded-lg hover:bg-blue/10 transition">
                  Télécharger le JSON
               </button>
-            </div>
+            </Card>
           </div>
 
           <div className="mt-12 animate-fade-in" style={{ animationDelay: '100ms' }}>
