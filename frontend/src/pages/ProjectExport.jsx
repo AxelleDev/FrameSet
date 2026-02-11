@@ -114,9 +114,9 @@ export default function ProjectExport() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
             <Card className="p-8 rounded-xl flex flex-col items-start text-left">
-              <div className="h-16 w-16 bg-[rgba(255,146,146,0.15)] text-pink rounded-full flex items-center justify-center mb-6">
-                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-              </div>
+                <div className="h-12 w-12 bg-[rgba(255,146,146,0.15)] text-pink rounded-full flex items-center justify-center mb-6">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                </div>
               <h3 className="text-lg font-medium text-primary mb-2">Guide de Style PDF</h3>
               <p className="text-sm text-primary mb-6">Un document PDF formaté professionnellement contenant toutes les normes actives et les palettes. Idéal pour l'impression.</p>
               <button onClick={downloadPdf} className="w-full py-3 border border-pink text-pink font-medium rounded-lg hover:bg-pink/10 transition">
@@ -125,9 +125,9 @@ export default function ProjectExport() {
             </Card>
 
             <Card className="p-8 rounded-xl flex flex-col items-start text-left">
-              <div className="h-16 w-16 bg-[rgba(137,148,223,0.15)] text-blue rounded-full flex items-center justify-center mb-6">
-                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
-              </div>
+                <div className="h-12 w-12 bg-[rgba(137,148,223,0.15)] text-blue rounded-full flex items-center justify-center mb-6">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                </div>
               <h3 className="text-lg font-medium text-primary mb-2">Pipeline JSON</h3>
               <p className="text-sm text-primary mb-6">Structure de données brute contenant tous les ID et valeurs. Utilisez ceci pour intégrer les normes directement dans vos logiciels créatifs.</p>
               <button onClick={downloadJson} className="w-full py-3 border border-blue text-blue font-medium rounded-lg hover:bg-blue/10 transition">
