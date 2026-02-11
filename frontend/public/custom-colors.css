@@ -44,3 +44,7 @@ body {
 .bg-pink {
   background-color: var(--color-pink) !important;
 }
+
+.stat-bg {
+  background-color: rgba(137, 148, 223, 0.10) !important;
+}
