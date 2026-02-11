@@ -143,8 +143,8 @@ export default function ProjectPalette() {
           {(draggedIndex !== null && dragOverIndex !== null ? previewPalette : palette).map((color, idx) => (
             <div
               key={color.hex + '-' + idx}
-              className={`group relative flex flex-col aspect-[4/5] animate-fade-in ${draggedIndex === idx ? 'opacity-60 scale-105 z-40' : ''} ${dragOverIndex === idx && draggedIndex !== null ? 'ring-4 ring-blue-400 ring-offset-2' : ''}`}
-              style={{ animationDelay: `${idx * 50}ms`, cursor: 'grab' }}
+              className={`group relative flex flex-col aspect-[4/5] ${draggedIndex === idx ? 'opacity-60 scale-105 z-40' : ''} ${dragOverIndex === idx && draggedIndex !== null ? 'ring-4 ring-blue-400 ring-offset-2' : ''}`}
+              style={{ cursor: 'grab' }}
               draggable
               onDragStart={e => {
                 setDraggedIndex(idx);
