@@ -7,6 +7,7 @@ import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
+import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
 
 export default function ProjectNorms() {
@@ -147,7 +148,7 @@ export default function ProjectNorms() {
             />
             {/* Brush Norms */}
             {activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
-              <div key={norm.id} className="glass-card p-6 rounded-2xl relative group hover:bg-white/80 transition-all hover:-translate-y-1 duration-300">
+              <Card key={norm.id} clickable className="p-6 relative group">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
                     onClick={() => openEditNorm(norm, 'brush')}
@@ -188,11 +189,11 @@ export default function ProjectNorms() {
                     <span className="text-[10px] text-blue font-bold uppercase tracking-wider">{norm.brushName || 'Brush'}</span>
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
             {/* Typography Norms */}
             {activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
-              <div key={norm.id} className="glass-card p-6 rounded-2xl relative group hover:bg-white/80 transition-all hover:-translate-y-1 duration-300">
+              <Card key={norm.id} clickable className="p-6 relative group">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
                     onClick={() => openEditNorm(norm, 'typography')}
@@ -235,7 +236,7 @@ export default function ProjectNorms() {
                 <div className="h-16 bg-blue/10 rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
                   <span className="text-primary text-xl font-medium tracking-tight" style={{fontFamily: norm.fontFamily, fontStyle: norm.fontStyle ? norm.fontStyle.toLowerCase() : undefined}}>AaBbCc</span>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
 

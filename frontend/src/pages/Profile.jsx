@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import { useNavigate, Link } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Card from '../components/Card';
 
 export default function Profile() {
   const { user, updateUserProfile, logout, changePassword } = useData();
@@ -138,7 +139,7 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">
       
-      <div className="glass-card p-8 rounded-3xl mb-8 flex flex-col md:flex-row items-center gap-8 border border-white">
+      <Card className="p-8 rounded-3xl mb-8 flex flex-col md:flex-row items-center gap-8 border border-white">
         
         <div className="w-32 h-32 rounded-full bg-blue/10 border-4 border-primary shadow-xl flex items-center justify-center text-primary text-4xl font-bold flex-shrink-0">
            {user.avatarInitials}
@@ -158,7 +159,7 @@ export default function Profile() {
               </button>
            </div>
         </div>
-      </div>
+      </Card>
 
       <div className="space-y-8">
         <section className="glass-panel p-8 rounded-2xl">

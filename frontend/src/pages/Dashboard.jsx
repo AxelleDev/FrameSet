@@ -7,6 +7,7 @@ import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
+import Card from '../components/Card';
 
 export default function Dashboard() {
   const { user, projects, addProject, deleteProject, setActiveProjectId, updateProjectName } = useData();
@@ -59,7 +60,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="relative rounded-3xl overflow-hidden bg-white mb-12 animate-fade-in border border-white">
+      <Card className="overflow-hidden mb-12 animate-fade-in border border-white">
         <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-start justify-between">
           <div>
             <h2 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">Bonjour, {user.name.split(' ')[0]}.</h2>
@@ -84,7 +85,7 @@ export default function Dashboard() {
              </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       <div className="flex items-end justify-between mb-6">
         <h3 className="text-xl font-medium text-primary">{projects.length === 1 ? 'Projet Actif' : 'Projets Actifs'}</h3>
@@ -92,7 +93,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (
-          <div key={project.id} onClick={() => openProject(project.id)} className="group glass-card relative rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-lavender-500/10 overflow-hidden">
+          <Card key={project.id} clickable onClick={() => openProject(project.id)} className="group p-6 overflow-hidden">
             <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-br from-lavender-100 to-transparent rounded-bl-full -mr-14 -mt-14 transition-transform group-hover:scale-110"></div>
 
             <div className="absolute top-4 right-4 flex gap-2 z-30">
@@ -133,7 +134,7 @@ export default function Dashboard() {
               </div>
 
             </div>
-          </div>
+          </Card>
         ))}
         <AddTile
           onClick={() => setIsCreatingProject(true)}
