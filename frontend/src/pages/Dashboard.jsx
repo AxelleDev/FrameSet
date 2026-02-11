@@ -78,7 +78,7 @@ export default function Dashboard() {
           <div className="hidden md:flex space-x-6 mt-6 md:mt-0">
              <div className="p-4 rounded-2xl w-32 text-center" style={{ backgroundColor: 'rgba(137, 148, 223, 0.10)' }}>
                 <div className="text-2xl font-bold text-primary">{totalNorms}</div>
-                <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">Normes</div>
+                   <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{totalNorms === 1 ? 'Norme' : 'Normes'}</div>
              </div>
              <div className="p-4 rounded-2xl w-32 text-center" style={{ backgroundColor: 'rgba(137, 148, 223, 0.10)' }}>
                <div className="text-2xl font-bold text-primary">{projects.length}</div>
