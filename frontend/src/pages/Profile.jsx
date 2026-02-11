@@ -203,7 +203,7 @@ export default function Profile() {
                 <p className="text-sm font-medium text-primary">Mot de passe</p>
                 <p className="text-xs text-blue">Dernière modification : {formatRelativeTime(user.passwordUpdatedAt)}</p>
               </div>
-              <Button onClick={openPasswordModal} variant="ghost" className="px-0 py-0 text-sm font-medium">Modifier</Button>
+              <Button onClick={openPasswordModal} variant="ghost" className="text-sm font-medium">Modifier</Button>
           </div>
         </Card>
 
@@ -211,7 +211,7 @@ export default function Profile() {
             <h3 className="text-lg font-medium text-primary mb-2">Zone de Danger</h3>
             <p className="text-sm text-primary mb-6">La suppression de votre compte est irréversible. Toutes vos données seront perdues.</p>
            
-            <Button onClick={deleteAccount} variant="secondary" className="px-5 py-2.5 text-sm">
+            <Button onClick={deleteAccount} variant="secondary" className="text-sm">
               Supprimer mon compte
             </Button>
         </Card>
@@ -277,10 +277,10 @@ export default function Profile() {
           )}
 
           <div className="flex items-center justify-end gap-3 pt-2">
-            <Button type="button" onClick={closePasswordModal} variant="ghost" className="px-5 py-2.5 text-sm">
+            <Button type="button" onClick={closePasswordModal} variant="ghost" className="text-sm">
               Annuler
             </Button>
-            <Button type="submit" disabled={isPasswordSaving} variant="primary" className="px-5 py-2.5 text-sm">
+            <Button type="submit" disabled={isPasswordSaving} variant="primary" className="text-sm">
               {isPasswordSaving ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </div>

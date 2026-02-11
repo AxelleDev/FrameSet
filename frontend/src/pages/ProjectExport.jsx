@@ -120,7 +120,7 @@ export default function ProjectExport() {
                 </div>
               <h3 className="text-lg font-medium text-primary mb-2">Guide de Style PDF</h3>
               <p className="text-sm text-primary mb-6">Un document PDF formaté professionnellement contenant toutes les normes actives et les palettes. Idéal pour l'impression.</p>
-                <Button onClick={downloadPdf} variant="primary" className="px-4 py-2">
+                <Button onClick={downloadPdf} variant="primary">
                   Télécharger le PDF
                 </Button>
             </Card>
@@ -131,7 +131,7 @@ export default function ProjectExport() {
                 </div>
               <h3 className="text-lg font-medium text-primary mb-2">Pipeline JSON</h3>
               <p className="text-sm text-primary mb-6">Structure de données brute contenant tous les ID et valeurs. Utilisez ceci pour intégrer les normes directement dans vos logiciels créatifs.</p>
-                <Button onClick={downloadJson} variant="primary" className="px-4 py-2">
+                <Button onClick={downloadJson} variant="primary">
                   Télécharger le JSON
                 </Button>
             </Card>
