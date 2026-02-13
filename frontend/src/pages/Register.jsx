@@ -29,7 +29,11 @@ export default function Register() {
 
     const result = await register(formData);
     if (result.success) {
-      navigate(`/verify?email=${encodeURIComponent(formData.email)}`);
+      if (result.data?.token) {
+        navigate('/app/dashboard');
+      } else {
+        navigate(`/verify?email=${encodeURIComponent(formData.email)}`);
+      }
     } else {
       setError(result.message || 'Erreur lors de l\'inscription');
     }

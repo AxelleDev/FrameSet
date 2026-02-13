@@ -1,7 +1,11 @@
 const bcrypt = require('bcryptjs');
 const db = require('../database');
 const mailService = require('../services/mail.service');
+const jwt = require('jsonwebtoken');
+const { generateRefreshToken, verifyRefreshToken } = require('../services/token.service');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
+const JWT_EXPIRES = '2h';
 const getInitials = (name) => name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
 const register = async (req, res) => {
@@ -39,7 +43,9 @@ const register = async (req, res) => {
       is_verified: false,
       passwordUpdatedAt: now
     };
-    res.json(newUser);
+    const token = jwt.sign({ id: newUser.id, email: newUser.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    const refreshToken = generateRefreshToken({ id: newUser.id, email: newUser.email });
+    res.json({ ...newUser, token, refreshToken });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
@@ -72,11 +78,22 @@ const login = async (req, res) => {
       passwordUpdatedAt: userDb.password_updated_at,
       pendingEmail: userDb.pending_email
     };
-    res.json(user);
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
+    res.json({ ...user, token, refreshToken });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
+};
+
+const refresh = async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.status(400).json({ error: 'Refresh token manquant' });
+  const user = verifyRefreshToken(refreshToken);
+  if (!user) return res.status(403).json({ error: 'Refresh token invalide ou expiré' });
+  const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+  res.json({ token });
 };
 
 const verify = async (req, res) => {
@@ -141,5 +158,6 @@ module.exports = {
   register,
   login,
   verify,
-  resendCode
+  resendCode,
+  refresh
 };
