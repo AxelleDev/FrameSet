@@ -10,6 +10,7 @@ import ProjectPalette from './pages/ProjectPalette';
 import ProjectExport from './pages/ProjectExport';
 import Profile from './pages/Profile';
 import Verify from './pages/Verify';
+import NotFound from './pages/NotFound';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
                <Route path="export" element={<ProjectExport />} />
             </Route>
           </Route>
+              <Route path="*" element={<NotFound />} />
         </Routes>
       </HashRouter>
     </DataProvider>
