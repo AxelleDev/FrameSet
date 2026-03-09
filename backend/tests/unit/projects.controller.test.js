@@ -3,20 +3,20 @@ const db = require('../../src/database');
 
 jest.mock('../../src/database');
 
-describe('projects.controller', () => {
+describe('contrôleur de projets', () => {
   const projectsController = require('../../src/controllers/projects.controller');
   const db = require('../../src/database');
   jest.mock('../../src/database');
 
-  describe('listProjects', () => {
-    it('should return empty array if no userId', async () => {
+  describe('lister les projets', () => {
+    it('devrait retourner un tableau vide si aucun userId', async () => {
       const req = { query: {} };
       const res = { json: jest.fn() };
       await projectsController.listProjects(req, res);
       expect(res.json).toHaveBeenCalledWith([]);
     });
 
-    it('should return projects for user', async () => {
+    it('devrait retourner les projets pour l’utilisateur', async () => {
       db.query.mockResolvedValueOnce([
         [
           { id: 1, name: 'Project1', last_edited: new Date(), user_id: 1 }

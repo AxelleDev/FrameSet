@@ -6,14 +6,14 @@ const tokenService = require('../../src/services/token.service');
 
 jest.mock('../../src/services/token.service');
 
-describe('authenticateToken middleware', () => {
+describe('middleware authenticateToken', () => {
   const authenticateToken = require('../../src/middleware/authenticateToken');
   jest.mock('jsonwebtoken', () => ({
     verify: jest.fn((token, secret, cb) => cb(null, { id: 1 }))
   }));
   const jwt = require('jsonwebtoken');
 
-  it('should return 401 if token missing', () => {
+  it('devrait retourner 401 si le jeton est manquant', () => {
     const req = { headers: {} };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();
@@ -22,7 +22,7 @@ describe('authenticateToken middleware', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Token manquant' });
   });
 
-  it('should return 403 if token invalid', () => {
+  it('devrait retourner 403 si le jeton est invalide', () => {
     const req = { headers: { authorization: 'Bearer token' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();
@@ -32,7 +32,7 @@ describe('authenticateToken middleware', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Token invalide ou expiré' });
   });
 
-  it('should call next if token valid', () => {
+  it('devrait appeler next si le jeton est valide', () => {
     const req = { headers: { authorization: 'Bearer token' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();

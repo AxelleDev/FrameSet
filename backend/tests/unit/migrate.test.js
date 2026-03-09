@@ -15,24 +15,24 @@ jest.mock('fs', () => ({
 }));
 const migrate = require('../../src/migrate');
 
-describe('migrate.js', () => {
+describe('migrations', () => {
   beforeEach(() => {
     mockQuery.mockClear();
     mockExistsSync.mockReset();
     mockReaddirSync.mockReset();
   });
 
-  it('should create migrations table', async () => {
+  it('devrait créer la table des migrations', async () => {
     await expect(migrate.ensureMigrationsTable(mockPool)).resolves.not.toThrow();
   });
 
-  it('should return empty array if migrations dir does not exist', async () => {
+  it('devrait retourner un tableau vide si le dossier des migrations n’existe pas', async () => {
     mockExistsSync.mockReturnValue(false);
     const result = await migrate.getPendingMigrations(mockPool);
     expect(result).toEqual([]);
   });
 
-  it('should filter .sql files in migrations dir', async () => {
+  it('devrait filtrer les fichiers .sql dans le dossier des migrations', async () => {
     mockExistsSync.mockReturnValue(true);
     mockReaddirSync.mockReturnValue(['001_init.sql', 'not_a_sql.txt']);
     mockQuery.mockResolvedValue([[]]); // Simule la réponse de la BDD

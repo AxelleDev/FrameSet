@@ -1,12 +1,12 @@
 const data = require('../../src/data');
 
-describe('data.js', () => {
+describe('données', () => {
   const data = require('../../src/data');
-  it('should export user object', () => {
+  it('devrait exporter l’objet utilisateur', () => {
     expect(data.user).toBeDefined();
     expect(data.user).toHaveProperty('name');
   });
-  it('should export projects array', () => {
+  it('devrait exporter le tableau de projets', () => {
     expect(data.projects).toBeInstanceOf(Array);
   });
 });
