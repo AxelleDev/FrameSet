@@ -45,7 +45,7 @@ const register = async (req, res) => {
     };
     const token = jwt.sign({ id: newUser.id, email: newUser.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
     const refreshToken = generateRefreshToken({ id: newUser.id, email: newUser.email });
-    res.json({ ...newUser, token, refreshToken });
+    res.json({ success: true, ...newUser, token, refreshToken });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
@@ -80,7 +80,7 @@ const login = async (req, res) => {
     };
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
-    res.json({ ...user, token, refreshToken });
+    res.json({ success: true, ...user, token, refreshToken });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -93,7 +93,7 @@ const refresh = async (req, res) => {
   const user = verifyRefreshToken(refreshToken);
   if (!user) return res.status(403).json({ error: 'Refresh token invalide ou expiré' });
   const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-  res.json({ token });
+  res.json({ success: true, token });
 };
 
 const verify = async (req, res) => {
@@ -154,10 +154,16 @@ const resendCode = async (req, res) => {
   }
 };
 
+const logout = async (req, res) => {
+  // Invalidate refresh token logic would go here if implemented (e.g., blacklist)
+  res.json({ success: true });
+};
+
 module.exports = {
   register,
   login,
   verify,
   resendCode,
-  refresh
+  refresh,
+  logout
 };

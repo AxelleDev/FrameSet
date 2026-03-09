@@ -5,7 +5,8 @@ require('dotenv').config();
 
 const migrationsDir = path.join(__dirname, '..', 'migrations');
 
-const pool = mysql.createPool({
+
+const getPool = () => mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
@@ -16,7 +17,7 @@ const pool = mysql.createPool({
   multipleStatements: true
 });
 
-const ensureMigrationsTable = async () => {
+const ensureMigrationsTable = async (pool = getPool()) => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       id INT NOT NULL AUTO_INCREMENT,
@@ -27,7 +28,7 @@ const ensureMigrationsTable = async () => {
   `);
 };
 
-const getPendingMigrations = async () => {
+const getPendingMigrations = async (pool = getPool()) => {
   const [rows] = await pool.query('SELECT filename FROM schema_migrations');
   const applied = new Set(rows.map((r) => r.filename));
 
@@ -76,4 +77,7 @@ const run = async () => {
   }
 };
 
-run();
+module.exports = {
+  ensureMigrationsTable,
+  getPendingMigrations
+};
