@@ -89,7 +89,7 @@ export const DataProvider = ({ children }) => {
       const data = await api.get(`/projects?userId=${userId}`, { onGlobalError: setGlobalError });
       setProjects(data || []);
     } catch (error) {
-      console.error('Failed to fetch projects', error);
+      console.error('Échec du chargement des projets', error);
     } finally {
       setLoading(false);
     }
@@ -146,7 +146,7 @@ export const DataProvider = ({ children }) => {
       if (newUser?.token) setApiToken(newUser.token);
       setUser(newUser);
       localStorage.setItem('frameset_user', JSON.stringify(newUser));
-      setProjects([]); // New user has no projects
+      setProjects([]);
       return { success: true };
     } catch (err) {
       return { success: false, message: err.data?.error || err.message };

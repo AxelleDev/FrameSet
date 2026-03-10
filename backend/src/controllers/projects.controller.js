@@ -1,4 +1,4 @@
-const db = require('../database');
+﻿const db = require('../database');
 
 const listProjects = async (req, res) => {
   const userId = req.query.userId;
@@ -41,7 +41,7 @@ const listProjects = async (req, res) => {
     res.json(fullProjects);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 
@@ -75,7 +75,7 @@ const createProject = async (req, res) => {
     res.json(newProject);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 
@@ -90,7 +90,7 @@ const updateProjectName = async (req, res) => {
     res.json({ success: true, name: name.trim() });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 
@@ -101,7 +101,7 @@ const deleteProject = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 
@@ -117,7 +117,7 @@ const addBrushNorm = async (req, res) => {
     res.json({ success: true, id: result.insertId });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 
@@ -133,7 +133,7 @@ const addTypographyNorm = async (req, res) => {
     res.json({ success: true, id: result.insertId });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 
@@ -151,7 +151,7 @@ const updatePalette = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 
@@ -165,7 +165,7 @@ const deleteBrushNorm = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 
@@ -179,7 +179,7 @@ const deleteTypographyNorm = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 
@@ -191,7 +191,7 @@ const deletePaletteColor = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 
@@ -207,7 +207,7 @@ const updatePaletteColor = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 
@@ -226,7 +226,7 @@ const updateBrushNorm = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 
@@ -245,7 +245,7 @@ const updateTypographyNorm = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 

@@ -67,7 +67,7 @@ const updateUser = async (req, res) => {
     res.json({ success: true, name, email: currentEmail, pendingEmail: rows[0].pending_email || null });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 };
 

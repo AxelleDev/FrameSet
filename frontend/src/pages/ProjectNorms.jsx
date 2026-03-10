@@ -24,13 +24,13 @@ export default function ProjectNorms() {
   } = useData();
 
   const [editingNorm, setEditingNorm] = useState(null);
-  const [editingType, setEditingType] = useState('brush'); // 'brush' or 'typography'
-  // Brush norm fields
+  const [editingType, setEditingType] = useState('brush');
+
   const [editBrushName, setEditBrushName] = useState('');
   const [editBrushUsage, setEditBrushUsage] = useState('');
   const [editBrushValue, setEditBrushValue] = useState('');
   const [editBrushUnit, setEditBrushUnit] = useState('px');
-  // Typography norm fields
+
   const [editFontFamily, setEditFontFamily] = useState('');
   const [editFontWeight, setEditFontWeight] = useState('');
   const [editFontUsage, setEditFontUsage] = useState('');

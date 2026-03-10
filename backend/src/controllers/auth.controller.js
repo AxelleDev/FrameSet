@@ -76,31 +76,31 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   let { email, password } = req.body;
-  console.log('Login attempt:', { email });
+  console.log('Tentative de connexion :', { email });
   if (!email || !password) {
-    console.log('Missing email or password');
+    console.log('Email ou mot de passe manquant');
     return res.status(400).json({ error: 'Tous les champs sont obligatoires.' });
   }
   email = validator.trim(email);
   password = validator.trim(password);
   if (!validator.isEmail(email)) {
-    console.log('Invalid email format');
+    console.log('Format d\'email invalide');
     return res.status(400).json({ error: 'Email invalide.' });
   }
   try {
     const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     if (rows.length === 0) {
-      console.log('User not found for email:', email);
+      console.log('Utilisateur non trouvé pour l\'email :', email);
       return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
     }
     const userDb = rows[0];
     if (!userDb.is_verified) {
-      console.log('User not verified:', email);
+      console.log('Utilisateur non vérifié :', email);
       return res.status(401).json({ error: 'Veuillez vérifier votre email avant de vous connecter.' });
     }
     const isMatch = await bcrypt.compare(password, userDb.password);
     if (!isMatch) {
-      console.log('Password mismatch for email:', email);
+      console.log('Mot de passe incorrect pour l\'email :', email);
       return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
     }
     const user = {
@@ -111,12 +111,12 @@ const login = async (req, res) => {
       passwordUpdatedAt: userDb.password_updated_at,
       pendingEmail: userDb.pending_email
     };
-    console.log('Login successful:', { id: user.id, email: user.email });
+    console.log('Connexion réussie :', { id: user.id, email: user.email });
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
     res.json({ success: true, ...user, token, refreshToken });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Erreur de connexion :', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
@@ -188,16 +188,10 @@ const resendCode = async (req, res) => {
   }
 };
 
-const logout = async (req, res) => {
-  // Invalidate refresh token logic would go here if implemented (e.g., blacklist)
-  res.json({ success: true });
-};
-
 module.exports = {
   register,
   login,
   verify,
   resendCode,
-  refresh,
-  logout
+  refresh
 };
