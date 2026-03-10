@@ -33,24 +33,37 @@ const buildHeaders = (isJson = true, extra = {}) => {
 const request = async (path, { method = 'GET', body, headers, signal } = {}) => {
   const opts = { method, headers: buildHeaders(body != null, headers), signal };
   if (body != null) opts.body = typeof body === 'string' ? body : JSON.stringify(body);
+  const onGlobalError = headers && headers.onGlobalError ? headers.onGlobalError : undefined;
   try {
     const res = await fetch(`${API_URL}${path}`, opts);
     const contentType = res.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
-    const data = isJson ? await res.json() : null;
+    let data = null;
+    try {
+      data = isJson ? await res.json() : null;
+    } catch (jsonErr) {
+      data = null;
+    }
     if (!res.ok) {
-      if (onGlobalError && (res.status >= 500 || res.status === 0)) {
-        onGlobalError('Le serveur est inaccessible, veuillez réessayer plus tard.');
+      // Message d'erreur métier ou serveur
+      const errorMsg = data?.error || res.statusText || 'Erreur inconnue';
+      if (typeof onGlobalError === 'function') {
+        onGlobalError(errorMsg);
       }
-      const err = new Error(data?.error || res.statusText || 'Request failed');
+      const err = new Error(errorMsg);
       err.status = res.status;
       err.data = data;
       throw err;
     }
     return data;
   } catch (e) {
-    if (onGlobalError) {
-      onGlobalError('Le serveur est inaccessible, veuillez réessayer plus tard.');
+    if (typeof onGlobalError === 'function') {
+      // Si c'est une erreur réseau, message spécifique
+      if (e instanceof TypeError || e.message === 'Failed to fetch') {
+        onGlobalError('Impossible de contacter le serveur. Vérifiez votre connexion ou réessayez plus tard.');
+      } else {
+        onGlobalError(e.message || 'Erreur inconnue');
+      }
     }
     throw e;
   }

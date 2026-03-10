@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import GlobalErrorAlert from './components/GlobalErrorAlert';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { DataProvider } from './context/DataContext';
+import { DataProvider, DataContext } from './context/DataContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import MainLayout from './layouts/MainLayout';
@@ -13,10 +13,10 @@ import Profile from './pages/Profile';
 import Verify from './pages/Verify';
 import NotFound from './pages/NotFound';
 
-export default function App() {
-  const { globalError, setGlobalError } = window.framesetDataContext || {};
+function AppRoutes() {
+  const { globalError, setGlobalError } = useContext(DataContext);
   return (
-    <DataProvider>
+    <>
       <GlobalErrorAlert
         message={globalError}
         onClose={() => setGlobalError && setGlobalError(null)}
@@ -27,11 +27,9 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/verify" element={<Verify />} />
-          
           <Route path="/app" element={<MainLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="profile" element={<Profile />} />
-            
             <Route path="project/:id">
                <Route index element={<Navigate to="norms" replace />} />
                <Route path="norms" element={<ProjectNorms />} />
@@ -39,9 +37,17 @@ export default function App() {
                <Route path="export" element={<ProjectExport />} />
             </Route>
           </Route>
-              <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </HashRouter>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <DataProvider>
+      <AppRoutes />
     </DataProvider>
   );
 }

@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import api, { setToken as setApiToken, clearToken as clearApiToken } from '../services/api';
 
-const DataContext = createContext(null);
+export const DataContext = createContext(null);
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -23,11 +23,13 @@ export const DataProvider = ({ children }) => {
           .then(profile => {
             setUser(parsedUser);
             fetchProjects(parsedUser.id);
+            setLoading(false);
           })
-          .catch(() => {
+          .catch((err) => {
             setUser(null);
             clearApiToken();
             localStorage.removeItem('frameset_user');
+            setGlobalError(err?.data?.error || err?.message || 'Session expirée ou invalide');
             setLoading(false);
           });
       } else {
@@ -58,7 +60,10 @@ export const DataProvider = ({ children }) => {
           normsCount: (p.normsCount || 0) - 1
         } : p)
       );
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      setGlobalError(e?.message || 'Erreur lors de la suppression de la norme.');
+      console.error(e);
+    }
   };
 
   // Delete typography norm
@@ -73,7 +78,10 @@ export const DataProvider = ({ children }) => {
           normsCount: (p.normsCount || 0) - 1
         } : p)
       );
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      setGlobalError(e?.message || 'Erreur lors de la suppression de la norme.');
+      console.error(e);
+    }
   };
 
   const fetchProjects = async (userId) => {
@@ -97,7 +105,10 @@ export const DataProvider = ({ children }) => {
           brushNorms: p.brushNorms.map(n => Number(n.id) === Number(normId) ? { ...n, ...updates } : n)
         } : p)
       );
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      setGlobalError(e?.message || 'Erreur lors de la modification de la norme.');
+      console.error(e);
+    }
   };
 
   // Update typography norm
@@ -110,7 +121,10 @@ export const DataProvider = ({ children }) => {
           typographyNorms: p.typographyNorms.map(n => Number(n.id) === Number(normId) ? { ...n, ...updates } : n)
         } : p)
       );
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      setGlobalError(e?.message || 'Erreur lors de la modification de la norme.');
+      console.error(e);
+    }
   };
 
   const login = async (email, password) => {
@@ -162,6 +176,7 @@ export const DataProvider = ({ children }) => {
       const newProject = await api.post('/projects', { userId: user.id, name }, { onGlobalError: setGlobalError });
       setProjects(prev => [newProject, ...prev]);
     } catch (e) {
+      setGlobalError(e?.message || 'Erreur lors de l’ajout du projet.');
       console.error(e);
     }
   };
@@ -172,6 +187,7 @@ export const DataProvider = ({ children }) => {
       setProjects(prev => prev.filter(p => String(p.id) !== String(id)));
       if (String(activeProjectId) === String(id)) setActiveProjectId(null);
     } catch (e) {
+      setGlobalError(e?.message || 'Erreur lors de la suppression du projet.');
       console.error(e);
     }
   };
@@ -182,7 +198,10 @@ export const DataProvider = ({ children }) => {
       setProjects(prev => 
         prev.map(p => String(p.id) === String(projectId) ? { ...p, palette: palette } : p)
       );
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      setGlobalError(e?.message || 'Erreur lors de la modification de la palette.');
+      console.error(e);
+    }
   };
 
   const updateProjectName = async (projectId, { name }) => {
@@ -191,7 +210,10 @@ export const DataProvider = ({ children }) => {
       setProjects(prev =>
         prev.map(p => String(p.id) === String(projectId) ? { ...p, name, lastEdited: "À l'instant" } : p)
       );
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      setGlobalError(e?.message || 'Erreur lors du changement de nom du projet.');
+      console.error(e);
+    }
   };
 
   const deleteProjectPaletteColor = async (projectId, colorHex) => {
@@ -203,7 +225,10 @@ export const DataProvider = ({ children }) => {
           palette: p.palette.filter(c => c.hex !== colorHex) 
         } : p)
       );
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      setGlobalError(e?.message || 'Erreur lors de la suppression de la couleur.');
+      console.error(e);
+    }
   };
 
   // Add brush norm
@@ -219,7 +244,10 @@ export const DataProvider = ({ children }) => {
         } : p)
       );
       return normWithId;
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      setGlobalError(e?.message || 'Erreur lors de l’ajout de la norme.');
+      console.error(e);
+    }
   };
 
   // Add typography norm
@@ -235,7 +263,10 @@ export const DataProvider = ({ children }) => {
         } : p)
       );
       return normWithId;
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      setGlobalError(e?.message || 'Erreur lors de l’ajout de la norme.');
+      console.error(e);
+    }
   };
 
   const updateUserProfile = async (updates) => {
@@ -250,7 +281,10 @@ export const DataProvider = ({ children }) => {
       };
       setUser(updatedUser);
       localStorage.setItem('frameset_user', JSON.stringify(updatedUser));
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      setGlobalError(e?.message || 'Erreur lors de la mise à jour du profil.');
+      console.error(e);
+    }
   };
 
   const changePassword = async ({ currentPassword, newPassword }) => {

@@ -10,9 +10,10 @@ function generateRefreshToken(payload) {
 
 function verifyRefreshToken(token) {
   try {
-    return jwt.verify(token, JWT_REFRESH_SECRET);
+     const user = jwt.verify(token, JWT_REFRESH_SECRET);
+     return user;
   } catch (err) {
-    return null;
+     return null;
   }
 }
 

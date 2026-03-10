@@ -46,7 +46,16 @@ const listProjects = async (req, res) => {
 };
 
 const createProject = async (req, res) => {
-  const { userId, name } = req.body;
+  const validator = require('validator');
+  let { userId, name, description } = req.body;
+  if (!name || !userId) {
+    return res.status(400).json({ error: 'Champs obligatoires manquants.' });
+  }
+  name = validator.trim(name);
+  description = description ? validator.trim(description) : '';
+  if (!validator.isLength(name, { min: 2, max: 50 })) {
+    return res.status(400).json({ error: 'Nom de projet invalide.' });
+    }
   try {
     const [result] = await db.query(
       'INSERT INTO projects (user_id, name, progress) VALUES (?, ?, 0)',

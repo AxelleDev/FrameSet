@@ -29,6 +29,7 @@ export default function Register() {
 
     const result = await register(formData);
     if (result.success) {
+      setError('');
       if (result.data?.token) {
         navigate('/app/dashboard');
       } else {

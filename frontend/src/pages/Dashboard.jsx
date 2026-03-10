@@ -12,7 +12,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 
 export default function Dashboard() {
-  const { user, projects, setActiveProjectId } = useData();
+  const { user, projects, setActiveProjectId, setGlobalError } = useData();
   const { addProject, deleteProject, updateProject } = useProjectApi();
   const navigate = useNavigate();
   const [isCreatingProject, setIsCreatingProject] = useState(false);
@@ -31,7 +31,7 @@ export default function Dashboard() {
 
   const handleCreateProject = () => {
     if (newProjectName && newProjectName.trim().length > 0) {
-      addProject(newProjectName);
+      addProject(newProjectName, { onGlobalError: setGlobalError });
       setIsCreatingProject(false);
       setNewProjectName('');
     }
@@ -51,7 +51,7 @@ export default function Dashboard() {
       return;
     }
     try {
-      await updateProject(editProjectId, { name: editProjectName.trim() });
+      await updateProject(editProjectId, { name: editProjectName.trim() }, { onGlobalError: setGlobalError });
       setIsEditingProject(false);
       setEditProjectId(null);
       setEditProjectName("");

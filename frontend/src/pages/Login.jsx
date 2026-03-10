@@ -28,6 +28,7 @@ export default function Login() {
 
     const result = await login(formData.email, formData.password);
     if (result.success) {
+      setError('');
       navigate('/app/dashboard');
     } else {
       setError(result.message || 'Identifiants invalides');

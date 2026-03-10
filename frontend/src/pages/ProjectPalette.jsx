@@ -15,7 +15,7 @@ import api from '../services/api';
 
 export default function ProjectPalette() {
   const { id } = useParams();
-  const { setActiveProjectId, activeProject, user } = useData();
+  const { setActiveProjectId, activeProject, user, setGlobalError } = useData();
   const { updatePalette: updateProjectPalette, deletePaletteColor: deleteProjectPaletteColor } = useProjectApi();
 
   const [editStatus, setEditStatus] = useState(null);
@@ -123,7 +123,7 @@ export default function ProjectPalette() {
     if (!newHex.startsWith('#')) newHex = '#' + newHex;
     const oldHex = palette[editIdx].hex;
     try {
-      await api.patch(`/projects/${id}/palette`, { oldHex, newName: editColorName, newHex });
+      await api.patch(`/projects/${id}/palette`, { oldHex, newName: editColorName, newHex }, { onGlobalError: setGlobalError });
       setEditStatus('success');
       await syncPalette();
     } catch (e) {
@@ -136,7 +136,7 @@ export default function ProjectPalette() {
     let hex = newColorHex.trim();
     if (!hex.startsWith('#')) hex = '#' + hex;
     const newPalette = [...palette, { name: newColorName, hex }];
-    await updateProjectPalette(id, newPalette);
+    await updateProjectPalette(id, newPalette, { onGlobalError: setGlobalError });
     setIsAddingColor(false);
     await syncPalette();
   };
@@ -333,7 +333,7 @@ export default function ProjectPalette() {
         onCancel={() => setConfirmDeleteColor(null)}
         onConfirm={async () => {
           if (confirmDeleteColor) {
-            await deleteProjectPaletteColor(id, confirmDeleteColor);
+            await deleteProjectPaletteColor(id, confirmDeleteColor, { onGlobalError: setGlobalError });
             await syncPalette();
           }
           setConfirmDeleteColor(null);

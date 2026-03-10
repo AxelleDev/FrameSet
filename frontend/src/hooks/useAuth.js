@@ -6,6 +6,7 @@ import { useData } from '../context/DataContext';
 // Fournit `login`, `register` et `logout` et gère le token via le service api.
 export const useAuthApi = () => {
   const { setAuthenticatedUser, setGlobalError } = useData();
+
   const login = useCallback(async (email, password) => {
     try {
       const userData = await api.post('/auth/login', { email, password }, { onGlobalError: setGlobalError });
@@ -13,6 +14,7 @@ export const useAuthApi = () => {
       setAuthenticatedUser(userData);
       return { success: true, data: userData };
     } catch (err) {
+      setGlobalError(err.data?.error || err.message || 'Erreur de connexion');
       return { success: false, message: err.data?.error || err.message };
     }
   }, [setGlobalError]);
@@ -24,13 +26,17 @@ export const useAuthApi = () => {
       setAuthenticatedUser(newUser);
       return { success: true, data: newUser };
     } catch (err) {
+      setGlobalError(err.data?.error || err.message || 'Erreur lors de l\'inscription');
       return { success: false, message: err.data?.error || err.message };
     }
   }, [setGlobalError]);
 
   const logout = useCallback(() => {
     clearToken();
-  }, []);
+    setAuthenticatedUser(null);
+    localStorage.removeItem('frameset_user');
+    setGlobalError(null);
+  }, [setAuthenticatedUser, setGlobalError]);
 
   return { login, register, logout };
 };

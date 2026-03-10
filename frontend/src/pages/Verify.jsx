@@ -7,7 +7,7 @@ export default function Verify() {
   const API_URL = import.meta.env.VITE_API_URL || '/api';
   const navigate = useNavigate();
   const location = useLocation();
-  const { applyUserUpdate } = useData();
+  const { applyUserUpdate, setGlobalError } = useData();
   const params = new URLSearchParams(location.search);
   const email = params.get('email');
   const type = params.get('type');
@@ -23,12 +23,13 @@ export default function Verify() {
       ? `${API_URL}/user/email/verify`
       : `${API_URL}/auth/verify`;
     try {
-      const data = await api.post(type === 'pending-email' ? '/user/email/verify' : '/auth/verify', { email, code });
+      const data = await api.post(type === 'pending-email' ? '/user/email/verify' : '/auth/verify', { email, code }, { onGlobalError: setGlobalError });
       if (data.success) {
         if (type === 'pending-email' && data.user) {
           applyUserUpdate(data.user);
         }
         setSuccess(true);
+        setError('');
         setTimeout(() => navigate(type === 'pending-email' ? '/app/profile' : '/login'), 2000);
       } else {
         setError(data.error || 'Code incorrect');
@@ -45,7 +46,7 @@ export default function Verify() {
       ? `${API_URL}/user/email/resend`
       : `${API_URL}/auth/resend-code`;
     try {
-      const data = await api.post(type === 'pending-email' ? '/user/email/resend' : '/auth/resend-code', { email });
+      const data = await api.post(type === 'pending-email' ? '/user/email/resend' : '/auth/resend-code', { email }, { onGlobalError: setGlobalError });
       if (data.success) {
         setResendMsg('Code renvoyé ! Vérifiez votre email.');
       } else {

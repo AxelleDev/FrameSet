@@ -13,7 +13,16 @@ const getUserCount = async (req, res) => {
 };
 
 const updateUser = async (req, res) => {
+  const validator = require('validator');
   const { id, name, email } = req.body;
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Tous les champs sont obligatoires.' });
+  }
+  const trimmedName = validator.trim(name);
+  const trimmedEmail = validator.trim(email);
+  if (!validator.isEmail(trimmedEmail)) {
+    return res.status(400).json({ error: 'Email invalide.' });
+  }
   try {
     const [rows] = await db.query('SELECT email, pending_email FROM users WHERE id = ?', [id]);
     if (rows.length === 0) {
@@ -133,9 +142,17 @@ const resendPendingEmail = async (req, res) => {
 };
 
 const changePassword = async (req, res) => {
+  const validator = require('validator');
   const { id, currentPassword, newPassword } = req.body;
   if (!id || !currentPassword || !newPassword) {
     return res.status(400).json({ error: 'Champs requis manquants.' });
+  }
+  const trimmedNewPassword = validator.trim(newPassword);
+  if (!validator.isLength(trimmedNewPassword, { min: 8 })) {
+    return res.status(400).json({ error: 'Mot de passe trop court.' });
+  }
+  if (!validator.matches(trimmedNewPassword, /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/)) {
+    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.' });
   }
   try {
     const [rows] = await db.query('SELECT password FROM users WHERE id = ?', [id]);
