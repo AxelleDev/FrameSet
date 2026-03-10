@@ -16,9 +16,22 @@ export const DataProvider = ({ children }) => {
     const storedUser = localStorage.getItem('frameset_user');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      if (parsedUser?.token) setApiToken(parsedUser.token);
-      fetchProjects(parsedUser.id);
+      if (parsedUser?.token) {
+        setApiToken(parsedUser.token);
+        api.get('/user/profile')
+          .then(profile => {
+            setUser(parsedUser);
+            fetchProjects(parsedUser.id);
+          })
+          .catch(() => {
+            setUser(null);
+            clearApiToken();
+            localStorage.removeItem('frameset_user');
+            setLoading(false);
+          });
+      } else {
+        setLoading(false);
+      }
     } else {
       setLoading(false);
     }
