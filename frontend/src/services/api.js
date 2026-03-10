@@ -33,17 +33,27 @@ const buildHeaders = (isJson = true, extra = {}) => {
 const request = async (path, { method = 'GET', body, headers, signal } = {}) => {
   const opts = { method, headers: buildHeaders(body != null, headers), signal };
   if (body != null) opts.body = typeof body === 'string' ? body : JSON.stringify(body);
-  const res = await fetch(`${API_URL}${path}`, opts);
-  const contentType = res.headers.get('content-type') || '';
-  const isJson = contentType.includes('application/json');
-  const data = isJson ? await res.json() : null;
-  if (!res.ok) {
-    const err = new Error(data?.error || res.statusText || 'Request failed');
-    err.status = res.status;
-    err.data = data;
-    throw err;
+  try {
+    const res = await fetch(`${API_URL}${path}`, opts);
+    const contentType = res.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    const data = isJson ? await res.json() : null;
+    if (!res.ok) {
+      if (onGlobalError && (res.status >= 500 || res.status === 0)) {
+        onGlobalError('Le serveur est inaccessible, veuillez réessayer plus tard.');
+      }
+      const err = new Error(data?.error || res.statusText || 'Request failed');
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  } catch (e) {
+    if (onGlobalError) {
+      onGlobalError('Le serveur est inaccessible, veuillez réessayer plus tard.');
+    }
+    throw e;
   }
-  return data;
 };
 
 export default {

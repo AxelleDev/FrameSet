@@ -1,4 +1,5 @@
 import React from 'react';
+import GlobalErrorAlert from './components/GlobalErrorAlert';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataProvider } from './context/DataContext';
 import Login from './pages/Login';
@@ -13,8 +14,13 @@ import Verify from './pages/Verify';
 import NotFound from './pages/NotFound';
 
 export default function App() {
+  const { globalError, setGlobalError } = window.framesetDataContext || {};
   return (
     <DataProvider>
+      <GlobalErrorAlert
+        message={globalError}
+        onClose={() => setGlobalError && setGlobalError(null)}
+      />
       <HashRouter>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />

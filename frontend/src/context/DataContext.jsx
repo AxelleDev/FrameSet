@@ -11,6 +11,7 @@ export const DataProvider = ({ children }) => {
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [globalError, setGlobalError] = useState(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('frameset_user');
@@ -18,7 +19,7 @@ export const DataProvider = ({ children }) => {
       const parsedUser = JSON.parse(storedUser);
       if (parsedUser?.token) {
         setApiToken(parsedUser.token);
-        api.get('/user/profile')
+        api.get('/user/profile', { onGlobalError: setGlobalError })
           .then(profile => {
             setUser(parsedUser);
             fetchProjects(parsedUser.id);
@@ -49,7 +50,7 @@ export const DataProvider = ({ children }) => {
   const deleteBrushNorm = async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
-      await api.delete(`/projects/${projectId}/brush-norms/${normIdNum}`);
+      await api.delete(`/projects/${projectId}/brush-norms/${normIdNum}`, { onGlobalError: setGlobalError });
       setProjects(prev =>
         prev.map(p => String(p.id) === String(projectId) ? {
           ...p,
@@ -64,7 +65,7 @@ export const DataProvider = ({ children }) => {
   const deleteTypographyNorm = async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
-      await api.delete(`/projects/${projectId}/typography-norms/${normIdNum}`);
+      await api.delete(`/projects/${projectId}/typography-norms/${normIdNum}`, { onGlobalError: setGlobalError });
       setProjects(prev =>
         prev.map(p => String(p.id) === String(projectId) ? {
           ...p,
@@ -77,7 +78,7 @@ export const DataProvider = ({ children }) => {
 
   const fetchProjects = async (userId) => {
     try {
-      const data = await api.get(`/projects?userId=${userId}`);
+      const data = await api.get(`/projects?userId=${userId}`, { onGlobalError: setGlobalError });
       setProjects(data || []);
     } catch (error) {
       console.error('Failed to fetch projects', error);
@@ -89,7 +90,7 @@ export const DataProvider = ({ children }) => {
   // Update brush norm
   const updateBrushNorm = async (projectId, normId, updates) => {
     try {
-      await api.put(`/projects/${projectId}/brush-norms/${normId}`, updates);
+      await api.put(`/projects/${projectId}/brush-norms/${normId}`, updates, { onGlobalError: setGlobalError });
       setProjects(prev =>
         prev.map(p => String(p.id) === String(projectId) ? {
           ...p,
@@ -102,7 +103,7 @@ export const DataProvider = ({ children }) => {
   // Update typography norm
   const updateTypographyNorm = async (projectId, normId, updates) => {
     try {
-      await api.put(`/projects/${projectId}/typography-norms/${normId}`, updates);
+      await api.put(`/projects/${projectId}/typography-norms/${normId}`, updates, { onGlobalError: setGlobalError });
       setProjects(prev =>
         prev.map(p => String(p.id) === String(projectId) ? {
           ...p,
@@ -114,7 +115,7 @@ export const DataProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const userData = await api.post('/auth/login', { email, password });
+      const userData = await api.post('/auth/login', { email, password }, { onGlobalError: setGlobalError });
       if (userData?.token) setApiToken(userData.token);
       setUser(userData);
       localStorage.setItem('frameset_user', JSON.stringify(userData));
@@ -127,7 +128,7 @@ export const DataProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const newUser = await api.post('/auth/register', userData);
+      const newUser = await api.post('/auth/register', userData, { onGlobalError: setGlobalError });
       if (newUser?.token) setApiToken(newUser.token);
       setUser(newUser);
       localStorage.setItem('frameset_user', JSON.stringify(newUser));
@@ -158,7 +159,7 @@ export const DataProvider = ({ children }) => {
   const addProject = async (name) => {
     if (!user) return;
     try {
-      const newProject = await api.post('/projects', { userId: user.id, name });
+      const newProject = await api.post('/projects', { userId: user.id, name }, { onGlobalError: setGlobalError });
       setProjects(prev => [newProject, ...prev]);
     } catch (e) {
       console.error(e);
@@ -167,7 +168,7 @@ export const DataProvider = ({ children }) => {
 
   const deleteProject = async (id) => {
     try {
-      await api.delete(`/projects/${id}`);
+      await api.delete(`/projects/${id}`, { onGlobalError: setGlobalError });
       setProjects(prev => prev.filter(p => String(p.id) !== String(id)));
       if (String(activeProjectId) === String(id)) setActiveProjectId(null);
     } catch (e) {
@@ -177,7 +178,7 @@ export const DataProvider = ({ children }) => {
 
   const updateProjectPalette = async (projectId, palette) => {
     try {
-      await api.post(`/projects/${projectId}/palette`, palette);
+      await api.post(`/projects/${projectId}/palette`, palette, { onGlobalError: setGlobalError });
       setProjects(prev => 
         prev.map(p => String(p.id) === String(projectId) ? { ...p, palette: palette } : p)
       );
@@ -186,7 +187,7 @@ export const DataProvider = ({ children }) => {
 
   const updateProjectName = async (projectId, { name }) => {
     try {
-      await api.put(`/projects/${projectId}`, { name });
+      await api.put(`/projects/${projectId}`, { name }, { onGlobalError: setGlobalError });
       setProjects(prev =>
         prev.map(p => String(p.id) === String(projectId) ? { ...p, name, lastEdited: "À l'instant" } : p)
       );
@@ -195,7 +196,7 @@ export const DataProvider = ({ children }) => {
 
   const deleteProjectPaletteColor = async (projectId, colorHex) => {
     try {
-      await api.delete(`/projects/${projectId}/palette`, { hex: colorHex });
+      await api.delete(`/projects/${projectId}/palette`, { hex: colorHex }, { onGlobalError: setGlobalError });
       setProjects(prev => 
         prev.map(p => String(p.id) === String(projectId) ? { 
           ...p, 
@@ -208,7 +209,7 @@ export const DataProvider = ({ children }) => {
   // Add brush norm
   const addBrushNorm = async (projectId, norm) => {
     try {
-      const data = await api.post(`/projects/${projectId}/brush-norms`, norm);
+      const data = await api.post(`/projects/${projectId}/brush-norms`, norm, { onGlobalError: setGlobalError });
       const normWithId = { ...norm, id: data.id };
       setProjects(prev =>
         prev.map(p => String(p.id) === String(projectId) ? {
@@ -224,7 +225,7 @@ export const DataProvider = ({ children }) => {
   // Add typography norm
   const addTypographyNorm = async (projectId, norm) => {
     try {
-      const data = await api.post(`/projects/${projectId}/typography-norms`, norm);
+      const data = await api.post(`/projects/${projectId}/typography-norms`, norm, { onGlobalError: setGlobalError });
       const normWithId = { ...norm, id: data.id };
       setProjects(prev =>
         prev.map(p => String(p.id) === String(projectId) ? {
@@ -240,7 +241,7 @@ export const DataProvider = ({ children }) => {
   const updateUserProfile = async (updates) => {
     if (!user) return;
     try {
-      const data = await api.put('/user', { id: user.id, ...updates });
+      const data = await api.put('/user', { id: user.id, ...updates }, { onGlobalError: setGlobalError });
       const updatedUser = {
         ...user,
         name: data.name ?? user.name,
@@ -255,7 +256,7 @@ export const DataProvider = ({ children }) => {
   const changePassword = async ({ currentPassword, newPassword }) => {
     if (!user) return { success: false, message: 'Utilisateur non connecté.' };
     try {
-      const data = await api.post('/user/password', { id: user.id, currentPassword, newPassword });
+      const data = await api.post('/user/password', { id: user.id, currentPassword, newPassword }, { onGlobalError: setGlobalError });
       const updatedUser = {
         ...user,
         passwordUpdatedAt: data.passwordUpdatedAt || new Date().toISOString()
@@ -294,7 +295,9 @@ export const DataProvider = ({ children }) => {
       loading,
       login,
       register,
-      logout
+      logout,
+      globalError,
+      setGlobalError
     }}>
       {children}
     </DataContext.Provider>

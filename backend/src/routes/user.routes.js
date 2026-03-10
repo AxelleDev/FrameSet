@@ -5,7 +5,7 @@ const router = express.Router();
 
 const authenticateToken = require('../middleware/authenticateToken');
 
-router.get('/count', authenticateToken, userController.getUserCount);
+router.get('/count', userController.getUserCount);
 router.put('/', authenticateToken, userController.updateUser);
 router.post('/password', authenticateToken, userController.changePassword);
 router.post('/email/verify', authenticateToken, userController.verifyPendingEmail);
