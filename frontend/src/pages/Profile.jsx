@@ -5,6 +5,7 @@ import AppModal from '../components/AppModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import PasswordInput from '../components/PasswordInput';
 
 export default function Profile() {
   const { user, updateUserProfile, logout, changePassword } = useData();
@@ -239,29 +240,29 @@ export default function Profile() {
         <form onSubmit={handlePasswordChange} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Ancien mot de passe</label>
-            <input
-              type="password"
+            <PasswordInput
               value={passwordForm.currentPassword}
               onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-              className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:border-pink transition"
+              inputClassName="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:border-pink transition"
+              autoComplete="current-password"
             />
           </div>
           <div>
             <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Nouveau mot de passe</label>
-            <input
-              type="password"
+            <PasswordInput
               value={passwordForm.newPassword}
               onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-              className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:border-pink transition"
+              inputClassName="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:border-pink transition"
+              autoComplete="new-password"
             />
           </div>
           <div>
             <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Confirmation du nouveau mot de passe</label>
-            <input
-              type="password"
+            <PasswordInput
               value={passwordForm.confirmPassword}
               onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-              className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:border-pink transition"
+              inputClassName="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:border-pink transition"
+              autoComplete="new-password"
             />
           </div>
 

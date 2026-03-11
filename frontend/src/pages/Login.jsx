@@ -4,6 +4,7 @@ import useAuthApi from '../hooks/useAuth';
 import AuthLayout from '../components/AuthLayout';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import PasswordInput from '../components/PasswordInput';
 import useUserCount from '../hooks/useUserCount';
 
 export default function Login() {
@@ -88,7 +89,14 @@ export default function Login() {
           
           <div className="group">
             <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Mot de passe</label>
-            <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" placeholder="••••••••" />
+            <PasswordInput
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              inputClassName="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all"
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
           </div>
           
           <Button onClick={handleLogin} fullWidth className="mt-2">
