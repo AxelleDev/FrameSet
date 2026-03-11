@@ -45,23 +45,30 @@ export default function GlobalErrorAlert({ message, onClose }) {
       zIndex: 9999,
       background: '#FF9292',
       color: '#fff',
-      padding: '1rem',
-      textAlign: 'center',
+      padding: '0.75rem 3rem',
       fontWeight: 'bold',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '3rem'
     }}>
-      {friendly}
+      <span>{friendly}</span>
       {onClose && (
         <button
           style={{
-            marginLeft: 16,
+            position: 'absolute',
+            right: '1rem',
+            top: '50%',
+            transform: 'translateY(-50%)',
             background: 'transparent',
             border: 'none',
             color: '#fff',
             cursor: 'pointer',
-            display: 'inline-flex',
+            display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            padding: '0.25rem'
           }}
           onClick={onClose}
           aria-label="Fermer l'alerte"
