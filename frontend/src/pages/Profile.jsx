@@ -42,8 +42,9 @@ export default function Profile() {
 
   const toggleEdit = () => {
     if (isEditing) {
-      updateUserProfile(editForm);
-      setIsEditing(false);
+      return updateUserProfile(editForm).finally(() => {
+        setIsEditing(false);
+      });
     } else {
       setEditForm({
         name: user.name,
@@ -98,19 +99,22 @@ export default function Profile() {
     }
 
     setIsPasswordSaving(true);
-    const result = await changePassword({
-      currentPassword: passwordForm.currentPassword,
-      newPassword: passwordForm.newPassword
-    });
-    setIsPasswordSaving(false);
+    try {
+      const result = await changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
 
-    if (!result.success) {
-      setPasswordError(result.message || 'Erreur lors de la modification.');
-      return;
+      if (!result.success) {
+        setPasswordError(result.message || 'Erreur lors de la modification.');
+        return;
+      }
+
+      setPasswordSuccess('Mot de passe modifié avec succès.');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } finally {
+      setIsPasswordSaving(false);
     }
-
-    setPasswordSuccess('Mot de passe modifié avec succès.');
-    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
   };
 
   if (!user) return null;
@@ -281,7 +285,7 @@ export default function Profile() {
             <Button type="button" onClick={closePasswordModal} variant="ghost" className="text-sm">
               Annuler
             </Button>
-            <Button type="submit" disabled={isPasswordSaving} variant="primary" className="text-sm">
+            <Button type="submit" disabled={isPasswordSaving} loading={isPasswordSaving} variant="primary" className="text-sm">
               {isPasswordSaving ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </div>

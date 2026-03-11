@@ -29,9 +29,9 @@ export default function Dashboard() {
 
   const totalNorms = projects.reduce((acc, p) => acc + p.normsCount, 0);
 
-  const handleCreateProject = () => {
+  const handleCreateProject = async () => {
     if (newProjectName && newProjectName.trim().length > 0) {
-      addProject(newProjectName, { onGlobalError: setGlobalError });
+      await addProject(newProjectName, { onGlobalError: setGlobalError });
       setIsCreatingProject(false);
       setNewProjectName('');
     }
@@ -210,10 +210,9 @@ export default function Dashboard() {
         confirmLabel="Supprimer"
         confirmClassName="bg-pink text-white hover:bg-pink/10"
         onCancel={() => setConfirmDeleteProject(null)}
-        onConfirm={() => {
-          if (confirmDeleteProject?.id) {
-            deleteProject(confirmDeleteProject.id);
-          }
+        onConfirm={async () => {
+          if (!confirmDeleteProject?.id) return;
+          await deleteProject(confirmDeleteProject.id);
           setConfirmDeleteProject(null);
         }}
       />

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import api from '../services/api';
+import Button from '../components/Button';
 
 export default function Verify() {
   const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -74,19 +75,21 @@ export default function Verify() {
         <div className="flex gap-2">
           {!success && (
             <>
-              <button
+              <Button
                 onClick={handleVerify}
-                className="w-full py-3 bg-blue text-white font-medium rounded-xl hover:bg-pink transition-all"
+                fullWidth
+                className="py-3"
               >
                 Vérifier
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleResend}
-                className="w-full py-3 bg-blue/10 text-blue font-medium rounded-xl hover:bg-pink/10 transition-all"
-                style={{ marginLeft: '8px' }}
+                fullWidth
+                variant="ghost"
+                className="py-3 bg-blue/10 text-blue font-medium hover:bg-pink/10"
               >
                 Renvoyer le code
-              </button>
+              </Button>
             </>
           )}
         </div>

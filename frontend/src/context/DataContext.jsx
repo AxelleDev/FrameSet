@@ -19,17 +19,16 @@ export const DataProvider = ({ children }) => {
       const parsedUser = JSON.parse(storedUser);
       if (parsedUser?.token) {
         setApiToken(parsedUser.token);
-        api.get('/user/profile', { onGlobalError: setGlobalError })
+        api.get('/user/profile')
           .then(profile => {
             setUser(parsedUser);
-            fetchProjects(parsedUser.id);
+            fetchProjects(parsedUser.id, { silent: true });
             setLoading(false);
           })
           .catch((err) => {
             setUser(null);
             clearApiToken();
             localStorage.removeItem('frameset_user');
-            setGlobalError(err?.data?.error || err?.message || 'Session expirée ou invalide');
             setLoading(false);
           });
       } else {
@@ -84,9 +83,10 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  const fetchProjects = async (userId) => {
+  const fetchProjects = async (userId, { silent = false } = {}) => {
     try {
-      const data = await api.get(`/projects?userId=${userId}`, { onGlobalError: setGlobalError });
+      const options = silent ? undefined : { onGlobalError: setGlobalError };
+      const data = await api.get(`/projects?userId=${userId}`, options);
       setProjects(data || []);
     } catch (error) {
       console.error('Échec du chargement des projets', error);
