@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useData } from '../context/DataContext';
 import useProjectApi from '../hooks/useProject';
 import { useParams } from 'react-router-dom';
@@ -24,9 +24,15 @@ export default function ProjectPalette() {
   const [editColorHex, setEditColorHex] = useState('');
 
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [draggedHex, setDraggedHex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [palette, setPalette] = useState([]);
   const [previewPalette, setPreviewPalette] = useState([]);
+  const itemRefs = useRef({});
+  const prevPositions = useRef({});
+  const skipFlip = useRef(false);
+  const didDrop = useRef(false);
+  const flipPending = useRef(false);
 
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null);
   const { copy, copiedValue } = useClipboard({ timeout: 1200 });
@@ -44,6 +50,35 @@ export default function ProjectPalette() {
     }
   }, [activeProject]);
   
+    useLayoutEffect(() => {
+      if (skipFlip.current) {
+        skipFlip.current = false;
+        Object.values(itemRefs.current).forEach(el => {
+          if (el) { el.style.transition = ''; el.style.transform = ''; }
+        });
+        return;
+      }
+      if (draggedHex === null) return;
+      if (!flipPending.current) return;
+      flipPending.current = false;
+      previewPalette.forEach(color => {
+        if (color.hex === draggedHex) return;
+        const el = itemRefs.current[color.hex];
+        const prev = prevPositions.current[color.hex];
+        if (!el || !prev) return;
+        const curr = el.getBoundingClientRect();
+        const dx = Math.round(prev.left - curr.left);
+        const dy = Math.round(prev.top - curr.top);
+        if (dx !== 0 || dy !== 0) {
+          el.style.transition = 'none';
+          el.style.transform = `translate(${dx}px, ${dy}px)`;
+          el.getBoundingClientRect();
+          el.style.transition = 'transform 280ms cubic-bezier(0.2, 0, 0, 1)';
+          el.style.transform = '';
+        }
+      });
+    }, [previewPalette, draggedHex]);
+
   const [isAddingColor, setIsAddingColor] = useState(false);
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('');
@@ -167,46 +202,69 @@ export default function ProjectPalette() {
             className="aspect-[4/5]"
            />
 
-          {(draggedIndex !== null && dragOverIndex !== null ? previewPalette : palette).map((color, idx) => (
+          {previewPalette.map((color, idx) => (
             <div
-              key={color.hex + '-' + idx}
-              className={`group relative flex flex-col aspect-[4/5] ${draggedIndex === idx ? 'opacity-60 scale-105 z-40' : ''} ${dragOverIndex === idx && draggedIndex !== null ? 'ring-4 ring-blue-400 ring-offset-2' : ''}`}
-              style={{ cursor: 'grab' }}
+              key={color.hex}
+              ref={el => { itemRefs.current[color.hex] = el; }}
+              className={`group relative flex flex-col aspect-[4/5] ${color.hex === draggedHex ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
               draggable
               onDragStart={e => {
+                didDrop.current = false;
+                flipPending.current = false;
+                prevPositions.current = {};
                 setDraggedIndex(idx);
+                setDraggedHex(color.hex);
                 setDragOverIndex(idx);
                 e.dataTransfer.effectAllowed = 'move';
               }}
               onDragOver={e => {
                 e.preventDefault();
-                if (draggedIndex !== null && idx !== draggedIndex) {
+                if (draggedHex !== null && color.hex !== draggedHex) {
+                  if (idx === dragOverIndex) return;
+                  const snapshots = {};
+                  Object.keys(itemRefs.current).forEach(key => {
+                    const el = itemRefs.current[key];
+                    if (el) snapshots[key] = el.getBoundingClientRect();
+                  });
+                  prevPositions.current = snapshots;
+                  flipPending.current = true;
                   setDragOverIndex(idx);
-                  if (draggedIndex !== null) {
-                    const tempPalette = [...palette];
-                    const [moved] = tempPalette.splice(draggedIndex, 1);
-                    tempPalette.splice(idx, 0, moved);
-                    setPreviewPalette(tempPalette);
-                  }
+                  const tempPalette = [...palette];
+                  const [moved] = tempPalette.splice(draggedIndex, 1);
+                  tempPalette.splice(idx, 0, moved);
+                  setPreviewPalette(tempPalette);
                 }
               }}
               onDrop={e => {
                 e.preventDefault();
-                if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+                didDrop.current = true;
+                flipPending.current = false;
+                if (draggedHex !== null && draggedIndex !== dragOverIndex) {
                   const newPalette = [...palette];
                   const [moved] = newPalette.splice(draggedIndex, 1);
                   newPalette.splice(dragOverIndex, 0, moved);
                   setPalette(newPalette);
-                  setPreviewPalette(newPalette);
                   setTimeout(() => {
                     updateProjectPalette(id, newPalette);
                   }, 200);
                 }
                 setDraggedIndex(null);
+                setDraggedHex(null);
                 setDragOverIndex(null);
               }}
               onDragEnd={() => {
+                if (didDrop.current) {
+                  didDrop.current = false;
+                  flipPending.current = false;
+                  setDraggedIndex(null);
+                  setDraggedHex(null);
+                  setDragOverIndex(null);
+                  return;
+                }
+                skipFlip.current = true;
+                flipPending.current = false;
                 setDraggedIndex(null);
+                setDraggedHex(null);
                 setDragOverIndex(null);
                 setPreviewPalette(palette);
               }}
