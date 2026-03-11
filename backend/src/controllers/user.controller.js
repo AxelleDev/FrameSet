@@ -2,6 +2,11 @@ const bcrypt = require('bcryptjs');
 const db = require('../database');
 const mailService = require('../services/mail.service');
 
+const getAuthenticatedUserId = (req) => {
+  const userId = Number(req?.user?.id);
+  return Number.isInteger(userId) && userId > 0 ? userId : null;
+};
+
 const getUserCount = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT COUNT(*) as count FROM users');
@@ -14,7 +19,11 @@ const getUserCount = async (req, res) => {
 
 const updateUser = async (req, res) => {
   const validator = require('validator');
-  const { id, name, email } = req.body;
+  const authenticatedUserId = getAuthenticatedUserId(req);
+  const { name, email } = req.body;
+  if (!authenticatedUserId) {
+    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+  }
   if (!name || !email) {
     return res.status(400).json({ error: 'Tous les champs sont obligatoires.' });
   }
@@ -24,18 +33,18 @@ const updateUser = async (req, res) => {
     return res.status(400).json({ error: 'Email invalide.' });
   }
   try {
-    const [rows] = await db.query('SELECT email, pending_email FROM users WHERE id = ?', [id]);
+    const [rows] = await db.query('SELECT email, pending_email FROM users WHERE id = ?', [authenticatedUserId]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Utilisateur non trouvé.' });
     }
 
     const currentEmail = rows[0].email;
-    const isEmailChanged = email && email !== currentEmail;
+    const isEmailChanged = trimmedEmail !== currentEmail;
 
     if (isEmailChanged) {
       const [existing] = await db.query(
         'SELECT id FROM users WHERE (email = ? OR pending_email = ?) AND id <> ?',
-        [email, email, id]
+        [trimmedEmail, trimmedEmail, authenticatedUserId]
       );
       if (existing.length > 0) {
         return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
@@ -46,11 +55,11 @@ const updateUser = async (req, res) => {
 
       await db.query(
         'UPDATE users SET name = ?, pending_email = ?, pending_email_code = ?, pending_email_expires = ? WHERE id = ?',
-        [name, email, pendingCode, expires, id]
+        [trimmedName, trimmedEmail, pendingCode, expires, authenticatedUserId]
       );
 
       await mailService.sendMail({
-        to: email,
+        to: trimmedEmail,
         subject: 'Confirmation de votre nouvel email',
         text: `Votre code de confirmation est : ${pendingCode}\nCe code expire dans 10 minutes.`,
         html: mailService.buildTemplate({
@@ -60,11 +69,11 @@ const updateUser = async (req, res) => {
         })
       });
 
-      return res.json({ success: true, name, email: currentEmail, pendingEmail: email });
+      return res.json({ success: true, name: trimmedName, email: currentEmail, pendingEmail: trimmedEmail });
     }
 
-    await db.query('UPDATE users SET name = ? WHERE id = ?', [name, id]);
-    res.json({ success: true, name, email: currentEmail, pendingEmail: rows[0].pending_email || null });
+    await db.query('UPDATE users SET name = ? WHERE id = ?', [trimmedName, authenticatedUserId]);
+    res.json({ success: true, name: trimmedName, email: currentEmail, pendingEmail: rows[0].pending_email || null });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erreur base de données' });
@@ -73,8 +82,12 @@ const updateUser = async (req, res) => {
 
 const verifyPendingEmail = async (req, res) => {
   const { email, code } = req.body;
+  const authenticatedUserId = getAuthenticatedUserId(req);
+  if (!authenticatedUserId) {
+    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+  }
   try {
-    const [rows] = await db.query('SELECT * FROM users WHERE pending_email = ?', [email]);
+    const [rows] = await db.query('SELECT * FROM users WHERE id = ? AND pending_email = ?', [authenticatedUserId, email]);
     if (rows.length === 0) {
       return res.status(400).json({ error: 'Email en attente non trouvé.' });
     }
@@ -109,8 +122,12 @@ const verifyPendingEmail = async (req, res) => {
 
 const resendPendingEmail = async (req, res) => {
   const { email } = req.body;
+  const authenticatedUserId = getAuthenticatedUserId(req);
+  if (!authenticatedUserId) {
+    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+  }
   try {
-    const [rows] = await db.query('SELECT * FROM users WHERE pending_email = ?', [email]);
+    const [rows] = await db.query('SELECT * FROM users WHERE id = ? AND pending_email = ?', [authenticatedUserId, email]);
     if (rows.length === 0) {
       return res.status(400).json({ error: 'Email en attente non trouvé.' });
     }
@@ -143,8 +160,9 @@ const resendPendingEmail = async (req, res) => {
 
 const changePassword = async (req, res) => {
   const validator = require('validator');
-  const { id, currentPassword, newPassword } = req.body;
-  if (!id || !currentPassword || !newPassword) {
+  const authenticatedUserId = getAuthenticatedUserId(req);
+  const { currentPassword, newPassword } = req.body;
+  if (!authenticatedUserId || !currentPassword || !newPassword) {
     return res.status(400).json({ error: 'Champs requis manquants.' });
   }
   const trimmedNewPassword = validator.trim(newPassword);
@@ -155,7 +173,7 @@ const changePassword = async (req, res) => {
     return res.status(400).json({ error: 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.' });
   }
   try {
-    const [rows] = await db.query('SELECT password FROM users WHERE id = ?', [id]);
+    const [rows] = await db.query('SELECT password FROM users WHERE id = ?', [authenticatedUserId]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Utilisateur non trouvé.' });
     }
@@ -163,8 +181,8 @@ const changePassword = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ error: 'Ancien mot de passe incorrect.' });
     }
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await db.query('UPDATE users SET password = ?, password_updated_at = NOW() WHERE id = ?', [hashedPassword, id]);
+    const hashedPassword = await bcrypt.hash(trimmedNewPassword, 10);
+    await db.query('UPDATE users SET password = ?, password_updated_at = NOW() WHERE id = ?', [hashedPassword, authenticatedUserId]);
     res.json({ success: true, passwordUpdatedAt: new Date() });
   } catch (error) {
     console.error(error);

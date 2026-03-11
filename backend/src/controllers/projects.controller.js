@@ -1,8 +1,35 @@
 ﻿const db = require('../database');
 
+const getAuthenticatedUserId = (req) => {
+  const userId = Number(req?.user?.id);
+  return Number.isInteger(userId) && userId > 0 ? userId : null;
+};
+
+const ensureProjectOwnership = async (req, res, projectId) => {
+  const userId = getAuthenticatedUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: 'Utilisateur non authentifié.' });
+    return false;
+  }
+
+  const [rows] = await db.query(
+    'SELECT id FROM projects WHERE id = ? AND user_id = ?',
+    [projectId, userId]
+  );
+
+  if (rows.length === 0) {
+    res.status(403).json({ error: 'Accès interdit à ce projet.' });
+    return false;
+  }
+
+  return true;
+};
+
 const listProjects = async (req, res) => {
-  const userId = req.query.userId;
-  if (!userId) return res.json([]);
+  const userId = getAuthenticatedUserId(req);
+  if (!userId) {
+    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+  }
   try {
     const [projectsData] = await db.query(
       'SELECT *, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? ORDER BY created_at DESC',
@@ -47,8 +74,12 @@ const listProjects = async (req, res) => {
 
 const createProject = async (req, res) => {
   const validator = require('validator');
-  let { userId, name, description } = req.body;
-  if (!name || !userId) {
+  const userId = getAuthenticatedUserId(req);
+  let { name, description } = req.body;
+  if (!userId) {
+    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+  }
+  if (!name) {
     return res.status(400).json({ error: 'Champs obligatoires manquants.' });
   }
   name = validator.trim(name);
@@ -86,6 +117,7 @@ const updateProjectName = async (req, res) => {
     return res.status(400).json({ error: 'Nom du projet requis.' });
   }
   try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
     await db.query('UPDATE projects SET name = ?, last_edited = NOW() WHERE id = ?', [name.trim(), id]);
     res.json({ success: true, name: name.trim() });
   } catch (error) {
@@ -97,6 +129,7 @@ const updateProjectName = async (req, res) => {
 const deleteProject = async (req, res) => {
   const { id } = req.params;
   try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
     await db.query('DELETE FROM projects WHERE id = ?', [id]);
     res.json({ success: true });
   } catch (error) {
@@ -109,6 +142,7 @@ const addBrushNorm = async (req, res) => {
   const { id } = req.params;
   const { name, value, unit, brushName } = req.body;
   try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
     const [result] = await db.query(
       'INSERT INTO project_brush_norms (project_id, name, value, unit, brush_name) VALUES (?, ?, ?, ?, ?)',
       [id, name, value, unit, brushName]
@@ -125,6 +159,7 @@ const addTypographyNorm = async (req, res) => {
   const { id } = req.params;
   const { fontFamily, fontWeight, fontUsage, fontStyle } = req.body;
   try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
     const [result] = await db.query(
       'INSERT INTO project_typography_norms (project_id, font_family, font_weight, font_usage, font_style) VALUES (?, ?, ?, ?, ?)',
       [id, fontFamily, fontWeight, fontUsage, fontStyle]
@@ -141,6 +176,7 @@ const updatePalette = async (req, res) => {
   const { id } = req.params;
   const colors = req.body;
   try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
     for (const color of colors) {
       await db.query(
         'REPLACE INTO project_palette (project_id, name, hex) VALUES (?, ?, ?)',
@@ -158,6 +194,7 @@ const updatePalette = async (req, res) => {
 const deleteBrushNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   try {
+    if (!(await ensureProjectOwnership(req, res, projectId))) return;
     const [result] = await db.query('DELETE FROM project_brush_norms WHERE id = ? AND project_id = ?', [normId, projectId]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Norme non trouvée' });
@@ -172,6 +209,7 @@ const deleteBrushNorm = async (req, res) => {
 const deleteTypographyNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   try {
+    if (!(await ensureProjectOwnership(req, res, projectId))) return;
     const [result] = await db.query('DELETE FROM project_typography_norms WHERE id = ? AND project_id = ?', [normId, projectId]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Norme non trouvée' });
@@ -187,6 +225,7 @@ const deletePaletteColor = async (req, res) => {
   const { id } = req.params;
   const { hex } = req.body;
   try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
     await db.query('DELETE FROM project_palette WHERE project_id = ? AND hex = ?', [id, hex]);
     res.json({ success: true });
   } catch (error) {
@@ -199,6 +238,7 @@ const updatePaletteColor = async (req, res) => {
   const { id } = req.params;
   const { oldHex, newName, newHex } = req.body;
   try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
     await db.query(
       'UPDATE project_palette SET name = ?, hex = ? WHERE project_id = ? AND hex = ?',
       [newName, newHex, id, oldHex]
@@ -215,6 +255,7 @@ const updateBrushNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   const { name, value, unit, brushName } = req.body;
   try {
+    if (!(await ensureProjectOwnership(req, res, projectId))) return;
     const [result] = await db.query(
       'UPDATE project_brush_norms SET name = ?, value = ?, unit = ?, brush_name = ? WHERE id = ? AND project_id = ?',
       [name, value, unit, brushName, normId, projectId]
@@ -234,6 +275,7 @@ const updateTypographyNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   const { fontFamily, fontWeight, fontUsage, fontStyle } = req.body;
   try {
+    if (!(await ensureProjectOwnership(req, res, projectId))) return;
     const [result] = await db.query(
       'UPDATE project_typography_norms SET font_family = ?, font_weight = ?, font_usage = ?, font_style = ? WHERE id = ? AND project_id = ?',
       [fontFamily, fontWeight, fontUsage, fontStyle, normId, projectId]
