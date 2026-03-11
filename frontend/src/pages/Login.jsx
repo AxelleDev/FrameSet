@@ -31,8 +31,8 @@ export default function Login() {
     if (result.success) {
       setError('');
       navigate('/app/dashboard');
-    } else {
-      setError(result.message || 'Identifiants invalides');
+    } else if (result.message) {
+      setError(result.message);
     }
   };
 

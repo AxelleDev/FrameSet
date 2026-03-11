@@ -300,7 +300,8 @@ export const DataProvider = ({ children }) => {
       return { success: true };
     } catch (e) {
       console.error(e);
-      return { success: false, message: e.data?.error || e.message || 'Erreur réseau.' };
+      const isBusinessError = e.status && e.status < 500;
+      return { success: false, message: isBusinessError ? (e.data?.error || e.message) : undefined };
     }
   };
 

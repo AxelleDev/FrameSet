@@ -14,8 +14,9 @@ export const useAuthApi = () => {
       setAuthenticatedUser(userData);
       return { success: true, data: userData };
     } catch (err) {
-      setGlobalError(err.data?.error || err.message || 'Erreur de connexion');
-      return { success: false, message: err.data?.error || err.message };
+      const isBusinessError = err.status && err.status < 500;
+      if (!isBusinessError) setGlobalError(err.message || 'Une erreur est survenue.');
+      return { success: false, message: isBusinessError ? (err.data?.error || err.message) : undefined };
     }
   }, [setGlobalError]);
 
@@ -26,8 +27,9 @@ export const useAuthApi = () => {
       setAuthenticatedUser(newUser);
       return { success: true, data: newUser };
     } catch (err) {
-      setGlobalError(err.data?.error || err.message || 'Erreur lors de l\'inscription');
-      return { success: false, message: err.data?.error || err.message };
+      const isBusinessError = err.status && err.status < 500;
+      if (!isBusinessError) setGlobalError(err.message || 'Une erreur est survenue.');
+      return { success: false, message: isBusinessError ? (err.data?.error || err.message) : undefined };
     }
   }, [setGlobalError]);
 

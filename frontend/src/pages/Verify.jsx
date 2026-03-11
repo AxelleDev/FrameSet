@@ -35,7 +35,7 @@ export default function Verify() {
         setError(data.error || 'Code incorrect');
       }
     } catch (err) {
-      setError(err.data?.error || err.message || 'Erreur réseau');
+      if (err.status && err.status < 500) setError(err.data?.error || err.message);
     }
   };
 
@@ -53,7 +53,7 @@ export default function Verify() {
         setError(data.error || "Erreur lors de l'envoi du code.");
       }
     } catch (err) {
-      setError(err.data?.error || err.message || 'Erreur réseau');
+      if (err.status && err.status < 500) setError(err.data?.error || err.message);
     }
   };
 

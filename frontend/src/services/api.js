@@ -30,10 +30,9 @@ const buildHeaders = (isJson = true, extra = {}) => {
 
 // Requête générique utilisée par les helpers ci-dessous.
 // Lance une erreur enrichie si le status HTTP n'est pas ok.
-const request = async (path, { method = 'GET', body, headers, signal } = {}) => {
+const request = async (path, { method = 'GET', body, headers, signal, onGlobalError } = {}) => {
   const opts = { method, headers: buildHeaders(body != null, headers), signal };
   if (body != null) opts.body = typeof body === 'string' ? body : JSON.stringify(body);
-  const onGlobalError = headers && headers.onGlobalError ? headers.onGlobalError : undefined;
   try {
     const res = await fetch(`${API_URL}${path}`, opts);
     const contentType = res.headers.get('content-type') || '';
@@ -47,7 +46,7 @@ const request = async (path, { method = 'GET', body, headers, signal } = {}) => 
     if (!res.ok) {
       // Message d'erreur métier ou serveur
       const errorMsg = data?.error || res.statusText || 'Erreur inconnue';
-      if (typeof onGlobalError === 'function') {
+      if (res.status >= 500 && typeof onGlobalError === 'function') {
         onGlobalError(errorMsg);
       }
       const err = new Error(errorMsg);
@@ -57,13 +56,8 @@ const request = async (path, { method = 'GET', body, headers, signal } = {}) => 
     }
     return data;
   } catch (e) {
-    if (typeof onGlobalError === 'function') {
-      // Si c'est une erreur réseau, message spécifique
-      if (e instanceof TypeError || e.message === 'Failed to fetch') {
-        onGlobalError('Impossible de contacter le serveur. Vérifiez votre connexion ou réessayez plus tard.');
-      } else {
-        onGlobalError(e.message || 'Erreur inconnue');
-      }
+    if ((e instanceof TypeError || e.message === 'Failed to fetch') && typeof onGlobalError === 'function') {
+      onGlobalError('Impossible de contacter le serveur. Vérifiez votre connexion ou réessayez plus tard.');
     }
     throw e;
   }

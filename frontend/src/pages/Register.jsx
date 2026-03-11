@@ -36,8 +36,8 @@ export default function Register() {
       } else {
         navigate(`/verify?email=${encodeURIComponent(formData.email)}`);
       }
-    } else {
-      setError(result.message || 'Erreur lors de l\'inscription');
+    } else if (result.message) {
+      setError(result.message);
     }
   };
 
