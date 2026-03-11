@@ -10,8 +10,8 @@ const authLimiter = rateLimit({
 	message: 'Trop de tentatives, veuillez réessayer dans une minute.'
 });
 
-router.post('/register', authController.register);
-router.post('/login', authController.login);
+router.post('/register', authLimiter, authController.register);
+router.post('/login', authLimiter, authController.login);
 router.post('/verify', authController.verify);
 router.post('/resend-code', authController.resendCode);
 router.post('/refresh', authController.refresh);
