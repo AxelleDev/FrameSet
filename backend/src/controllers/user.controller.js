@@ -4,6 +4,7 @@ const validator = require('validator');
 const db = require('../database');
 const mailService = require('../services/mail.service');
 const { getAuthenticatedUserId } = require('../utils/auth.utils');
+const { BCRYPT_SALT_ROUNDS } = require('../config/security.config');
 
 const getUserCount = async (req, res) => {
   try {
@@ -208,7 +209,7 @@ const changePassword = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ error: 'Ancien mot de passe incorrect.' });
     }
-    const hashedPassword = await bcrypt.hash(trimmedNewPassword, 10);
+    const hashedPassword = await bcrypt.hash(trimmedNewPassword, BCRYPT_SALT_ROUNDS);
     await db.query('UPDATE users SET password = ?, password_updated_at = NOW() WHERE id = ?', [hashedPassword, authenticatedUserId]);
     res.json({ success: true, passwordUpdatedAt: new Date() });
   } catch (error) {

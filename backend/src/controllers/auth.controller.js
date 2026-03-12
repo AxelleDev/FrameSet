@@ -5,6 +5,7 @@ const db = require('../database');
 const mailService = require('../services/mail.service');
 const jwt = require('jsonwebtoken');
 const { generateRefreshToken, verifyRefreshToken } = require('../services/token.service');
+const { BCRYPT_SALT_ROUNDS } = require('../config/security.config');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -36,7 +37,7 @@ const register = async (req, res) => {
   const expires = new Date(Date.now() + 10 * 60 * 1000);
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
     const now = new Date();
 
     const [result] = await db.query(
