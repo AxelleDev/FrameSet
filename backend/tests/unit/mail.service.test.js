@@ -1,7 +1,8 @@
 const nodemailer = require('nodemailer');
+const mockSendMail = jest.fn().mockResolvedValue(true);
 jest.mock('nodemailer', () => ({
   createTransport: jest.fn(() => ({
-    sendMail: jest.fn().mockResolvedValue(true)
+    sendMail: mockSendMail
   }))
 }));
 const mailService = require('../../src/services/mail.service');
@@ -15,9 +16,9 @@ describe('service de mail', () => {
   });
 
   it('devrait envoyer un mail', async () => {
-    const mockTransport = { sendMail: jest.fn().mockResolvedValue(true) };
-    nodemailer.createTransport.mockReturnValue(mockTransport);
+    mockSendMail.mockClear();
+    mockSendMail.mockResolvedValueOnce(true);
     await mailService.sendMail({ to: 'a@b.com', subject: 'Test', text: 'Hello', html: '<div>Test</div>' });
-    expect(mockTransport.sendMail).toHaveBeenCalled();
+    expect(mockSendMail).toHaveBeenCalled();
   });
 });
