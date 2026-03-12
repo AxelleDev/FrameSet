@@ -1,16 +1,14 @@
 const nodemailer = require('nodemailer');
 
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS
-    }
-  });
-};
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS
+  }
+});
 
 const buildTemplate = ({ title, message, code, footer }) => {
   return `
@@ -37,7 +35,6 @@ const buildTemplate = ({ title, message, code, footer }) => {
 };
 
 const sendMail = async ({ to, subject, text, html }) => {
-  const transporter = createTransporter();
   await transporter.sendMail({
     from: process.env.MAIL_USER,
     to,
