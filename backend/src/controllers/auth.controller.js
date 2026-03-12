@@ -6,12 +6,7 @@ const mailService = require('../services/mail.service');
 const jwt = require('jsonwebtoken');
 const { generateRefreshToken, verifyRefreshToken } = require('../services/token.service');
 const { BCRYPT_SALT_ROUNDS } = require('../config/security.config');
-
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET doit être défini dans les variables d’environnement');
-}
-const JWT_EXPIRES = '2h';
+const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
 const getInitials = (name) => name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
 const register = async (req, res) => {
