@@ -175,7 +175,6 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    setAuthenticatedUser,
     applyUserUpdate,
     updateUserProfile,
     changePassword
@@ -186,7 +185,6 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    setAuthenticatedUser,
     applyUserUpdate,
     updateUserProfile,
     changePassword
