@@ -4,13 +4,29 @@ const db = require('../database');
 const mailService = require('../services/mail.service');
 const { getAuthenticatedUserId, generateVerificationCode } = require('../utils/auth.utils');
 const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
+const { logger } = require('../utils/logger');
+
+const logUserControllerError = (req, operation, error, meta = {}) => {
+  const userId = getAuthenticatedUserId(req);
+  const logMeta = {
+    requestId: req.id,
+    ...meta,
+    error
+  };
+
+  if (userId) {
+    logMeta.userId = userId;
+  }
+
+  logger.error(`users.${operation}.error`, logMeta);
+};
 
 const getUserCount = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT COUNT(*) as count FROM users');
     res.json({ count: rows[0].count });
   } catch (error) {
-    console.error(error);
+    logUserControllerError(req, 'count', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
@@ -41,7 +57,7 @@ const getProfile = async (req, res) => {
       pendingEmail: userDb.pending_email || null
     });
   } catch (error) {
-    console.error(error);
+    logUserControllerError(req, 'profile', error);
     return res.status(500).json({ error: 'Erreur serveur' });
   }
 };
@@ -102,7 +118,7 @@ const updateUser = async (req, res) => {
     await db.query('UPDATE users SET name = ? WHERE id = ?', [trimmedName, authenticatedUserId]);
     res.json({ success: true, name: trimmedName, email: currentEmail, pendingEmail: rows[0].pending_email || null });
   } catch (error) {
-    console.error(error);
+    logUserControllerError(req, 'update', error);
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -142,7 +158,7 @@ const verifyPendingEmail = async (req, res) => {
 
     res.json({ success: true, user: updatedUser });
   } catch (error) {
-    console.error(error);
+    logUserControllerError(req, 'verify_pending_email', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
@@ -179,7 +195,7 @@ const resendPendingEmail = async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    logUserControllerError(req, 'resend_pending_email', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
@@ -210,7 +226,7 @@ const changePassword = async (req, res) => {
     await db.query('UPDATE users SET password = ?, password_updated_at = NOW() WHERE id = ?', [hashedPassword, authenticatedUserId]);
     res.json({ success: true, passwordUpdatedAt: new Date() });
   } catch (error) {
-    console.error(error);
+    logUserControllerError(req, 'change_password', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
@@ -227,7 +243,7 @@ const deleteAccount = async (req, res) => {
     }
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    logUserControllerError(req, 'delete_account', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };

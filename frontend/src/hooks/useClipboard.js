@@ -1,5 +1,6 @@
 // Utilitaire pour copier du texte dans le presse-papiers.
 import { useRef, useState } from 'react';
+import logger from '../utils/logger';
 
 export default function useClipboard({ timeout = 1200 } = {}) {
   const [copiedValue, setCopiedValue] = useState(null);
@@ -23,7 +24,7 @@ export default function useClipboard({ timeout = 1200 } = {}) {
         document.body.removeChild(textarea);
       }
     } catch (err) {
-      console.error('Erreur presse-papiers :', err);
+      logger.error('clipboard.copy.error', err);
       success = false;
     }
 

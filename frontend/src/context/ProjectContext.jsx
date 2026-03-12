@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 import { useAuth } from './AuthContext';
+import logger from '../utils/logger';
 
 export const ProjectContext = createContext(null);
 
@@ -27,7 +28,7 @@ export const ProjectProvider = ({ children }) => {
       setProjects(nextProjects);
       return nextProjects;
     } catch (error) {
-      console.error('Echec du chargement des projets', error);
+      logger.error('projects.fetch.error', error);
       return [];
     } finally {
       setProjectsLoading(false);
@@ -59,7 +60,7 @@ export const ProjectProvider = ({ children }) => {
       setProjects((prevProjects) => [newProject, ...prevProjects]);
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de l\'ajout du projet.');
-      console.error(error);
+      logger.error('projects.add.error', error);
     }
   }, [user, setGlobalError]);
 
@@ -72,7 +73,7 @@ export const ProjectProvider = ({ children }) => {
       }
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de la suppression du projet.');
-      console.error(error);
+      logger.error('projects.delete.error', error);
     }
   }, [activeProjectId, setGlobalError]);
 
@@ -86,7 +87,7 @@ export const ProjectProvider = ({ children }) => {
       ));
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de la modification de la palette.');
-      console.error(error);
+      logger.error('projects.updatePalette.error', error);
     }
   }, [setGlobalError]);
 
@@ -102,7 +103,7 @@ export const ProjectProvider = ({ children }) => {
       ));
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors du changement de nom du projet.');
-      console.error(error);
+      logger.error('projects.updateName.error', error);
     }
   }, [setGlobalError]);
 
@@ -118,7 +119,7 @@ export const ProjectProvider = ({ children }) => {
       ));
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de la suppression de la couleur.');
-      console.error(error);
+      logger.error('projects.deletePaletteColor.error', error);
     }
   }, [setGlobalError]);
 
@@ -140,7 +141,7 @@ export const ProjectProvider = ({ children }) => {
       return normWithId;
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de l\'ajout de la norme.');
-      console.error(error);
+      logger.error('projects.addBrushNorm.error', error);
       return null;
     }
   }, [setGlobalError]);
@@ -163,7 +164,7 @@ export const ProjectProvider = ({ children }) => {
       return normWithId;
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de l\'ajout de la norme.');
-      console.error(error);
+      logger.error('projects.addTypographyNorm.error', error);
       return null;
     }
   }, [setGlobalError]);
@@ -185,7 +186,7 @@ export const ProjectProvider = ({ children }) => {
       ));
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de la suppression de la norme.');
-      console.error(error);
+      logger.error('projects.deleteBrushNorm.error', error);
     }
   }, [setGlobalError]);
 
@@ -206,7 +207,7 @@ export const ProjectProvider = ({ children }) => {
       ));
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de la suppression de la norme.');
-      console.error(error);
+      logger.error('projects.deleteTypographyNorm.error', error);
     }
   }, [setGlobalError]);
 
@@ -227,7 +228,7 @@ export const ProjectProvider = ({ children }) => {
       ));
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de la modification de la norme.');
-      console.error(error);
+      logger.error('projects.updateBrushNorm.error', error);
     }
   }, [setGlobalError]);
 
@@ -248,7 +249,7 @@ export const ProjectProvider = ({ children }) => {
       ));
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de la modification de la norme.');
-      console.error(error);
+      logger.error('projects.updateTypographyNorm.error', error);
     }
   }, [setGlobalError]);
 

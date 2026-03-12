@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import api, { setToken as setApiToken, clearToken as clearApiToken } from '../services/api';
+import logger from '../utils/logger';
 
 export const AuthContext = createContext(null);
 
@@ -142,7 +143,7 @@ export const AuthProvider = ({ children }) => {
       persistUser(updatedUser);
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de la mise a jour du profil.');
-      console.error(error);
+      logger.error('auth.updateUserProfile.error', error);
     }
   }, [user]);
 
@@ -178,7 +179,7 @@ export const AuthProvider = ({ children }) => {
       persistUser(updatedUser);
       return { success: true };
     } catch (error) {
-      console.error(error);
+      logger.error('auth.changePassword.error', error);
       const isBusinessError = error.status && error.status < 500;
       return { success: false, message: isBusinessError ? (error.data?.error || error.message) : undefined };
     }

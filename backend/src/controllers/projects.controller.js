@@ -1,6 +1,22 @@
 ﻿const db = require('../database');
 const validator = require('validator');
 const { getAuthenticatedUserId } = require('../utils/auth.utils');
+const { logger } = require('../utils/logger');
+
+const logProjectsControllerError = (req, operation, error, meta = {}) => {
+  const userId = getAuthenticatedUserId(req);
+  const logMeta = {
+    requestId: req.id,
+    ...meta,
+    error
+  };
+
+  if (userId) {
+    logMeta.userId = userId;
+  }
+
+  logger.error(`projects.${operation}.error`, logMeta);
+};
 
 const ensureProjectOwnership = async (req, res, projectId) => {
   const userId = getAuthenticatedUserId(req);
@@ -164,7 +180,7 @@ const listProjects = async (req, res) => {
     }));
     res.json(fullProjects);
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'list', error);
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -199,7 +215,7 @@ const createProject = async (req, res) => {
     };
     res.json(newProject);
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'create', error);
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -215,7 +231,7 @@ const updateProjectName = async (req, res) => {
     await db.query('UPDATE projects SET name = ?, last_edited = NOW() WHERE id = ?', [name.trim(), id]);
     res.json({ success: true, name: name.trim() });
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'update_name', error, { projectId: id });
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -227,7 +243,7 @@ const deleteProject = async (req, res) => {
     await db.query('DELETE FROM projects WHERE id = ?', [id]);
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'delete', error, { projectId: id });
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -256,7 +272,7 @@ const addBrushNorm = async (req, res) => {
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
     res.json({ success: true, id: result.insertId });
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'add_brush_norm', error, { projectId: id });
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -285,7 +301,7 @@ const addTypographyNorm = async (req, res) => {
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
     res.json({ success: true, id: result.insertId });
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'add_typography_norm', error, { projectId: id });
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -304,7 +320,7 @@ const updatePalette = async (req, res) => {
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'update_palette', error, { projectId: id });
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -319,7 +335,10 @@ const deleteBrushNorm = async (req, res) => {
     }
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'delete_brush_norm', error, {
+      projectId,
+      normId
+    });
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -334,7 +353,10 @@ const deleteTypographyNorm = async (req, res) => {
     }
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'delete_typography_norm', error, {
+      projectId,
+      normId
+    });
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -347,7 +369,9 @@ const deletePaletteColor = async (req, res) => {
     await db.query('DELETE FROM project_palette WHERE project_id = ? AND hex = ?', [id, hex]);
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'delete_palette_color', error, {
+      projectId: id
+    });
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -364,7 +388,9 @@ const updatePaletteColor = async (req, res) => {
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'update_palette_color', error, {
+      projectId: id
+    });
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -397,7 +423,10 @@ const updateBrushNorm = async (req, res) => {
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [projectId]);
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'update_brush_norm', error, {
+      projectId,
+      normId
+    });
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };
@@ -430,7 +459,10 @@ const updateTypographyNorm = async (req, res) => {
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [projectId]);
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    logProjectsControllerError(req, 'update_typography_norm', error, {
+      projectId,
+      normId
+    });
     res.status(500).json({ error: 'Erreur base de données' });
   }
 };

@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
 require('dotenv').config();
+const { logger } = require('./utils/logger');
 
 const migrationsDir = path.join(__dirname, '..', 'migrations');
 const SKIPPABLE_MIGRATION_ERROR_CODES = new Set([
@@ -10,6 +11,7 @@ const SKIPPABLE_MIGRATION_ERROR_CODES = new Set([
   'ER_TABLE_EXISTS_ERROR',
   'ER_DUP_KEYNAME'
 ]);
+const migrationLogger = logger.child({ component: 'migrations' });
 
 const getPool = () => mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -75,7 +77,7 @@ const run = async (pool) => {
     const pending = await getPendingMigrations(resolvedPool);
 
     if (pending.length === 0) {
-      console.log('Aucune migration en attente.');
+      migrationLogger.info('migrations.none_pending');
       return;
     }
 
@@ -84,26 +86,30 @@ const run = async (pool) => {
       const sql = fs.readFileSync(filePath, 'utf8').trim();
 
       if (!sql) {
-        console.log(`Migration ignorée (vide): ${file}`);
+        migrationLogger.warn('migrations.empty_skipped', { file });
         await resolvedPool.query('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)', [file]);
         continue;
       }
 
-      console.log(`Exécution de la migration: ${file}`);
+      migrationLogger.info('migrations.execute', { file });
       try {
         await resolvedPool.query(sql);
-        console.log(`Migration appliquée: ${file}`);
+        migrationLogger.info('migrations.applied', { file });
       } catch (error) {
         if (!SKIPPABLE_MIGRATION_ERROR_CODES.has(error?.code)) {
           throw error;
         }
-        console.warn(`Migration déjà reflétée dans le schéma, marquée comme appliquée: ${file} (${error.code})`);
+
+        migrationLogger.warn('migrations.already_reflected', {
+          file,
+          errorCode: error.code
+        });
       }
 
       await resolvedPool.query('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)', [file]);
     }
   } catch (error) {
-    console.error('Erreur migration:', error);
+    migrationLogger.error('migrations.run.error', { error });
     process.exitCode = 1;
   } finally {
     if (shouldClosePool) {
