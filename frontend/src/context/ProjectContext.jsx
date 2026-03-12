@@ -65,7 +65,7 @@ export const ProjectProvider = ({ children }) => {
 
   const deleteProject = useCallback(async (id) => {
     try {
-      await api.delete(`/projects/${id}`, { onGlobalError: setGlobalError });
+      await api.delete(`/projects/${id}`, null, { onGlobalError: setGlobalError });
       setProjects((prevProjects) => prevProjects.filter((project) => String(project.id) !== String(id)));
       if (String(activeProjectId) === String(id)) {
         setActiveProjectId(null);
@@ -171,7 +171,7 @@ export const ProjectProvider = ({ children }) => {
   const deleteBrushNorm = useCallback(async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
-      await api.delete(`/projects/${projectId}/brush-norms/${normIdNum}`, { onGlobalError: setGlobalError });
+      await api.delete(`/projects/${projectId}/brush-norms/${normIdNum}`, null, { onGlobalError: setGlobalError });
       setProjects((prevProjects) => (
         prevProjects.map((project) => (
           String(project.id) === String(projectId)
@@ -192,7 +192,7 @@ export const ProjectProvider = ({ children }) => {
   const deleteTypographyNorm = useCallback(async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
-      await api.delete(`/projects/${projectId}/typography-norms/${normIdNum}`, { onGlobalError: setGlobalError });
+      await api.delete(`/projects/${projectId}/typography-norms/${normIdNum}`, null, { onGlobalError: setGlobalError });
       setProjects((prevProjects) => (
         prevProjects.map((project) => (
           String(project.id) === String(projectId)

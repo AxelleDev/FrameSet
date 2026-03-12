@@ -159,8 +159,7 @@ const listProjects = async (req, res) => {
         palette: palette.map(c => ({
           name: c.name,
           hex: c.hex
-        })),
-        characters: []
+        }))
       };
     }));
     res.json(fullProjects);
@@ -172,7 +171,7 @@ const listProjects = async (req, res) => {
 
 const createProject = async (req, res) => {
   const userId = getAuthenticatedUserId(req);
-  let { name, description } = req.body;
+  let { name } = req.body;
   if (!userId) {
     return res.status(401).json({ error: 'Utilisateur non authentifié.' });
   }
@@ -180,7 +179,6 @@ const createProject = async (req, res) => {
     return res.status(400).json({ error: 'Champs obligatoires manquants.' });
   }
   name = validator.trim(name);
-  description = description ? validator.trim(description) : '';
   if (!validator.isLength(name, { min: 2, max: 50 })) {
     return res.status(400).json({ error: 'Nom de projet invalide.' });
     }
@@ -197,8 +195,7 @@ const createProject = async (req, res) => {
       lastEdited: 'À l\'instant',
       normsCount: 0,
       norms: [],
-      palette: [],
-      characters: []
+      palette: []
     };
     res.json(newProject);
   } catch (error) {
