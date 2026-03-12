@@ -8,7 +8,7 @@ import Button from '../components/Button';
 import PasswordInput from '../components/PasswordInput';
 
 export default function Profile() {
-  const { user, updateUserProfile, logout, changePassword } = useAuth();
+  const { user, updateUserProfile, logout, changePassword, deleteAccount } = useAuth();
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -66,10 +66,6 @@ export default function Profile() {
 
   const cancelLogout = () => {
     setIsLogoutConfirmOpen(false);
-  };
-
-  const deleteAccount = () => {
-    setIsDeleteAccountOpen(true);
   };
 
   const openPasswordModal = () => {
@@ -216,7 +212,7 @@ export default function Profile() {
             <h3 className="text-lg font-medium text-primary mb-2">Zone de Danger</h3>
             <p className="text-sm text-primary mb-6">La suppression de votre compte est irréversible. Toutes vos données seront perdues.</p>
            
-            <Button onClick={deleteAccount} variant="secondary" className="text-sm">
+            <Button onClick={() => setIsDeleteAccountOpen(true)} variant="secondary" className="text-sm">
               Supprimer mon compte
             </Button>
         </Card>
@@ -297,11 +293,15 @@ export default function Profile() {
         title="Supprimer mon compte"
         message="Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible."
         confirmLabel="Supprimer"
+        cancelLabel="Annuler"
         confirmClassName="bg-pink text-white hover:bg-pink/10"
         onCancel={() => setIsDeleteAccountOpen(false)}
-        onConfirm={() => {
+        onConfirm={async () => {
           setIsDeleteAccountOpen(false);
-          handleLogout();
+          const result = await deleteAccount();
+          if (result.success) {
+            navigate('/login');
+          }
         }}
       />
 

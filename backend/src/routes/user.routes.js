@@ -11,5 +11,6 @@ router.put('/', authenticateToken, userController.updateUser);
 router.post('/password', authenticateToken, userController.changePassword);
 router.post('/email/verify', authenticateToken, userController.verifyPendingEmail);
 router.post('/email/resend', authenticateToken, userController.resendPendingEmail);
+router.delete('/me', authenticateToken, userController.deleteAccount);
 
 module.exports = router;

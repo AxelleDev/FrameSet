@@ -146,6 +146,23 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
+  const deleteAccount = useCallback(async () => {
+    try {
+      await api.delete('/users/me', null, { onGlobalError: setGlobalError });
+      setUser(null);
+      clearApiToken();
+      localStorage.removeItem('frameset_user');
+      setGlobalError(null);
+      return { success: true };
+    } catch (error) {
+      const isBusinessError = error.status && error.status < 500;
+      if (!isBusinessError) {
+        setGlobalError(error.message || 'Erreur lors de la suppression du compte.');
+      }
+      return { success: false, message: isBusinessError ? (error.data?.error || error.message) : undefined };
+    }
+  }, []);
+
   const changePassword = useCallback(async ({ currentPassword, newPassword }) => {
     if (!user) {
       return { success: false, message: 'Utilisateur non connecte.' };
@@ -177,7 +194,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     applyUserUpdate,
     updateUserProfile,
-    changePassword
+    changePassword,
+    deleteAccount
   }), [
     user,
     authLoading,
@@ -187,7 +205,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     applyUserUpdate,
     updateUserProfile,
-    changePassword
+    changePassword,
+    deleteAccount
   ]);
 
   return (

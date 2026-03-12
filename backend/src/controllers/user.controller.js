@@ -218,11 +218,29 @@ const changePassword = async (req, res) => {
   }
 };
 
+const deleteAccount = async (req, res) => {
+  const authenticatedUserId = getAuthenticatedUserId(req);
+  if (!authenticatedUserId) {
+    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+  }
+  try {
+    const [result] = await db.query('DELETE FROM users WHERE id = ?', [authenticatedUserId]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
 module.exports = {
   getUserCount,
   getProfile,
   updateUser,
   verifyPendingEmail,
   resendPendingEmail,
-  changePassword
+  changePassword,
+  deleteAccount
 };
