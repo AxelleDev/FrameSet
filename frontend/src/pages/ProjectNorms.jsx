@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useFormState from '../hooks/useFormState';
 import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
 import FormModal from '../components/FormModal';
@@ -26,29 +27,16 @@ export default function ProjectNorms() {
   const [editingNorm, setEditingNorm] = useState(null);
   const [editingType, setEditingType] = useState('brush');
 
-  const [editBrushName, setEditBrushName] = useState('');
-  const [editBrushUsage, setEditBrushUsage] = useState('');
-  const [editBrushValue, setEditBrushValue] = useState('');
-  const [editBrushUnit, setEditBrushUnit] = useState('px');
-
-  const [editFontFamily, setEditFontFamily] = useState('');
-  const [editFontWeight, setEditFontWeight] = useState('');
-  const [editFontUsage, setEditFontUsage] = useState('');
-  const [editFontStyle, setEditFontStyle] = useState('');
+  const { values: brushForm, setValues: setBrushForm, setField: setBrushField, reset: resetBrushForm } = useFormState({ usage: '', name: '', value: '', unit: 'px' });
+  const { values: typoForm, setValues: setTypoForm, setField: setTypoField, reset: resetTypoForm } = useFormState({ fontFamily: '', fontWeight: '', fontUsage: '', fontStyle: '' });
 
   const openEditNorm = (norm, type) => {
     setEditingNorm(norm);
     setEditingType(type);
     if (type === 'brush') {
-      setEditBrushUsage(norm.name);
-      setEditBrushName(norm.brushName);
-      setEditBrushValue(norm.value);
-      setEditBrushUnit(norm.unit || 'px');
+      setBrushForm({ usage: norm.name, name: norm.brushName || '', value: norm.value, unit: norm.unit || 'px' });
     } else {
-      setEditFontFamily(norm.fontFamily);
-      setEditFontWeight(norm.fontWeight || '');
-      setEditFontUsage(norm.fontUsage || '');
-      setEditFontStyle(norm.fontStyle || '');
+      setTypoForm({ fontFamily: norm.fontFamily, fontWeight: norm.fontWeight || '', fontUsage: norm.fontUsage || '', fontStyle: norm.fontStyle || '' });
     }
   };
 
@@ -56,17 +44,17 @@ export default function ProjectNorms() {
     if (!id || !editingNorm) return;
     if (editingType === 'brush') {
       await updateBrushNorm(id, editingNorm.id, {
-        name: editBrushUsage,
-        value: editBrushValue,
-        unit: editBrushUnit,
-        brushName: editBrushName
+        name: brushForm.usage,
+        value: brushForm.value,
+        unit: brushForm.unit,
+        brushName: brushForm.name
       });
     } else {
       await updateTypographyNorm(id, editingNorm.id, {
-        fontFamily: editFontFamily,
-        fontWeight: editFontWeight,
-        fontUsage: editFontUsage,
-        fontStyle: editFontStyle
+        fontFamily: typoForm.fontFamily,
+        fontWeight: typoForm.fontWeight,
+        fontUsage: typoForm.fontUsage,
+        fontStyle: typoForm.fontStyle
       });
     }
     setEditingNorm(null);
@@ -82,49 +70,33 @@ export default function ProjectNorms() {
 
   const [isAddingNorm, setIsAddingNorm] = useState(false);
   const [addType, setAddType] = useState('brush');
-  // Champs d'ajout d'une norme de trait
-  const [newBrushUsage, setNewBrushUsage] = useState('');
-  const [newBrushName, setNewBrushName] = useState('');
-  const [newBrushValue, setNewBrushValue] = useState('');
-  const [newBrushUnit, setNewBrushUnit] = useState('px');
-  // Champs d'ajout d'une norme typographique
-  const [newFontFamily, setNewFontFamily] = useState('');
-  const [newFontWeight, setNewFontWeight] = useState('');
-  const [newFontUsage, setNewFontUsage] = useState('');
-  const [newFontStyle, setNewFontStyle] = useState('');
 
   useEffect(() => {
     if (id) setActiveProjectId(id);
   }, [id, setActiveProjectId]);
 
   const resetForm = () => {
-    setNewBrushUsage('');
-    setNewBrushName('');
-    setNewBrushValue('');
-    setNewBrushUnit('px');
-    setNewFontFamily('');
-    setNewFontWeight('');
-    setNewFontUsage('');
-    setNewFontStyle('');
+    resetBrushForm();
+    resetTypoForm();
   };
 
   const handleAddNorm = async () => {
     if (!id) return;
     if (addType === 'brush') {
-      if (!newBrushUsage || !newBrushValue) return;
+      if (!brushForm.usage || !brushForm.value) return;
       await addBrushNorm(id, {
-        name: newBrushUsage,
-        value: newBrushValue,
-        unit: newBrushUnit,
-        brushName: newBrushName
+        name: brushForm.usage,
+        value: brushForm.value,
+        unit: brushForm.unit,
+        brushName: brushForm.name
       });
     } else {
-      if (!newFontFamily) return;
+      if (!typoForm.fontFamily) return;
       await addTypographyNorm(id, {
-        fontFamily: newFontFamily,
-        fontWeight: newFontWeight,
-        fontUsage: newFontUsage,
-        fontStyle: newFontStyle
+        fontFamily: typoForm.fontFamily,
+        fontWeight: typoForm.fontWeight,
+        fontUsage: typoForm.fontUsage,
+        fontStyle: typoForm.fontStyle
       });
     }
     setIsAddingNorm(false);
@@ -249,31 +221,31 @@ export default function ProjectNorms() {
               {editingType === 'brush' ? (
                 <>
                   <FormField label="Usage du pinceau">
-                    <input type="text" value={editBrushUsage} onChange={e => setEditBrushUsage(e.target.value)} placeholder="ex: Contour cheveux" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="ex: Contour cheveux" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                   <FormField label="Nom du pinceau">
-                    <input type="text" value={editBrushName} onChange={e => setEditBrushName(e.target.value)} placeholder="ex: Plume G" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="ex: Plume G" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                   <FormField label="Taille (px)">
-                    <input type="text" value={editBrushValue} onChange={e => setEditBrushValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                   <FormField label="Unité">
-                    <input type="text" value={editBrushUnit} onChange={e => setEditBrushUnit(e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                 </>
               ) : (
                 <>
                   <FormField label="Famille de police">
-                    <input type="text" value={editFontFamily} onChange={e => setEditFontFamily(e.target.value)} placeholder="ex: Figtree" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={typoForm.fontFamily} onChange={e => setTypoField('fontFamily', e.target.value)} placeholder="ex: Figtree" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                   <FormField label="Poids">
-                    <input type="text" value={editFontWeight} onChange={e => setEditFontWeight(e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                   <FormField label="Usage">
-                    <input type="text" value={editFontUsage} onChange={e => setEditFontUsage(e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                   <FormField label="Style">
-                    <input type="text" value={editFontStyle} onChange={e => setEditFontStyle(e.target.value)} placeholder="ex: Italique" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="ex: Italique" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                 </>
               )}
@@ -283,7 +255,7 @@ export default function ProjectNorms() {
               primaryLabel="Modifier"
               onSecondary={() => setEditingNorm(null)}
               onPrimary={handleEditNorm}
-              primaryDisabled={editingType === 'brush' ? !editBrushUsage || !editBrushValue : !editFontFamily}
+              primaryDisabled={editingType === 'brush' ? !brushForm.usage || !brushForm.value : !typoForm.fontFamily}
             />
           </FormModal>
         </>
@@ -304,31 +276,31 @@ export default function ProjectNorms() {
           {addType === 'brush' ? (
             <>
               <FormField label="Usage du pinceau">
-                <input type="text" value={newBrushUsage} onChange={e => setNewBrushUsage(e.target.value)} placeholder="ex: Contour cheveux" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <input type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="ex: Contour cheveux" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
               <FormField label="Nom du pinceau">
-                <input type="text" value={newBrushName} onChange={e => setNewBrushName(e.target.value)} placeholder="ex: Plume G" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <input type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="ex: Plume G" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
               <FormField label="Taille (px)">
-                <input type="text" value={newBrushValue} onChange={e => setNewBrushValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <input type="text" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
               <FormField label="Unité">
-                <input type="text" value={newBrushUnit} onChange={e => setNewBrushUnit(e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <input type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
             </>
           ) : (
             <>
               <FormField label="Famille de police">
-                <input type="text" value={newFontFamily} onChange={e => setNewFontFamily(e.target.value)} placeholder="ex: Figtree" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <input type="text" value={typoForm.fontFamily} onChange={e => setTypoField('fontFamily', e.target.value)} placeholder="ex: Figtree" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
               <FormField label="Poids">
-                <input type="text" value={newFontWeight} onChange={e => setNewFontWeight(e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <input type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
               <FormField label="Usage">
-                <input type="text" value={newFontUsage} onChange={e => setNewFontUsage(e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <input type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
               <FormField label="Style">
-                <input type="text" value={newFontStyle} onChange={e => setNewFontStyle(e.target.value)} placeholder="ex: Italique" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <input type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="ex: Italique" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
             </>
           )}
@@ -338,7 +310,7 @@ export default function ProjectNorms() {
           primaryLabel="Ajouter"
           onSecondary={() => setIsAddingNorm(false)}
           onPrimary={handleAddNorm}
-          primaryDisabled={addType === 'brush' ? !newBrushUsage || !newBrushValue : !newFontFamily}
+          primaryDisabled={addType === 'brush' ? !brushForm.usage || !brushForm.value : !typoForm.fontFamily}
         />
       </FormModal>
 
