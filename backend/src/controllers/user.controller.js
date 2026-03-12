@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const { randomInt } = require('crypto');
 const db = require('../database');
 const mailService = require('../services/mail.service');
 
@@ -81,7 +82,7 @@ const updateUser = async (req, res) => {
         return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
       }
 
-      const pendingCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const pendingCode = randomInt(100000, 1000000).toString();
       const expires = new Date(Date.now() + 10 * 60 * 1000);
 
       await db.query(
@@ -163,7 +164,7 @@ const resendPendingEmail = async (req, res) => {
       return res.status(400).json({ error: 'Email en attente non trouvé.' });
     }
     const userDb = rows[0];
-    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const newCode = randomInt(100000, 1000000).toString();
     const expires = new Date(Date.now() + 10 * 60 * 1000);
 
     await db.query(
