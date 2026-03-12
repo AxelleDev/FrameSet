@@ -377,9 +377,22 @@ const updateBrushNorm = async (req, res) => {
   const { name, value, unit, brushName } = req.body;
   try {
     if (!(await ensureProjectOwnership(req, res, projectId))) return;
+
+    const validatedBrushNorm = validateBrushNormPayload({ name, value, unit, brushName });
+    if (validatedBrushNorm.error) {
+      return res.status(400).json({ error: validatedBrushNorm.error });
+    }
+
     const [result] = await db.query(
       'UPDATE project_brush_norms SET name = ?, value = ?, unit = ?, brush_name = ? WHERE id = ? AND project_id = ?',
-      [name, value, unit, brushName, normId, projectId]
+      [
+        validatedBrushNorm.value.name,
+        validatedBrushNorm.value.value,
+        validatedBrushNorm.value.unit,
+        validatedBrushNorm.value.brushName,
+        normId,
+        projectId
+      ]
     );
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Norme non trouvée' });
@@ -397,9 +410,22 @@ const updateTypographyNorm = async (req, res) => {
   const { fontFamily, fontWeight, fontUsage, fontStyle } = req.body;
   try {
     if (!(await ensureProjectOwnership(req, res, projectId))) return;
+
+    const validatedTypographyNorm = validateTypographyNormPayload({ fontFamily, fontWeight, fontUsage, fontStyle });
+    if (validatedTypographyNorm.error) {
+      return res.status(400).json({ error: validatedTypographyNorm.error });
+    }
+
     const [result] = await db.query(
       'UPDATE project_typography_norms SET font_family = ?, font_weight = ?, font_usage = ?, font_style = ? WHERE id = ? AND project_id = ?',
-      [fontFamily, fontWeight, fontUsage, fontStyle, normId, projectId]
+      [
+        validatedTypographyNorm.value.fontFamily,
+        validatedTypographyNorm.value.fontWeight,
+        validatedTypographyNorm.value.fontUsage,
+        validatedTypographyNorm.value.fontStyle,
+        normId,
+        projectId
+      ]
     );
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Norme non trouvée' });
