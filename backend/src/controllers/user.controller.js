@@ -1,9 +1,8 @@
 const bcrypt = require('bcryptjs');
-const { randomInt } = require('crypto');
 const validator = require('validator');
 const db = require('../database');
 const mailService = require('../services/mail.service');
-const { getAuthenticatedUserId } = require('../utils/auth.utils');
+const { getAuthenticatedUserId, generateVerificationCode } = require('../utils/auth.utils');
 const { BCRYPT_SALT_ROUNDS } = require('../config/security.config');
 
 const getUserCount = async (req, res) => {
@@ -79,8 +78,7 @@ const updateUser = async (req, res) => {
         return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
       }
 
-      const pendingCode = randomInt(100000, 1000000).toString();
-      const expires = new Date(Date.now() + 10 * 60 * 1000);
+      const { code: pendingCode, expires } = generateVerificationCode();
 
       await db.query(
         'UPDATE users SET name = ?, pending_email = ?, pending_email_code = ?, pending_email_expires = ? WHERE id = ?',
@@ -161,8 +159,7 @@ const resendPendingEmail = async (req, res) => {
       return res.status(400).json({ error: 'Email en attente non trouvé.' });
     }
     const userDb = rows[0];
-    const newCode = randomInt(100000, 1000000).toString();
-    const expires = new Date(Date.now() + 10 * 60 * 1000);
+    const { code: newCode, expires } = generateVerificationCode();
 
     await db.query(
       'UPDATE users SET pending_email_code = ?, pending_email_expires = ? WHERE id = ?',

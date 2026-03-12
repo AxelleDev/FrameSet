@@ -1,9 +1,9 @@
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
-const { randomInt } = require('crypto');
 const db = require('../database');
 const mailService = require('../services/mail.service');
 const jwt = require('jsonwebtoken');
+const { generateVerificationCode } = require('../utils/auth.utils');
 const { generateRefreshToken, verifyRefreshToken } = require('../services/token.service');
 const { BCRYPT_SALT_ROUNDS } = require('../config/security.config');
 const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
@@ -28,8 +28,7 @@ const register = async (req, res) => {
   }
 
   const initials = getInitials(name);
-  const verificationCode = randomInt(100000, 1000000).toString();
-  const expires = new Date(Date.now() + 10 * 60 * 1000);
+  const { code: verificationCode, expires } = generateVerificationCode();
 
   try {
     const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
@@ -173,8 +172,7 @@ const resendCode = async (req, res) => {
     if (userDb.is_verified) {
       return res.status(400).json({ error: 'Utilisateur déjà vérifié.' });
     }
-    const newCode = randomInt(100000, 1000000).toString();
-    const expires = new Date(Date.now() + 10 * 60 * 1000);
+    const { code: newCode, expires } = generateVerificationCode();
     await db.query('UPDATE users SET verification_code = ?, verification_code_expires = ? WHERE email = ?', [newCode, expires, email]);
 
     await mailService.sendMail({
