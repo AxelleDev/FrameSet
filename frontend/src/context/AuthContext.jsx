@@ -17,6 +17,15 @@ const persistUser = (userData) => {
   localStorage.setItem('frameset_user', JSON.stringify(userData));
 };
 
+const readStoredRefreshToken = () => {
+  try {
+    const storedUser = localStorage.getItem('frameset_user');
+    return storedUser ? JSON.parse(storedUser).refreshToken : null;
+  } catch (error) {
+    return null;
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -128,6 +137,52 @@ export const AuthProvider = ({ children }) => {
     setGlobalError(null);
   }, []);
 
+  const refreshAccessToken = useCallback(async () => {
+    try {
+      const refreshToken = readStoredRefreshToken();
+      if (!refreshToken) {
+        logout();
+        return null;
+      }
+
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken })
+      });
+
+      if (!response.ok) {
+        logout();
+        return null;
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.token) {
+        setApiToken(data.token);
+        
+        if (user) {
+          const updatedUser = {
+            ...user,
+            token: data.token,
+            refreshToken: data.refreshToken || refreshToken
+          };
+          setUser(updatedUser);
+          persistUser(updatedUser);
+        }
+
+        return data.token;
+      }
+
+      logout();
+      return null;
+    } catch (error) {
+      logger.error('auth.refreshAccessToken.error', error);
+      logout();
+      return null;
+    }
+  }, [user, logout]);
+
   const updateUserProfile = useCallback(async (updates) => {
     if (!user) return;
 
@@ -193,6 +248,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    refreshAccessToken,
     applyUserUpdate,
     updateUserProfile,
     changePassword,
@@ -204,6 +260,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    refreshAccessToken,
     applyUserUpdate,
     updateUserProfile,
     changePassword,

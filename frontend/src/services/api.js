@@ -16,6 +16,29 @@ const getStoredToken = () => {
   }
 };
 
+// Récupère le refresh token stocké localement
+const getStoredRefreshToken = () => {
+  try {
+    const u = JSON.parse(localStorage.getItem('frameset_user'));
+    return u?.refreshToken || null;
+  } catch (e) {
+    return null;
+  }
+};
+
+// Met à jour le token dans localStorage
+const updateStoredToken = (newToken) => {
+  try {
+    const u = JSON.parse(localStorage.getItem('frameset_user'));
+    if (u) {
+      u.token = newToken;
+      localStorage.setItem('frameset_user', JSON.stringify(u));
+    }
+  } catch (e) {
+    // ignore
+  }
+};
+
 let explicitToken = null;
 
 // Permet d'écraser temporairement le token (utile après login)
@@ -32,12 +55,46 @@ const buildHeaders = (isJson = true, extra = {}) => {
   return headers;
 };
 
+// Tente de rafraîchir le token et retourner true si succès
+const attemptTokenRefresh = async () => {
+  const refreshToken = getStoredRefreshToken();
+  if (!refreshToken) {
+    return false;
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken })
+    });
+
+    if (!res.ok) {
+      return false;
+    }
+
+    const data = await res.json();
+    if (data.success && data.token) {
+      updateStoredToken(data.token);
+      clearToken(); // Reset explicit token so next request uses updated one
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    return false;
+  }
+};
+
 // Requete generique utilisee par les fonctions utilitaires ci-dessous.
 // Lance une erreur enrichie si le status HTTP n'est pas ok.
 const request = async (path, { method = 'GET', body, headers, signal, onGlobalError } = {}) => {
   const requestStartedAt = Date.now();
-  const opts = { method, headers: buildHeaders(body != null, headers) };
+  let opts = { method, headers: buildHeaders(body != null, headers) };
   if (body != null) opts.body = typeof body === 'string' ? body : JSON.stringify(body);
+  
+  let hasAttemptedTokenRefresh = false;
+  
   while (true) {
     const elapsedBeforeAttempt = Date.now() - requestStartedAt;
     const remainingBeforeAttempt = RETRY_WINDOW_MS - elapsedBeforeAttempt;
@@ -86,6 +143,19 @@ const request = async (path, { method = 'GET', body, headers, signal, onGlobalEr
       const parentAborted = signal?.aborted;
       if (e?.name === 'AbortError' && parentAborted) {
         throw e;
+      }
+
+      // Gestion spéciale des tokens expirés (403)
+      if (e?.status === 403 && !hasAttemptedTokenRefresh && path !== '/auth/refresh') {
+        hasAttemptedTokenRefresh = true;
+        const refreshSuccess = await attemptTokenRefresh();
+        if (refreshSuccess) {
+          // Recréer les headers avec le nouveau token
+          opts = { method, headers: buildHeaders(body != null, headers) };
+          if (body != null) opts.body = typeof body === 'string' ? body : JSON.stringify(body);
+          await sleep(100);
+          continue;
+        }
       }
 
       const isNetworkError = e instanceof TypeError || e.message === 'Failed to fetch';
