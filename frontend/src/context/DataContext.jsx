@@ -47,7 +47,7 @@ export const DataProvider = ({ children }) => {
     if (userData.id) fetchProjects(userData.id);
   };
 
-  // Delete brush norm
+  // Supprimer une norme de trait
   const deleteBrushNorm = async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
@@ -65,7 +65,7 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  // Delete typography norm
+  // Supprimer une norme typographique
   const deleteTypographyNorm = async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
@@ -95,7 +95,7 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  // Update brush norm
+  // Mettre a jour une norme de trait
   const updateBrushNorm = async (projectId, normId, updates) => {
     try {
       await api.put(`/projects/${projectId}/brush-norms/${normId}`, updates, { onGlobalError: setGlobalError });
@@ -111,7 +111,7 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  // Update typography norm
+  // Mettre a jour une norme typographique
   const updateTypographyNorm = async (projectId, normId, updates) => {
     try {
       await api.put(`/projects/${projectId}/typography-norms/${normId}`, updates, { onGlobalError: setGlobalError });
@@ -233,7 +233,7 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  // Add brush norm
+  // Ajouter une norme de trait
   const addBrushNorm = async (projectId, norm) => {
     try {
       const data = await api.post(`/projects/${projectId}/brush-norms`, norm, { onGlobalError: setGlobalError });
@@ -252,7 +252,7 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  // Add typography norm
+  // Ajouter une norme typographique
   const addTypographyNorm = async (projectId, norm) => {
     try {
       const data = await api.post(`/projects/${projectId}/typography-norms`, norm, { onGlobalError: setGlobalError });
@@ -344,7 +344,7 @@ export const DataProvider = ({ children }) => {
 export const useData = () => {
   const context = useContext(DataContext);
   if (!context) {
-    throw new Error('useData must be used within a DataProvider');
+    throw new Error('useData doit etre utilise dans un DataProvider');
   }
   return context;
 };

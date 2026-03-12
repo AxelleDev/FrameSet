@@ -1,6 +1,6 @@
 
 <div align="center">
-	<img src="frontend/public/FrameSet_Logo.png" alt="FrameSet Logo" width="120" />
+	<img src="frontend/public/FrameSet_Logo.png" alt="Logo FrameSet" width="120" />
 	<p><b>FRAMESET — Le référentiel graphique pensé pour l’illustration digitale.</b></p>
 </div>
 
@@ -8,7 +8,7 @@
 
 ## ✧･ﾟ: ✧･ﾟ Objectif du projet
 
-FrameSet est une application web destinée aux illustrateurs et créateurs digitaux. Elle permet de centraliser, structurer et exporter les référentiels graphiques liés à un projet d’illustration (palettes, typographies, brushes, etc.).
+FrameSet est une application web destinée aux illustrateurs et créateurs digitaux. Elle permet de centraliser, structurer et exporter les référentiels graphiques liés à un projet d’illustration (palettes, typographies, pinceaux, etc.).
 
 ---
 
@@ -33,7 +33,7 @@ npm install
 npm start
 ```
 
-### Frontend (App)
+### Frontend (application)
 
 ```bash
 cd frontend

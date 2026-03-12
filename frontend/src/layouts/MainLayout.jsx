@@ -1,4 +1,4 @@
-// Layout principal de l'application.
+// Mise en page principale de l'application.
 import React, { useState } from 'react';
 import { Outlet, NavLink, Link, useLocation, Navigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
@@ -52,7 +52,7 @@ export default function MainLayout() {
       `}>
         <div className="p-8 border-b border-white/20 flex items-center justify-between">
             <div className="flex justify-center w-full">
-              <img src="/FrameSet_Logo.png" alt="FrameSet Logo" className="w-[65%] h-auto object-contain" style={{ maxWidth: '260px' }} />
+              <img src="/FrameSet_Logo.png" alt="Logo FrameSet" className="w-[65%] h-auto object-contain" style={{ maxWidth: '260px' }} />
             </div>
             <button onClick={closeMobileMenu} className="md:hidden text-slate-400 hover:text-slate-600">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>

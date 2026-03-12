@@ -23,7 +23,7 @@ export default function ProjectExport() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(projectJson);
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `${activeProject.name.replace(/\s+/g, '_').toLowerCase()}_standards.json`);
+    downloadAnchorNode.setAttribute("download", `${activeProject.name.replace(/\s+/g, '_').toLowerCase()}_normes.json`);
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -83,7 +83,7 @@ export default function ProjectExport() {
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(50);
-      doc.text('Palette de Couleurs', 20, y);
+      doc.text('Palette de couleurs', 20, y);
       y += 12;
 
       doc.setFontSize(11);
@@ -102,13 +102,13 @@ export default function ProjectExport() {
       y += 10;
     }
 
-    doc.save(`${activeProject.name.replace(/\s+/g, '_')}_StyleGuide.pdf`);
+    doc.save(`${activeProject.name.replace(/\s+/g, '_')}_guide_de_style.pdf`);
   };
 
   return (
     <>
       <PageHeader
-        title="Exporter les Standards"
+        title="Exporter les normes"
         subtitle="Exportez l’essentiel de votre direction artistique."
       />
 
@@ -119,7 +119,7 @@ export default function ProjectExport() {
                 <div className="h-12 w-12 bg-[rgba(255,146,146,0.15)] text-pink rounded-full flex items-center justify-center mb-6">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                 </div>
-              <h3 className="text-lg font-medium text-primary mb-2">Guide de Style PDF</h3>
+              <h3 className="text-lg font-medium text-primary mb-2">Guide de style PDF</h3>
               <p className="text-sm text-primary mb-6">Un document PDF structuré regroupant l’ensemble des normes actives et des palettes du projet. Idéal pour l’impression ou le partage.</p>
                 <Button onClick={downloadPdf} variant="primary">
                   Télécharger le PDF
@@ -130,7 +130,7 @@ export default function ProjectExport() {
                 <div className="h-12 w-12 bg-[rgba(137,148,223,0.15)] text-blue rounded-full flex items-center justify-center mb-6">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
                 </div>
-              <h3 className="text-lg font-medium text-primary mb-2">Pipeline JSON</h3>
+              <h3 className="text-lg font-medium text-primary mb-2">Données JSON</h3>
               <p className="text-sm text-primary mb-6">Structure de données brute regroupant l’ensemble du projet : normes, palettes, identifiants et paramètres. Prête à être intégrée dans vos outils.</p>
                 <Button onClick={downloadJson} variant="primary">
                   Télécharger le JSON

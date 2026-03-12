@@ -1,5 +1,5 @@
-// Service centralisé pour les appels réseau vers l'API backend.
-// Fournit des helpers `get/post/put/patch/delete` et gère le token auth.
+// Service centralise pour les appels reseau vers l'API backend.
+// Fournit des fonctions utilitaires pour les methodes HTTP et gere le token d'authentification.
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 const RETRY_WINDOW_MS = 5000;
 const RETRY_INTERVAL_MS = 500;
@@ -32,7 +32,7 @@ const buildHeaders = (isJson = true, extra = {}) => {
   return headers;
 };
 
-// Requête générique utilisée par les helpers ci-dessous.
+// Requete generique utilisee par les fonctions utilitaires ci-dessous.
 // Lance une erreur enrichie si le status HTTP n'est pas ok.
 const request = async (path, { method = 'GET', body, headers, signal, onGlobalError } = {}) => {
   const requestStartedAt = Date.now();

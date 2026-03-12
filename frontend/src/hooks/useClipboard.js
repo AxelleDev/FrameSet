@@ -1,4 +1,4 @@
-// Hook pour copier du texte dans le presse-papiers.
+// Utilitaire pour copier du texte dans le presse-papiers.
 import { useRef, useState } from 'react';
 
 export default function useClipboard({ timeout = 1200 } = {}) {
@@ -23,7 +23,7 @@ export default function useClipboard({ timeout = 1200 } = {}) {
         document.body.removeChild(textarea);
       }
     } catch (err) {
-      console.error('Clipboard error:', err);
+      console.error('Erreur presse-papiers :', err);
       success = false;
     }
 

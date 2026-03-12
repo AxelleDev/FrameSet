@@ -82,12 +82,12 @@ export default function ProjectNorms() {
 
   const [isAddingNorm, setIsAddingNorm] = useState(false);
   const [addType, setAddType] = useState('brush');
-  // Add brush norm fields
+  // Champs d'ajout d'une norme de trait
   const [newBrushUsage, setNewBrushUsage] = useState('');
   const [newBrushName, setNewBrushName] = useState('');
   const [newBrushValue, setNewBrushValue] = useState('');
   const [newBrushUnit, setNewBrushUnit] = useState('px');
-  // Add typography norm fields
+  // Champs d'ajout d'une norme typographique
   const [newFontFamily, setNewFontFamily] = useState('');
   const [newFontWeight, setNewFontWeight] = useState('');
   const [newFontUsage, setNewFontUsage] = useState('');
@@ -146,7 +146,7 @@ export default function ProjectNorms() {
               onClick={() => { resetForm(); setAddType('brush'); setIsAddingNorm(true); }}
               className="min-h-[260px]"
             />
-            {/* Brush Norms */}
+            {/* Normes de trait */}
             {activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
               <Card key={norm.id} clickable className="p-6 relative group">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
@@ -186,12 +186,12 @@ export default function ProjectNorms() {
                 <div className="h-16 bg-blue/10 rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
                   <div className="flex flex-col items-center justify-center w-full px-4">
                     <div className="w-16 rounded-full mb-1 bg-primary" style={{ height: `${norm.value}px`, minHeight: '1px', backgroundColor: 'var(--color-primary)' }}></div>
-                    <span className="text-[10px] text-blue font-bold uppercase tracking-wider">{norm.brushName || 'Brush'}</span>
+                    <span className="text-[10px] text-blue font-bold uppercase tracking-wider">{norm.brushName || 'Pinceau'}</span>
                   </div>
                 </div>
               </Card>
             ))}
-            {/* Typography Norms */}
+            {/* Normes typographiques */}
             {activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
               <Card key={norm.id} clickable className="p-6 relative group">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
@@ -248,11 +248,11 @@ export default function ProjectNorms() {
             <div className="space-y-4">
               {editingType === 'brush' ? (
                 <>
-                  <FormField label="Usage du Brush">
-                    <input type="text" value={editBrushUsage} onChange={e => setEditBrushUsage(e.target.value)} placeholder="ex: Hair Lineart" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                  <FormField label="Usage du pinceau">
+                    <input type="text" value={editBrushUsage} onChange={e => setEditBrushUsage(e.target.value)} placeholder="ex: Contour cheveux" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
-                  <FormField label="Nom du Brush">
-                    <input type="text" value={editBrushName} onChange={e => setEditBrushName(e.target.value)} placeholder="ex: G-Pen" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                  <FormField label="Nom du pinceau">
+                    <input type="text" value={editBrushName} onChange={e => setEditBrushName(e.target.value)} placeholder="ex: Plume G" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                   <FormField label="Taille (px)">
                     <input type="text" value={editBrushValue} onChange={e => setEditBrushValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
@@ -264,7 +264,7 @@ export default function ProjectNorms() {
               ) : (
                 <>
                   <FormField label="Famille de police">
-                    <input type="text" value={editFontFamily} onChange={e => setEditFontFamily(e.target.value)} placeholder="ex: Inter" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={editFontFamily} onChange={e => setEditFontFamily(e.target.value)} placeholder="ex: Figtree" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                   <FormField label="Poids">
                     <input type="text" value={editFontWeight} onChange={e => setEditFontWeight(e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
@@ -273,7 +273,7 @@ export default function ProjectNorms() {
                     <input type="text" value={editFontUsage} onChange={e => setEditFontUsage(e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                   <FormField label="Style">
-                    <input type="text" value={editFontStyle} onChange={e => setEditFontStyle(e.target.value)} placeholder="ex: Italic" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="text" value={editFontStyle} onChange={e => setEditFontStyle(e.target.value)} placeholder="ex: Italique" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                 </>
               )}
@@ -292,7 +292,7 @@ export default function ProjectNorms() {
       <FormModal
         isOpen={isAddingNorm}
         onClose={() => setIsAddingNorm(false)}
-        title="Nouvelle Norme"
+        title="Nouvelle norme"
       >
         <div className="space-y-4">
           <FormField label="Type">
@@ -303,11 +303,11 @@ export default function ProjectNorms() {
           </FormField>
           {addType === 'brush' ? (
             <>
-              <FormField label="Usage du Brush">
-                <input type="text" value={newBrushUsage} onChange={e => setNewBrushUsage(e.target.value)} placeholder="ex: Hair Lineart" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+              <FormField label="Usage du pinceau">
+                <input type="text" value={newBrushUsage} onChange={e => setNewBrushUsage(e.target.value)} placeholder="ex: Contour cheveux" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
-              <FormField label="Nom du Brush">
-                <input type="text" value={newBrushName} onChange={e => setNewBrushName(e.target.value)} placeholder="ex: G-Pen" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+              <FormField label="Nom du pinceau">
+                <input type="text" value={newBrushName} onChange={e => setNewBrushName(e.target.value)} placeholder="ex: Plume G" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
               <FormField label="Taille (px)">
                 <input type="text" value={newBrushValue} onChange={e => setNewBrushValue(e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
@@ -319,7 +319,7 @@ export default function ProjectNorms() {
           ) : (
             <>
               <FormField label="Famille de police">
-                <input type="text" value={newFontFamily} onChange={e => setNewFontFamily(e.target.value)} placeholder="ex: Inter" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <input type="text" value={newFontFamily} onChange={e => setNewFontFamily(e.target.value)} placeholder="ex: Figtree" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
               <FormField label="Poids">
                 <input type="text" value={newFontWeight} onChange={e => setNewFontWeight(e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
@@ -328,7 +328,7 @@ export default function ProjectNorms() {
                 <input type="text" value={newFontUsage} onChange={e => setNewFontUsage(e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
               <FormField label="Style">
-                <input type="text" value={newFontStyle} onChange={e => setNewFontStyle(e.target.value)} placeholder="ex: Italic" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <input type="text" value={newFontStyle} onChange={e => setNewFontStyle(e.target.value)} placeholder="ex: Italique" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
             </>
           )}

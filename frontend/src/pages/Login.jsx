@@ -44,7 +44,7 @@ export default function Login() {
       hero={
         <>
           <div className="flex items-center mb-2">
-            <img src="/FrameSet_Logo.png" alt="FrameSet Logo" className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
+            <img src="/FrameSet_Logo.png" alt="Logo FrameSet" className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
           </div>
           
           <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
