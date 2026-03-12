@@ -1,3 +1,6 @@
+process.env.JWT_SECRET = 'test_jwt_secret';
+process.env.JWT_REFRESH_SECRET = 'test_jwt_refresh_secret';
+
 jest.mock('jsonwebtoken', () => ({
   sign: jest.fn(() => 'token'),
   verify: jest.fn(() => ({ id: 1 }))

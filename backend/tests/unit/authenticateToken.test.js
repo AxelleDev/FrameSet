@@ -1,17 +1,13 @@
+process.env.JWT_SECRET = 'test_jwt_secret';
+
 jest.mock('jsonwebtoken', () => ({
   verify: jest.fn((token, secret, cb) => cb(null, { id: 1 }))
 }));
-const authenticateToken = require('../../src/middleware/authenticateToken');
-const tokenService = require('../../src/services/token.service');
 
-jest.mock('../../src/services/token.service');
+const jwt = require('jsonwebtoken');
+const authenticateToken = require('../../src/middleware/authenticateToken');
 
 describe('middleware authenticateToken', () => {
-  const authenticateToken = require('../../src/middleware/authenticateToken');
-  jest.mock('jsonwebtoken', () => ({
-    verify: jest.fn((token, secret, cb) => cb(null, { id: 1 }))
-  }));
-  const jwt = require('jsonwebtoken');
 
   it('devrait retourner 401 si le jeton est manquant', () => {
     const req = { headers: {} };
