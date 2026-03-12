@@ -143,9 +143,11 @@ export const DataProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const newUser = await api.post('/auth/register', userData, { onGlobalError: setGlobalError });
-      if (newUser?.token) setApiToken(newUser.token);
-      setUser(newUser);
-      localStorage.setItem('frameset_user', JSON.stringify(newUser));
+      if (newUser?.token) {
+        setApiToken(newUser.token);
+        setUser(newUser);
+        localStorage.setItem('frameset_user', JSON.stringify(newUser));
+      }
       setProjects([]);
       return { success: true };
     } catch (err) {

@@ -23,8 +23,10 @@ export const useAuthApi = () => {
   const register = useCallback(async (userData) => {
     try {
       const newUser = await api.post('/auth/register', userData, { onGlobalError: setGlobalError });
-      if (newUser?.token) setToken(newUser.token);
-      setAuthenticatedUser(newUser);
+      if (newUser?.token) {
+        setToken(newUser.token);
+        setAuthenticatedUser(newUser);
+      }
       return { success: true, data: newUser };
     } catch (err) {
       const isBusinessError = err.status && err.status < 500;

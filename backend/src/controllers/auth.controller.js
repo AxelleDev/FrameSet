@@ -62,9 +62,7 @@ const register = async (req, res) => {
       is_verified: false,
       passwordUpdatedAt: now
     };
-    const token = jwt.sign({ id: newUser.id, email: newUser.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-    const refreshToken = generateRefreshToken({ id: newUser.id, email: newUser.email });
-    res.json({ success: true, ...newUser, token, refreshToken });
+    res.json({ success: true, ...newUser });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({ error: 'Erreur lors de l’inscription.' });
