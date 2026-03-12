@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -8,7 +8,7 @@ import Button from '../components/Button';
 import PasswordInput from '../components/PasswordInput';
 
 export default function Profile() {
-  const { user, updateUserProfile, logout, changePassword } = useData();
+  const { user, updateUserProfile, logout, changePassword } = useAuth();
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);

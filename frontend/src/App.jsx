@@ -1,7 +1,8 @@
 import React from 'react';
 import GlobalErrorAlert from './components/GlobalErrorAlert';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { DataProvider, useData } from './context/DataContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ProjectProvider } from './context/ProjectContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import MainLayout from './layouts/MainLayout';
@@ -14,7 +15,7 @@ import Verify from './pages/Verify';
 import NotFound from './pages/NotFound';
 
 function AppRoutes() {
-  const { globalError, setGlobalError } = useData();
+  const { globalError, setGlobalError } = useAuth();
   return (
     <>
       <GlobalErrorAlert
@@ -46,8 +47,10 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <DataProvider>
-      <AppRoutes />
-    </DataProvider>
+    <AuthProvider>
+      <ProjectProvider>
+        <AppRoutes />
+      </ProjectProvider>
+    </AuthProvider>
   );
 }

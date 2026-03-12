@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useData } from '../context/DataContext';
-import useProjectApi from '../hooks/useProject';
+import { useAuth } from '../context/AuthContext';
+import { useProjects } from '../context/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
@@ -12,8 +12,8 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 
 export default function Dashboard() {
-  const { user, projects, setActiveProjectId, setGlobalError } = useData();
-  const { addProject, deleteProject, updateProject } = useProjectApi();
+  const { user } = useAuth();
+  const { projects, setActiveProjectId, addProject, deleteProject, updateProjectName } = useProjects();
   const navigate = useNavigate();
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -31,7 +31,7 @@ export default function Dashboard() {
 
   const handleCreateProject = async () => {
     if (newProjectName && newProjectName.trim().length > 0) {
-      await addProject(newProjectName, { onGlobalError: setGlobalError });
+      await addProject(newProjectName);
       setIsCreatingProject(false);
       setNewProjectName('');
     }
@@ -51,7 +51,7 @@ export default function Dashboard() {
       return;
     }
     try {
-      await updateProject(editProjectId, { name: editProjectName.trim() }, { onGlobalError: setGlobalError });
+      await updateProjectName(editProjectId, { name: editProjectName.trim() });
       setIsEditingProject(false);
       setEditProjectId(null);
       setEditProjectName("");

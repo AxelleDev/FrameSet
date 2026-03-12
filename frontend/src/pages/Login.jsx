@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import useAuthApi from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -9,7 +9,7 @@ import useUserCount from '../hooks/useUserCount';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuthApi();
+  const { login } = useAuth();
 
   const [formData, setFormData] = useState({
     email: '',

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Button from '../components/Button';
 
@@ -8,7 +8,7 @@ export default function Verify() {
   const API_URL = import.meta.env.VITE_API_URL || '/api';
   const navigate = useNavigate();
   const location = useLocation();
-  const { applyUserUpdate, setGlobalError } = useData();
+  const { applyUserUpdate, setGlobalError } = useAuth();
   const params = new URLSearchParams(location.search);
   const email = params.get('email');
   const type = params.get('type');

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useData } from '../context/DataContext';
+import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import Card from '../components/Card';
@@ -8,7 +8,7 @@ import Button from '../components/Button';
 
 export default function ProjectExport() {
   const { id } = useParams();
-  const { setActiveProjectId, activeProject } = useData();
+  const { setActiveProjectId, activeProject } = useProjects();
 
   useEffect(() => {
     if (id) setActiveProjectId(id);

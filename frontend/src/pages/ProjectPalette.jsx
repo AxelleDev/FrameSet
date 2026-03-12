@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { useData } from '../context/DataContext';
-import useProjectApi from '../hooks/useProject';
+import { useAuth } from '../context/AuthContext';
+import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
@@ -15,8 +15,8 @@ import api from '../services/api';
 
 export default function ProjectPalette() {
   const { id } = useParams();
-  const { setActiveProjectId, activeProject, user, setGlobalError } = useData();
-  const { updatePalette: updateProjectPalette, deletePaletteColor: deleteProjectPaletteColor } = useProjectApi();
+  const { user, setGlobalError } = useAuth();
+  const { setActiveProjectId, activeProject, updateProjectPalette, deleteProjectPaletteColor } = useProjects();
 
   const [editStatus, setEditStatus] = useState(null);
   const [editIdx, setEditIdx] = useState(null);
@@ -171,7 +171,7 @@ export default function ProjectPalette() {
     let hex = newColorHex.trim();
     if (!hex.startsWith('#')) hex = '#' + hex;
     const newPalette = [...palette, { name: newColorName, hex }];
-    await updateProjectPalette(id, newPalette, { onGlobalError: setGlobalError });
+    await updateProjectPalette(id, newPalette);
     setIsAddingColor(false);
     await syncPalette();
   };
@@ -391,7 +391,7 @@ export default function ProjectPalette() {
         onCancel={() => setConfirmDeleteColor(null)}
         onConfirm={async () => {
           if (confirmDeleteColor) {
-            await deleteProjectPaletteColor(id, confirmDeleteColor, { onGlobalError: setGlobalError });
+            await deleteProjectPaletteColor(id, confirmDeleteColor);
             await syncPalette();
           }
           setConfirmDeleteColor(null);

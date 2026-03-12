@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useData } from '../context/DataContext';
+import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
@@ -21,7 +21,7 @@ export default function ProjectNorms() {
     deleteTypographyNorm,
     updateBrushNorm,
     updateTypographyNorm
-  } = useData();
+  } = useProjects();
 
   const [editingNorm, setEditingNorm] = useState(null);
   const [editingType, setEditingType] = useState('brush');

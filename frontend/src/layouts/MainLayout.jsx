@@ -1,10 +1,13 @@
 // Mise en page principale de l'application.
 import React, { useState } from 'react';
 import { Outlet, NavLink, Link, useLocation, Navigate } from 'react-router-dom';
-import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import { useProjects } from '../context/ProjectContext';
 
 export default function MainLayout() {
-  const { activeProject, user, loading } = useData();
+  const { user, authLoading } = useAuth();
+  const { activeProject, projectsLoading } = useProjects();
+  const loading = authLoading || projectsLoading;
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
