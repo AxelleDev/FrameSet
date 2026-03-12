@@ -20,6 +20,35 @@ describe('contrôleur utilisateur', () => {
     });
   });
 
+  describe('profil utilisateur', () => {
+    it('devrait retourner le profil de l’utilisateur authentifié', async () => {
+      db.query.mockResolvedValueOnce([[{
+        id: 1,
+        name: 'Axel',
+        email: 'axel@a.com',
+        avatar_initials: 'AT',
+        password_updated_at: new Date('2026-01-01T00:00:00.000Z'),
+        pending_email: null
+      }]]);
+
+      const req = { user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await userController.getProfile(req, res);
+
+      expect(db.query).toHaveBeenCalledWith(
+        'SELECT id, name, email, avatar_initials, password_updated_at, pending_email FROM users WHERE id = ?',
+        [1]
+      );
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        id: 1,
+        name: 'Axel',
+        email: 'axel@a.com',
+        avatarInitials: 'AT'
+      }));
+    });
+  });
+
   describe('mettre à jour un utilisateur', () => {
     it('devrait mettre à jour le nom de l’utilisateur', async () => {
       db.query.mockResolvedValueOnce([[{ email: 'a@b.com', pending_email: null }]]);

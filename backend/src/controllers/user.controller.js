@@ -17,6 +17,37 @@ const getUserCount = async (req, res) => {
   }
 };
 
+const getProfile = async (req, res) => {
+  const authenticatedUserId = getAuthenticatedUserId(req);
+  if (!authenticatedUserId) {
+    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+  }
+
+  try {
+    const [rows] = await db.query(
+      'SELECT id, name, email, avatar_initials, password_updated_at, pending_email FROM users WHERE id = ?',
+      [authenticatedUserId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+    }
+
+    const userDb = rows[0];
+    return res.json({
+      id: userDb.id,
+      name: userDb.name,
+      email: userDb.email,
+      avatarInitials: userDb.avatar_initials,
+      passwordUpdatedAt: userDb.password_updated_at,
+      pendingEmail: userDb.pending_email || null
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
 const updateUser = async (req, res) => {
   const validator = require('validator');
   const authenticatedUserId = getAuthenticatedUserId(req);
@@ -192,6 +223,7 @@ const changePassword = async (req, res) => {
 
 module.exports = {
   getUserCount,
+  getProfile,
   updateUser,
   verifyPendingEmail,
   resendPendingEmail,
