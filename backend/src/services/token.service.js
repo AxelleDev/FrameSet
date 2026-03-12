@@ -1,6 +1,12 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET doit être défini dans les variables d\'environnement');
+}
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+if (!JWT_REFRESH_SECRET) {
+  throw new Error('JWT_REFRESH_SECRET doit être défini dans les variables d\'environnement');
+}
 const JWT_EXPIRES = '2h';
 const JWT_REFRESH_EXPIRES = '7d';
 
