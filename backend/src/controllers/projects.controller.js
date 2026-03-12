@@ -1,9 +1,5 @@
 ﻿const db = require('../database');
-
-const getAuthenticatedUserId = (req) => {
-  const userId = Number(req?.user?.id);
-  return Number.isInteger(userId) && userId > 0 ? userId : null;
-};
+const { getAuthenticatedUserId } = require('../utils/auth.utils');
 
 const ensureProjectOwnership = async (req, res, projectId) => {
   const userId = getAuthenticatedUserId(req);

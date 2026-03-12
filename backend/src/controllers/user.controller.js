@@ -2,11 +2,7 @@ const bcrypt = require('bcryptjs');
 const { randomInt } = require('crypto');
 const db = require('../database');
 const mailService = require('../services/mail.service');
-
-const getAuthenticatedUserId = (req) => {
-  const userId = Number(req?.user?.id);
-  return Number.isInteger(userId) && userId > 0 ? userId : null;
-};
+const { getAuthenticatedUserId } = require('../utils/auth.utils');
 
 const getUserCount = async (req, res) => {
   try {
