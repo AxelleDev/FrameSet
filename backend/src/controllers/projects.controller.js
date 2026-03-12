@@ -22,6 +22,107 @@ const ensureProjectOwnership = async (req, res, projectId) => {
   return true;
 };
 
+const sanitizeOptionalTextField = (value, { maxLength }) => {
+  if (value === undefined || value === null) {
+    return { value: null };
+  }
+
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    return { error: 'invalid_type' };
+  }
+
+  const trimmedValue = validator.trim(String(value));
+  if (!trimmedValue) {
+    return { value: null };
+  }
+
+  if (!validator.isLength(trimmedValue, { max: maxLength })) {
+    return { error: 'invalid_length' };
+  }
+
+  return { value: trimmedValue };
+};
+
+const validateBrushNormPayload = ({ name, value, unit, brushName }) => {
+  if (typeof name !== 'string') {
+    return { error: 'Le nom de la norme de trait est invalide.' };
+  }
+
+  const trimmedName = validator.trim(name);
+  if (!validator.isLength(trimmedName, { min: 1, max: 255 })) {
+    return { error: 'Le nom de la norme de trait est invalide.' };
+  }
+
+  const valueAsString = typeof value === 'number' ? String(value) : value;
+  if (typeof valueAsString !== 'string') {
+    return { error: 'La valeur de la norme de trait doit etre un nombre positif.' };
+  }
+
+  const trimmedValue = validator.trim(valueAsString);
+  if (!validator.isFloat(trimmedValue, { gt: 0, max: 1000 })) {
+    return { error: 'La valeur de la norme de trait doit etre un nombre positif.' };
+  }
+
+  const unitInput = unit === undefined || unit === null ? 'px' : unit;
+  if (typeof unitInput !== 'string') {
+    return { error: "L'unite de la norme de trait est invalide." };
+  }
+
+  const trimmedUnit = validator.trim(unitInput);
+  if (!validator.isLength(trimmedUnit, { min: 1, max: 20 }) || !validator.matches(trimmedUnit, /^[a-zA-Z%]+$/)) {
+    return { error: "L'unite de la norme de trait est invalide." };
+  }
+
+  const normalizedBrushName = sanitizeOptionalTextField(brushName, { maxLength: 255 });
+  if (normalizedBrushName.error) {
+    return { error: 'Le nom du pinceau est invalide.' };
+  }
+
+  return {
+    value: {
+      name: trimmedName,
+      value: trimmedValue,
+      unit: trimmedUnit,
+      brushName: normalizedBrushName.value
+    }
+  };
+};
+
+const validateTypographyNormPayload = ({ fontFamily, fontWeight, fontUsage, fontStyle }) => {
+  if (typeof fontFamily !== 'string') {
+    return { error: 'La famille de police est invalide.' };
+  }
+
+  const trimmedFontFamily = validator.trim(fontFamily);
+  if (!validator.isLength(trimmedFontFamily, { min: 1, max: 255 })) {
+    return { error: 'La famille de police est invalide.' };
+  }
+
+  const normalizedFontWeight = sanitizeOptionalTextField(fontWeight, { maxLength: 100 });
+  if (normalizedFontWeight.error) {
+    return { error: 'Le poids de police est invalide.' };
+  }
+
+  const normalizedFontUsage = sanitizeOptionalTextField(fontUsage, { maxLength: 255 });
+  if (normalizedFontUsage.error) {
+    return { error: "L'usage typographique est invalide." };
+  }
+
+  const normalizedFontStyle = sanitizeOptionalTextField(fontStyle, { maxLength: 100 });
+  if (normalizedFontStyle.error) {
+    return { error: 'Le style de police est invalide.' };
+  }
+
+  return {
+    value: {
+      fontFamily: trimmedFontFamily,
+      fontWeight: normalizedFontWeight.value,
+      fontUsage: normalizedFontUsage.value,
+      fontStyle: normalizedFontStyle.value
+    }
+  };
+};
+
 const listProjects = async (req, res) => {
   const userId = getAuthenticatedUserId(req);
   if (!userId) {
@@ -139,9 +240,21 @@ const addBrushNorm = async (req, res) => {
   const { name, value, unit, brushName } = req.body;
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
+
+    const validatedBrushNorm = validateBrushNormPayload({ name, value, unit, brushName });
+    if (validatedBrushNorm.error) {
+      return res.status(400).json({ error: validatedBrushNorm.error });
+    }
+
     const [result] = await db.query(
       'INSERT INTO project_brush_norms (project_id, name, value, unit, brush_name) VALUES (?, ?, ?, ?, ?)',
-      [id, name, value, unit, brushName]
+      [
+        id,
+        validatedBrushNorm.value.name,
+        validatedBrushNorm.value.value,
+        validatedBrushNorm.value.unit,
+        validatedBrushNorm.value.brushName
+      ]
     );
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
     res.json({ success: true, id: result.insertId });
@@ -156,9 +269,21 @@ const addTypographyNorm = async (req, res) => {
   const { fontFamily, fontWeight, fontUsage, fontStyle } = req.body;
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
+
+    const validatedTypographyNorm = validateTypographyNormPayload({ fontFamily, fontWeight, fontUsage, fontStyle });
+    if (validatedTypographyNorm.error) {
+      return res.status(400).json({ error: validatedTypographyNorm.error });
+    }
+
     const [result] = await db.query(
       'INSERT INTO project_typography_norms (project_id, font_family, font_weight, font_usage, font_style) VALUES (?, ?, ?, ?, ?)',
-      [id, fontFamily, fontWeight, fontUsage, fontStyle]
+      [
+        id,
+        validatedTypographyNorm.value.fontFamily,
+        validatedTypographyNorm.value.fontWeight,
+        validatedTypographyNorm.value.fontUsage,
+        validatedTypographyNorm.value.fontStyle
+      ]
     );
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
     res.json({ success: true, id: result.insertId });
