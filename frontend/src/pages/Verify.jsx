@@ -21,10 +21,10 @@ export default function Verify() {
   const handleVerify = async () => {
     setError('');
     const endpoint = type === 'pending-email'
-      ? `${API_URL}/user/email/verify`
+      ? `${API_URL}/users/email/verify`
       : `${API_URL}/auth/verify`;
     try {
-      const data = await api.post(type === 'pending-email' ? '/user/email/verify' : '/auth/verify', { email, code }, { onGlobalError: setGlobalError });
+      const data = await api.post(type === 'pending-email' ? '/users/email/verify' : '/auth/verify', { email, code }, { onGlobalError: setGlobalError });
       if (data.success) {
         if (type === 'pending-email' && data.user) {
           applyUserUpdate(data.user);
@@ -44,10 +44,10 @@ export default function Verify() {
     setResendMsg('');
     setError('');
     const endpoint = type === 'pending-email'
-      ? `${API_URL}/user/email/resend`
+      ? `${API_URL}/users/email/resend`
       : `${API_URL}/auth/resend-code`;
     try {
-      const data = await api.post(type === 'pending-email' ? '/user/email/resend' : '/auth/resend-code', { email }, { onGlobalError: setGlobalError });
+      const data = await api.post(type === 'pending-email' ? '/users/email/resend' : '/auth/resend-code', { email }, { onGlobalError: setGlobalError });
       if (data.success) {
         setResendMsg('Code renvoyé ! Vérifiez votre email.');
       } else {

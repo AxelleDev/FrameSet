@@ -19,7 +19,7 @@ export const DataProvider = ({ children }) => {
       const parsedUser = JSON.parse(storedUser);
       if (parsedUser?.token) {
         setApiToken(parsedUser.token);
-        api.get('/user/profile')
+        api.get('/users/profile')
           .then(profile => {
             setUser(parsedUser);
             fetchProjects(parsedUser.id, { silent: true });
@@ -208,7 +208,7 @@ export const DataProvider = ({ children }) => {
 
   const updateProjectName = async (projectId, { name }) => {
     try {
-      await api.put(`/projects/${projectId}`, { name }, { onGlobalError: setGlobalError });
+      await api.patch(`/projects/${projectId}`, { name }, { onGlobalError: setGlobalError });
       setProjects(prev =>
         prev.map(p => String(p.id) === String(projectId) ? { ...p, name, lastEdited: "À l'instant" } : p)
       );
@@ -274,7 +274,7 @@ export const DataProvider = ({ children }) => {
   const updateUserProfile = async (updates) => {
     if (!user) return;
     try {
-      const data = await api.put('/user', { id: user.id, ...updates }, { onGlobalError: setGlobalError });
+      const data = await api.put('/users', { id: user.id, ...updates }, { onGlobalError: setGlobalError });
       const updatedUser = {
         ...user,
         name: data.name ?? user.name,
@@ -292,7 +292,7 @@ export const DataProvider = ({ children }) => {
   const changePassword = async ({ currentPassword, newPassword }) => {
     if (!user) return { success: false, message: 'Utilisateur non connecté.' };
     try {
-      const data = await api.post('/user/password', { id: user.id, currentPassword, newPassword }, { onGlobalError: setGlobalError });
+      const data = await api.post('/users/password', { id: user.id, currentPassword, newPassword }, { onGlobalError: setGlobalError });
       const updatedUser = {
         ...user,
         passwordUpdatedAt: data.passwordUpdatedAt || new Date().toISOString()

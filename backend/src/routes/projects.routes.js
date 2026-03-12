@@ -7,7 +7,6 @@ const router = express.Router();
 router.get('/', authenticateToken, projectsController.listProjects);
 router.post('/', authenticateToken, projectsController.createProject);
 router.patch('/:id', authenticateToken, projectsController.updateProjectName);
-router.put('/:id', authenticateToken, projectsController.updateProjectName);
 router.delete('/:id', authenticateToken, projectsController.deleteProject);
 
 router.post('/:id/brush-norms', authenticateToken, projectsController.addBrushNorm);
