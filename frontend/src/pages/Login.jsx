@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
+import FormField from '../components/FormField';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PasswordInput from '../components/PasswordInput';
@@ -83,13 +84,26 @@ export default function Login() {
         </div>}
 
         <div className="space-y-5">
-          <div className="group">
-            <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Email</label>
-            <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" placeholder="email@exemple.com" />
-          </div>
+          <FormField 
+            label="Email"
+            labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2"
+            className="group"
+          >
+            <input 
+              type="email" 
+              name="email" 
+              value={formData.email} 
+              onChange={handleChange} 
+              className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" 
+              placeholder="email@exemple.com" 
+            />
+          </FormField>
           
-          <div className="group">
-            <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Mot de passe</label>
+          <FormField 
+            label="Mot de passe"
+            labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2"
+            className="group"
+          >
             <PasswordInput
               name="password"
               value={formData.password}
@@ -98,7 +112,7 @@ export default function Login() {
               placeholder="••••••••"
               autoComplete="current-password"
             />
-          </div>
+          </FormField>
           
           <Button onClick={handleLogin} fullWidth className="mt-2">
             Continuer

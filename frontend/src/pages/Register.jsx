@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
+import FormField from '../components/FormField';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PasswordInput from '../components/PasswordInput';
@@ -82,18 +83,41 @@ export default function Register() {
         {error && <div className="mb-4 p-3 bg-pink text-primary text-xs rounded-lg text-center font-medium">{error}</div>}
 
         <div className="space-y-4">
-          <div className="group">
-            <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Nom Complet</label>
-            <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" placeholder="ex: Prénom Nom" />
-          </div>
+          <FormField 
+            label="Nom Complet"
+            labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2"
+            className="group"
+          >
+            <input 
+              type="text" 
+              name="name" 
+              value={formData.name} 
+              onChange={handleChange} 
+              className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" 
+              placeholder="ex: Prénom Nom" 
+            />
+          </FormField>
 
-          <div className="group">
-            <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Email</label>
-            <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" placeholder="email@exemple.com" />
-          </div>
+          <FormField 
+            label="Email"
+            labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2"
+            className="group"
+          >
+            <input 
+              type="email" 
+              name="email" 
+              value={formData.email} 
+              onChange={handleChange} 
+              className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" 
+              placeholder="email@exemple.com" 
+            />
+          </FormField>
           
-          <div className="group">
-            <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Mot de passe</label>
+          <FormField 
+            label="Mot de passe"
+            labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2"
+            className="group"
+          >
             <PasswordInput
               name="password"
               value={formData.password}
@@ -102,7 +126,7 @@ export default function Register() {
               placeholder="8+ caractères"
               autoComplete="new-password"
             />
-          </div>
+          </FormField>
           
           <Button onClick={handleRegister} fullWidth className="mt-2">
             Créer un compte
