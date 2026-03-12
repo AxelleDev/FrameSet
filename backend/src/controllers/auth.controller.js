@@ -3,10 +3,11 @@ const validator = require('validator');
 const db = require('../database');
 const mailService = require('../services/mail.service');
 const jwt = require('jsonwebtoken');
-const { generateVerificationCode } = require('../utils/auth.utils');
+const { generateVerificationCode, getIdentifierFingerprint } = require('../utils/auth.utils');
 const { generateRefreshToken, verifyRefreshToken } = require('../services/token.service');
 const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
 const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
+const { logger } = require('../utils/logger');
 const getInitials = (name) => name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
 const register = async (req, res) => {
@@ -61,42 +62,90 @@ const register = async (req, res) => {
     res.json({ success: true, ...newUser });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
+      logger.warn('auth.register.duplicate_email', {
+        requestId: req.id,
+        emailFingerprint: getIdentifierFingerprint(email)
+      });
       return res.status(400).json({ error: 'Erreur lors de l’inscription.' });
     }
-    console.error(error);
+
+    logger.error('auth.register.error', {
+      requestId: req.id,
+      emailFingerprint: getIdentifierFingerprint(email),
+      error
+    });
+
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
 
 const login = async (req, res) => {
   let { email, password } = req.body;
-  console.log('Tentative de connexion :', { email });
+  const emailFingerprint = getIdentifierFingerprint(email);
+
+  logger.info('auth.login.attempt', {
+    requestId: req.id,
+    emailFingerprint
+  });
+
   if (!email || !password) {
-    console.log('Email ou mot de passe manquant');
+    logger.warn('auth.login.validation_failed', {
+      requestId: req.id,
+      emailFingerprint,
+      reason: 'missing_credentials'
+    });
+
     return res.status(400).json({ error: 'Tous les champs sont obligatoires.' });
   }
+
   email = validator.trim(email);
   password = validator.trim(password);
+
   if (!validator.isEmail(email)) {
-    console.log('Format d\'email invalide');
+    logger.warn('auth.login.validation_failed', {
+      requestId: req.id,
+      emailFingerprint,
+      reason: 'invalid_email_format'
+    });
+
     return res.status(400).json({ error: 'Email invalide.' });
   }
+
   try {
     const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     if (rows.length === 0) {
-      console.log('Utilisateur non trouvé pour l\'email :', email);
+      logger.warn('auth.login.failed', {
+        requestId: req.id,
+        emailFingerprint,
+        reason: 'invalid_credentials'
+      });
+
       return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
     }
+
     const userDb = rows[0];
     if (!userDb.is_verified) {
-      console.log('Utilisateur non vérifié :', email);
+      logger.info('auth.login.blocked', {
+        requestId: req.id,
+        userId: userDb.id,
+        reason: 'email_not_verified'
+      });
+
       return res.status(401).json({ error: 'Veuillez vérifier votre email avant de vous connecter.' });
     }
+
     const isMatch = await bcrypt.compare(password, userDb.password);
     if (!isMatch) {
-      console.log('Mot de passe incorrect pour l\'email :', email);
+      logger.warn('auth.login.failed', {
+        requestId: req.id,
+        userId: userDb.id,
+        emailFingerprint,
+        reason: 'invalid_credentials'
+      });
+
       return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
     }
+
     const user = {
       id: userDb.id,
       name: userDb.name,
@@ -105,21 +154,53 @@ const login = async (req, res) => {
       passwordUpdatedAt: userDb.password_updated_at,
       pendingEmail: userDb.pending_email
     };
-    console.log('Connexion réussie :', { id: user.id, email: user.email });
+
+    logger.info('auth.login.success', {
+      requestId: req.id,
+      userId: user.id
+    });
+
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
     res.json({ success: true, ...user, token, refreshToken });
   } catch (error) {
-    console.error('Erreur de connexion :', error);
+    logger.error('auth.login.error', {
+      requestId: req.id,
+      emailFingerprint,
+      error
+    });
+
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
 
 const refresh = async (req, res) => {
   const { refreshToken } = req.body;
-  if (!refreshToken) return res.status(400).json({ error: 'Refresh token manquant' });
+
+  if (!refreshToken) {
+    logger.warn('auth.refresh.validation_failed', {
+      requestId: req.id,
+      reason: 'missing_refresh_token'
+    });
+
+    return res.status(400).json({ error: 'Refresh token manquant' });
+  }
+
   const user = verifyRefreshToken(refreshToken);
-  if (!user) return res.status(403).json({ error: 'Refresh token invalide ou expiré' });
+  if (!user) {
+    logger.warn('auth.refresh.failed', {
+      requestId: req.id,
+      reason: 'invalid_or_expired_refresh_token'
+    });
+
+    return res.status(403).json({ error: 'Refresh token invalide ou expiré' });
+  }
+
+  logger.info('auth.refresh.success', {
+    requestId: req.id,
+    userId: user.id
+  });
+
   const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
   res.json({ success: true, token });
 };
@@ -150,7 +231,12 @@ const verify = async (req, res) => {
     await db.query('UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL WHERE email = ?', [email]);
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    logger.error('auth.verify.error', {
+      requestId: req.id,
+      emailFingerprint: getIdentifierFingerprint(email),
+      error
+    });
+
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
@@ -188,7 +274,12 @@ const resendCode = async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    logger.error('auth.resend_code.error', {
+      requestId: req.id,
+      emailFingerprint: getIdentifierFingerprint(email),
+      error
+    });
+
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };
