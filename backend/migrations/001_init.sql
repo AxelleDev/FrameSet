@@ -25,8 +25,9 @@ CREATE TABLE IF NOT EXISTS `projects` (
   `last_edited` datetime DEFAULT CURRENT_TIMESTAMP,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `fk_projects_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `project_brush_norms` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -36,15 +37,17 @@ CREATE TABLE IF NOT EXISTS `project_brush_norms` (
   `unit` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `brush_name` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `project_id` (`project_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `project_id` (`project_id`),
+  CONSTRAINT `fk_project_brush_norms_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `project_palette` (
   `project_id` int NOT NULL,
   `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `hex` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
-  PRIMARY KEY (`project_id`,`hex`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  PRIMARY KEY (`project_id`,`hex`),
+  CONSTRAINT `fk_project_palette_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `project_typography_norms` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -54,5 +57,6 @@ CREATE TABLE IF NOT EXISTS `project_typography_norms` (
   `font_usage` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `font_style` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `project_id` (`project_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `project_id` (`project_id`),
+  CONSTRAINT `fk_project_typography_norms_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
