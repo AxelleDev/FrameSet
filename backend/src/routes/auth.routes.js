@@ -10,10 +10,22 @@ const authLimiter = rateLimit({
 	message: 'Trop de tentatives, veuillez réessayer dans une minute.'
 });
 
+const verifyCodeLimiter = rateLimit({
+	windowMs: 10 * 60 * 1000,
+	max: 10,
+	message: 'Trop de tentatives de vérification, réessayez dans 10 minutes.'
+});
+
+const resendCodeLimiter = rateLimit({
+	windowMs: 10 * 60 * 1000,
+	max: 3,
+	message: 'Trop de demandes de renvoi, réessayez dans 10 minutes.'
+});
+
 router.post('/register', authLimiter, authController.register);
 router.post('/login', authLimiter, authController.login);
-router.post('/verify', authController.verify);
-router.post('/resend-code', authController.resendCode);
+router.post('/verify', verifyCodeLimiter, authController.verify);
+router.post('/resend-code', resendCodeLimiter, authController.resendCode);
 router.post('/refresh', authController.refresh);
 
 module.exports = router;
