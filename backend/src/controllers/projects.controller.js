@@ -1,4 +1,5 @@
 ﻿const db = require('../database');
+const validator = require('validator');
 const { getAuthenticatedUserId } = require('../utils/auth.utils');
 
 const ensureProjectOwnership = async (req, res, projectId) => {
@@ -69,7 +70,6 @@ const listProjects = async (req, res) => {
 };
 
 const createProject = async (req, res) => {
-  const validator = require('validator');
   const userId = getAuthenticatedUserId(req);
   let { name, description } = req.body;
   if (!userId) {

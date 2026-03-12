@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { randomInt } = require('crypto');
+const validator = require('validator');
 const db = require('../database');
 const mailService = require('../services/mail.service');
 const { getAuthenticatedUserId } = require('../utils/auth.utils');
@@ -46,7 +47,6 @@ const getProfile = async (req, res) => {
 };
 
 const updateUser = async (req, res) => {
-  const validator = require('validator');
   const authenticatedUserId = getAuthenticatedUserId(req);
   const { name, email } = req.body;
   if (!authenticatedUserId) {
@@ -187,7 +187,6 @@ const resendPendingEmail = async (req, res) => {
 };
 
 const changePassword = async (req, res) => {
-  const validator = require('validator');
   const authenticatedUserId = getAuthenticatedUserId(req);
   const { currentPassword, newPassword } = req.body;
   if (!authenticatedUserId || !currentPassword || !newPassword) {
