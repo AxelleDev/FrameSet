@@ -9,7 +9,10 @@ const projectsRoutes = require('./routes/projects.routes');
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
 
 app.use((req, res, next) => {
