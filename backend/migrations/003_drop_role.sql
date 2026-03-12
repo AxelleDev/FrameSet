@@ -1,2 +1,2 @@
 ALTER TABLE `users`
-  DROP COLUMN `role`;
+  DROP COLUMN IF EXISTS `role`;
