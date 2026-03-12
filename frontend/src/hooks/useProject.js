@@ -1,21 +1,22 @@
 import { useCallback } from 'react';
-import { useData } from '../context/DataContext';
+import { useProjects } from '../context/ProjectContext';
 
 export const useProjectApi = () => {
-  const data = useData();
-  const fetchProjects = useCallback((userId) => data && data.fetchProjects ? data.fetchProjects(userId) : null, [data]);
-  const addProject = useCallback((...args) => data.addProject(...args), [data]);
-  const deleteProject = useCallback((...args) => data.deleteProject(...args), [data]);
-  const updateProject = useCallback((...args) => data.updateProject ? data.updateProject(...args) : data.updateProjectName(...args), [data]);
-  const updatePalette = useCallback((...args) => data.updateProjectPalette(...args), [data]);
-  const deletePaletteColor = useCallback((...args) => data.deleteProjectPaletteColor(...args), [data]);
+  const projects = useProjects();
 
-  const addBrushNorm = useCallback((...args) => data.addBrushNorm(...args), [data]);
-  const addTypographyNorm = useCallback((...args) => data.addTypographyNorm(...args), [data]);
-  const deleteBrushNorm = useCallback((...args) => data.deleteBrushNorm(...args), [data]);
-  const deleteTypographyNorm = useCallback((...args) => data.deleteTypographyNorm(...args), [data]);
-  const updateBrushNorm = useCallback((...args) => data.updateBrushNorm(...args), [data]);
-  const updateTypographyNorm = useCallback((...args) => data.updateTypographyNorm(...args), [data]);
+  const fetchProjects = useCallback((...args) => projects.fetchProjects(...args), [projects]);
+  const addProject = useCallback((...args) => projects.addProject(...args), [projects]);
+  const deleteProject = useCallback((...args) => projects.deleteProject(...args), [projects]);
+  const updateProject = useCallback((...args) => projects.updateProjectName(...args), [projects]);
+  const updatePalette = useCallback((...args) => projects.updateProjectPalette(...args), [projects]);
+  const deletePaletteColor = useCallback((...args) => projects.deleteProjectPaletteColor(...args), [projects]);
+
+  const addBrushNorm = useCallback((...args) => projects.addBrushNorm(...args), [projects]);
+  const addTypographyNorm = useCallback((...args) => projects.addTypographyNorm(...args), [projects]);
+  const deleteBrushNorm = useCallback((...args) => projects.deleteBrushNorm(...args), [projects]);
+  const deleteTypographyNorm = useCallback((...args) => projects.deleteTypographyNorm(...args), [projects]);
+  const updateBrushNorm = useCallback((...args) => projects.updateBrushNorm(...args), [projects]);
+  const updateTypographyNorm = useCallback((...args) => projects.updateTypographyNorm(...args), [projects]);
 
   return {
     fetchProjects,

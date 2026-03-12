@@ -1,7 +1,7 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import GlobalErrorAlert from './components/GlobalErrorAlert';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { DataProvider, DataContext } from './context/DataContext';
+import { DataProvider, useData } from './context/DataContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import MainLayout from './layouts/MainLayout';
@@ -14,7 +14,7 @@ import Verify from './pages/Verify';
 import NotFound from './pages/NotFound';
 
 function AppRoutes() {
-  const { globalError, setGlobalError } = useContext(DataContext);
+  const { globalError, setGlobalError } = useData();
   return (
     <>
       <GlobalErrorAlert
