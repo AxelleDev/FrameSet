@@ -3,7 +3,7 @@ const validator = require('validator');
 const db = require('../database');
 const mailService = require('../services/mail.service');
 const { getAuthenticatedUserId, generateVerificationCode } = require('../utils/auth.utils');
-const { BCRYPT_SALT_ROUNDS } = require('../config/security.config');
+const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
 
 const getUserCount = async (req, res) => {
   try {
@@ -191,10 +191,10 @@ const changePassword = async (req, res) => {
     return res.status(400).json({ error: 'Champs requis manquants.' });
   }
   const trimmedNewPassword = validator.trim(newPassword);
-  if (!validator.isLength(trimmedNewPassword, { min: 8 })) {
+  if (!validator.isLength(trimmedNewPassword, { min: PASSWORD_MIN_LENGTH })) {
     return res.status(400).json({ error: 'Mot de passe trop court.' });
   }
-  if (!validator.matches(trimmedNewPassword, /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/)) {
+  if (!validator.matches(trimmedNewPassword, PASSWORD_COMPLEXITY_REGEX)) {
     return res.status(400).json({ error: 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.' });
   }
   try {

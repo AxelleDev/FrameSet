@@ -5,7 +5,7 @@ const mailService = require('../services/mail.service');
 const jwt = require('jsonwebtoken');
 const { generateVerificationCode } = require('../utils/auth.utils');
 const { generateRefreshToken, verifyRefreshToken } = require('../services/token.service');
-const { BCRYPT_SALT_ROUNDS } = require('../config/security.config');
+const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
 const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
 const getInitials = (name) => name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
@@ -20,10 +20,10 @@ const register = async (req, res) => {
   if (!validator.isEmail(email)) {
     return res.status(400).json({ error: 'Email invalide.' });
   }
-  if (!validator.isLength(password, { min: 8 })) {
+  if (!validator.isLength(password, { min: PASSWORD_MIN_LENGTH })) {
     return res.status(400).json({ error: 'Mot de passe trop court.' });
   }
-  if (!validator.matches(password, /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/)) {
+  if (!validator.matches(password, PASSWORD_COMPLEXITY_REGEX)) {
     return res.status(400).json({ error: 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.' });
   }
 
