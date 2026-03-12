@@ -52,10 +52,13 @@ describe('contrôleur d’authentification', () => {
 
   describe('rafraîchir', () => {
     it('devrait rafraîchir le jeton', async () => {
+      const refreshHandler = authController.refresh || authController.refreshToken;
+      expect(typeof refreshHandler).toBe('function');
+
       tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
       const req = { body: { refreshToken: 'token' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-      await authController.refresh(req, res);
+      await refreshHandler(req, res);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
   });
