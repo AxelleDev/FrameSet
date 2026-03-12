@@ -2,6 +2,11 @@
 <div align="center">
 	<img src="frontend/public/FrameSet_Logo.png" alt="Logo FrameSet" width="120" />
 	<p><b>FRAMESET — Le référentiel graphique pensé pour l’illustration digitale.</b></p>
+	<p>
+		<a href="https://github.com/AxelleDev/frameset/actions/workflows/ci.yml">
+			<img src="https://github.com/AxelleDev/frameset/actions/workflows/ci.yml/badge.svg" alt="Statut CI" />
+		</a>
+	</p>
 </div>
 
 ---
@@ -40,6 +45,18 @@ cd frontend
 npm install
 npm run dev
 ```
+
+---
+
+## ✧･ﾟ: ✧･ﾟ CI (GitHub Actions)
+
+La pipeline CI lance automatiquement :
+
+- les tests backend
+- les tests frontend
+- le build frontend
+
+Workflow : `.github/workflows/ci.yml`
 
 ---
 
