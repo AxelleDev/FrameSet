@@ -6,19 +6,20 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import PasswordInput from '../components/PasswordInput';
 import useUserCount from '../hooks/useUserCount';
+import useFormState from '../hooks/useFormState';
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [formData, setFormData] = useState({
+  const { values: formData, setField } = useFormState({
     email: '',
     password: ''
   });
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setField(e.target.name, e.target.value);
   };
 
   const handleLogin = async () => {
