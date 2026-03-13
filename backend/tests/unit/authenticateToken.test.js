@@ -68,4 +68,16 @@ describe('middleware authenticateToken', () => {
     expect(req.user).toEqual({ id: 1 });
     expect(req.token).toBe('validtoken');
   });
+
+  it('devrait accepter un token valide depuis le cookie HttpOnly', async () => {
+    const req = { headers: { cookie: 'frameset_access_token=cookie-token' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    await authenticateToken(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(req.user).toEqual({ id: 1 });
+    expect(req.token).toBe('cookie-token');
+  });
 });

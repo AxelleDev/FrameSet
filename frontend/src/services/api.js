@@ -1,72 +1,25 @@
 // Service centralise pour les appels reseau vers l'API backend.
-// Fournit des fonctions utilitaires pour les methodes HTTP et gere le token d'authentification.
+// Fournit des fonctions utilitaires pour les methodes HTTP et gere la session via cookies HttpOnly.
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 const RETRY_WINDOW_MS = 5000;
 const RETRY_INTERVAL_MS = 500;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Récupère le token stocké localement (si présent)
-const getStoredToken = () => {
-  try {
-    const u = JSON.parse(localStorage.getItem('frameset_user'));
-    return u?.token || null;
-  } catch (e) {
-    return null;
-  }
-};
-
-// Récupère le refresh token stocké localement
-const getStoredRefreshToken = () => {
-  try {
-    const u = JSON.parse(localStorage.getItem('frameset_user'));
-    return u?.refreshToken || null;
-  } catch (e) {
-    return null;
-  }
-};
-
-// Met à jour le token dans localStorage
-const updateStoredToken = (newToken) => {
-  try {
-    const u = JSON.parse(localStorage.getItem('frameset_user'));
-    if (u) {
-      u.token = newToken;
-      localStorage.setItem('frameset_user', JSON.stringify(u));
-    }
-  } catch (e) {
-    // ignore
-  }
-};
-
-let explicitToken = null;
-
-// Permet d'écraser temporairement le token (utile après login)
-export const setToken = (t) => { explicitToken = t; };
-// Supprime le token explicite
-export const clearToken = () => { explicitToken = null; };
-
 // Construit les headers pour la requête (JSON + Authorization si présent)
 const buildHeaders = (isJson = true, extra = {}) => {
   const headers = { ...extra };
   if (isJson) headers['Content-Type'] = 'application/json';
-  const token = explicitToken || getStoredToken();
-  if (token) headers['Authorization'] = `Bearer ${token}`;
   return headers;
 };
 
 // Tente de rafraîchir le token et retourner true si succès
 const attemptTokenRefresh = async () => {
-  const refreshToken = getStoredRefreshToken();
-  if (!refreshToken) {
-    return false;
-  }
-
   try {
     const res = await fetch(`${API_URL}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken })
+      credentials: 'include'
     });
 
     if (!res.ok) {
@@ -74,9 +27,7 @@ const attemptTokenRefresh = async () => {
     }
 
     const data = await res.json();
-    if (data.success && data.token) {
-      updateStoredToken(data.token);
-      clearToken(); // Reset explicit token so next request uses updated one
+    if (data.success) {
       return true;
     }
 
@@ -122,7 +73,11 @@ const request = async (path, { method = 'GET', body, headers, signal, onGlobalEr
     }
 
     try {
-      const res = await fetch(`${API_URL}${path}`, { ...opts, signal: attemptController.signal });
+      const res = await fetch(`${API_URL}${path}`, {
+        ...opts,
+        credentials: 'include',
+        signal: attemptController.signal
+      });
       const contentType = res.headers.get('content-type') || '';
       const isJson = contentType.includes('application/json');
       let data = null;
@@ -196,7 +151,5 @@ export default {
   post: (p, b, opts) => request(p, { method: 'POST', body: b, ...opts }),
   put: (p, b, opts) => request(p, { method: 'PUT', body: b, ...opts }),
   patch: (p, b, opts) => request(p, { method: 'PATCH', body: b, ...opts }),
-  delete: (p, b, opts) => request(p, { method: 'DELETE', body: b, ...opts }),
-  setToken,
-  clearToken,
+  delete: (p, b, opts) => request(p, { method: 'DELETE', body: b, ...opts })
 };

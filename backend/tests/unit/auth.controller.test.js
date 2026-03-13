@@ -38,14 +38,18 @@ describe('contrôleur d’authentification', () => {
   });
 
   describe('connexion', () => {
-    it('devrait connecter un utilisateur et retourner les jetons', async () => {
+    it('devrait connecter un utilisateur et définir les cookies HttpOnly', async () => {
       db.query.mockResolvedValueOnce([[{ id: 1, name: 'Axel', email: 'axel@a.com', password: 'hashed', avatar_initials: 'A', is_verified: true }]]);
       require('bcryptjs').compare = jest.fn().mockResolvedValue(true);
       tokenService.generateRefreshToken.mockReturnValue('refreshToken');
       const req = { body: { email: 'axel@a.com', password: 'pass' } };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
       await authController.login(req, res);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+      expect(res.cookie).toHaveBeenCalledTimes(2);
+      const payload = res.json.mock.calls[0][0];
+      expect(payload.token).toBeUndefined();
+      expect(payload.refreshToken).toBeUndefined();
     });
   });
 
@@ -58,9 +62,10 @@ describe('contrôleur d’authentification', () => {
       tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
       tokenService.isTokenRevoked.mockResolvedValue(false);
       const req = { body: { refreshToken: 'token' } };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
       await refreshHandler(req, res);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+      expect(res.cookie).toHaveBeenCalledTimes(1);
     });
 
     it('devrait refuser un refresh token révoqué', async () => {
@@ -69,7 +74,7 @@ describe('contrôleur d’authentification', () => {
       tokenService.isTokenRevoked.mockResolvedValue(true);
 
       const req = { id: 'req-1', body: { refreshToken: 'token' } };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
 
       await refreshHandler(req, res);
 
@@ -89,23 +94,25 @@ describe('contrôleur d’authentification', () => {
         token: 'access-token',
         body: { refreshToken: 'refresh-token' }
       };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
 
       await authController.logout(req, res);
 
       expect(tokenService.revokeToken).toHaveBeenCalledWith(1, 'access-token');
       expect(tokenService.revokeToken).toHaveBeenCalledWith(1, 'refresh-token');
       expect(res.json).toHaveBeenCalledWith({ success: true });
+      expect(res.clearCookie).toHaveBeenCalledTimes(2);
     });
 
     it('devrait retourner 401 si non authentifié', async () => {
       const req = { user: null, token: null, body: {} };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
 
       await authController.logout(req, res);
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({ error: 'Utilisateur non authentifié.' });
+      expect(res.clearCookie).toHaveBeenCalledTimes(2);
     });
   });
 });

@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import api, { setToken as setApiToken, clearToken as clearApiToken } from '../services/api';
+import api from '../services/api';
 import logger from '../utils/logger';
 
 export const AuthContext = createContext(null);
@@ -17,15 +17,6 @@ const persistUser = (userData) => {
   localStorage.setItem('frameset_user', JSON.stringify(userData));
 };
 
-const readStoredRefreshToken = () => {
-  try {
-    const storedUser = localStorage.getItem('frameset_user');
-    return storedUser ? JSON.parse(storedUser).refreshToken : null;
-  } catch (error) {
-    return null;
-  }
-};
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -33,28 +24,21 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const storedUser = readStoredUser();
-
-    if (!storedUser?.token) {
-      setAuthLoading(false);
-      return;
+    if (storedUser) {
+      setUser(storedUser);
     }
-
-    setApiToken(storedUser.token);
 
     api.get('/users/profile')
       .then((profile) => {
         const hydratedUser = {
-          ...storedUser,
-          ...profile,
-          token: storedUser.token,
-          refreshToken: storedUser.refreshToken
+          ...(storedUser || {}),
+          ...profile
         };
         setUser(hydratedUser);
         persistUser(hydratedUser);
       })
       .catch(() => {
         setUser(null);
-        clearApiToken();
         localStorage.removeItem('frameset_user');
       })
       .finally(() => {
@@ -65,13 +49,8 @@ export const AuthProvider = ({ children }) => {
   const setAuthenticatedUser = useCallback((userData) => {
     if (!userData) {
       setUser(null);
-      clearApiToken();
       localStorage.removeItem('frameset_user');
       return;
-    }
-
-    if (userData?.token) {
-      setApiToken(userData.token);
     }
 
     setUser(userData);
@@ -86,14 +65,6 @@ export const AuthProvider = ({ children }) => {
         ...(currentUser || {}),
         ...userData
       };
-
-      if (currentUser?.token && !nextUser.token) {
-        nextUser.token = currentUser.token;
-      }
-
-      if (currentUser?.refreshToken && !nextUser.refreshToken) {
-        nextUser.refreshToken = currentUser.refreshToken;
-      }
 
       persistUser(nextUser);
       return nextUser;
@@ -117,7 +88,7 @@ export const AuthProvider = ({ children }) => {
   const register = useCallback(async (userData) => {
     try {
       const newUser = await api.post('/auth/register', userData, { onGlobalError: setGlobalError });
-      if (newUser?.token) {
+      if (newUser?.is_verified) {
         setAuthenticatedUser(newUser);
       }
       return { success: true, data: newUser };
@@ -132,32 +103,11 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(async () => {
     try {
-      const storedUser = readStoredUser();
-      const token = storedUser?.token;
-      const refreshToken = storedUser?.refreshToken;
-      
-      // Révoquer le token côté serveur avant logout local
-      if (token) {
-        try {
-          await fetch('/api/auth/logout', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ refreshToken })
-          });
-        } catch (err) {
-          // Continuer le logout même si la révocation échoue
-          logger.error('auth.logout.revoke_failed', err);
-        }
-      }
+      await api.post('/auth/logout', {}, { onGlobalError: setGlobalError });
     } catch (err) {
-      logger.error('auth.logout.error', err);
+      logger.error('auth.logout.revoke_failed', err);
     } finally {
-      // Toujours clearer le localStorage et l'état local
       setUser(null);
-      clearApiToken();
       localStorage.removeItem('frameset_user');
       setGlobalError(null);
     }
@@ -165,49 +115,13 @@ export const AuthProvider = ({ children }) => {
 
   const refreshAccessToken = useCallback(async () => {
     try {
-      const refreshToken = readStoredRefreshToken();
-      if (!refreshToken) {
-        logout();
-        return null;
-      }
-
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken })
-      });
-
-      if (!response.ok) {
-        logout();
-        return null;
-      }
-
-      const data = await response.json();
-      
-      if (data.success && data.token) {
-        setApiToken(data.token);
-        
-        if (user) {
-          const updatedUser = {
-            ...user,
-            token: data.token,
-            refreshToken: data.refreshToken || refreshToken
-          };
-          setUser(updatedUser);
-          persistUser(updatedUser);
-        }
-
-        return data.token;
-      }
-
-      logout();
-      return null;
+      const data = await api.post('/auth/refresh', {}, { onGlobalError: setGlobalError });
+      return Boolean(data?.success);
     } catch (error) {
       logger.error('auth.refreshAccessToken.error', error);
-      logout();
       return null;
     }
-  }, [user, logout]);
+  }, []);
 
   const updateUserProfile = useCallback(async (updates) => {
     if (!user) return;
@@ -232,7 +146,6 @@ export const AuthProvider = ({ children }) => {
     try {
       await api.delete('/users/me', null, { onGlobalError: setGlobalError });
       setUser(null);
-      clearApiToken();
       localStorage.removeItem('frameset_user');
       setGlobalError(null);
       return { success: true };

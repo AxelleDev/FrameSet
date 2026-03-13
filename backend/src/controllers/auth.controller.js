@@ -7,8 +7,20 @@ const { generateVerificationCode, getIdentifierFingerprint } = require('../utils
 const { generateRefreshToken, verifyRefreshToken, revokeToken, isTokenRevoked } = require('../services/token.service');
 const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
 const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
+const { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME, getAccessTokenCookieOptions, getRefreshTokenCookieOptions, getCookieBaseOptions, getCookieValue } = require('../utils/cookies.utils');
 const { logger } = require('../utils/logger');
 const getInitials = (name) => name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+const setAuthCookies = (res, accessToken, refreshToken) => {
+  res.cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, getAccessTokenCookieOptions());
+  res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, getRefreshTokenCookieOptions());
+};
+
+const clearAuthCookies = (res) => {
+  const cookieOptions = getCookieBaseOptions();
+  res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, cookieOptions);
+  res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
+};
 
 const register = async (req, res) => {
   let { name, email, password } = req.body;
@@ -162,7 +174,9 @@ const login = async (req, res) => {
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
-    res.json({ success: true, ...user, token, refreshToken });
+
+    setAuthCookies(res, token, refreshToken);
+    res.json({ success: true, ...user });
   } catch (error) {
     logger.error('auth.login.error', {
       requestId: req.id,
@@ -175,7 +189,7 @@ const login = async (req, res) => {
 };
 
 const refresh = async (req, res) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.body?.refreshToken || getCookieValue(req, REFRESH_TOKEN_COOKIE_NAME);
 
   if (!refreshToken) {
     logger.warn('auth.refresh.validation_failed', {
@@ -213,7 +227,8 @@ const refresh = async (req, res) => {
   });
 
   const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-  res.json({ success: true, token });
+  res.cookie(ACCESS_TOKEN_COOKIE_NAME, token, getAccessTokenCookieOptions());
+  res.json({ success: true });
 };
 
 const verify = async (req, res) => {
@@ -298,9 +313,10 @@ const resendCode = async (req, res) => {
 const logout = async (req, res) => {
   const authenticatedUserId = req.user?.id;
   const token = req.token;
-  const refreshToken = req.body?.refreshToken;
+  const refreshToken = req.body?.refreshToken || getCookieValue(req, REFRESH_TOKEN_COOKIE_NAME);
 
   if (!authenticatedUserId || !token) {
+    clearAuthCookies(res);
     return res.status(401).json({ error: 'Utilisateur non authentifié.' });
   }
 
@@ -316,6 +332,8 @@ const logout = async (req, res) => {
 
     await Promise.all(revokeTasks);
 
+    clearAuthCookies(res);
+
     logger.info('auth.logout.success', {
       requestId: req.id,
       userId: authenticatedUserId
@@ -323,6 +341,8 @@ const logout = async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
+    clearAuthCookies(res);
+
     logger.error('auth.logout.error', {
       requestId: req.id,
       userId: authenticatedUserId,
