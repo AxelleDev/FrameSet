@@ -56,10 +56,56 @@ describe('contrôleur d’authentification', () => {
       expect(typeof refreshHandler).toBe('function');
 
       tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
+      tokenService.isTokenRevoked.mockResolvedValue(false);
       const req = { body: { refreshToken: 'token' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await refreshHandler(req, res);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it('devrait refuser un refresh token révoqué', async () => {
+      const refreshHandler = authController.refresh || authController.refreshToken;
+      tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
+      tokenService.isTokenRevoked.mockResolvedValue(true);
+
+      const req = { id: 'req-1', body: { refreshToken: 'token' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await refreshHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Refresh token invalide ou expiré' });
+    });
+  });
+
+  describe('déconnexion', () => {
+    it('devrait révoquer le token d’accès et le refresh token', async () => {
+      tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
+      tokenService.revokeToken.mockResolvedValue(true);
+
+      const req = {
+        id: 'req-logout-1',
+        user: { id: 1 },
+        token: 'access-token',
+        body: { refreshToken: 'refresh-token' }
+      };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await authController.logout(req, res);
+
+      expect(tokenService.revokeToken).toHaveBeenCalledWith(1, 'access-token');
+      expect(tokenService.revokeToken).toHaveBeenCalledWith(1, 'refresh-token');
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('devrait retourner 401 si non authentifié', async () => {
+      const req = { user: null, token: null, body: {} };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await authController.logout(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Utilisateur non authentifié.' });
     });
   });
 });

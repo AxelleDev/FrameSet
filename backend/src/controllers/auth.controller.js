@@ -4,7 +4,7 @@ const db = require('../database');
 const mailService = require('../services/mail.service');
 const jwt = require('jsonwebtoken');
 const { generateVerificationCode, getIdentifierFingerprint } = require('../utils/auth.utils');
-const { generateRefreshToken, verifyRefreshToken } = require('../services/token.service');
+const { generateRefreshToken, verifyRefreshToken, revokeToken, isTokenRevoked } = require('../services/token.service');
 const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
 const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
 const { logger } = require('../utils/logger');
@@ -196,6 +196,17 @@ const refresh = async (req, res) => {
     return res.status(403).json({ error: 'Refresh token invalide ou expiré' });
   }
 
+  const refreshTokenRevoked = await isTokenRevoked(user.id, refreshToken);
+  if (refreshTokenRevoked) {
+    logger.warn('auth.refresh.failed', {
+      requestId: req.id,
+      userId: user.id,
+      reason: 'revoked_refresh_token'
+    });
+
+    return res.status(403).json({ error: 'Refresh token invalide ou expiré' });
+  }
+
   logger.info('auth.refresh.success', {
     requestId: req.id,
     userId: user.id
@@ -284,10 +295,49 @@ const resendCode = async (req, res) => {
   }
 };
 
+const logout = async (req, res) => {
+  const authenticatedUserId = req.user?.id;
+  const token = req.token;
+  const refreshToken = req.body?.refreshToken;
+
+  if (!authenticatedUserId || !token) {
+    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+  }
+
+  try {
+    const revokeTasks = [revokeToken(authenticatedUserId, token)];
+
+    if (refreshToken) {
+      const refreshPayload = verifyRefreshToken(refreshToken);
+      if (refreshPayload?.id === authenticatedUserId) {
+        revokeTasks.push(revokeToken(authenticatedUserId, refreshToken));
+      }
+    }
+
+    await Promise.all(revokeTasks);
+
+    logger.info('auth.logout.success', {
+      requestId: req.id,
+      userId: authenticatedUserId
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('auth.logout.error', {
+      requestId: req.id,
+      userId: authenticatedUserId,
+      error
+    });
+
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
 module.exports = {
   register,
   login,
   verify,
   resendCode,
-  refresh
+  refresh,
+  logout
 };

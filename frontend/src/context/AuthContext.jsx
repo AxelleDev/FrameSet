@@ -130,11 +130,37 @@ export const AuthProvider = ({ children }) => {
     }
   }, [setAuthenticatedUser]);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    clearApiToken();
-    localStorage.removeItem('frameset_user');
-    setGlobalError(null);
+  const logout = useCallback(async () => {
+    try {
+      const storedUser = readStoredUser();
+      const token = storedUser?.token;
+      const refreshToken = storedUser?.refreshToken;
+      
+      // Révoquer le token côté serveur avant logout local
+      if (token) {
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ refreshToken })
+          });
+        } catch (err) {
+          // Continuer le logout même si la révocation échoue
+          logger.error('auth.logout.revoke_failed', err);
+        }
+      }
+    } catch (err) {
+      logger.error('auth.logout.error', err);
+    } finally {
+      // Toujours clearer le localStorage et l'état local
+      setUser(null);
+      clearApiToken();
+      localStorage.removeItem('frameset_user');
+      setGlobalError(null);
+    }
   }, []);
 
   const refreshAccessToken = useCallback(async () => {

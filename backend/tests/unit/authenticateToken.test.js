@@ -2,13 +2,24 @@ process.env.JWT_SECRET = 'test_jwt_secret';
 process.env.JWT_REFRESH_SECRET = 'test_jwt_refresh_secret';
 
 jest.mock('jsonwebtoken', () => ({
-  verify: jest.fn((token, secret, cb) => cb(null, { id: 1 }))
+  verify: jest.fn(() => ({ id: 1 }))
+}));
+
+jest.mock('../../src/services/token.service', () => ({
+  isTokenRevoked: jest.fn().mockResolvedValue(false)
 }));
 
 const jwt = require('jsonwebtoken');
+const tokenService = require('../../src/services/token.service');
 const authenticateToken = require('../../src/middleware/authenticateToken');
 
 describe('middleware authenticateToken', () => {
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    jwt.verify.mockReturnValue({ id: 1 });
+    tokenService.isTokenRevoked.mockResolvedValue(false);
+  });
 
   it('devrait retourner 401 si le jeton est manquant', () => {
     const req = { headers: {} };
@@ -19,23 +30,42 @@ describe('middleware authenticateToken', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Token manquant' });
   });
 
-  it('devrait retourner 403 si le jeton est invalide', () => {
+  it('devrait retourner 403 si le jeton est invalide', async () => {
     const req = { headers: { authorization: 'Bearer token' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();
-    jwt.verify.mockImplementation((token, secret, cb) => cb(true));
-    authenticateToken(req, res, next);
+    jwt.verify.mockImplementation(() => {
+      throw new Error('invalid token');
+    });
+
+    await authenticateToken(req, res, next);
+
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({ error: 'Token invalide ou expiré' });
   });
 
-  it('devrait appeler next si le jeton est valide', () => {
+  it('devrait retourner 403 si le jeton est révoqué', async () => {
     const req = { headers: { authorization: 'Bearer token' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();
-    jwt.verify.mockImplementation((token, secret, cb) => cb(null, { id: 1 }));
-    authenticateToken(req, res, next);
+    tokenService.isTokenRevoked.mockResolvedValue(true);
+
+    await authenticateToken(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Token invalide ou expiré' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('devrait accepter un token valide', async () => {
+    const req = { headers: { authorization: 'Bearer validtoken' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    await authenticateToken(req, res, next);
+
     expect(next).toHaveBeenCalled();
     expect(req.user).toEqual({ id: 1 });
+    expect(req.token).toBe('validtoken');
   });
 });
