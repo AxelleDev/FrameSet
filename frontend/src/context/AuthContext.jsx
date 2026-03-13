@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 import logger from '../utils/logger';
+import { handleApiError } from '../utils/apiError';
 
 export const AuthContext = createContext(null);
 
@@ -77,11 +78,8 @@ export const AuthProvider = ({ children }) => {
       setAuthenticatedUser(userData);
       return { success: true, data: userData };
     } catch (err) {
-      const isBusinessError = err.status && err.status < 500;
-      if (!isBusinessError) {
-        setGlobalError(err.message || 'Une erreur est survenue.');
-      }
-      return { success: false, message: isBusinessError ? (err.data?.error || err.message) : undefined };
+      const { message } = handleApiError(err, setGlobalError, 'Une erreur est survenue.');
+      return { success: false, message };
     }
   }, [setAuthenticatedUser]);
 
@@ -90,11 +88,8 @@ export const AuthProvider = ({ children }) => {
       const registrationData = await api.post('/auth/register', userData, { onGlobalError: setGlobalError });
       return { success: true, data: registrationData };
     } catch (err) {
-      const isBusinessError = err.status && err.status < 500;
-      if (!isBusinessError) {
-        setGlobalError(err.message || 'Une erreur est survenue.');
-      }
-      return { success: false, message: isBusinessError ? (err.data?.error || err.message) : undefined };
+      const { message } = handleApiError(err, setGlobalError, 'Une erreur est survenue.');
+      return { success: false, message };
     }
   }, [setGlobalError]);
 
@@ -147,11 +142,8 @@ export const AuthProvider = ({ children }) => {
       setGlobalError(null);
       return { success: true };
     } catch (error) {
-      const isBusinessError = error.status && error.status < 500;
-      if (!isBusinessError) {
-        setGlobalError(error.message || 'Erreur lors de la suppression du compte.');
-      }
-      return { success: false, message: isBusinessError ? (error.data?.error || error.message) : undefined };
+      const { message } = handleApiError(error, setGlobalError, 'Erreur lors de la suppression du compte.');
+      return { success: false, message };
     }
   }, []);
 

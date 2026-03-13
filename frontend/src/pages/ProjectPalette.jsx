@@ -10,11 +10,11 @@ import CopyBadge from '../components/CopyBadge';
 import AddTile from '../components/AddTile';
 import PageHeader from '../components/PageHeader';
 import useClipboard from '../hooks/useClipboard';
+import useActiveProject from '../hooks/useActiveProject';
 
 export default function ProjectPalette() {
   const { id } = useParams();
   const {
-    setActiveProjectId,
     activeProject,
     updateProjectPalette,
     updateProjectPaletteColor,
@@ -118,9 +118,7 @@ export default function ProjectPalette() {
     setter(cleaned);
   };
 
-  useEffect(() => {
-    if (id) setActiveProjectId(id);
-  }, [id, setActiveProjectId]);
+  useActiveProject(id);
 
   const renderEditStatus = () => {
     if (editStatus === 'error') {

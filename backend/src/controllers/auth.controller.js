@@ -3,7 +3,7 @@ const validator = require('validator');
 const db = require('../database');
 const mailService = require('../services/mail.service');
 const jwt = require('jsonwebtoken');
-const { generateVerificationCode, getIdentifierFingerprint } = require('../utils/auth.utils');
+const { generateVerificationCode, getIdentifierFingerprint, getInitials } = require('../utils/auth.utils');
 const { generateRefreshToken, verifyRefreshToken, revokeToken, isTokenRevoked } = require('../services/token.service');
 const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
 const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
@@ -11,13 +11,6 @@ const { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME, getAccessTokenCooki
 const { logger } = require('../utils/logger');
 
 const normalizeInput = (value) => validator.trim(String(value ?? ''));
-const getInitials = (name) => name
-  .split(/\s+/)
-  .filter(Boolean)
-  .map((word) => word[0])
-  .join('')
-  .substring(0, 2)
-  .toUpperCase();
 
 const setAuthCookies = (res, accessToken, refreshToken) => {
   res.cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, getAccessTokenCookieOptions());

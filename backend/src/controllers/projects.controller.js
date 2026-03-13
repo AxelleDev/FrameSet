@@ -1,22 +1,8 @@
 ﻿const db = require('../database');
 const validator = require('validator');
-const { getAuthenticatedUserId } = require('../utils/auth.utils');
-const { logger } = require('../utils/logger');
+const { getAuthenticatedUserId, createControllerLogger } = require('../utils/auth.utils');
 
-const logProjectsControllerError = (req, operation, error, meta = {}) => {
-  const userId = getAuthenticatedUserId(req);
-  const logMeta = {
-    requestId: req.id,
-    ...meta,
-    error
-  };
-
-  if (userId) {
-    logMeta.userId = userId;
-  }
-
-  logger.error(`projects.${operation}.error`, logMeta);
-};
+const logProjectsControllerError = createControllerLogger('projects');
 
 const ensureProjectOwnership = async (req, res, projectId) => {
   const userId = getAuthenticatedUserId(req);

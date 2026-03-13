@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import useFormState from '../hooks/useFormState';
+import useActiveProject from '../hooks/useActiveProject';
 import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
 import FormModal from '../components/FormModal';
@@ -14,7 +15,6 @@ import PageHeader from '../components/PageHeader';
 export default function ProjectNorms() {
   const { id } = useParams();
   const {
-    setActiveProjectId,
     activeProject,
     addBrushNorm,
     addTypographyNorm,
@@ -71,9 +71,7 @@ export default function ProjectNorms() {
   const [isAddingNorm, setIsAddingNorm] = useState(false);
   const [addType, setAddType] = useState('brush');
 
-  useEffect(() => {
-    if (id) setActiveProjectId(id);
-  }, [id, setActiveProjectId]);
+  useActiveProject(id);
 
   const resetForm = () => {
     resetBrushForm();

@@ -2,24 +2,10 @@ const bcrypt = require('bcryptjs');
 const validator = require('validator');
 const db = require('../database');
 const mailService = require('../services/mail.service');
-const { getAuthenticatedUserId, generateVerificationCode } = require('../utils/auth.utils');
+const { getAuthenticatedUserId, generateVerificationCode, createControllerLogger } = require('../utils/auth.utils');
 const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
-const { logger } = require('../utils/logger');
 
-const logUserControllerError = (req, operation, error, meta = {}) => {
-  const userId = getAuthenticatedUserId(req);
-  const logMeta = {
-    requestId: req.id,
-    ...meta,
-    error
-  };
-
-  if (userId) {
-    logMeta.userId = userId;
-  }
-
-  logger.error(`users.${operation}.error`, logMeta);
-};
+const logUserControllerError = createControllerLogger('users');
 
 const getUserCount = async (req, res) => {
   try {
