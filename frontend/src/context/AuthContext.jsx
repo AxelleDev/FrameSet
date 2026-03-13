@@ -5,42 +5,18 @@ import { handleApiError } from '../utils/apiError';
 
 export const AuthContext = createContext(null);
 
-const readStoredUser = () => {
-  try {
-    const storedUser = localStorage.getItem('frameset_user');
-    return storedUser ? JSON.parse(storedUser) : null;
-  } catch (error) {
-    return null;
-  }
-};
-
-const persistUser = (userData) => {
-  localStorage.setItem('frameset_user', JSON.stringify(userData));
-};
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [globalError, setGlobalError] = useState(null);
 
   useEffect(() => {
-    const storedUser = readStoredUser();
-    if (storedUser) {
-      setUser(storedUser);
-    }
-
     api.get('/users/profile')
       .then((profile) => {
-        const hydratedUser = {
-          ...(storedUser || {}),
-          ...profile
-        };
-        setUser(hydratedUser);
-        persistUser(hydratedUser);
+        setUser(profile || null);
       })
       .catch(() => {
         setUser(null);
-        localStorage.removeItem('frameset_user');
       })
       .finally(() => {
         setAuthLoading(false);
@@ -50,25 +26,20 @@ export const AuthProvider = ({ children }) => {
   const setAuthenticatedUser = useCallback((userData) => {
     if (!userData) {
       setUser(null);
-      localStorage.removeItem('frameset_user');
       return;
     }
 
     setUser(userData);
-    persistUser(userData);
   }, []);
 
   const applyUserUpdate = useCallback((userData) => {
     if (!userData) return;
 
     setUser((currentUser) => {
-      const nextUser = {
+      return {
         ...(currentUser || {}),
         ...userData
       };
-
-      persistUser(nextUser);
-      return nextUser;
     });
   }, []);
 
@@ -100,7 +71,6 @@ export const AuthProvider = ({ children }) => {
       logger.error('auth.logout.revoke_failed', err);
     } finally {
       setUser(null);
-      localStorage.removeItem('frameset_user');
       setGlobalError(null);
     }
   }, []);
@@ -127,7 +97,6 @@ export const AuthProvider = ({ children }) => {
         pendingEmail: data.pendingEmail ?? user.pendingEmail
       };
       setUser(updatedUser);
-      persistUser(updatedUser);
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de la mise a jour du profil.');
       logger.error('auth.updateUserProfile.error', error);
@@ -138,7 +107,6 @@ export const AuthProvider = ({ children }) => {
     try {
       await api.delete('/users/me', null, { onGlobalError: setGlobalError });
       setUser(null);
-      localStorage.removeItem('frameset_user');
       setGlobalError(null);
       return { success: true };
     } catch (error) {
@@ -159,7 +127,6 @@ export const AuthProvider = ({ children }) => {
         passwordUpdatedAt: data.passwordUpdatedAt || new Date().toISOString()
       };
       setUser(updatedUser);
-      persistUser(updatedUser);
       return { success: true };
     } catch (error) {
       logger.error('auth.changePassword.error', error);
