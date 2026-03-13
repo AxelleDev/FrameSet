@@ -72,9 +72,17 @@ describe('service de jeton', () => {
     expect(db.query).not.toHaveBeenCalled();
   });
 
-  it('devrait retourner false si le token à vérifier est vide', async () => {
+  it('devrait traiter un token vide comme révoqué (fail-closed)', async () => {
     const revoked = await tokenService.isTokenRevoked(1, '');
-    expect(revoked).toBe(false);
+    expect(revoked).toBe(true);
     expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('devrait lever une erreur si la vérification de révocation échoue en base', async () => {
+    db.query.mockRejectedValueOnce(new Error('db down'));
+
+    await expect(tokenService.isTokenRevoked(1, 'abc'))
+      .rejects
+      .toMatchObject({ message: 'TOKEN_REVOCATION_CHECK_FAILED' });
   });
 });

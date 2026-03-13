@@ -69,6 +69,19 @@ describe('middleware authenticateToken', () => {
     expect(req.token).toBe('validtoken');
   });
 
+  it('devrait retourner 503 si le contrôle de révocation échoue', async () => {
+    const req = { headers: { authorization: 'Bearer token' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    tokenService.isTokenRevoked.mockRejectedValueOnce(new Error('db down'));
+
+    await authenticateToken(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Service temporairement indisponible' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
   it('devrait accepter un token valide depuis le cookie HttpOnly', async () => {
     const req = { headers: { cookie: 'frameset_access_token=cookie-token' } };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };

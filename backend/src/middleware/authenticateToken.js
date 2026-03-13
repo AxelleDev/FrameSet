@@ -20,6 +20,10 @@ async function authenticateToken(req, res, next) {
     return res.status(403).json({ error: 'Token invalide ou expiré' });
   }
 
+  if (!user || user.id === null || user.id === undefined) {
+    return res.status(403).json({ error: 'Token invalide ou expiré' });
+  }
+
   try {
     const revoked = await isTokenRevoked(user.id, token);
     if (revoked) {

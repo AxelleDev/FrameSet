@@ -46,15 +46,21 @@ async function revokeToken(userId, token) {
 
 async function isTokenRevoked(userId, token) {
   const tokenHash = hashToken(token);
-  if (!tokenHash) {
-    return false;
+  if (!tokenHash || userId === null || userId === undefined) {
+    return true;
   }
 
-  const [rows] = await db.query(
-    'SELECT id FROM revoked_tokens WHERE user_id = ? AND token = ? LIMIT 1',
-    [userId, tokenHash]
-  );
-  return rows.length > 0;
+  try {
+    const [rows] = await db.query(
+      'SELECT id FROM revoked_tokens WHERE user_id = ? AND token = ? LIMIT 1',
+      [userId, tokenHash]
+    );
+    return rows.length > 0;
+  } catch (error) {
+    const revocationCheckError = new Error('TOKEN_REVOCATION_CHECK_FAILED');
+    revocationCheckError.cause = error;
+    throw revocationCheckError;
+  }
 }
 
 async function cleanupExpiredRevokedTokens() {
