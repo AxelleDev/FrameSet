@@ -12,8 +12,8 @@ export const ProjectProvider = ({ children }) => {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [projectsLoading, setProjectsLoading] = useState(false);
 
-  const fetchProjects = useCallback(async (userId = user?.id, { silent = false } = {}) => {
-    if (!userId) {
+  const fetchProjects = useCallback(async ({ silent = false } = {}) => {
+    if (!user?.id) {
       setProjects([]);
       setProjectsLoading(false);
       return [];
@@ -23,7 +23,7 @@ export const ProjectProvider = ({ children }) => {
 
     try {
       const options = silent ? undefined : { onGlobalError: setGlobalError };
-      const data = await api.get(`/projects?userId=${userId}`, options);
+      const data = await api.get('/projects', options);
       const nextProjects = data || [];
       setProjects(nextProjects);
       return nextProjects;
@@ -45,7 +45,7 @@ export const ProjectProvider = ({ children }) => {
       return;
     }
 
-    fetchProjects(user.id, { silent: true });
+    fetchProjects({ silent: true });
   }, [authLoading, user?.id, fetchProjects]);
 
   const activeProject = useMemo(() => (
@@ -56,7 +56,7 @@ export const ProjectProvider = ({ children }) => {
     if (!user) return;
 
     try {
-      const newProject = await api.post('/projects', { userId: user.id, name }, { onGlobalError: setGlobalError });
+      const newProject = await api.post('/projects', { name }, { onGlobalError: setGlobalError });
       setProjects((prevProjects) => [newProject, ...prevProjects]);
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de l\'ajout du projet.');
