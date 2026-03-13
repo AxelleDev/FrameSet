@@ -38,6 +38,8 @@ const ensureProjectOwnership = async (req, res, projectId) => {
   return true;
 };
 
+const MAX_PALETTE_SIZE = 50;
+
 const sanitizeOptionalTextField = (value, { maxLength }) => {
   if (value === undefined || value === null) {
     return { value: null };
@@ -309,19 +311,47 @@ const addTypographyNorm = async (req, res) => {
 const updatePalette = async (req, res) => {
   const { id } = req.params;
   const colors = req.body;
+
+  if (!Array.isArray(colors)) {
+    return res.status(400).json({ error: 'La palette doit être un tableau de couleurs.' });
+  }
+  if (colors.length > MAX_PALETTE_SIZE) {
+    return res.status(400).json({ error: `La palette ne peut pas dépasser ${MAX_PALETTE_SIZE} couleurs.` });
+  }
+
+  for (const color of colors) {
+    if (typeof color?.hex !== 'string' || !validator.isHexColor(color.hex)) {
+      return res.status(400).json({ error: `Couleur invalide : la valeur hex "${color?.hex}" n'est pas un format valide (#RGB ou #RRGGBB).` });
+    }
+    const nameCheck = sanitizeOptionalTextField(color.name, { maxLength: 255 });
+    if (nameCheck.error) {
+      return res.status(400).json({ error: 'Le nom de la couleur est invalide.' });
+    }
+  }
+
+  const connection = await db.getConnection();
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
+
+    await connection.beginTransaction();
+
     for (const color of colors) {
-      await db.query(
+      const safeName = sanitizeOptionalTextField(color.name, { maxLength: 255 }).value;
+      await connection.query(
         'REPLACE INTO project_palette (project_id, name, hex) VALUES (?, ?, ?)',
-        [id, color.name, color.hex]
+        [id, safeName, color.hex]
       );
     }
-    await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
+    await connection.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
+
+    await connection.commit();
     res.json({ success: true });
   } catch (error) {
+    await connection.rollback();
     logProjectsControllerError(req, 'update_palette', error, { projectId: id });
     res.status(500).json({ error: 'Erreur base de données' });
+  } finally {
+    connection.release();
   }
 };
 
