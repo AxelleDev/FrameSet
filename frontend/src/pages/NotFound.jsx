@@ -1,15 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function NotFound() {
-  const user = (() => {
-    try {
-      return JSON.parse(localStorage.getItem('frameset_user'));
-    } catch {
-      return null;
-    }
-  })();
-  const homeLink = user && user.token ? '/app/dashboard' : '/login';
+  const { user } = useAuth();
+  const homeLink = user ? '/app/dashboard' : '/login';
+
   return (
     <div style={{ textAlign: 'center', marginTop: '10vh' }}>
       <h1 style={{ fontSize: '3rem', color: '#FF9292' }}>404</h1>

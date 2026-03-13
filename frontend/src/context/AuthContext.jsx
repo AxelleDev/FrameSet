@@ -87,11 +87,8 @@ export const AuthProvider = ({ children }) => {
 
   const register = useCallback(async (userData) => {
     try {
-      const newUser = await api.post('/auth/register', userData, { onGlobalError: setGlobalError });
-      if (newUser?.is_verified) {
-        setAuthenticatedUser(newUser);
-      }
-      return { success: true, data: newUser };
+      const registrationData = await api.post('/auth/register', userData, { onGlobalError: setGlobalError });
+      return { success: true, data: registrationData };
     } catch (err) {
       const isBusinessError = err.status && err.status < 500;
       if (!isBusinessError) {
@@ -99,7 +96,7 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: false, message: isBusinessError ? (err.data?.error || err.message) : undefined };
     }
-  }, [setAuthenticatedUser]);
+  }, [setGlobalError]);
 
   const logout = useCallback(async () => {
     try {
