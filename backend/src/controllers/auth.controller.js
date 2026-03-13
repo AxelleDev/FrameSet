@@ -9,7 +9,15 @@ const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = r
 const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
 const { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME, getAccessTokenCookieOptions, getRefreshTokenCookieOptions, getCookieBaseOptions, getCookieValue } = require('../utils/cookies.utils');
 const { logger } = require('../utils/logger');
-const getInitials = (name) => name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+const normalizeInput = (value) => validator.trim(String(value ?? ''));
+const getInitials = (name) => name
+  .split(/\s+/)
+  .filter(Boolean)
+  .map((word) => word[0])
+  .join('')
+  .substring(0, 2)
+  .toUpperCase();
 
 const setAuthCookies = (res, accessToken, refreshToken) => {
   res.cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, getAccessTokenCookieOptions());
@@ -50,13 +58,16 @@ const createAccessToken = (user) => jwt.sign(
 );
 
 const register = async (req, res) => {
-  let { name, email, password } = req.body;
+  const { name: rawName, email: rawEmail, password: rawPassword } = req.body || {};
+
+  const name = normalizeInput(rawName);
+  const email = normalizeInput(rawEmail);
+  const password = normalizeInput(rawPassword);
+
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Tous les champs sont obligatoires.' });
   }
-  name = validator.trim(name);
-  email = validator.trim(email);
-  password = validator.trim(password);
+
   if (!validator.isEmail(email)) {
     return res.status(400).json({ error: 'Email invalide.' });
   }

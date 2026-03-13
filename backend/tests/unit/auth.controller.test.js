@@ -26,15 +26,33 @@ describe('contrôleur d’authentification', () => {
     it('devrait inscrire un utilisateur sans émettre de tokens avant vérification', async () => {
       db.query.mockResolvedValueOnce([{ insertId: 1 }]);
       mailService.sendMail.mockResolvedValueOnce();
-      const req = { body: { name: 'Axel', email: 'axel@a.com', password: 'Pass1234' } };
+      const req = { body: { name: '  Axel   Nom  ', email: '  axel@a.com  ', password: '  Pass1234  ' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
       await authController.register(req, res);
 
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
       const payload = res.json.mock.calls[0][0];
+      expect(payload.name).toBe('Axel   Nom');
+      expect(payload.avatarInitials).toBe('AT');
       expect(payload.token).toBeUndefined();
       expect(payload.refreshToken).toBeUndefined();
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO users'),
+        expect.arrayContaining(['Axel   Nom', 'axel@a.com'])
+      );
+    });
+
+    it('devrait refuser un nom rempli uniquement d\'espaces', async () => {
+      const req = { body: { name: '   ', email: 'axel@a.com', password: 'Pass1234' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await authController.register(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Tous les champs sont obligatoires.' });
+      expect(db.query).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
     });
   });
 
