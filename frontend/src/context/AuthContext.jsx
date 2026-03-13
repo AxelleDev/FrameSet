@@ -168,6 +168,49 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
+  const verifyEmail = useCallback(async (email, code) => {
+    try {
+      const data = await api.post('/auth/verify', { email, code }, { onGlobalError: setGlobalError });
+      return { success: Boolean(data?.success) };
+    } catch (err) {
+      const { message } = handleApiError(err, setGlobalError, 'Code incorrect.');
+      return { success: false, message };
+    }
+  }, [setGlobalError]);
+
+  const resendVerificationCode = useCallback(async (email) => {
+    try {
+      const data = await api.post('/auth/resend-code', { email }, { onGlobalError: setGlobalError });
+      return { success: Boolean(data?.success) };
+    } catch (err) {
+      const { message } = handleApiError(err, setGlobalError, "Erreur lors de l'envoi du code.");
+      return { success: false, message };
+    }
+  }, [setGlobalError]);
+
+  const verifyPendingEmail = useCallback(async (email, code) => {
+    try {
+      const data = await api.post('/users/email/verify', { email, code }, { onGlobalError: setGlobalError });
+      if (data?.success && data.user) {
+        applyUserUpdate(data.user);
+      }
+      return { success: Boolean(data?.success) };
+    } catch (err) {
+      const { message } = handleApiError(err, setGlobalError, 'Code incorrect.');
+      return { success: false, message };
+    }
+  }, [applyUserUpdate, setGlobalError]);
+
+  const resendPendingEmailCode = useCallback(async (email) => {
+    try {
+      const data = await api.post('/users/email/resend', { email }, { onGlobalError: setGlobalError });
+      return { success: Boolean(data?.success) };
+    } catch (err) {
+      const { message } = handleApiError(err, setGlobalError, "Erreur lors de l'envoi du code.");
+      return { success: false, message };
+    }
+  }, [setGlobalError]);
+
   const value = useMemo(() => ({
     user,
     authLoading,
@@ -180,7 +223,11 @@ export const AuthProvider = ({ children }) => {
     applyUserUpdate,
     updateUserProfile,
     changePassword,
-    deleteAccount
+    deleteAccount,
+    verifyEmail,
+    resendVerificationCode,
+    verifyPendingEmail,
+    resendPendingEmailCode
   }), [
     user,
     authLoading,
@@ -192,7 +239,11 @@ export const AuthProvider = ({ children }) => {
     applyUserUpdate,
     updateUserProfile,
     changePassword,
-    deleteAccount
+    deleteAccount,
+    verifyEmail,
+    resendVerificationCode,
+    verifyPendingEmail,
+    resendPendingEmailCode
   ]);
 
   return (

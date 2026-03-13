@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
 import Button from '../components/Button';
 
 export default function Verify() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { applyUserUpdate, setGlobalError } = useAuth();
+  const { verifyEmail, resendVerificationCode, verifyPendingEmail, resendPendingEmailCode } = useAuth();
   const params = new URLSearchParams(location.search);
   const email = params.get('email');
   const type = params.get('type');
@@ -19,35 +18,29 @@ export default function Verify() {
 
   const handleVerify = async () => {
     setError('');
-    try {
-      const data = await api.post(type === 'pending-email' ? '/users/email/verify' : '/auth/verify', { email, code }, { onGlobalError: setGlobalError });
-      if (data.success) {
-        if (type === 'pending-email' && data.user) {
-          applyUserUpdate(data.user);
-        }
-        setSuccess(true);
-        setError('');
-        setTimeout(() => navigate(type === 'pending-email' ? '/app/profile' : '/login'), 2000);
-      } else {
-        setError(data.error || 'Code incorrect');
-      }
-    } catch (err) {
-      if (err.status && err.status < 500) setError(err.data?.error || err.message);
+    const result = type === 'pending-email'
+      ? await verifyPendingEmail(email, code)
+      : await verifyEmail(email, code);
+
+    if (result.success) {
+      setSuccess(true);
+      setTimeout(() => navigate(type === 'pending-email' ? '/app/profile' : '/login'), 2000);
+    } else {
+      setError(result.message || 'Code incorrect');
     }
   };
 
   const handleResend = async () => {
     setResendMsg('');
     setError('');
-    try {
-      const data = await api.post(type === 'pending-email' ? '/users/email/resend' : '/auth/resend-code', { email }, { onGlobalError: setGlobalError });
-      if (data.success) {
-        setResendMsg('Code renvoyé ! Vérifiez votre email.');
-      } else {
-        setError(data.error || "Erreur lors de l'envoi du code.");
-      }
-    } catch (err) {
-      if (err.status && err.status < 500) setError(err.data?.error || err.message);
+    const result = type === 'pending-email'
+      ? await resendPendingEmailCode(email)
+      : await resendVerificationCode(email);
+
+    if (result.success) {
+      setResendMsg('Code renvoyé ! Vérifiez votre email.');
+    } else {
+      setError(result.message || "Erreur lors de l'envoi du code.");
     }
   };
 
