@@ -13,20 +13,25 @@ async function authenticateToken(req, res, next) {
 
   if (!token) return res.status(401).json({ error: 'Token manquant' });
 
+  let user;
   try {
-    const user = jwt.verify(token, JWT_SECRET);
-    const revoked = await isTokenRevoked(user.id, token);
-
-    if (revoked) {
-      return res.status(403).json({ error: 'Token invalide ou expiré' });
-    }
-
-    req.user = user;
-    req.token = token;
-    next();
+    user = jwt.verify(token, JWT_SECRET);
   } catch (error) {
     return res.status(403).json({ error: 'Token invalide ou expiré' });
   }
+
+  try {
+    const revoked = await isTokenRevoked(user.id, token);
+    if (revoked) {
+      return res.status(403).json({ error: 'Token invalide ou expiré' });
+    }
+  } catch (error) {
+    return res.status(503).json({ error: 'Service temporairement indisponible' });
+  }
+
+  req.user = user;
+  req.token = token;
+  next();
 }
 
 module.exports = authenticateToken;

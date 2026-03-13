@@ -50,15 +50,11 @@ async function isTokenRevoked(userId, token) {
     return false;
   }
 
-  try {
-    const [rows] = await db.query(
-      'SELECT id FROM revoked_tokens WHERE user_id = ? AND token = ? LIMIT 1',
-      [userId, tokenHash]
-    );
-    return rows.length > 0;
-  } catch (error) {
-    return false;
-  }
+  const [rows] = await db.query(
+    'SELECT id FROM revoked_tokens WHERE user_id = ? AND token = ? LIMIT 1',
+    [userId, tokenHash]
+  );
+  return rows.length > 0;
 }
 
 async function cleanupExpiredRevokedTokens() {
