@@ -47,6 +47,74 @@ const sanitizeOptionalTextField = (value, { maxLength }) => {
   return { value: trimmedValue };
 };
 
+const sanitizeRequiredTextField = (value, { maxLength }) => {
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    return { error: 'invalid_type' };
+  }
+
+  const trimmedValue = validator.trim(String(value));
+  if (!validator.isLength(trimmedValue, { min: 1, max: maxLength })) {
+    return { error: 'invalid_length' };
+  }
+
+  return { value: trimmedValue };
+};
+
+const buildInvalidHexColorError = (value) => (
+  `Couleur invalide : la valeur hex "${value}" n'est pas un format valide (#RGB ou #RRGGBB).`
+);
+
+const validateHexColorField = (value) => {
+  if (typeof value !== 'string') {
+    return { error: 'invalid_hex' };
+  }
+
+  const trimmedValue = validator.trim(value);
+  if (!trimmedValue.startsWith('#') || !validator.isHexColor(trimmedValue)) {
+    return { error: 'invalid_hex' };
+  }
+
+  return { value: trimmedValue };
+};
+
+const validateDeletePaletteColorPayload = ({ hex }) => {
+  const normalizedHex = validateHexColorField(hex);
+  if (normalizedHex.error) {
+    return { error: buildInvalidHexColorError(hex) };
+  }
+
+  return {
+    value: {
+      hex: normalizedHex.value
+    }
+  };
+};
+
+const validateUpdatePaletteColorPayload = ({ oldHex, newHex, newName }) => {
+  const normalizedOldHex = validateHexColorField(oldHex);
+  if (normalizedOldHex.error) {
+    return { error: buildInvalidHexColorError(oldHex) };
+  }
+
+  const normalizedNewHex = validateHexColorField(newHex);
+  if (normalizedNewHex.error) {
+    return { error: buildInvalidHexColorError(newHex) };
+  }
+
+  const normalizedName = sanitizeRequiredTextField(newName, { maxLength: 255 });
+  if (normalizedName.error) {
+    return { error: 'Le nom de la couleur est invalide.' };
+  }
+
+  return {
+    value: {
+      oldHex: normalizedOldHex.value,
+      newHex: normalizedNewHex.value,
+      newName: normalizedName.value
+    }
+  };
+};
+
 const validateBrushNormPayload = ({ name, value, unit, brushName }) => {
   if (typeof name !== 'string') {
     return { error: 'Le nom de la norme de trait est invalide.' };
@@ -380,9 +448,25 @@ const deleteTypographyNorm = async (req, res) => {
 const deletePaletteColor = async (req, res) => {
   const { id } = req.params;
   const { hex } = req.body;
+
+  const validatedPayload = validateDeletePaletteColorPayload({ hex });
+  if (validatedPayload.error) {
+    return res.status(400).json({ error: validatedPayload.error });
+  }
+
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
-    await db.query('DELETE FROM project_palette WHERE project_id = ? AND hex = ?', [id, hex]);
+
+    const [result] = await db.query(
+      'DELETE FROM project_palette WHERE project_id = ? AND hex = ?',
+      [id, validatedPayload.value.hex]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Couleur non trouvée' });
+    }
+
+    await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
     res.json({ success: true });
   } catch (error) {
     logProjectsControllerError(req, 'delete_palette_color', error, {
@@ -395,12 +479,29 @@ const deletePaletteColor = async (req, res) => {
 const updatePaletteColor = async (req, res) => {
   const { id } = req.params;
   const { oldHex, newName, newHex } = req.body;
+
+  const validatedPayload = validateUpdatePaletteColorPayload({ oldHex, newName, newHex });
+  if (validatedPayload.error) {
+    return res.status(400).json({ error: validatedPayload.error });
+  }
+
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
-    await db.query(
+
+    const [result] = await db.query(
       'UPDATE project_palette SET name = ?, hex = ? WHERE project_id = ? AND hex = ?',
-      [newName, newHex, id, oldHex]
+      [
+        validatedPayload.value.newName,
+        validatedPayload.value.newHex,
+        id,
+        validatedPayload.value.oldHex
+      ]
     );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Couleur non trouvée' });
+    }
+
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
     res.json({ success: true });
   } catch (error) {
