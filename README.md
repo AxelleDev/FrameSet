@@ -20,10 +20,11 @@ FrameSet est une application web destinée aux illustrateurs et créateurs digit
 ## ✧･ﾟ: ✧･ﾟ Structure du projet
 
 ```
-├── backend/      # API Node.js (Express)
-├── frontend/     # Application React (Vite)
-├── index.html    # Point d'entrée web
-├── index.tsx     # Point d'entrée React
+frameset/
+├── backend/            # API Node.js (Express)
+└── frontend/           # Application React
+	├── index.html      # HTML du frontend
+	└── src/main.jsx    # Point d'entrée React
 ```
 
 ---
