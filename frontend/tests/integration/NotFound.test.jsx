@@ -23,7 +23,7 @@ describe('NotFound', () => {
   });
 
   it('redirige vers le tableau de bord quand un utilisateur est connecté', () => {
-    renderPage({ id: 1, email: 'axel@a.com' });
+    renderPage({ id: 1, email: 'axelle@example.com' });
 
     const link = screen.getByRole('link', { name: /retour à l'accueil/i });
     expect(link.getAttribute('href')).toContain('/app/dashboard');

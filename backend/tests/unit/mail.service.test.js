@@ -18,7 +18,7 @@ describe('service de mail', () => {
   it('devrait envoyer un mail', async () => {
     mockSendMail.mockClear();
     mockSendMail.mockResolvedValueOnce(true);
-    await mailService.sendMail({ to: 'a@b.com', subject: 'Test', text: 'Hello', html: '<div>Test</div>' });
+    await mailService.sendMail({ to: 'axelle@example.com', subject: 'Test', text: 'Hello', html: '<div>Test</div>' });
     expect(mockSendMail).toHaveBeenCalled();
   });
 });

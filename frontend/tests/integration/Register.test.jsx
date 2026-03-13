@@ -44,23 +44,23 @@ describe('Register', () => {
       success: true,
       data: {
         id: 1,
-        email: 'axel@a.com',
+        email: 'axelle@example.com',
         is_verified: false
       }
     });
 
     renderPage();
 
-    await user.type(screen.getByPlaceholderText(/prénom nom/i), 'Axel Nom');
-    await user.type(screen.getByPlaceholderText(/email@exemple.com/i), 'axel@a.com');
+    await user.type(screen.getByPlaceholderText(/prénom nom/i), 'Prénom Nom');
+    await user.type(screen.getByPlaceholderText(/email@exemple.com/i), 'axelle@example.com');
     await user.type(screen.getByPlaceholderText(/8\+ caractères/i), 'Pass1234');
     await user.click(screen.getByRole('button', { name: /créer un compte/i }));
 
     expect(mockRegister).toHaveBeenCalledWith({
-      name: 'Axel Nom',
-      email: 'axel@a.com',
+      name: 'Prénom Nom',
+      email: 'axelle@example.com',
       password: 'Pass1234'
     });
-    expect(mockNavigate).toHaveBeenCalledWith('/verify?email=axel%40a.com');
+    expect(mockNavigate).toHaveBeenCalledWith('/verify?email=axelle%40example.com');
   });
 });

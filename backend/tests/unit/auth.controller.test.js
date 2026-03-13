@@ -26,25 +26,25 @@ describe('contrôleur d’authentification', () => {
     it('devrait inscrire un utilisateur sans émettre de tokens avant vérification', async () => {
       db.query.mockResolvedValueOnce([{ insertId: 1 }]);
       mailService.sendMail.mockResolvedValueOnce();
-      const req = { body: { name: '  Axel   Nom  ', email: '  axel@a.com  ', password: '  Pass1234  ' } };
+      const req = { body: { name: '  Prénom   Nom  ', email: '  axelle@example.com  ', password: '  Pass1234  ' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
       await authController.register(req, res);
 
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
       const payload = res.json.mock.calls[0][0];
-      expect(payload.name).toBe('Axel   Nom');
+      expect(payload.name).toBe('Prénom   Nom');
       expect(payload.avatarInitials).toBe('AT');
       expect(payload.token).toBeUndefined();
       expect(payload.refreshToken).toBeUndefined();
       expect(db.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO users'),
-        expect.arrayContaining(['Axel   Nom', 'axel@a.com'])
+        expect.arrayContaining(['Prénom   Nom', 'axelle@example.com'])
       );
     });
 
     it('devrait refuser un nom rempli uniquement d\'espaces', async () => {
-      const req = { body: { name: '   ', email: 'axel@a.com', password: 'Pass1234' } };
+      const req = { body: { name: '   ', email: 'axelle@example.com', password: 'Pass1234' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
       await authController.register(req, res);
@@ -58,10 +58,10 @@ describe('contrôleur d’authentification', () => {
 
   describe('connexion', () => {
     it('devrait connecter un utilisateur et définir les cookies HttpOnly', async () => {
-      db.query.mockResolvedValueOnce([[{ id: 1, name: 'Axel', email: 'axel@a.com', password: 'hashed', avatar_initials: 'A', is_verified: true }]]);
+      db.query.mockResolvedValueOnce([[{ id: 1, name: 'Prénom Nom', email: 'axelle@example.com', password: 'hashed', avatar_initials: 'AT', is_verified: true }]]);
       require('bcryptjs').compare = jest.fn().mockResolvedValue(true);
       tokenService.generateRefreshToken.mockReturnValue('refreshToken');
-      const req = { body: { email: 'axel@a.com', password: 'pass' } };
+      const req = { body: { email: 'axelle@example.com', password: 'pass' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
       await authController.login(req, res);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
@@ -106,7 +106,7 @@ describe('contrôleur d’authentification', () => {
 
     it('devrait retourner 500 si la rotation du refresh token échoue', async () => {
       const refreshHandler = authController.refresh || authController.refreshToken;
-      tokenService.verifyRefreshToken.mockReturnValue({ id: 1, email: 'axel@a.com' });
+      tokenService.verifyRefreshToken.mockReturnValue({ id: 1, email: 'axelle@example.com' });
       tokenService.isTokenRevoked.mockResolvedValue(false);
       tokenService.generateRefreshToken.mockReturnValue('rotated-refresh-token');
       tokenService.revokeToken.mockResolvedValue(false);
@@ -126,7 +126,7 @@ describe('contrôleur d’authentification', () => {
     it('devrait révoquer le token d’accès et le refresh token', async () => {
       tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
       tokenService.revokeToken.mockResolvedValue(true);
-      const accessToken = jwt.sign({ id: 1, email: 'axel@a.com' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const accessToken = jwt.sign({ id: 1, email: 'axelle@example.com' }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
       const req = {
         id: 'req-logout-1',
@@ -146,7 +146,7 @@ describe('contrôleur d’authentification', () => {
     it('devrait permettre la déconnexion avec access token expiré si le refresh token est valide', async () => {
       tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
       tokenService.revokeToken.mockResolvedValue(true);
-      const expiredAccessToken = jwt.sign({ id: 1, email: 'axel@a.com' }, process.env.JWT_SECRET, { expiresIn: -10 });
+      const expiredAccessToken = jwt.sign({ id: 1, email: 'axelle@example.com' }, process.env.JWT_SECRET, { expiresIn: -10 });
 
       const req = {
         id: 'req-logout-2',
