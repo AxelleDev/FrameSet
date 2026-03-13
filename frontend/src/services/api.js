@@ -3,8 +3,58 @@
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 const RETRY_WINDOW_MS = 5000;
 const RETRY_INTERVAL_MS = 500;
+const CSRF_HEADER_NAME = 'x-csrf-token';
+const METHODS_REQUIRING_CSRF = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+let csrfTokenCache = null;
+let csrfTokenPromise = null;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isCsrfProtectedRequest = (method, path) => (
+  METHODS_REQUIRING_CSRF.has(String(method || '').toUpperCase())
+  && path !== '/auth/csrf-token'
+);
+
+const isInvalidCsrfError = (error) => (
+  error?.status === 403
+  && String(error?.data?.error || '').toLowerCase().includes('csrf')
+);
+
+const fetchCsrfToken = async ({ forceRefresh = false } = {}) => {
+  if (!forceRefresh && csrfTokenCache) {
+    return csrfTokenCache;
+  }
+
+  if (!forceRefresh && csrfTokenPromise) {
+    return csrfTokenPromise;
+  }
+
+  csrfTokenPromise = (async () => {
+    const res = await fetch(`${API_URL}/auth/csrf-token`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+
+    if (!res.ok) {
+      throw new Error('Impossible de recuperer le token CSRF.');
+    }
+
+    const data = await res.json().catch(() => null);
+    if (!data?.csrfToken || typeof data.csrfToken !== 'string') {
+      throw new Error('Token CSRF invalide.');
+    }
+
+    csrfTokenCache = data.csrfToken;
+    return csrfTokenCache;
+  })();
+
+  try {
+    return await csrfTokenPromise;
+  } finally {
+    csrfTokenPromise = null;
+  }
+};
 
 // Construit les headers pour la requête (JSON + Authorization si présent)
 const buildHeaders = (isJson = true, extra = {}) => {
@@ -15,12 +65,30 @@ const buildHeaders = (isJson = true, extra = {}) => {
 
 // Tente de rafraîchir le token et retourner true si succès
 const attemptTokenRefresh = async () => {
+  let csrfToken;
+
   try {
-    const res = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include'
-    });
+    csrfToken = await fetchCsrfToken();
+  } catch (error) {
+    return false;
+  }
+
+  const sendRefreshRequest = async (csrfHeaderValue) => fetch(`${API_URL}/auth/refresh`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      [CSRF_HEADER_NAME]: csrfHeaderValue
+    },
+    credentials: 'include'
+  });
+
+  try {
+    let res = await sendRefreshRequest(csrfToken);
+
+    if (res.status === 403) {
+      const refreshedCsrfToken = await fetchCsrfToken({ forceRefresh: true });
+      res = await sendRefreshRequest(refreshedCsrfToken);
+    }
 
     if (!res.ok) {
       return false;
@@ -40,11 +108,34 @@ const attemptTokenRefresh = async () => {
 // Requete generique utilisee par les fonctions utilitaires ci-dessous.
 // Lance une erreur enrichie si le status HTTP n'est pas ok.
 const request = async (path, { method = 'GET', body, headers, signal, onGlobalError } = {}) => {
+  const normalizedMethod = String(method || 'GET').toUpperCase();
+  const requiresCsrf = isCsrfProtectedRequest(normalizedMethod, path);
+
+  const buildRequestOptions = async () => {
+    const nextHeaders = { ...(headers || {}) };
+
+    if (requiresCsrf) {
+      const csrfToken = await fetchCsrfToken();
+      nextHeaders[CSRF_HEADER_NAME] = csrfToken;
+    }
+
+    const nextOptions = {
+      method: normalizedMethod,
+      headers: buildHeaders(body != null, nextHeaders)
+    };
+
+    if (body != null) {
+      nextOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
+    }
+
+    return nextOptions;
+  };
+
   const requestStartedAt = Date.now();
-  let opts = { method, headers: buildHeaders(body != null, headers) };
-  if (body != null) opts.body = typeof body === 'string' ? body : JSON.stringify(body);
-  
+
+  let opts = await buildRequestOptions();
   let hasAttemptedTokenRefresh = false;
+  let hasAttemptedCsrfRefresh = false;
   
   while (true) {
     const elapsedBeforeAttempt = Date.now() - requestStartedAt;
@@ -100,14 +191,24 @@ const request = async (path, { method = 'GET', body, headers, signal, onGlobalEr
         throw e;
       }
 
+      if (isInvalidCsrfError(e) && requiresCsrf && !hasAttemptedCsrfRefresh) {
+        hasAttemptedCsrfRefresh = true;
+
+        try {
+          await fetchCsrfToken({ forceRefresh: true });
+          opts = await buildRequestOptions();
+          continue;
+        } catch (csrfError) {
+          throw e;
+        }
+      }
+
       // Gestion spéciale des tokens expirés (403)
       if (e?.status === 403 && !hasAttemptedTokenRefresh && path !== '/auth/refresh') {
         hasAttemptedTokenRefresh = true;
         const refreshSuccess = await attemptTokenRefresh();
         if (refreshSuccess) {
-          // Recréer les headers avec le nouveau token
-          opts = { method, headers: buildHeaders(body != null, headers) };
-          if (body != null) opts.body = typeof body === 'string' ? body : JSON.stringify(body);
+          opts = await buildRequestOptions();
           await sleep(100);
           continue;
         }

@@ -30,6 +30,7 @@ const refreshLimiter = rateLimit({
 
 router.post('/register', authLimiter, authController.register);
 router.post('/login', authLimiter, authController.login);
+router.get('/csrf-token', authController.getCsrfToken);
 router.post('/verify', verifyCodeLimiter, authController.verify);
 router.post('/resend-code', resendCodeLimiter, authController.resendCode);
 router.post('/refresh', refreshLimiter, authController.refresh);

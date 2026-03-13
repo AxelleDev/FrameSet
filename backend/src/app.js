@@ -6,6 +6,7 @@ const { randomUUID } = require('crypto');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const projectsRoutes = require('./routes/projects.routes');
+const { ensureCsrfCookie, csrfProtection } = require('./middleware/csrfProtection');
 const { logger } = require('./utils/logger');
 
 const app = express();
@@ -57,6 +58,9 @@ app.use((req, res, next) => {
 
 	next();
 });
+
+app.use('/api', ensureCsrfCookie);
+app.use('/api', csrfProtection);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);

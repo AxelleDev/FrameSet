@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const { randomBytes } = require('crypto');
 const validator = require('validator');
 const db = require('../database');
 const mailService = require('../services/mail.service');
@@ -7,7 +8,16 @@ const { generateVerificationCode, getIdentifierFingerprint, getInitials } = requ
 const { generateRefreshToken, verifyRefreshToken, revokeToken, isTokenRevoked } = require('../services/token.service');
 const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
 const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
-const { ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME, getAccessTokenCookieOptions, getRefreshTokenCookieOptions, getCookieBaseOptions, getCookieValue } = require('../utils/cookies.utils');
+const {
+  ACCESS_TOKEN_COOKIE_NAME,
+  REFRESH_TOKEN_COOKIE_NAME,
+  CSRF_TOKEN_COOKIE_NAME,
+  getAccessTokenCookieOptions,
+  getRefreshTokenCookieOptions,
+  getCsrfTokenCookieOptions,
+  getCookieBaseOptions,
+  getCookieValue
+} = require('../utils/cookies.utils');
 const { logger } = require('../utils/logger');
 
 const normalizeInput = (value) => validator.trim(String(value ?? ''));
@@ -49,6 +59,16 @@ const createAccessToken = (user) => jwt.sign(
   JWT_SECRET,
   { expiresIn: JWT_EXPIRES }
 );
+
+const createCsrfToken = () => randomBytes(32).toString('hex');
+
+const getCsrfToken = (req, res) => {
+  const existingCsrfToken = getCookieValue(req, CSRF_TOKEN_COOKIE_NAME);
+  const csrfToken = existingCsrfToken || createCsrfToken();
+
+  res.cookie(CSRF_TOKEN_COOKIE_NAME, csrfToken, getCsrfTokenCookieOptions());
+  return res.json({ csrfToken });
+};
 
 const register = async (req, res) => {
   const { name: rawName, email: rawEmail, password: rawPassword } = req.body || {};
@@ -401,6 +421,7 @@ const logout = async (req, res) => {
 };
 
 module.exports = {
+  getCsrfToken,
   register,
   login,
   verify,
