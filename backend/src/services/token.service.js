@@ -35,7 +35,7 @@ async function revokeToken(userId, token) {
 
   try {
     await db.query(
-      'INSERT INTO revoked_tokens (user_id, token) VALUES (?, ?)',
+      'INSERT IGNORE INTO revoked_tokens (user_id, token) VALUES (?, ?)',
       [userId, tokenHash]
     );
     return true;

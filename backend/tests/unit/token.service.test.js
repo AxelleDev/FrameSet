@@ -45,7 +45,7 @@ describe('service de jeton', () => {
     const ok = await tokenService.revokeToken(1, 'abc');
     expect(ok).toBe(true);
     expect(db.query).toHaveBeenCalledWith(
-      'INSERT INTO revoked_tokens (user_id, token) VALUES (?, ?)',
+      'INSERT IGNORE INTO revoked_tokens (user_id, token) VALUES (?, ?)',
       [1, hashToken('abc')]
     );
   });
