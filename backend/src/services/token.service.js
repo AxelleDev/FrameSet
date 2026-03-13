@@ -1,6 +1,15 @@
 const jwt = require('jsonwebtoken');
+const { createHash } = require('crypto');
 const db = require('../database');
 const { JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES } = require('../config/jwt.config');
+
+function hashToken(token) {
+  if (typeof token !== 'string' || token.length === 0) {
+    return null;
+  }
+
+  return createHash('sha256').update(token).digest('hex');
+}
 
 function generateRefreshToken(payload) {
   return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRES });
@@ -16,10 +25,15 @@ function verifyRefreshToken(token) {
 }
 
 async function revokeToken(userId, token) {
+  const tokenHash = hashToken(token);
+  if (!tokenHash) {
+    return false;
+  }
+
   try {
     await db.query(
       'INSERT INTO revoked_tokens (user_id, token) VALUES (?, ?)',
-      [userId, token]
+      [userId, tokenHash]
     );
     return true;
   } catch (error) {
@@ -28,10 +42,15 @@ async function revokeToken(userId, token) {
 }
 
 async function isTokenRevoked(userId, token) {
+  const tokenHash = hashToken(token);
+  if (!tokenHash) {
+    return false;
+  }
+
   try {
     const [rows] = await db.query(
       'SELECT id FROM revoked_tokens WHERE user_id = ? AND token = ? LIMIT 1',
-      [userId, token]
+      [userId, tokenHash]
     );
     return rows.length > 0;
   } catch (error) {

@@ -1,6 +1,8 @@
 process.env.JWT_SECRET = 'test_jwt_secret';
 process.env.JWT_REFRESH_SECRET = 'test_jwt_refresh_secret';
 
+const { createHash } = require('crypto');
+
 jest.mock('jsonwebtoken', () => ({
   sign: jest.fn(() => 'token'),
   verify: jest.fn(() => ({ id: 1 }))
@@ -12,6 +14,8 @@ jest.mock('../../src/database', () => ({
 const jwt = require('jsonwebtoken');
 const db = require('../../src/database');
 const tokenService = require('../../src/services/token.service');
+
+const hashToken = (token) => createHash('sha256').update(token).digest('hex');
 
 describe('service de jeton', () => {
   beforeEach(() => {
@@ -42,7 +46,7 @@ describe('service de jeton', () => {
     expect(ok).toBe(true);
     expect(db.query).toHaveBeenCalledWith(
       'INSERT INTO revoked_tokens (user_id, token) VALUES (?, ?)',
-      [1, 'abc']
+      [1, hashToken('abc')]
     );
   });
 
@@ -50,11 +54,27 @@ describe('service de jeton', () => {
     db.query.mockResolvedValueOnce([[{ id: 99 }]]);
     const revoked = await tokenService.isTokenRevoked(1, 'abc');
     expect(revoked).toBe(true);
+    expect(db.query).toHaveBeenCalledWith(
+      'SELECT id FROM revoked_tokens WHERE user_id = ? AND token = ? LIMIT 1',
+      [1, hashToken('abc')]
+    );
   });
 
   it('devrait retourner false pour un token non révoqué', async () => {
     db.query.mockResolvedValueOnce([[]]);
     const revoked = await tokenService.isTokenRevoked(1, 'abc');
     expect(revoked).toBe(false);
+  });
+
+  it('devrait refuser de révoquer un token vide', async () => {
+    const ok = await tokenService.revokeToken(1, '');
+    expect(ok).toBe(false);
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('devrait retourner false si le token à vérifier est vide', async () => {
+    const revoked = await tokenService.isTokenRevoked(1, '');
+    expect(revoked).toBe(false);
+    expect(db.query).not.toHaveBeenCalled();
   });
 });
