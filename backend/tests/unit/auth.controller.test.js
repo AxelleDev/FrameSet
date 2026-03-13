@@ -61,11 +61,14 @@ describe('contrôleur d’authentification', () => {
 
       tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
       tokenService.isTokenRevoked.mockResolvedValue(false);
+      tokenService.generateRefreshToken.mockReturnValue('rotated-refresh-token');
+      tokenService.revokeToken.mockResolvedValue(true);
       const req = { body: { refreshToken: 'token' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
       await refreshHandler(req, res);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
-      expect(res.cookie).toHaveBeenCalledTimes(1);
+      expect(tokenService.revokeToken).toHaveBeenCalledWith(1, 'token');
+      expect(res.cookie).toHaveBeenCalledTimes(2);
     });
 
     it('devrait refuser un refresh token révoqué', async () => {
@@ -80,6 +83,23 @@ describe('contrôleur d’authentification', () => {
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({ error: 'Refresh token invalide ou expiré' });
+    });
+
+    it('devrait retourner 500 si la rotation du refresh token échoue', async () => {
+      const refreshHandler = authController.refresh || authController.refreshToken;
+      tokenService.verifyRefreshToken.mockReturnValue({ id: 1, email: 'axel@a.com' });
+      tokenService.isTokenRevoked.mockResolvedValue(false);
+      tokenService.generateRefreshToken.mockReturnValue('rotated-refresh-token');
+      tokenService.revokeToken.mockResolvedValue(false);
+
+      const req = { id: 'req-refresh-1', body: { refreshToken: 'token' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+
+      await refreshHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Erreur serveur' });
+      expect(res.cookie).not.toHaveBeenCalled();
     });
   });
 

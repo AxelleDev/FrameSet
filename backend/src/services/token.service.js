@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { createHash } = require('crypto');
+const { createHash, randomUUID } = require('crypto');
 const db = require('../database');
 const { JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES } = require('../config/jwt.config');
 
@@ -12,7 +12,10 @@ function hashToken(token) {
 }
 
 function generateRefreshToken(payload) {
-  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRES });
+  return jwt.sign(payload, JWT_REFRESH_SECRET, {
+    expiresIn: JWT_REFRESH_EXPIRES,
+    jwtid: randomUUID()
+  });
 }
 
 function verifyRefreshToken(token) {

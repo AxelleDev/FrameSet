@@ -22,6 +22,12 @@ const clearAuthCookies = (res) => {
   res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
 };
 
+const createAccessToken = (user) => jwt.sign(
+  { id: user.id, email: user.email },
+  JWT_SECRET,
+  { expiresIn: JWT_EXPIRES }
+);
+
 const register = async (req, res) => {
   let { name, email, password } = req.body;
   if (!name || !email || !password) {
@@ -172,7 +178,7 @@ const login = async (req, res) => {
       userId: user.id
     });
 
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    const token = createAccessToken(user);
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
 
     setAuthCookies(res, token, refreshToken);
@@ -226,8 +232,21 @@ const refresh = async (req, res) => {
     userId: user.id
   });
 
-  const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-  res.cookie(ACCESS_TOKEN_COOKIE_NAME, token, getAccessTokenCookieOptions());
+  const token = createAccessToken(user);
+  const nextRefreshToken = generateRefreshToken({ id: user.id, email: user.email });
+  const revokeSucceeded = await revokeToken(user.id, refreshToken);
+
+  if (!revokeSucceeded) {
+    logger.error('auth.refresh.rotation_failed', {
+      requestId: req.id,
+      userId: user.id,
+      reason: 'refresh_token_revoke_failed'
+    });
+
+    return res.status(500).json({ error: 'Erreur serveur' });
+  }
+
+  setAuthCookies(res, token, nextRefreshToken);
   res.json({ success: true });
 };
 

@@ -23,11 +23,17 @@ const resendCodeLimiter = rateLimit({
 	message: 'Trop de demandes de renvoi, réessayez dans 10 minutes.'
 });
 
+const refreshLimiter = rateLimit({
+	windowMs: 60 * 1000,
+	max: 10,
+	message: 'Trop de demandes de rafraîchissement, veuillez réessayer dans une minute.'
+});
+
 router.post('/register', authLimiter, authController.register);
 router.post('/login', authLimiter, authController.login);
 router.post('/verify', verifyCodeLimiter, authController.verify);
 router.post('/resend-code', resendCodeLimiter, authController.resendCode);
-router.post('/refresh', authController.refresh);
+router.post('/refresh', refreshLimiter, authController.refresh);
 router.post('/logout', authenticateToken, authController.logout);
 
 module.exports = router;
