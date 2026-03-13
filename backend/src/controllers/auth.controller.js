@@ -22,6 +22,27 @@ const clearAuthCookies = (res) => {
   res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
 };
 
+const getBearerToken = (req) => {
+  const authHeader = req?.headers?.authorization;
+  return authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.split(' ')[1]
+    : null;
+};
+
+const getAccessTokenFromRequest = (req) => getBearerToken(req) || getCookieValue(req, ACCESS_TOKEN_COOKIE_NAME);
+
+const verifyAccessToken = (token, { ignoreExpiration = false } = {}) => {
+  if (!token) {
+    return null;
+  }
+
+  try {
+    return jwt.verify(token, JWT_SECRET, { ignoreExpiration });
+  } catch (error) {
+    return null;
+  }
+};
+
 const createAccessToken = (user) => jwt.sign(
   { id: user.id, email: user.email },
   JWT_SECRET,
@@ -330,23 +351,26 @@ const resendCode = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-  const authenticatedUserId = req.user?.id;
-  const token = req.token;
+  const token = req.token || getAccessTokenFromRequest(req);
   const refreshToken = req.body?.refreshToken || getCookieValue(req, REFRESH_TOKEN_COOKIE_NAME);
+  const refreshPayload = refreshToken ? verifyRefreshToken(refreshToken) : null;
+  const accessPayload = verifyAccessToken(token, { ignoreExpiration: true });
+  const authenticatedUserId = refreshPayload?.id || accessPayload?.id || null;
 
-  if (!authenticatedUserId || !token) {
+  if (!authenticatedUserId) {
     clearAuthCookies(res);
-    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+    return res.json({ success: true });
   }
 
   try {
-    const revokeTasks = [revokeToken(authenticatedUserId, token)];
+    const revokeTasks = [];
 
-    if (refreshToken) {
-      const refreshPayload = verifyRefreshToken(refreshToken);
-      if (refreshPayload?.id === authenticatedUserId) {
-        revokeTasks.push(revokeToken(authenticatedUserId, refreshToken));
-      }
+    if (token && accessPayload?.id === authenticatedUserId) {
+      revokeTasks.push(revokeToken(authenticatedUserId, token));
+    }
+
+    if (refreshToken && refreshPayload?.id === authenticatedUserId) {
+      revokeTasks.push(revokeToken(authenticatedUserId, refreshToken));
     }
 
     await Promise.all(revokeTasks);

@@ -1,7 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const authController = require('../controllers/auth.controller');
-const authenticateToken = require('../middleware/authenticateToken');
 
 const router = express.Router();
 
@@ -34,6 +33,6 @@ router.post('/login', authLimiter, authController.login);
 router.post('/verify', verifyCodeLimiter, authController.verify);
 router.post('/resend-code', resendCodeLimiter, authController.resendCode);
 router.post('/refresh', refreshLimiter, authController.refresh);
-router.post('/logout', authenticateToken, authController.logout);
+router.post('/logout', authController.logout);
 
 module.exports = router;

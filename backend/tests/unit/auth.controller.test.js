@@ -8,6 +8,7 @@ jest.mock('nodemailer', () => ({
 }));
 jest.mock('../../src/services/mail.service');
 
+const jwt = require('jsonwebtoken');
 const authController = require('../../src/controllers/auth.controller');
 const db = require('../../src/database');
 const mailService = require('../../src/services/mail.service');
@@ -107,31 +108,50 @@ describe('contrôleur d’authentification', () => {
     it('devrait révoquer le token d’accès et le refresh token', async () => {
       tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
       tokenService.revokeToken.mockResolvedValue(true);
+      const accessToken = jwt.sign({ id: 1, email: 'axel@a.com' }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
       const req = {
         id: 'req-logout-1',
-        user: { id: 1 },
-        token: 'access-token',
+        token: accessToken,
         body: { refreshToken: 'refresh-token' }
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
 
       await authController.logout(req, res);
 
-      expect(tokenService.revokeToken).toHaveBeenCalledWith(1, 'access-token');
+      expect(tokenService.revokeToken).toHaveBeenCalledWith(1, accessToken);
       expect(tokenService.revokeToken).toHaveBeenCalledWith(1, 'refresh-token');
       expect(res.json).toHaveBeenCalledWith({ success: true });
       expect(res.clearCookie).toHaveBeenCalledTimes(2);
     });
 
-    it('devrait retourner 401 si non authentifié', async () => {
-      const req = { user: null, token: null, body: {} };
+    it('devrait permettre la déconnexion avec access token expiré si le refresh token est valide', async () => {
+      tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
+      tokenService.revokeToken.mockResolvedValue(true);
+      const expiredAccessToken = jwt.sign({ id: 1, email: 'axel@a.com' }, process.env.JWT_SECRET, { expiresIn: -10 });
+
+      const req = {
+        id: 'req-logout-2',
+        headers: { authorization: `Bearer ${expiredAccessToken}` },
+        body: { refreshToken: 'refresh-token' }
+      };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
 
       await authController.logout(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Utilisateur non authentifié.' });
+      expect(tokenService.revokeToken).toHaveBeenCalledWith(1, expiredAccessToken);
+      expect(tokenService.revokeToken).toHaveBeenCalledWith(1, 'refresh-token');
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+      expect(res.clearCookie).toHaveBeenCalledTimes(2);
+    });
+
+    it('devrait retourner success même sans session active', async () => {
+      const req = { headers: {}, body: {} };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
+
+      await authController.logout(req, res);
+
+      expect(res.json).toHaveBeenCalledWith({ success: true });
       expect(res.clearCookie).toHaveBeenCalledTimes(2);
     });
   });
