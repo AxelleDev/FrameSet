@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
 import FormModal from '../components/FormModal';
@@ -11,12 +10,16 @@ import CopyBadge from '../components/CopyBadge';
 import AddTile from '../components/AddTile';
 import PageHeader from '../components/PageHeader';
 import useClipboard from '../hooks/useClipboard';
-import api from '../services/api';
 
 export default function ProjectPalette() {
   const { id } = useParams();
-  const { user, setGlobalError } = useAuth();
-  const { setActiveProjectId, activeProject, updateProjectPalette, deleteProjectPaletteColor } = useProjects();
+  const {
+    setActiveProjectId,
+    activeProject,
+    updateProjectPalette,
+    updateProjectPaletteColor,
+    deleteProjectPaletteColor
+  } = useProjects();
 
   const [editStatus, setEditStatus] = useState(null);
   const [editIdx, setEditIdx] = useState(null);
@@ -154,38 +157,57 @@ export default function ProjectPalette() {
 
   const confirmEditColor = async () => {
     if (editIdx === null || !editColorName || !editColorHex) return;
+    const currentColor = palette[editIdx];
+    if (!currentColor) return;
+
+    const normalizedName = editColorName.trim();
+    if (!normalizedName) return;
+
     let newHex = editColorHex.trim();
     if (!newHex.startsWith('#')) newHex = '#' + newHex;
-    const oldHex = palette[editIdx].hex;
-    try {
-      await api.patch(`/projects/${id}/palette`, { oldHex, newName: editColorName, newHex }, { onGlobalError: setGlobalError });
+    const oldHex = currentColor.hex;
+
+    const updated = await updateProjectPaletteColor(id, {
+      oldHex,
+      newName: normalizedName,
+      newHex
+    });
+
+    if (updated) {
+      const nextPalette = palette.map((color, idx) => (
+        idx === editIdx ? { ...color, name: normalizedName, hex: newHex } : color
+      ));
+
+      setPalette(nextPalette);
+      setPreviewPalette(nextPalette);
       setEditStatus('success');
-      await syncPalette();
-    } catch (e) {
+    } else {
       setEditStatus('error');
     }
   };
 
   const confirmAddColor = async () => {
     if (!id || !newColorName || !newColorHex) return;
+    const normalizedName = newColorName.trim();
+    if (!normalizedName) return;
+
     let hex = newColorHex.trim();
     if (!hex.startsWith('#')) hex = '#' + hex;
-    const newPalette = [...palette, { name: newColorName, hex }];
-    await updateProjectPalette(id, newPalette);
-    setIsAddingColor(false);
-    await syncPalette();
+
+    const newPalette = [...palette, { name: normalizedName, hex }];
+    const updated = await updateProjectPalette(id, newPalette);
+
+    if (updated) {
+      setPalette(newPalette);
+      setPreviewPalette(newPalette);
+      setIsAddingColor(false);
+    }
   };
 
-  const handleDeleteColor = async (e, colorHex) => {
+  const handleDeleteColor = (e, colorHex) => {
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
     setConfirmDeleteColor(colorHex);
-  };
-
-  const syncPalette = async () => {
-    if (user && user.id) {
-      window.location.reload();
-    }
   };
 
   return (
@@ -391,8 +413,13 @@ export default function ProjectPalette() {
         onCancel={() => setConfirmDeleteColor(null)}
         onConfirm={async () => {
           if (confirmDeleteColor) {
-            await deleteProjectPaletteColor(id, confirmDeleteColor);
-            await syncPalette();
+            const deleted = await deleteProjectPaletteColor(id, confirmDeleteColor);
+            if (deleted) {
+              setPalette((prevPalette) => prevPalette.filter((color) => color.hex !== confirmDeleteColor));
+              setPreviewPalette((prevPalette) => prevPalette.filter((color) => color.hex !== confirmDeleteColor));
+              setConfirmDeleteColor(null);
+            }
+            return;
           }
           setConfirmDeleteColor(null);
         }}

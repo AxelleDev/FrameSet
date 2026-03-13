@@ -85,9 +85,38 @@ export const ProjectProvider = ({ children }) => {
           String(project.id) === String(projectId) ? { ...project, palette } : project
         ))
       ));
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de la modification de la palette.');
       logger.error('projects.updatePalette.error', error);
+      return false;
+    }
+  }, [setGlobalError]);
+
+  const updateProjectPaletteColor = useCallback(async (projectId, { oldHex, newName, newHex }) => {
+    try {
+      await api.patch(
+        `/projects/${projectId}/palette`,
+        { oldHex, newName, newHex },
+        { onGlobalError: setGlobalError }
+      );
+      setProjects((prevProjects) => (
+        prevProjects.map((project) => (
+          String(project.id) === String(projectId)
+            ? {
+              ...project,
+              palette: project.palette.map((color) => (
+                color.hex === oldHex ? { ...color, name: newName, hex: newHex } : color
+              ))
+            }
+            : project
+        ))
+      ));
+      return true;
+    } catch (error) {
+      setGlobalError(error?.message || 'Erreur lors de la modification de la couleur.');
+      logger.error('projects.updatePaletteColor.error', error);
+      return false;
     }
   }, [setGlobalError]);
 
@@ -117,9 +146,11 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de la suppression de la couleur.');
       logger.error('projects.deletePaletteColor.error', error);
+      return false;
     }
   }, [setGlobalError]);
 
@@ -264,6 +295,7 @@ export const ProjectProvider = ({ children }) => {
     deleteProject,
     updateProjectName,
     updateProjectPalette,
+    updateProjectPaletteColor,
     deleteProjectPaletteColor,
     addBrushNorm,
     addTypographyNorm,
@@ -281,6 +313,7 @@ export const ProjectProvider = ({ children }) => {
     deleteProject,
     updateProjectName,
     updateProjectPalette,
+    updateProjectPaletteColor,
     deleteProjectPaletteColor,
     addBrushNorm,
     addTypographyNorm,
