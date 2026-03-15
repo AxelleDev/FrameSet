@@ -56,7 +56,7 @@ export default function Verify() {
           placeholder="Code de vérification"
           className="w-full px-4 py-3 mb-4 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue"
         />
-        {error && <div className="text-pink mb-4">{error}</div>}
+        {error && <div className="text-pink mb-4" aria-live="polite" role="alert">{error}</div>}
         {resendMsg && <div className="text-blue mb-4">{resendMsg}</div>}
         <div className="flex gap-2">
           {!success && (

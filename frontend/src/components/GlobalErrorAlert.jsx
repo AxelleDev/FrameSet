@@ -37,7 +37,7 @@ export default function GlobalErrorAlert({ message, onClose }) {
   const friendly = getFriendlyMessage(message);
   if (!friendly) return null;
   return (
-    <div style={{
+    <div role="alert" style={{
       position: 'fixed',
       top: 0,
       left: 0,

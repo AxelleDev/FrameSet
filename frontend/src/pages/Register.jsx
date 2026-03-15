@@ -51,7 +51,9 @@ export default function Register() {
           <div className="flex items-center mb-2">
             <img src="/FrameSet_Logo.png" alt="Logo FrameSet" className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
           </div>
-          
+          {error && (
+            <div className="text-pink mb-4" aria-live="polite" role="alert">{error}</div>
+          )}
           <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
             Rejoignez le <br />
             <span className="font-bold text-primary">Référentiel.</span>
