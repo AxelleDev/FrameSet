@@ -1,3 +1,9 @@
+process.env.MAIL_HOST = process.env.MAIL_HOST || 'smtp.test.local';
+process.env.MAIL_PORT = process.env.MAIL_PORT || '465';
+process.env.MAIL_SECURE = process.env.MAIL_SECURE || 'true';
+process.env.MAIL_USER = process.env.MAIL_USER || 'mail@test.local';
+process.env.MAIL_PASS = process.env.MAIL_PASS || 'test_mail_password';
+
 const nodemailer = require('nodemailer');
 const mockSendMail = jest.fn().mockResolvedValue(true);
 jest.mock('nodemailer', () => ({
@@ -8,6 +14,18 @@ jest.mock('nodemailer', () => ({
 const mailService = require('../../src/services/mail.service');
 
 describe('service de mail', () => {
+
+  it('devrait configurer le transport SMTP depuis les variables d\'environnement', () => {
+    expect(nodemailer.createTransport).toHaveBeenCalledWith({
+      host: process.env.MAIL_HOST,
+      port: Number.parseInt(process.env.MAIL_PORT, 10),
+      secure: process.env.MAIL_SECURE === 'true',
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
+      }
+    });
+  });
 
   it('devrait construire le template d’email', () => {
     const html = mailService.buildTemplate({ title: 'Test', message: 'Hello', code: '123456' });

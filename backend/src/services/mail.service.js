@@ -1,12 +1,19 @@
 const nodemailer = require('nodemailer');
+const {
+  MAIL_HOST,
+  MAIL_PORT,
+  MAIL_SECURE,
+  MAIL_USER,
+  MAIL_PASS
+} = require('../config/mail.config');
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  host: MAIL_HOST,
+  port: MAIL_PORT,
+  secure: MAIL_SECURE,
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS
+    user: MAIL_USER,
+    pass: MAIL_PASS
   }
 });
 
@@ -36,7 +43,7 @@ const buildTemplate = ({ title, message, code, footer }) => {
 
 const sendMail = async ({ to, subject, text, html }) => {
   await transporter.sendMail({
-    from: process.env.MAIL_USER,
+    from: MAIL_USER,
     to,
     subject,
     text,

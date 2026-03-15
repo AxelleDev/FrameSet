@@ -1,3 +1,9 @@
+process.env.MAIL_HOST = process.env.MAIL_HOST || 'smtp.test.local';
+process.env.MAIL_PORT = process.env.MAIL_PORT || '465';
+process.env.MAIL_SECURE = process.env.MAIL_SECURE || 'true';
+process.env.MAIL_USER = process.env.MAIL_USER || 'mail@test.local';
+process.env.MAIL_PASS = process.env.MAIL_PASS || 'test_mail_password';
+
 const userController = require('../../src/controllers/user.controller');
 const db = require('../../src/database');
 const mailService = require('../../src/services/mail.service');
