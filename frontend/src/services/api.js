@@ -107,7 +107,14 @@ const attemptTokenRefresh = async () => {
 
 // Requete generique utilisee par les fonctions utilitaires ci-dessous.
 // Lance une erreur enrichie si le status HTTP n'est pas ok.
-const request = async (path, { method = 'GET', body, headers, signal, onGlobalError } = {}) => {
+const request = async (path, {
+  method = 'GET',
+  body,
+  headers,
+  signal,
+  onGlobalError,
+  skipTokenRefresh = false
+} = {}) => {
   const normalizedMethod = String(method || 'GET').toUpperCase();
   const requiresCsrf = isCsrfProtectedRequest(normalizedMethod, path);
 
@@ -204,7 +211,7 @@ const request = async (path, { method = 'GET', body, headers, signal, onGlobalEr
       }
 
       // Gestion spéciale des tokens expirés (403)
-      if (e?.status === 403 && !hasAttemptedTokenRefresh && path !== '/auth/refresh') {
+      if (e?.status === 403 && !skipTokenRefresh && !hasAttemptedTokenRefresh && path !== '/auth/refresh') {
         hasAttemptedTokenRefresh = true;
         const refreshSuccess = await attemptTokenRefresh();
         if (refreshSuccess) {

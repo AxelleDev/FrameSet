@@ -10,18 +10,73 @@ export const AuthProvider = ({ children }) => {
   const [authLoading, setAuthLoading] = useState(true);
   const [globalError, setGlobalError] = useState(null);
 
+  const refreshAccessToken = useCallback(async ({ silent = false } = {}) => {
+    try {
+      const refreshOptions = silent ? undefined : { onGlobalError: setGlobalError };
+      const data = await api.post('/auth/refresh', {}, refreshOptions);
+      return Boolean(data?.success);
+    } catch (error) {
+      logger.error('auth.refreshAccessToken.error', error);
+      return false;
+    }
+  }, [setGlobalError]);
+
   useEffect(() => {
-    api.get('/users/profile')
-      .then((profile) => {
-        setUser(profile || null);
-      })
-      .catch(() => {
-        setUser(null);
-      })
-      .finally(() => {
-        setAuthLoading(false);
-      });
-  }, []);
+    let isMounted = true;
+
+    const setHydratedUser = (nextUser) => {
+      if (!isMounted) {
+        return;
+      }
+
+      setUser(nextUser);
+    };
+
+    const hydrateSession = async () => {
+      try {
+        const profile = await api.get('/users/profile', { skipTokenRefresh: true });
+        setHydratedUser(profile || null);
+        return;
+      } catch (error) {
+        if (error?.status === 401) {
+          setHydratedUser(null);
+          return;
+        }
+
+        if (error?.status === 403) {
+          const refreshSucceeded = await refreshAccessToken({ silent: true });
+
+          if (refreshSucceeded) {
+            try {
+              const profile = await api.get('/users/profile', { skipTokenRefresh: true });
+              setHydratedUser(profile || null);
+              return;
+            } catch (profileRetryError) {
+              if (profileRetryError?.status !== 401 && profileRetryError?.status !== 403) {
+                logger.error('auth.hydration.profile_retry_failed', profileRetryError);
+              }
+            }
+          }
+
+          setHydratedUser(null);
+          return;
+        }
+
+        logger.error('auth.hydration.profile_failed', error);
+        setHydratedUser(null);
+      } finally {
+        if (isMounted) {
+          setAuthLoading(false);
+        }
+      }
+    };
+
+    hydrateSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [refreshAccessToken]);
 
   const setAuthenticatedUser = useCallback((userData) => {
     if (!userData) {
@@ -72,16 +127,6 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       setGlobalError(null);
-    }
-  }, []);
-
-  const refreshAccessToken = useCallback(async () => {
-    try {
-      const data = await api.post('/auth/refresh', {}, { onGlobalError: setGlobalError });
-      return Boolean(data?.success);
-    } catch (error) {
-      logger.error('auth.refreshAccessToken.error', error);
-      return null;
     }
   }, []);
 
