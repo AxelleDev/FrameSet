@@ -20,6 +20,18 @@ const request = require('supertest');
 const app = require('../../src/app');
 
 describe('middleware de l\'application', () => {
+  describe('en-tetes de securite', () => {
+    it('devrait exposer un header Content-Security-Policy explicite', async () => {
+      const res = await request(app)
+        .get('/api/auth/csrf-token');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-security-policy']).toContain("default-src 'self'");
+      expect(res.headers['content-security-policy']).toContain("script-src 'self'");
+      expect(res.headers['content-security-policy']).toContain("object-src 'none'");
+    });
+  });
+
   describe('limite de taille JSON', () => {
     it('devrait retourner 413 pour un payload JSON dépassant 10 Ko', async () => {
       const largePayload = JSON.stringify({ data: 'x'.repeat(200 * 1024) });

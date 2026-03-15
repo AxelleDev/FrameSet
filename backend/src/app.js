@@ -10,10 +10,29 @@ const { ensureCsrfCookie, csrfProtection } = require('./middleware/csrfProtectio
 const { logger } = require('./utils/logger');
 
 const app = express();
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+const isDevelopment = process.env.NODE_ENV !== 'production';
 
-app.use(helmet());
+app.use(helmet({
+	contentSecurityPolicy: {
+		useDefaults: true,
+		directives: {
+			defaultSrc: ["'self'"],
+			scriptSrc: ["'self'"],
+			styleSrc: ["'self'"],
+			imgSrc: ["'self'", 'data:'],
+			fontSrc: ["'self'"],
+			connectSrc: ["'self'", FRONTEND_ORIGIN],
+			objectSrc: ["'none'"],
+			frameAncestors: ["'none'"],
+			baseUri: ["'self'"],
+			formAction: ["'self'"],
+			upgradeInsecureRequests: isDevelopment ? null : []
+		}
+	}
+}));
 app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173',
+	origin: FRONTEND_ORIGIN,
   credentials: true
 }));
 app.use(express.json({ limit: '10kb' }));
