@@ -6,6 +6,7 @@ const { randomUUID } = require('crypto');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const projectsRoutes = require('./routes/projects.routes');
+const db = require('./database');
 const { ensureCsrfCookie, csrfProtection } = require('./middleware/csrfProtection');
 const { logger } = require('./utils/logger');
 
@@ -76,6 +77,30 @@ app.use((req, res, next) => {
 	});
 
 	next();
+});
+
+app.get('/health', async (req, res) => {
+	const uptime = Number(process.uptime().toFixed(2));
+
+	try {
+		await db.ping();
+		return res.status(200).json({
+			status: 'ok',
+			db: 'reachable',
+			uptime
+		});
+	} catch (error) {
+		logger.error('health.check.failed', {
+			requestId: req.id,
+			error
+		});
+
+		return res.status(503).json({
+			status: 'error',
+			db: 'unreachable',
+			uptime
+		});
+	}
 });
 
 app.use('/api', ensureCsrfCookie);

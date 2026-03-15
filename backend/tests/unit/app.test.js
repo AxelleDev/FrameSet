@@ -13,13 +13,35 @@ jest.mock('nodemailer', () => ({
 jest.mock('../../src/database', () => ({
   execute: jest.fn(),
   query: jest.fn(),
-  getConnection: jest.fn()
+  getConnection: jest.fn(),
+  ping: jest.fn()
 }));
 
 const request = require('supertest');
 const app = require('../../src/app');
+const db = require('../../src/database');
 
 describe('middleware de l\'application', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('health check', () => {
+    it('devrait retourner 200 avec un statut ok si la base est joignable', async () => {
+      db.ping.mockResolvedValueOnce();
+
+      const res = await request(app)
+        .get('/health');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(expect.objectContaining({
+        status: 'ok',
+        db: 'reachable',
+        uptime: expect.any(Number)
+      }));
+    });
+  });
+
   describe('en-tetes de securite', () => {
     it('devrait exposer un header Content-Security-Policy explicite', async () => {
       const res = await request(app)

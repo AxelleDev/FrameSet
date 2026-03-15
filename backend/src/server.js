@@ -1,25 +1,23 @@
 require('dotenv').config();
 
 const app = require('./app');
+const db = require('./database');
 const { logger } = require('./utils/logger');
 const tokenService = require('./services/token.service');
 
 const PORT = process.env.PORT || 3000;
 const REVOKED_TOKENS_CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
+let cleanupInterval;
+let isShuttingDown = false;
 
-app.listen(PORT, () => {
-  logger.info('server.started', {
-    port: Number(PORT),
-    nodeEnv: process.env.NODE_ENV || 'development'
-  });
-
+const startCleanupScheduler = () => {
   logger.info('token.cleanup.scheduler.started', {
     intervalMs: REVOKED_TOKENS_CLEANUP_INTERVAL_MS,
     frequency: '24h',
     retentionDays: 30
   });
 
-  const cleanupInterval = setInterval(async () => {
+  cleanupInterval = setInterval(async () => {
     try {
       const hasCleaned = await tokenService.cleanupExpiredRevokedTokens();
       if (!hasCleaned) {
@@ -42,4 +40,71 @@ app.listen(PORT, () => {
   if (typeof cleanupInterval.unref === 'function') {
     cleanupInterval.unref();
   }
+
+  return cleanupInterval;
+};
+
+const server = app.listen(PORT, () => {
+  logger.info('server.started', {
+    port: Number(PORT),
+    nodeEnv: process.env.NODE_ENV || 'development'
+  });
+
+  startCleanupScheduler();
 });
+
+const closeServer = () => new Promise((resolve, reject) => {
+  server.close((error) => {
+    if (error) {
+      reject(error);
+      return;
+    }
+
+    resolve();
+  });
+});
+
+const shutdownGracefully = async (signal) => {
+  if (isShuttingDown) {
+    return;
+  }
+
+  isShuttingDown = true;
+
+  logger.info('Graceful shutdown started', {
+    signal
+  });
+
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+  }
+
+  try {
+    await closeServer();
+    await db.closePool();
+
+    logger.info('Graceful shutdown completed', {
+      signal
+    });
+
+    process.exit(0);
+  } catch (error) {
+    logger.error('Graceful shutdown failed', {
+      signal,
+      error
+    });
+
+    process.exit(1);
+  }
+};
+
+process.on('SIGTERM', () => {
+  void shutdownGracefully('SIGTERM');
+});
+
+module.exports = {
+  server,
+  startCleanupScheduler,
+  shutdownGracefully,
+  REVOKED_TOKENS_CLEANUP_INTERVAL_MS
+};

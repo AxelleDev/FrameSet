@@ -1,5 +1,16 @@
+const mockCloseServer = jest.fn((callback) => callback && callback());
+
 jest.mock('../../src/app', () => ({
-  listen: jest.fn((port, cb) => cb && cb())
+  listen: jest.fn((port, cb) => {
+    cb && cb();
+    return {
+      close: mockCloseServer
+    };
+  })
+}));
+
+jest.mock('../../src/database', () => ({
+  closePool: jest.fn().mockResolvedValue(true)
 }));
 
 jest.mock('../../src/services/token.service', () => ({
@@ -15,9 +26,20 @@ jest.mock('../../src/utils/logger', () => ({
 }));
 
 describe('serveur', () => {
+  let processOnSpy;
+  let processExitSpy;
+
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
+    mockCloseServer.mockClear();
+    processOnSpy = jest.spyOn(process, 'on').mockImplementation(() => process);
+    processExitSpy = jest.spyOn(process, 'exit').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    processOnSpy.mockRestore();
+    processExitSpy.mockRestore();
   });
 
   it('devrait démarrer le serveur et activer le scheduler de nettoyage', () => {
@@ -45,6 +67,12 @@ describe('serveur', () => {
     setIntervalSpy.mockRestore();
   });
 
+  it('devrait enregistrer un handler SIGTERM pour le graceful shutdown', () => {
+    require('../../src/server');
+
+    expect(processOnSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
+  });
+
   it('devrait lancer cleanupExpiredRevokedTokens via le callback du scheduler', async () => {
     let scheduledCleanup;
     const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation((callback) => {
@@ -58,6 +86,27 @@ describe('serveur', () => {
 
     expect(tokenService.cleanupExpiredRevokedTokens).toHaveBeenCalledTimes(1);
 
+    setIntervalSpy.mockRestore();
+  });
+
+  it('devrait fermer le serveur HTTP et le pool DB lors du graceful shutdown', async () => {
+    const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation(() => ({
+      unref: jest.fn()
+    }));
+    const clearIntervalSpy = jest.spyOn(global, 'clearInterval').mockImplementation(() => {});
+    const { logger } = require('../../src/utils/logger');
+    const db = require('../../src/database');
+    const serverModule = require('../../src/server');
+
+    await serverModule.shutdownGracefully('SIGTERM');
+
+    expect(mockCloseServer).toHaveBeenCalledTimes(1);
+    expect(db.closePool).toHaveBeenCalledTimes(1);
+    expect(logger.info).toHaveBeenCalledWith('Graceful shutdown started', { signal: 'SIGTERM' });
+    expect(logger.info).toHaveBeenCalledWith('Graceful shutdown completed', { signal: 'SIGTERM' });
+    expect(processExitSpy).toHaveBeenCalledWith(0);
+
+    clearIntervalSpy.mockRestore();
     setIntervalSpy.mockRestore();
   });
 });

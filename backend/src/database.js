@@ -12,4 +12,10 @@ const pool = mysql.createPool({
 
 const promisePool = pool.promise();
 
+promisePool.ping = async () => {
+  await promisePool.query('SELECT 1');
+};
+
+promisePool.closePool = async () => promisePool.end();
+
 module.exports = promisePool;
