@@ -24,20 +24,156 @@ describe('contrôleur de projets', () => {
     it('devrait retourner les projets pour l’utilisateur', async () => {
       db.query.mockResolvedValueOnce([
         [
-          { id: 1, name: 'Project1', last_edited: new Date(), user_id: 1 }
+          { id: 1, name: 'Project1', lastEditedFormatted: '15/03 10:00' }
         ]
       ]);
-      db.query.mockResolvedValueOnce([[]]); // brushNorms
-      db.query.mockResolvedValueOnce([[]]); // typographyNorms
-      db.query.mockResolvedValueOnce([[]]); // palette
+      db.query.mockResolvedValueOnce([
+        [
+          {
+            id: 10,
+            project_id: 1,
+            name: 'Contour',
+            value: '8',
+            unit: 'px',
+            brush_name: 'Smooth'
+          }
+        ]
+      ]);
+      db.query.mockResolvedValueOnce([
+        [
+          {
+            id: 11,
+            project_id: 1,
+            font_family: 'Inter',
+            font_weight: '700',
+            font_usage: 'Titre',
+            font_style: 'Italic'
+          }
+        ]
+      ]);
+      db.query.mockResolvedValueOnce([
+        [
+          {
+            project_id: 1,
+            name: 'Primary',
+            hex: '#112233'
+          }
+        ]
+      ]);
+
       const req = { query: { userId: 999 }, user: { id: 1 } };
       const res = { json: jest.fn() };
+
       await projectsController.listProjects(req, res);
+
       expect(db.query).toHaveBeenNthCalledWith(
         1,
         expect.stringContaining('FROM projects WHERE user_id = ?'),
         [1]
       );
+
+      expect(db.query).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('FROM project_brush_norms WHERE project_id IN'),
+        [1]
+      );
+
+      expect(db.query).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining('FROM project_typography_norms WHERE project_id IN'),
+        [1]
+      );
+
+      expect(db.query).toHaveBeenNthCalledWith(
+        4,
+        expect.stringContaining('FROM project_palette WHERE project_id IN'),
+        [1]
+      );
+
+      expect(db.query).toHaveBeenCalledTimes(4);
+
+      expect(res.json).toHaveBeenCalledWith([
+        {
+          id: 1,
+          name: 'Project1',
+          lastEdited: '15/03 10:00',
+          brushNorms: [
+            {
+              id: 10,
+              name: 'Contour',
+              value: '8',
+              unit: 'px',
+              brushName: 'Smooth'
+            }
+          ],
+          typographyNorms: [
+            {
+              id: 11,
+              fontFamily: 'Inter',
+              fontWeight: '700',
+              fontUsage: 'Titre',
+              fontStyle: 'Italic'
+            }
+          ],
+          normsCount: 2,
+          palette: [
+            {
+              name: 'Primary',
+              hex: '#112233'
+            }
+          ]
+        }
+      ]);
+    });
+
+    it('devrait utiliser 4 requetes SQL avec 10 projets (au lieu de 31 en N+1)', async () => {
+      const projectsRows = Array.from({ length: 10 }, (_, index) => ({
+        id: index + 1,
+        name: `Project ${index + 1}`,
+        lastEditedFormatted: '15/03 10:00'
+      }));
+
+      db.query
+        .mockResolvedValueOnce([projectsRows])
+        .mockResolvedValueOnce([
+          [
+            { id: 1, project_id: 1, name: 'Contour', value: '4', unit: 'px', brush_name: 'Soft' },
+            { id: 2, project_id: 2, name: 'Ombre', value: '6', unit: 'px', brush_name: 'Hard' }
+          ]
+        ])
+        .mockResolvedValueOnce([
+          [
+            { id: 3, project_id: 1, font_family: 'Inter', font_weight: '700', font_usage: 'Titre', font_style: 'Normal' }
+          ]
+        ])
+        .mockResolvedValueOnce([
+          [
+            { project_id: 2, name: 'Primary', hex: '#AABBCC' }
+          ]
+        ]);
+
+      const req = { user: { id: 1 } };
+      const res = { json: jest.fn() };
+
+      await projectsController.listProjects(req, res);
+
+      expect(db.query).toHaveBeenCalledTimes(4);
+      expect(db.query).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('FROM project_brush_norms WHERE project_id IN'),
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      );
+      expect(db.query).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining('FROM project_typography_norms WHERE project_id IN'),
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      );
+      expect(db.query).toHaveBeenNthCalledWith(
+        4,
+        expect.stringContaining('FROM project_palette WHERE project_id IN'),
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      );
+
       expect(res.json).toHaveBeenCalledWith(expect.any(Array));
     });
   });

@@ -1,6 +1,7 @@
 ﻿const db = require('../database');
 const validator = require('validator');
 const { getAuthenticatedUserId, createControllerLogger } = require('../utils/auth.utils');
+const { logger } = require('../utils/logger');
 
 const logProjectsControllerError = createControllerLogger('projects');
 
@@ -195,45 +196,174 @@ const validateTypographyNormPayload = ({ fontFamily, fontWeight, fontUsage, font
   };
 };
 
+const runTimedQuery = async ({ label, sql, params }) => {
+  const startedAt = process.hrtime.bigint();
+  const [rows] = await db.query(sql, params);
+  const durationMs = Number((Number(process.hrtime.bigint() - startedAt) / 1e6).toFixed(2));
+
+  return {
+    rows,
+    timing: {
+      label,
+      durationMs,
+      rowCount: Array.isArray(rows) ? rows.length : 0
+    }
+  };
+};
+
+const groupRowsByProjectId = (rows, mapper) => {
+  const groupedRows = new Map();
+
+  rows.forEach((row) => {
+    const projectId = Number(row.project_id);
+
+    if (!Number.isInteger(projectId)) {
+      return;
+    }
+
+    if (!groupedRows.has(projectId)) {
+      groupedRows.set(projectId, []);
+    }
+
+    groupedRows.get(projectId).push(mapper(row));
+  });
+
+  return groupedRows;
+};
+
+const logListProjectsPerformance = ({ req, userId, projectCount, queryTimings }) => {
+  const legacyNPlusOneQueryCount = 1 + (projectCount * 3);
+  const optimizedSqlQueries = queryTimings.length;
+  const queryReduction = legacyNPlusOneQueryCount - optimizedSqlQueries;
+  const queryReductionPercent = legacyNPlusOneQueryCount === 0
+    ? 0
+    : Number(((queryReduction / legacyNPlusOneQueryCount) * 100).toFixed(2));
+  const totalSqlTimeMs = Number(
+    queryTimings.reduce((accumulator, queryTiming) => accumulator + queryTiming.durationMs, 0).toFixed(2)
+  );
+
+  logger.info('projects.list.performance', {
+    requestId: req.id,
+    userId,
+    projectCount,
+    legacyNPlusOneQueryCount,
+    optimizedSqlQueries,
+    queryReduction,
+    queryReductionPercent,
+    totalSqlTimeMs,
+    sqlTimings: queryTimings
+  });
+};
+
 const listProjects = async (req, res) => {
   const userId = getAuthenticatedUserId(req);
   if (!userId) {
     return res.status(401).json({ error: 'Utilisateur non authentifié.' });
   }
   try {
-    const [projectsData] = await db.query(
-      'SELECT *, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? ORDER BY created_at DESC',
-      [userId]
+    const queryTimings = [];
+
+    const projectsQuery = await runTimedQuery({
+      label: 'projects',
+      sql: 'SELECT *, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? ORDER BY created_at DESC',
+      params: [userId]
+    });
+
+    queryTimings.push(projectsQuery.timing);
+
+    const projectsData = projectsQuery.rows;
+    if (projectsData.length === 0) {
+      logListProjectsPerformance({
+        req,
+        userId,
+        projectCount: 0,
+        queryTimings
+      });
+
+      return res.json([]);
+    }
+
+    const projectIds = projectsData.map((project) => Number(project.id));
+    const placeholders = projectIds.map(() => '?').join(', ');
+
+    const [brushNormsQuery, typographyNormsQuery, paletteQuery] = await Promise.all([
+      runTimedQuery({
+        label: 'project_brush_norms',
+        sql: `SELECT id, project_id, name, value, unit, brush_name FROM project_brush_norms WHERE project_id IN (${placeholders})`,
+        params: projectIds
+      }),
+      runTimedQuery({
+        label: 'project_typography_norms',
+        sql: `SELECT id, project_id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id IN (${placeholders})`,
+        params: projectIds
+      }),
+      runTimedQuery({
+        label: 'project_palette',
+        sql: `SELECT project_id, name, hex FROM project_palette WHERE project_id IN (${placeholders})`,
+        params: projectIds
+      })
+    ]);
+
+    queryTimings.push(
+      brushNormsQuery.timing,
+      typographyNormsQuery.timing,
+      paletteQuery.timing
     );
-    const fullProjects = await Promise.all(projectsData.map(async (p) => {
-      const [brushNorms] = await db.query('SELECT * FROM project_brush_norms WHERE project_id = ?', [p.id]);
-      const [typographyNorms] = await db.query('SELECT * FROM project_typography_norms WHERE project_id = ?', [p.id]);
-      const [palette] = await db.query('SELECT * FROM project_palette WHERE project_id = ?', [p.id]);
+
+    const brushNormsByProjectId = groupRowsByProjectId(
+      brushNormsQuery.rows,
+      (norm) => ({
+        id: norm.id,
+        name: norm.name,
+        value: norm.value,
+        unit: norm.unit,
+        brushName: norm.brush_name
+      })
+    );
+
+    const typographyNormsByProjectId = groupRowsByProjectId(
+      typographyNormsQuery.rows,
+      (norm) => ({
+        id: norm.id,
+        fontFamily: norm.font_family,
+        fontWeight: norm.font_weight,
+        fontUsage: norm.font_usage,
+        fontStyle: norm.font_style
+      })
+    );
+
+    const paletteByProjectId = groupRowsByProjectId(
+      paletteQuery.rows,
+      (color) => ({
+        name: color.name,
+        hex: color.hex
+      })
+    );
+
+    const fullProjects = projectsData.map((project) => {
+      const projectId = Number(project.id);
+      const brushNorms = brushNormsByProjectId.get(projectId) || [];
+      const typographyNorms = typographyNormsByProjectId.get(projectId) || [];
+      const palette = paletteByProjectId.get(projectId) || [];
+
       return {
-        id: p.id,
-        name: p.name,
-        lastEdited: p.lastEditedFormatted || 'À l\'instant',
-        brushNorms: brushNorms.map(n => ({
-          id: n.id,
-          name: n.name,
-          value: n.value,
-          unit: n.unit,
-          brushName: n.brush_name
-        })),
-        typographyNorms: typographyNorms.map(n => ({
-          id: n.id,
-          fontFamily: n.font_family,
-          fontWeight: n.font_weight,
-          fontUsage: n.font_usage,
-          fontStyle: n.font_style
-        })),
+        id: project.id,
+        name: project.name,
+        lastEdited: project.lastEditedFormatted || 'À l\'instant',
+        brushNorms,
+        typographyNorms,
         normsCount: brushNorms.length + typographyNorms.length,
-        palette: palette.map(c => ({
-          name: c.name,
-          hex: c.hex
-        }))
+        palette
       };
-    }));
+    });
+
+    logListProjectsPerformance({
+      req,
+      userId,
+      projectCount: projectsData.length,
+      queryTimings
+    });
+
     res.json(fullProjects);
   } catch (error) {
     logProjectsControllerError(req, 'list', error);
