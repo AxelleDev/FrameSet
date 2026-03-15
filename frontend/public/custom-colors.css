@@ -1,3 +1,10 @@
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter.ttf') format('truetype');
+  font-weight: 300 700;
+  font-display: swap;
+}
+
 :root {
   --color-primary: #3C3D48;
   --color-secondary: #AFAFAF;
