@@ -27,14 +27,14 @@ export default function ProjectNorms() {
   const [editingNorm, setEditingNorm] = useState(null);
   const [editingType, setEditingType] = useState('brush');
 
-  const { values: brushForm, setValues: setBrushForm, setField: setBrushField, reset: resetBrushForm } = useFormState({ usage: '', name: '', value: '', unit: 'px' });
+  const { values: brushForm, setValues: setBrushForm, setField: setBrushField, reset: resetBrushForm } = useFormState({ usage: '', name: '', value: '', unit: 'px', opacity: '' });
   const { values: typoForm, setValues: setTypoForm, setField: setTypoField, reset: resetTypoForm } = useFormState({ fontFamily: '', fontWeight: '', fontUsage: '', fontStyle: '' });
 
   const openEditNorm = (norm, type) => {
     setEditingNorm(norm);
     setEditingType(type);
     if (type === 'brush') {
-      setBrushForm({ usage: norm.name, name: norm.brushName || '', value: norm.value, unit: norm.unit || 'px' });
+      setBrushForm({ usage: norm.name, name: norm.brushName || '', value: norm.value, unit: norm.unit || 'px', opacity: norm.opacity ?? '' });
     } else {
       setTypoForm({ fontFamily: norm.fontFamily, fontWeight: norm.fontWeight || '', fontUsage: norm.fontUsage || '', fontStyle: norm.fontStyle || '' });
     }
@@ -47,7 +47,8 @@ export default function ProjectNorms() {
         name: brushForm.usage,
         value: brushForm.value,
         unit: brushForm.unit,
-        brushName: brushForm.name
+        brushName: brushForm.name,
+        opacity: brushForm.opacity
       });
     } else {
       await updateTypographyNorm(id, editingNorm.id, {
@@ -86,7 +87,8 @@ export default function ProjectNorms() {
         name: brushForm.usage,
         value: brushForm.value,
         unit: brushForm.unit,
-        brushName: brushForm.name
+        brushName: brushForm.name,
+        opacity: brushForm.opacity
       });
     } else {
       if (!typoForm.fontFamily) return;
@@ -149,9 +151,12 @@ export default function ProjectNorms() {
                   <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white border border-primary shadow-sm text-primary">Trait</span>
                 </div>
                 <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.name}</h3>
-                <div className="flex items-baseline mb-6">
+                <div className="flex items-baseline mb-2">
                   <span className="text-4xl font-light text-primary mr-1">{norm.value}</span>
                   <span className="text-lg text-blue font-medium">{norm.unit}</span>
+                </div>
+                <div className="mb-6 text-xs text-slate-500">
+                  Opacité : {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}
                 </div>
                 <div className="h-16 bg-blue/10 rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
                   <div className="flex flex-col items-center justify-center w-full px-4">
@@ -230,6 +235,9 @@ export default function ProjectNorms() {
                   <FormField label="Unité">
                     <input type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
+                  <FormField label="Opacité (0 à 1)">
+                    <input type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="ex: 1.0" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                  </FormField>
                 </>
               ) : (
                 <>
@@ -284,6 +292,9 @@ export default function ProjectNorms() {
               </FormField>
               <FormField label="Unité">
                 <input type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+              </FormField>
+              <FormField label="Opacité (0 à 1)">
+                <input type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="ex: 1.0" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
             </>
           ) : (

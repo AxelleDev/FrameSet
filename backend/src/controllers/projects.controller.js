@@ -116,7 +116,7 @@ const validateUpdatePaletteColorPayload = ({ oldHex, newHex, newName }) => {
   };
 };
 
-const validateBrushNormPayload = ({ name, value, unit, brushName }) => {
+const validateBrushNormPayload = ({ name, value, unit, brushName, opacity }) => {
   if (typeof name !== 'string') {
     return { error: 'Le nom de la norme de trait est invalide.' };
   }
@@ -151,12 +151,26 @@ const validateBrushNormPayload = ({ name, value, unit, brushName }) => {
     return { error: 'Le nom du pinceau est invalide.' };
   }
 
+  let validatedOpacity = null;
+  if (opacity !== undefined) {
+    if (typeof opacity === 'string' || typeof opacity === 'number') {
+      const opStr = String(opacity).trim();
+      if (validator.isFloat(opStr, { min: 0, max: 1 })) {
+        validatedOpacity = parseFloat(opStr);
+      } else {
+        return { error: "L'opacité doit être un nombre entre 0 et 1." };
+      }
+    } else {
+      return { error: "L'opacité doit être un nombre entre 0 et 1." };
+    }
+  }
   return {
     value: {
       name: trimmedName,
       value: trimmedValue,
       unit: trimmedUnit,
-      brushName: normalizedBrushName.value
+      brushName: normalizedBrushName.value,
+      opacity: validatedOpacity
     }
   };
 };
@@ -289,7 +303,7 @@ const listProjects = async (req, res) => {
     const [brushNormsQuery, typographyNormsQuery, paletteQuery] = await Promise.all([
       runTimedQuery({
         label: 'project_brush_norms',
-        sql: `SELECT id, project_id, name, value, unit, brush_name FROM project_brush_norms WHERE project_id IN (${placeholders})`,
+        sql: `SELECT id, project_id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id IN (${placeholders})`,
         params: projectIds
       }),
       runTimedQuery({
@@ -317,7 +331,8 @@ const listProjects = async (req, res) => {
         name: norm.name,
         value: norm.value,
         unit: norm.unit,
-        brushName: norm.brush_name
+        brushName: norm.brush_name,
+        opacity: norm.opacity
       })
     );
 
@@ -440,19 +455,20 @@ const addBrushNorm = async (req, res) => {
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
 
-    const validatedBrushNorm = validateBrushNormPayload({ name, value, unit, brushName });
+    const validatedBrushNorm = validateBrushNormPayload({ name, value, unit, brushName, opacity });
     if (validatedBrushNorm.error) {
       return res.status(400).json({ error: validatedBrushNorm.error });
     }
 
     const [result] = await db.query(
-      'INSERT INTO project_brush_norms (project_id, name, value, unit, brush_name) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO project_brush_norms (project_id, name, value, unit, brush_name, opacity) VALUES (?, ?, ?, ?, ?, ?)',
       [
         id,
         validatedBrushNorm.value.name,
         validatedBrushNorm.value.value,
         validatedBrushNorm.value.unit,
-        validatedBrushNorm.value.brushName
+        validatedBrushNorm.value.brushName,
+        validatedBrushNorm.value.opacity
       ]
     );
     await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
@@ -648,18 +664,19 @@ const updateBrushNorm = async (req, res) => {
   try {
     if (!(await ensureProjectOwnership(req, res, projectId))) return;
 
-    const validatedBrushNorm = validateBrushNormPayload({ name, value, unit, brushName });
+    const validatedBrushNorm = validateBrushNormPayload({ name, value, unit, brushName, opacity });
     if (validatedBrushNorm.error) {
       return res.status(400).json({ error: validatedBrushNorm.error });
     }
 
     const [result] = await db.query(
-      'UPDATE project_brush_norms SET name = ?, value = ?, unit = ?, brush_name = ? WHERE id = ? AND project_id = ?',
+      'UPDATE project_brush_norms SET name = ?, value = ?, unit = ?, brush_name = ?, opacity = ? WHERE id = ? AND project_id = ?',
       [
         validatedBrushNorm.value.name,
         validatedBrushNorm.value.value,
         validatedBrushNorm.value.unit,
         validatedBrushNorm.value.brushName,
+        validatedBrushNorm.value.opacity,
         normId,
         projectId
       ]
