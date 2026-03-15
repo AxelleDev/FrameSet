@@ -291,10 +291,13 @@ export default function Profile() {
       <ConfirmDialog
         isOpen={isDeleteAccountOpen}
         title="Supprimer mon compte"
-        message="Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible."
+        message="Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible. Pour confirmer la suppression, saisissez exactement le mot 'Suppression' dans le champ ci-dessous."
         confirmLabel="Supprimer"
         cancelLabel="Annuler"
         confirmClassName="bg-pink text-white hover:bg-pink/10"
+        confirmationWord="Suppression"
+        confirmationInputLabel="Écrivez le mot de confirmation"
+        confirmationInputPlaceholder="Suppression"
         onCancel={() => setIsDeleteAccountOpen(false)}
         onConfirm={async () => {
           setIsDeleteAccountOpen(false);
