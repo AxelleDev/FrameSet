@@ -16,7 +16,7 @@ app.use(cors({
   origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173',
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 
 app.use((req, res, next) => {
 	const requestStartedAt = process.hrtime.bigint();
@@ -80,6 +80,21 @@ app.use((req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
+	const status = err.status || err.statusCode;
+
+	if (status && status >= 400 && status < 500) {
+		logger.warn('http.client_error', {
+			requestId: req.id,
+			method: req.method,
+			path: req.path,
+			status,
+			type: err.type
+		});
+		return res.status(status).json({
+			error: err.message || 'Erreur du client'
+		});
+	}
+
 	logger.error('http.unhandled_error', {
 		requestId: req.id,
 		method: req.method,
