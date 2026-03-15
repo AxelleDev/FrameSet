@@ -1,17 +1,18 @@
 const express = require('express');
 const projectsController = require('../controllers/projects.controller');
 const authenticateToken = require('../middleware/authenticateToken');
+const { projectCreateLimiter } = require('../middleware/projectCreateLimiter');
 
 const router = express.Router();
 
 router.get('/', authenticateToken, projectsController.listProjects);
-router.post('/', authenticateToken, projectsController.createProject);
+router.post('/', authenticateToken, projectCreateLimiter, projectsController.createProject);
 router.patch('/:id', authenticateToken, projectsController.updateProjectName);
 router.delete('/:id', authenticateToken, projectsController.deleteProject);
 
-router.post('/:id/brush-norms', authenticateToken, projectsController.addBrushNorm);
-router.post('/:id/typography-norms', authenticateToken, projectsController.addTypographyNorm);
-router.post('/:id/palette', authenticateToken, projectsController.updatePalette);
+router.post('/:id/brush-norms', authenticateToken, projectCreateLimiter, projectsController.addBrushNorm);
+router.post('/:id/typography-norms', authenticateToken, projectCreateLimiter, projectsController.addTypographyNorm);
+router.post('/:id/palette', authenticateToken, projectCreateLimiter, projectsController.updatePalette);
 
 router.delete('/:projectId/brush-norms/:normId', authenticateToken, projectsController.deleteBrushNorm);
 router.delete('/:projectId/typography-norms/:normId', authenticateToken, projectsController.deleteTypographyNorm);
