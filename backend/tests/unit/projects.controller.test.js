@@ -231,7 +231,7 @@ describe('contrôleur de projets', () => {
       expect(db.query).toHaveBeenNthCalledWith(
         2,
         expect.stringContaining('INSERT INTO project_brush_norms'),
-        ['1', 'Contour cheveux', '8', 'px', 'Smooth']
+        ['1', 'Contour cheveux', '8', 'px', 'Smooth', null]
       );
       expect(res.json).toHaveBeenCalledWith({ success: true, id: 9 });
     });
