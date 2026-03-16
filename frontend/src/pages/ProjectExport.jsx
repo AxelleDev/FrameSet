@@ -39,14 +39,20 @@ export default function ProjectExport() {
       ...(activeProject.brushNorms || []).map(n => ({
         category: 'Trait',
         name: n.name,
-        value: n.value,
-        unit: n.unit || ''
+        value: `${n.value}${n.unit || ''}`,
+        details: [
+          n.brushName ? `Pinceau: ${n.brushName}` : null,
+          n.opacity !== undefined && n.opacity !== null ? `Opacité: ${n.opacity}` : null
+        ].filter(Boolean).join(' | ')
       })),
       ...(activeProject.typographyNorms || []).map(n => ({
         category: 'Typographie',
         name: n.fontUsage || n.fontFamily,
         value: n.fontFamily,
-        unit: n.fontWeight ? ` ${n.fontWeight}` : ''
+        details: [
+          n.fontWeight ? `Graisse: ${n.fontWeight}` : null,
+          n.fontStyle ? `Style: ${n.fontStyle}` : null
+        ].filter(Boolean).join(' | ')
       }))
     ];
 
@@ -65,14 +71,31 @@ export default function ProjectExport() {
     doc.line(20, y - 10, 190, y - 10);
 
     if (norms.length > 0) {
+      // Section title for Normes Graphiques
+      if (y > 250) { doc.addPage(); y = 20; }
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(50);
+      doc.text('Normes Graphiques', 20, y);
+      y += 12;
+
       doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0);
       norms.forEach(norm => {
         if (y > 270) { doc.addPage(); y = 20; }
-        const line = `• [${norm.category}] ${norm.name}: ${norm.value}${norm.unit || ''}`;
+        let line = `• [${norm.category}] ${norm.name}: ${norm.value}`;
         doc.text(line, 25, y);
-        y += 8;
+        y += 6;
+        if (norm.details) {
+          doc.setFontSize(9);
+          doc.setTextColor(100);
+          doc.text(`   ${norm.details}`, 28, y);
+          doc.setFontSize(11);
+          doc.setTextColor(0);
+          y += 6;
+        }
+        y += 2;
       });
       y += 10;
     }
