@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import useGoogleFonts from '../hooks/useGoogleFonts';
+import { loadGoogleFont } from '../utils/loadGoogleFont';
 import useFormState from '../hooks/useFormState';
 import useActiveProject from '../hooks/useActiveProject';
 import { useProjects } from '../context/ProjectContext';
@@ -29,6 +31,9 @@ export default function ProjectNorms() {
 
   const { values: brushForm, setValues: setBrushForm, setField: setBrushField, reset: resetBrushForm } = useFormState({ usage: '', name: '', value: '', unit: 'px', opacity: '' });
   const { values: typoForm, setValues: setTypoForm, setField: setTypoField, reset: resetTypoForm } = useFormState({ fontFamily: '', fontWeight: '', fontUsage: '', fontStyle: '' });
+
+  const GOOGLE_FONTS_API_KEY = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
+  const { fonts: googleFonts, loading: loadingFonts, error: errorFonts } = useGoogleFonts(GOOGLE_FONTS_API_KEY);
 
   const openEditNorm = (norm, type) => {
     setEditingNorm(norm);
@@ -92,6 +97,10 @@ export default function ProjectNorms() {
       });
     } else {
       if (!typoForm.fontFamily) return;
+      const selectedFont = googleFonts.find(f => f.family === typoForm.fontFamily);
+      if (selectedFont) {
+        loadGoogleFont(selectedFont.family, selectedFont.variants?.includes('regular') ? '400' : selectedFont.variants?.[0] || '400');
+      }
       await addTypographyNorm(id, {
         fontFamily: typoForm.fontFamily,
         fontWeight: typoForm.fontWeight,
@@ -209,7 +218,13 @@ export default function ProjectNorms() {
                   </div>
                 )}
                 <div className="h-16 bg-blue/10 rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
-                  <span className="text-primary text-xl font-medium tracking-tight" style={{fontFamily: norm.fontFamily, fontStyle: norm.fontStyle ? norm.fontStyle.toLowerCase() : undefined}}>AaBbCc</span>
+                  <span
+                    className="text-primary text-xl font-medium tracking-tight"
+                    style={{ fontFamily: norm.fontFamily, fontStyle: norm.fontStyle ? norm.fontStyle.toLowerCase() : undefined }}
+                    onMouseEnter={() => loadGoogleFont(norm.fontFamily, norm.fontWeight || '400')}
+                  >
+                    AaBbCc
+                  </span>
                 </div>
               </Card>
             ))}
@@ -300,7 +315,25 @@ export default function ProjectNorms() {
           ) : (
             <>
               <FormField label="Famille de police">
-                <input type="text" value={typoForm.fontFamily} onChange={e => setTypoField('fontFamily', e.target.value)} placeholder="ex: Figtree" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <select
+                  value={typoForm.fontFamily}
+                  onChange={e => {
+                    setTypoField('fontFamily', e.target.value);
+                    const selectedFont = googleFonts.find(f => f.family === e.target.value);
+                    if (selectedFont) {
+                      loadGoogleFont(selectedFont.family, selectedFont.variants?.includes('regular') ? '400' : selectedFont.variants?.[0] || '400');
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary appearance-none font-medium"
+                  disabled={loadingFonts}
+                >
+                  <option value="">Sélectionnez la typographie</option>
+                  {googleFonts && googleFonts.map(font => (
+                    <option key={font.family} value={font.family}>{font.family}</option>
+                  ))}
+                </select>
+                {loadingFonts && <div className="text-xs text-slate-400 mt-1">Chargement des polices...</div>}
+                {errorFonts && <div className="text-xs text-red-500 mt-1">Erreur de chargement des polices</div>}
               </FormField>
               <FormField label="Poids">
                 <input type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
