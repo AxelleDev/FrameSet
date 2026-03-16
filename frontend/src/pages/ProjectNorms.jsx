@@ -169,7 +169,15 @@ export default function ProjectNorms() {
                 </div>
                 <div className="h-16 bg-blue/10 rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
                   <div className="flex flex-col items-center justify-center w-full px-4">
-                    <div className="w-16 rounded-full mb-1 bg-primary" style={{ height: `${norm.value}px`, minHeight: '1px', backgroundColor: 'var(--color-primary)' }}></div>
+                    <div
+                      className="w-16 rounded-full mb-1 bg-primary"
+                      style={{
+                        height: `${norm.value}px`,
+                        minHeight: '1px',
+                        backgroundColor: 'var(--color-primary)',
+                        opacity: typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ? parseFloat(norm.opacity) : 1)
+                      }}
+                    ></div>
                     <span className="text-[10px] text-blue font-bold uppercase tracking-wider">{norm.brushName || 'Pinceau'}</span>
                   </div>
                 </div>

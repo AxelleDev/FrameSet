@@ -451,7 +451,7 @@ const deleteProject = async (req, res) => {
 
 const addBrushNorm = async (req, res) => {
   const { id } = req.params;
-  const { name, value, unit, brushName } = req.body;
+  const { name, value, unit, brushName, opacity } = req.body;
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
 
@@ -660,7 +660,7 @@ const updatePaletteColor = async (req, res) => {
 
 const updateBrushNorm = async (req, res) => {
   const { projectId, normId } = req.params;
-  const { name, value, unit, brushName } = req.body;
+  const { name, value, unit, brushName, opacity } = req.body;
   try {
     if (!(await ensureProjectOwnership(req, res, projectId))) return;
 
