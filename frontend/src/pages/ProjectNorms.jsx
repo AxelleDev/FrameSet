@@ -184,8 +184,14 @@ export default function ProjectNorms() {
               </Card>
             ))}
             {/* Normes typographiques */}
-            {activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
-              <Card key={norm.id} clickable className="p-6 relative group">
+            {activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => {
+              React.useEffect(() => {
+                if (norm.fontFamily) {
+                  loadGoogleFont(norm.fontFamily, norm.fontWeight || '400');
+                }
+              }, [norm.fontFamily, norm.fontWeight]);
+              return (
+                <Card key={norm.id} clickable className="p-6 relative group">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
                     onClick={() => openEditNorm(norm, 'typography')}
@@ -229,13 +235,13 @@ export default function ProjectNorms() {
                   <span
                     className="text-primary text-xl font-medium tracking-tight"
                     style={{ fontFamily: norm.fontFamily, fontStyle: norm.fontStyle ? norm.fontStyle.toLowerCase() : undefined }}
-                    onMouseEnter={() => loadGoogleFont(norm.fontFamily, norm.fontWeight || '400')}
                   >
                     AaBbCc
                   </span>
                 </div>
               </Card>
-            ))}
+              );
+            })}
           </div>
 
           <FormModal
@@ -265,7 +271,25 @@ export default function ProjectNorms() {
               ) : (
                 <>
                   <FormField label="Famille de police">
-                    <input type="text" value={typoForm.fontFamily} onChange={e => setTypoField('fontFamily', e.target.value)} placeholder="ex: Figtree" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <select
+                      value={typoForm.fontFamily}
+                      onChange={e => {
+                        setTypoField('fontFamily', e.target.value);
+                        const selectedFont = googleFonts.find(f => f.family === e.target.value);
+                        if (selectedFont) {
+                          loadGoogleFont(selectedFont.family, selectedFont.variants?.includes('regular') ? '400' : selectedFont.variants?.[0] || '400');
+                        }
+                      }}
+                      className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary appearance-none font-medium"
+                      disabled={loadingFonts}
+                    >
+                      <option value="">Sélectionnez la typographie</option>
+                      {googleFonts && googleFonts.map(font => (
+                        <option key={font.family} value={font.family}>{font.family}</option>
+                      ))}
+                    </select>
+                    {loadingFonts && <div className="text-xs text-slate-400 mt-1">Chargement des polices...</div>}
+                    {errorFonts && <div className="text-xs text-red-500 mt-1">Erreur de chargement des polices</div>}
                   </FormField>
                   <FormField label="Poids">
                     <input type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
