@@ -32,6 +32,15 @@ export default function ProjectNorms() {
   const { values: brushForm, setValues: setBrushForm, setField: setBrushField, reset: resetBrushForm } = useFormState({ usage: '', name: '', value: '', unit: 'px', opacity: '' });
   const { values: typoForm, setValues: setTypoForm, setField: setTypoField, reset: resetTypoForm } = useFormState({ fontFamily: '', fontWeight: '', fontUsage: '', fontStyle: '' });
 
+    React.useEffect(() => {
+      if (activeProject?.typographyNorms) {
+        activeProject.typographyNorms.forEach(norm => {
+          if (norm.fontFamily) {
+            loadGoogleFont(norm.fontFamily, norm.fontWeight || '400');
+          }
+        });
+      }
+    }, [activeProject?.typographyNorms]);
   const GOOGLE_FONTS_API_KEY = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
   const { fonts: googleFonts, loading: loadingFonts, error: errorFonts } = useGoogleFonts(GOOGLE_FONTS_API_KEY);
 
@@ -184,13 +193,7 @@ export default function ProjectNorms() {
               </Card>
             ))}
             {/* Normes typographiques */}
-            {activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => {
-              React.useEffect(() => {
-                if (norm.fontFamily) {
-                  loadGoogleFont(norm.fontFamily, norm.fontWeight || '400');
-                }
-              }, [norm.fontFamily, norm.fontWeight]);
-              return (
+            {activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
                 <Card key={norm.id} clickable className="p-6 relative group">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
@@ -240,8 +243,7 @@ export default function ProjectNorms() {
                   </span>
                 </div>
               </Card>
-              );
-            })}
+            ))}
           </div>
 
           <FormModal
