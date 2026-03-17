@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import FontFaceObserver from 'fontfaceobserver';
 import useGoogleFonts from '../hooks/useGoogleFonts';
 import { loadGoogleFont } from '../utils/loadGoogleFont';
 import useFormState from '../hooks/useFormState';
@@ -32,15 +33,50 @@ export default function ProjectNorms() {
   const { values: brushForm, setValues: setBrushForm, setField: setBrushField, reset: resetBrushForm } = useFormState({ usage: '', name: '', value: '', unit: 'px', opacity: '' });
   const { values: typoForm, setValues: setTypoForm, setField: setTypoField, reset: resetTypoForm } = useFormState({ fontFamily: '', fontWeight: '', fontUsage: '', fontStyle: '' });
 
+  const [loadedFonts, setLoadedFonts] = useState([]);
+  const loadingFontsRef = useRef({});
+
     React.useEffect(() => {
       if (activeProject?.typographyNorms) {
-        activeProject.typographyNorms.forEach(norm => {
-          if (norm.fontFamily) {
-            loadGoogleFont(norm.fontFamily, norm.fontWeight || '400');
+        activeProject.typographyNorms.forEach(async norm => {
+          if (norm.fontFamily && !loadedFonts.includes(norm.fontFamily) && !loadingFontsRef.current[norm.fontFamily]) {
+            loadingFontsRef.current[norm.fontFamily] = true;
+            try {
+              // Cherche la police dans la liste Google Fonts
+              const fontMeta = (googleFonts || []).find(f => f.family === norm.fontFamily);
+              let fontWeight = norm.fontWeight || '400';
+              let availableWeights = [];
+              if (fontMeta && fontMeta.variants) {
+                // Extrait les poids numériques des variantes (ex: 'regular', '700italic', '400', ...)
+                availableWeights = fontMeta.variants
+                  .map(v => v.replace(/[^0-9]/g, '') || '400')
+                  .filter((v, i, arr) => arr.indexOf(v) === i); // unique
+              }
+              // Si le poids demandé n'est pas dispo, prend le premier dispo ou 400
+              if (availableWeights.length === 0) {
+                fontWeight = '400';
+              } else if (!availableWeights.includes(fontWeight)) {
+                fontWeight = availableWeights[0] || '400';
+              }
+              console.log('[FontDebug] Loading font:', norm.fontFamily, 'weight:', fontWeight, 'available:', availableWeights);
+              const maybePromise = loadGoogleFont(norm.fontFamily, fontWeight);
+              if (maybePromise && typeof maybePromise.then === 'function') {
+                await maybePromise;
+              }
+              // Si aucun poids, n'ajoute pas l'option weight à FontFaceObserver
+              const fontObserverOpts = availableWeights.length > 0 ? { weight: fontWeight } : {};
+              const font = new FontFaceObserver(norm.fontFamily, fontObserverOpts);
+              await font.load(null, 5000); // timeout 5s
+              console.log('[FontDebug] Font loaded:', norm.fontFamily, 'weight:', fontWeight);
+              setLoadedFonts(prev => [...prev, norm.fontFamily]);
+            } catch (e) {
+              console.warn('[FontDebug] Font failed to load:', norm.fontFamily, e);
+              setLoadedFonts(prev => [...prev, norm.fontFamily]);
+            }
           }
         });
       }
-    }, [activeProject?.typographyNorms]);
+    }, [activeProject?.typographyNorms, loadedFonts]);
   const GOOGLE_FONTS_API_KEY = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
   const { fonts: googleFonts, loading: loadingFonts, error: errorFonts } = useGoogleFonts(GOOGLE_FONTS_API_KEY);
 
@@ -235,12 +271,17 @@ export default function ProjectNorms() {
                   </div>
                 )}
                 <div className="h-16 bg-blue/10 rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
-                  <span
-                    className="text-primary text-xl font-medium tracking-tight"
-                    style={{ fontFamily: norm.fontFamily, fontStyle: norm.fontStyle ? norm.fontStyle.toLowerCase() : undefined }}
-                  >
-                    AaBbCc
-                  </span>
+                  {loadedFonts.includes(norm.fontFamily) ? (
+                    <span
+                      className="text-primary text-xl font-medium tracking-tight"
+                      style={{ fontFamily: `'${norm.fontFamily}', Arial, sans-serif`, fontStyle: norm.fontStyle ? norm.fontStyle.toLowerCase() : undefined }}
+                      title={norm.fontFamily}
+                    >
+                      AaBbCc
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-400">Chargement… <span style={{fontFamily: `'${norm.fontFamily}', Arial, sans-serif`}}>{norm.fontFamily}</span></span>
+                  )}
                 </div>
               </Card>
             ))}
