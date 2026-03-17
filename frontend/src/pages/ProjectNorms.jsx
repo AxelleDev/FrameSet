@@ -154,13 +154,36 @@ export default function ProjectNorms() {
     resetForm();
   };
 
+  // Filtre d'affichage : all, brush, typography
+  const [filterType, setFilterType] = useState('all');
+
   return (
     <>
-      <PageHeader
-        title="Normes Graphiques"
-        subtitle="Ensemble des règles techniques qui garantissent la cohérence visuelle."
-        subtitleClassName="max-w-xl"
-      />
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <PageHeader
+            title="Normes Graphiques"
+            subtitle="Ensemble des règles techniques qui garantissent la cohérence visuelle."
+            subtitleClassName="max-w-xl"
+          />
+        </div>
+        <div className="ml-4 flex-shrink-0 relative w-48">
+          <select
+            value={filterType}
+            onChange={e => setFilterType(e.target.value)}
+            className="appearance-none w-full px-4 py-2 border border-blue rounded-xl bg-white text-primary text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink pr-10"
+          >
+            <option value="all">Trier par : Tout</option>
+            <option value="brush">Trait</option>
+            <option value="typography">Typographie</option>
+          </select>
+          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-blue">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </span>
+        </div>
+      </div>
 
       {activeProject && (
         <>
@@ -170,7 +193,7 @@ export default function ProjectNorms() {
               className="min-h-[260px]"
             />
             {/* Normes de trait */}
-            {activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
+            {filterType !== 'typography' && activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
               <Card key={norm.id} clickable className="p-6 relative group flex flex-col justify-between h-full">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
@@ -226,7 +249,7 @@ export default function ProjectNorms() {
               </Card>
             ))}
             {/* Normes typographiques */}
-            {activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
+            {filterType !== 'brush' && activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
               <Card key={norm.id} clickable className="p-6 relative group flex flex-col justify-between h-full">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
