@@ -58,7 +58,6 @@ export default function ProjectNorms() {
               } else if (!availableWeights.includes(fontWeight)) {
                 fontWeight = availableWeights[0] || '400';
               }
-              console.log('[FontDebug] Loading font:', norm.fontFamily, 'weight:', fontWeight, 'available:', availableWeights);
               const maybePromise = loadGoogleFont(norm.fontFamily, fontWeight);
               if (maybePromise && typeof maybePromise.then === 'function') {
                 await maybePromise;
@@ -67,10 +66,8 @@ export default function ProjectNorms() {
               const fontObserverOpts = availableWeights.length > 0 ? { weight: fontWeight } : {};
               const font = new FontFaceObserver(norm.fontFamily, fontObserverOpts);
               await font.load(null, 5000); // timeout 5s
-              console.log('[FontDebug] Font loaded:', norm.fontFamily, 'weight:', fontWeight);
               setLoadedFonts(prev => [...prev, norm.fontFamily]);
             } catch (e) {
-              console.warn('[FontDebug] Font failed to load:', norm.fontFamily, e);
               setLoadedFonts(prev => [...prev, norm.fontFamily]);
             }
           }
@@ -174,7 +171,7 @@ export default function ProjectNorms() {
             />
             {/* Normes de trait */}
             {activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
-              <Card key={norm.id} clickable className="p-6 relative group">
+              <Card key={norm.id} clickable className="p-6 relative group flex flex-col justify-between h-full">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
                     onClick={() => openEditNorm(norm, 'brush')}
@@ -201,36 +198,36 @@ export default function ProjectNorms() {
                     )}
                   </ActionIconButton>
                 </div>
-                <div className="flex justify-between items-start mb-6">
-                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white border border-primary shadow-sm text-primary">Trait</span>
+                <div className="mb-4">
+                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white border border-primary shadow-sm text-primary mb-2">Trait</span>
+                  <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.name}</h3>
+                  <div className="flex items-baseline mb-2">
+                    <span className="text-2xl font-light text-primary mr-1">{norm.value}</span>
+                    <span className="text-base text-blue font-medium">{norm.unit}</span>
+                  </div>
+                  <div className="text-xs text-slate-500 mb-2">Opacité : {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}</div>
                 </div>
-                <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.name}</h3>
-                <div className="flex items-baseline mb-2">
-                  <span className="text-4xl font-light text-primary mr-1">{norm.value}</span>
-                  <span className="text-lg text-blue font-medium">{norm.unit}</span>
-                </div>
-                <div className="mb-6 text-xs text-slate-500">
-                  Opacité : {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}
-                </div>
-                <div className="h-16 bg-blue/10 rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
-                  <div className="flex flex-col items-center justify-center w-full px-4">
-                    <div
-                      className="w-16 rounded-full mb-1 bg-primary"
-                      style={{
-                        height: `${norm.value}px`,
-                        minHeight: '1px',
-                        backgroundColor: 'var(--color-primary)',
-                        opacity: typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ? parseFloat(norm.opacity) : 1)
-                      }}
-                    ></div>
-                    <span className="text-[10px] text-blue font-bold uppercase tracking-wider">{norm.brushName || 'Pinceau'}</span>
+                <div className="flex-1 flex flex-col justify-end">
+                  <div className="h-16 bg-white rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
+                    <div className="flex flex-col items-center justify-center w-full px-4">
+                      <div
+                        className="w-16 rounded-full mb-1 bg-primary"
+                        style={{
+                          height: `${norm.value}px`,
+                          minHeight: '1px',
+                          backgroundColor: 'var(--color-primary)',
+                          opacity: typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ? parseFloat(norm.opacity) : 1)
+                        }}
+                      ></div>
+                      <span className="text-[10px] text-blue font-bold uppercase tracking-wider">{norm.brushName || 'Pinceau'}</span>
+                    </div>
                   </div>
                 </div>
               </Card>
             ))}
             {/* Normes typographiques */}
             {activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
-                <Card key={norm.id} clickable className="p-6 relative group">
+              <Card key={norm.id} clickable className="p-6 relative group flex flex-col justify-between h-full">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
                     onClick={() => openEditNorm(norm, 'typography')}
@@ -257,31 +254,33 @@ export default function ProjectNorms() {
                     )}
                   </ActionIconButton>
                 </div>
-                <div className="flex justify-between items-start mb-6">
-                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white border border-pink shadow-sm text-pink">Typographie</span>
-                </div>
-                <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.fontUsage || norm.fontFamily}</h3>
-                <div className="flex items-baseline mb-2">
-                  <span className="text-2xl font-light text-primary mr-1">{norm.fontFamily}</span>
-                  <span className="text-lg text-blue font-medium">{norm.fontWeight}</span>
-                </div>
-                {norm.fontStyle && (
-                  <div className="mb-2">
-                    <span className="text-xs text-primary italic">{norm.fontStyle}</span>
+                <div className="mb-4">
+                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white border border-pink shadow-sm text-pink mb-2">Typographie</span>
+                  <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.fontUsage || norm.fontFamily}</h3>
+                  <div className="flex items-baseline mb-2">
+                    <span className="text-2xl font-light text-primary mr-1">{norm.fontFamily}</span>
+                    <span className="text-base text-blue font-medium">{norm.fontWeight}</span>
                   </div>
-                )}
-                <div className="h-16 bg-blue/10 rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
-                  {loadedFonts.includes(norm.fontFamily) ? (
-                    <span
-                      className="text-primary text-xl font-medium tracking-tight"
-                      style={{ fontFamily: `'${norm.fontFamily}', Arial, sans-serif`, fontStyle: norm.fontStyle ? norm.fontStyle.toLowerCase() : undefined }}
-                      title={norm.fontFamily}
-                    >
-                      AaBbCc
-                    </span>
-                  ) : (
-                    <span className="text-xs text-slate-400">Chargement… <span style={{fontFamily: `'${norm.fontFamily}', Arial, sans-serif`}}>{norm.fontFamily}</span></span>
+                  {norm.fontStyle && (
+                    <div className="mb-2">
+                      <span className="text-xs text-primary italic">{norm.fontStyle}</span>
+                    </div>
                   )}
+                </div>
+                <div className="flex-1 flex flex-col justify-end">
+                  <div className="h-16 bg-white rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
+                    {loadedFonts.includes(norm.fontFamily) ? (
+                      <span
+                        className="text-primary text-xl font-medium tracking-tight"
+                        style={{ fontFamily: `'${norm.fontFamily}', Arial, sans-serif`, fontStyle: norm.fontStyle ? norm.fontStyle.toLowerCase() : undefined }}
+                        title={norm.fontFamily}
+                      >
+                        AaBbCc
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400">Chargement… <span style={{fontFamily: `'${norm.fontFamily}', Arial, sans-serif`}}>{norm.fontFamily}</span></span>
+                    )}
+                  </div>
                 </div>
               </Card>
             ))}
