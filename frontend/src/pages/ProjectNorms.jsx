@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import CustomSelect from '../components/CustomSelect';
 import FontFaceObserver from 'fontfaceobserver';
 import useGoogleFonts from '../hooks/useGoogleFonts';
 import { loadGoogleFont } from '../utils/loadGoogleFont';
@@ -167,21 +168,18 @@ export default function ProjectNorms() {
             subtitleClassName="max-w-xl"
           />
         </div>
-        <div className="ml-4 flex-shrink-0 relative w-48">
-          <select
+        <div className="ml-4 flex-shrink-0 w-48">
+          <CustomSelect
             value={filterType}
-            onChange={e => setFilterType(e.target.value)}
-            className="appearance-none w-full px-4 py-2 border border-blue rounded-xl bg-white text-primary text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink pr-10"
-          >
-            <option value="all">Trier par : Tout</option>
-            <option value="brush">Trait</option>
-            <option value="typography">Typographie</option>
-          </select>
-          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-blue">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </span>
+            onChange={val => setFilterType(val)}
+            options={[
+              { value: 'all', label: 'Trier par : Tout' },
+              { value: 'brush', label: 'Trait' },
+              { value: 'typography', label: 'Typographie' }
+            ]}
+            placeholder="Trier par"
+            isSearchable={false}
+          />
         </div>
       </div>
 
@@ -336,23 +334,23 @@ export default function ProjectNorms() {
               ) : (
                 <>
                   <FormField label="Famille de police">
-                    <select
-                      value={typoForm.fontFamily}
-                      onChange={e => {
-                        setTypoField('fontFamily', e.target.value);
-                        const selectedFont = googleFonts.find(f => f.family === e.target.value);
-                        if (selectedFont) {
-                          loadGoogleFont(selectedFont.family, selectedFont.variants?.includes('regular') ? '400' : selectedFont.variants?.[0] || '400');
-                        }
-                      }}
-                      className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary appearance-none font-medium"
-                      disabled={loadingFonts}
-                    >
-                      <option value="">Sélectionnez la typographie</option>
-                      {googleFonts && googleFonts.map(font => (
-                        <option key={font.family} value={font.family}>{font.family}</option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <CustomSelect
+                        value={typoForm.fontFamily}
+                        onChange={val => {
+                          setTypoField('fontFamily', val);
+                          const selectedFont = googleFonts.find(f => f.family === val);
+                          if (selectedFont) {
+                            loadGoogleFont(selectedFont.family, selectedFont.variants?.includes('regular') ? '400' : selectedFont.variants?.[0] || '400');
+                          }
+                        }}
+                        options={googleFonts ? googleFonts.map(font => ({ value: font.family, label: font.family })) : []}
+                        placeholder="Sélectionnez la typographie"
+                        isLoading={loadingFonts}
+                        isDisabled={loadingFonts}
+                        noOptionsMessage={() => loadingFonts ? 'Chargement...' : 'Aucune police'}
+                      />
+                    </div>
                     {loadingFonts && <div className="text-xs text-slate-400 mt-1">Chargement des polices...</div>}
                     {errorFonts && <div className="text-xs text-red-500 mt-1">Erreur de chargement des polices</div>}
                   </FormField>
@@ -412,23 +410,21 @@ export default function ProjectNorms() {
           ) : (
             <>
               <FormField label="Famille de police">
-                <select
+                <CustomSelect
                   value={typoForm.fontFamily}
-                  onChange={e => {
-                    setTypoField('fontFamily', e.target.value);
-                    const selectedFont = googleFonts.find(f => f.family === e.target.value);
+                  onChange={val => {
+                    setTypoField('fontFamily', val);
+                    const selectedFont = googleFonts.find(f => f.family === val);
                     if (selectedFont) {
                       loadGoogleFont(selectedFont.family, selectedFont.variants?.includes('regular') ? '400' : selectedFont.variants?.[0] || '400');
                     }
                   }}
-                  className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary appearance-none font-medium"
-                  disabled={loadingFonts}
-                >
-                  <option value="">Sélectionnez la typographie</option>
-                  {googleFonts && googleFonts.map(font => (
-                    <option key={font.family} value={font.family}>{font.family}</option>
-                  ))}
-                </select>
+                  options={googleFonts ? googleFonts.map(font => ({ value: font.family, label: font.family })) : []}
+                  placeholder="Sélectionnez la typographie"
+                  isLoading={loadingFonts}
+                  isDisabled={loadingFonts}
+                  noOptionsMessage={() => loadingFonts ? 'Chargement...' : 'Aucune police'}
+                />
                 {loadingFonts && <div className="text-xs text-slate-400 mt-1">Chargement des polices...</div>}
                 {errorFonts && <div className="text-xs text-red-500 mt-1">Erreur de chargement des polices</div>}
               </FormField>
