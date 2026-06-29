@@ -16,4 +16,4 @@ FrameSet and its users safe.
 
 ## Supported versions
 
-This project is under active development; only the latest `master` is supported.
+This project is under active development; only the latest `main` is supported.

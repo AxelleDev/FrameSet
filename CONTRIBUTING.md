@@ -50,7 +50,7 @@ npm run build    # frontend only
 
 ## Pull requests
 
-- Create a branch from `master` (e.g. `feat/...`, `fix/...`).
+- Create a branch from `main` (e.g. `feat/...`, `fix/...`).
 - Keep PRs focused and describe what changed and why.
 - Make sure lint and tests pass.
 - Do not commit secrets — keep them in your local `.env` (which is git-ignored).
