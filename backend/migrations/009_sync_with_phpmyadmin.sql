@@ -1,5 +1,5 @@
 ALTER TABLE project_brush_norms ENGINE=InnoDB;
--- Ajout du champ opacité (opacity) pour les pinceaux
+-- Add the opacity field for brush norms
 ALTER TABLE project_brush_norms ADD COLUMN IF NOT EXISTS opacity FLOAT NULL AFTER unit;
 ALTER TABLE project_palette ENGINE=InnoDB;
 ALTER TABLE project_typography_norms ENGINE=InnoDB;

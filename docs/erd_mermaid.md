@@ -1,6 +1,6 @@
-# Diagramme Entité-Relation (ERD) — frameset_db
+# Entity-Relationship Diagram (ERD) — frameset_db
 
-Copiez ce bloc sur https://mermaid.live pour visualiser le schéma :
+Paste this block into https://mermaid.live to visualize the schema:
 
 ```mermaid
 erDiagram
@@ -34,11 +34,14 @@ erDiagram
       varchar value
       varchar unit
       varchar brush_name
+      float opacity
     }
     PROJECT_PALETTE {
+      int id PK
       int project_id FK
       varchar name
       varchar hex
+      int position
     }
     PROJECT_TYPOGRAPHY_NORMS {
       int id PK

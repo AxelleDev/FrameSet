@@ -46,7 +46,7 @@ describe('migrations', () => {
   it('devrait filtrer les fichiers .sql dans le dossier des migrations', async () => {
     mockExistsSync.mockReturnValue(true);
     mockReaddirSync.mockReturnValue(['001_init.sql', 'not_a_sql.txt']);
-    mockQuery.mockResolvedValue([[]]); // Simule la réponse de la BDD
+    mockQuery.mockResolvedValue([[]]); // Simulate the database response
     const result = await migrate.getPendingMigrations(mockPool);
     expect(result).toContain('001_init.sql');
     expect(result).not.toContain('not_a_sql.txt');
