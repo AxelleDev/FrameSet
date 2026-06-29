@@ -12,7 +12,8 @@
  *   Setters: setGlobalError
  *   Actions: login, register, logout, refreshAccessToken, applyUserUpdate,
  *            updateUserProfile, changePassword, deleteAccount, verifyEmail,
- *            resendVerificationCode, verifyPendingEmail, resendPendingEmailCode
+ *            resendVerificationCode, requestPasswordReset, resetPassword,
+ *            verifyPendingEmail, resendPendingEmailCode
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
@@ -268,6 +269,36 @@ export const AuthProvider = ({ children }) => {
   }, [setGlobalError]);
 
   /**
+   * Starts the forgot-password flow: asks the backend to email a reset code.
+   * The backend always responds the same way (whether or not the email exists).
+   * @returns {Promise<{success: boolean, message?: string}>}
+   */
+  const requestPasswordReset = useCallback(async (email) => {
+    try {
+      const data = await api.post('/auth/forgot-password', { email }, { onGlobalError: setGlobalError });
+      return { success: Boolean(data?.success) };
+    } catch (err) {
+      const { message } = handleApiError(err, setGlobalError, "Erreur lors de l'envoi du code.");
+      return { success: false, message };
+    }
+  }, [setGlobalError]);
+
+  /**
+   * Completes the forgot-password flow: submits the reset code and a new
+   * password to set the new credentials.
+   * @returns {Promise<{success: boolean, message?: string}>}
+   */
+  const resetPassword = useCallback(async (email, code, newPassword) => {
+    try {
+      const data = await api.post('/auth/reset-password', { email, code, newPassword }, { onGlobalError: setGlobalError });
+      return { success: Boolean(data?.success) };
+    } catch (err) {
+      const { message } = handleApiError(err, setGlobalError, 'Réinitialisation impossible.');
+      return { success: false, message };
+    }
+  }, [setGlobalError]);
+
+  /**
    * Confirms a pending email change (initiated from the profile page) with its
    * code, and merges the updated user returned by the server.
    * @returns {Promise<{success: boolean, message?: string}>}
@@ -313,6 +344,8 @@ export const AuthProvider = ({ children }) => {
     deleteAccount,
     verifyEmail,
     resendVerificationCode,
+    requestPasswordReset,
+    resetPassword,
     verifyPendingEmail,
     resendPendingEmailCode
   }), [
@@ -329,6 +362,8 @@ export const AuthProvider = ({ children }) => {
     deleteAccount,
     verifyEmail,
     resendVerificationCode,
+    requestPasswordReset,
+    resetPassword,
     verifyPendingEmail,
     resendPendingEmailCode
   ]);

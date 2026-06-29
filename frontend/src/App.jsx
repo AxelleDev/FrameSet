@@ -32,6 +32,7 @@ import MainLayout from './layouts/MainLayout';
 // jsPDF / react-select) is only downloaded when that route is first visited.
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ProjectNorms = lazy(() => import('./pages/ProjectNorms'));
 const ProjectPalette = lazy(() => import('./pages/ProjectPalette'));
@@ -68,6 +69,7 @@ function AppRoutes() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/verify" element={<Verify />} />
           <Route path="/app" element={<MainLayout />}>
             <Route path="dashboard" element={<Dashboard />} />

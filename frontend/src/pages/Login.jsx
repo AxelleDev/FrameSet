@@ -22,9 +22,10 @@ export default function Login() {
 
   const { values: formData, setField } = useFormState({
     email: '',
-    password: ''
+    password: '',
   });
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setField(e.target.name, e.target.value);
@@ -32,13 +33,19 @@ export default function Login() {
 
   // Validate locally, then authenticate; on success go to the dashboard,
   // otherwise show the returned business-error message inline.
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+
     if (!formData.email || !formData.password) {
       setError('Veuillez remplir tous les champs.');
       return;
     }
 
-    const result = await login(formData.email, formData.password);
+    setSubmitting(true);
+    const result = await login(formData.email.trim(), formData.password);
+    setSubmitting(false);
+
     if (result.success) {
       setError('');
       navigate('/app/dashboard');
@@ -49,6 +56,9 @@ export default function Login() {
 
   const userCount = useUserCount();
 
+  const inputClass =
+    'w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all';
+
   return (
     <AuthLayout
       variant="login"
@@ -57,12 +67,12 @@ export default function Login() {
           <div className="flex items-center mb-2">
             <img src="/FrameSet_Logo.png" alt="Logo FrameSet" className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
           </div>
-          
+
           <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
             Définissez votre <br />
             <span className="font-bold text-primary">Vérité Visuelle.</span>
           </h1>
-          
+
           <p className="text-lg text-primary max-w-md leading-relaxed">
             FrameSet centralise les fondations graphiques de vos projets créatifs, pour une direction artistique claire et maîtrisée.
           </p>
@@ -80,58 +90,55 @@ export default function Login() {
           <h2 className="text-2xl font-medium text-primary">Connexion</h2>
           <p className="text-primary text-sm mt-2">Reprenez là où vous vous êtes arrêté.</p>
         </div>
-        
-        {error && <div className="mb-4 p-3 bg-pink text-primary text-xs rounded-lg text-center font-medium">{error}
-          {/* Offer a verification shortcut when login failed due to an unverified email */}
-          {error.includes('vérifier votre email') && (
-            <button
-              onClick={() => navigate(`/verify?email=${encodeURIComponent(formData.email)}`)}
-              className="mt-2 w-full py-2 bg-blue text-white rounded-xl hover:bg-pink transition-all text-sm font-medium"
-            >
-              Vérifier mon email
-            </button>
-          )}
-        </div>}
 
-        <div className="space-y-5">
-          <FormField 
-            label="Email"
-            labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2"
-            className="group"
-          >
-            <input 
-              type="email" 
-              name="email" 
-              value={formData.email} 
-              onChange={handleChange} 
-              className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" 
-              placeholder="email@exemple.com" 
+        {error && (
+          <div className="mb-4 p-3 bg-pink text-primary text-xs rounded-lg text-center font-medium" aria-live="polite" role="alert">
+            {error}
+            {/* Offer a verification shortcut when login failed due to an unverified email */}
+            {error.includes('vérifier votre email') && (
+              <button
+                type="button"
+                onClick={() => navigate(`/verify?email=${encodeURIComponent(formData.email.trim())}`)}
+                className="mt-2 w-full py-2 bg-blue text-white rounded-xl hover:bg-pink transition-all text-sm font-medium"
+              >
+                Vérifier mon email
+              </button>
+            )}
+          </div>
+        )}
+
+        <form className="space-y-5" onSubmit={handleLogin} noValidate>
+          <FormField label="Email" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className={inputClass}
+              placeholder="email@exemple.com"
+              autoComplete="email"
             />
           </FormField>
-          
-          <FormField 
-            label="Mot de passe"
-            labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2"
-            className="group"
-          >
+
+          <FormField label="Mot de passe" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
             <PasswordInput
               name="password"
               value={formData.password}
               onChange={handleChange}
-              inputClassName="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all"
+              inputClassName={inputClass}
               placeholder="••••••••"
               autoComplete="current-password"
             />
           </FormField>
-          
-          <Button onClick={handleLogin} fullWidth className="mt-2">
+
+          <Button type="submit" fullWidth className="mt-2" loading={submitting}>
             Continuer
           </Button>
-        </div>
+        </form>
 
         <div className="mt-8 text-center flex flex-col gap-2">
           <Link to="/register" className="text-sm font-medium text-blue hover:text-pink transition-colors">Pas encore de compte ? Créer un compte</Link>
-          <a href="#" className="text-xs text-blue hover:text-pink transition-colors">Mot de passe oublié ?</a>
+          <Link to="/forgot-password" className="text-xs text-blue hover:text-pink transition-colors">Mot de passe oublié ?</Link>
         </div>
       </Card>
     </AuthLayout>

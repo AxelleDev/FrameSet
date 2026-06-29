@@ -1,8 +1,9 @@
 /**
  * Registration page (route: /register).
  *
- * Collects name + email + password, creates the account via the auth context,
- * and on success redirects to the verification page with the email prefilled.
+ * Collects name + email + password (with confirmation), validates everything on
+ * the client (email format, live password policy, matching confirmation), then
+ * creates the account via the auth context and redirects to email verification.
  */
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -12,35 +13,51 @@ import FormField from '../components/FormField';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PasswordInput from '../components/PasswordInput';
+import PasswordChecklist from '../components/PasswordChecklist';
 import useUserCount from '../hooks/useUserCount';
 import useFormState from '../hooks/useFormState';
+import { isPasswordValid, isValidEmail } from '../utils/passwordRules';
 
 export default function Register() {
   const navigate = useNavigate();
   const { register } = useAuth();
-  
+
   const { values: formData, setField } = useFormState({
     name: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: '',
   });
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setField(e.target.name, e.target.value);
   };
 
-  const handleRegister = async () => {
-    if (!formData.name || !formData.email || !formData.password) {
-      setError('Veuillez remplir tous les champs.');
-      return;
-    }
+  // Live validation flags used for inline hints and to gate the submit button.
+  const emailValid = isValidEmail(formData.email);
+  const passwordValid = isPasswordValid(formData.password);
+  const passwordsMatch = formData.password === formData.confirmPassword;
+  const canSubmit =
+    formData.name.trim() !== '' && emailValid && passwordValid && passwordsMatch;
 
-    const result = await register(formData);
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    if (!canSubmit || submitting) return;
+
+    setSubmitting(true);
+    const result = await register({
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      password: formData.password,
+    });
+    setSubmitting(false);
+
     if (result.success) {
       setError('');
       // Prefer the server-confirmed email; fall back to what the user typed.
-      const verificationEmail = result.data?.email || formData.email;
+      const verificationEmail = result.data?.email || formData.email.trim();
       navigate(`/verify?email=${encodeURIComponent(verificationEmail)}`);
     } else if (result.message) {
       setError(result.message);
@@ -48,6 +65,9 @@ export default function Register() {
   };
 
   const userCount = useUserCount();
+
+  const inputClass =
+    'w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all';
 
   return (
     <AuthLayout
@@ -58,14 +78,11 @@ export default function Register() {
           <div className="flex items-center mb-2">
             <img src="/FrameSet_Logo.png" alt="Logo FrameSet" className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
           </div>
-          {error && (
-            <div className="text-pink mb-4" aria-live="polite" role="alert">{error}</div>
-          )}
           <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
             Rejoignez le <br />
             <span className="font-bold text-primary">Référentiel.</span>
           </h1>
-          
+
           <p className="text-lg text-primary max-w-md leading-relaxed">
             Commencez à structurer les fondations graphiques de vos projets et donnez à votre univers créatif une direction claire et cohérente.
           </p>
@@ -85,59 +102,71 @@ export default function Register() {
           <h2 className="text-2xl font-medium text-primary">Inscription</h2>
           <p className="text-primary text-sm mt-2">Votre référence graphique commence ici.</p>
         </div>
-        
-        {error && <div className="mb-4 p-3 bg-pink text-primary text-xs rounded-lg text-center font-medium">{error}</div>}
 
-        <div className="space-y-4">
-          <FormField 
-            label="Nom Complet"
-            labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2"
-            className="group"
-          >
-            <input 
-              type="text" 
-              name="name" 
-              value={formData.name} 
-              onChange={handleChange} 
-              className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" 
-              placeholder="ex: Prénom Nom" 
+        {error && (
+          <div className="mb-4 p-3 bg-pink text-primary text-xs rounded-lg text-center font-medium" aria-live="polite" role="alert">
+            {error}
+          </div>
+        )}
+
+        <form className="space-y-4" onSubmit={handleRegister} noValidate>
+          <FormField label="Nom Complet" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className={inputClass}
+              placeholder="ex: Prénom Nom"
+              autoComplete="name"
             />
           </FormField>
 
-          <FormField 
-            label="Email"
-            labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2"
-            className="group"
-          >
-            <input 
-              type="email" 
-              name="email" 
-              value={formData.email} 
-              onChange={handleChange} 
-              className="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all" 
-              placeholder="email@exemple.com" 
+          <FormField label="Email" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className={inputClass}
+              placeholder="email@exemple.com"
+              autoComplete="email"
             />
+            {formData.email !== '' && !emailValid && (
+              <p className="text-xs text-pink mt-1">Format d'email invalide.</p>
+            )}
           </FormField>
-          
-          <FormField 
-            label="Mot de passe"
-            labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2"
-            className="group"
-          >
+
+          <FormField label="Mot de passe" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
             <PasswordInput
               name="password"
               value={formData.password}
               onChange={handleChange}
-              inputClassName="w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all"
-              placeholder="8+ caractères"
+              inputClassName={inputClass}
+              placeholder="Votre mot de passe"
               autoComplete="new-password"
             />
+            <PasswordChecklist password={formData.password} />
           </FormField>
-          
-          <Button onClick={handleRegister} fullWidth className="mt-2">
+
+          <FormField label="Confirmer le mot de passe" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
+            <PasswordInput
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              inputClassName={inputClass}
+              placeholder="Retapez votre mot de passe"
+              autoComplete="new-password"
+            />
+            {formData.confirmPassword !== '' && !passwordsMatch && (
+              <p className="text-xs text-pink mt-1">Les mots de passe ne correspondent pas.</p>
+            )}
+          </FormField>
+
+          <Button type="submit" fullWidth className="mt-2" disabled={!canSubmit} loading={submitting}>
             Créer un compte
           </Button>
-        </div>
+        </form>
 
         <div className="mt-8 text-center">
           <span className="text-sm text-primary">Vous avez déjà un compte ? </span>

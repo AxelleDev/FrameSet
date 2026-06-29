@@ -46,6 +46,8 @@ router.post('/login', authLimiter, authController.login);
 router.get('/csrf-token', authController.getCsrfToken);
 router.post('/verify', verifyCodeLimiter, authController.verify);
 router.post('/resend-code', resendCodeLimiter, authController.resendCode);
+router.post('/forgot-password', resendCodeLimiter, authController.forgotPassword);
+router.post('/reset-password', verifyCodeLimiter, authController.resetPassword);
 router.post('/refresh', refreshLimiter, authController.refresh);
 router.post('/logout', authController.logout);
 

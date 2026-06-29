@@ -6,6 +6,7 @@
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
     "start:backend": "npm --prefix backend run start",
+    "migrate:backend": "npm --prefix backend run migrate",
     "test:frontend": "npm --prefix frontend run test",
     "test:backend": "npm --prefix backend run test",
     "build:frontend": "npm --prefix frontend run build"

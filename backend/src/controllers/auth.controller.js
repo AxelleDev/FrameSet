@@ -515,6 +515,125 @@ const logout = async (req, res) => {
   }
 };
 
+/**
+ * Starts the "forgot password" flow: if the email matches an account, stores a
+ * one-time reset code (with expiry) and emails it. The response is identical
+ * whether or not the email exists, to avoid revealing which emails are
+ * registered; a mail-send failure is logged but does not change the response
+ * (the stored code remains usable).
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
+const forgotPassword = async (req, res) => {
+  const email = normalizeInput(req.body?.email);
+  if (!email) {
+    return res.status(400).json({ error: 'Email obligatoire.' });
+  }
+  if (!validator.isEmail(email)) {
+    return res.status(400).json({ error: 'Email invalide.' });
+  }
+
+  try {
+    const [rows] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+
+    if (rows.length > 0) {
+      const { code, expires } = generateVerificationCode();
+      await db.query(
+        'UPDATE users SET reset_code = ?, reset_code_expires = ? WHERE email = ?',
+        [code, expires, email]
+      );
+
+      try {
+        await mailService.sendMail({
+          to: email,
+          subject: 'Réinitialisation de votre mot de passe',
+          text: `Votre code de réinitialisation est : ${code}\nCe code expire dans 10 minutes.`,
+          html: mailService.buildTemplate({
+            title: 'Réinitialisation de votre mot de passe',
+            message: 'Utilisez le code ci-dessous pour choisir un nouveau mot de passe.',
+            code
+          })
+        });
+      } catch (mailError) {
+        // Never leak whether the email exists: log the send failure but keep the
+        // generic success response. The stored code stays valid.
+        logger.error('auth.forgot_password.mail_failed', {
+          requestId: req.id,
+          emailFingerprint: getIdentifierFingerprint(email),
+          error: mailError
+        });
+      }
+    }
+
+    // Same response regardless of whether the account exists.
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('auth.forgot_password.error', {
+      requestId: req.id,
+      emailFingerprint: getIdentifierFingerprint(email),
+      error
+    });
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
+/**
+ * Completes the "forgot password" flow: validates the reset code and its expiry,
+ * enforces the password policy, hashes and stores the new password, and clears
+ * the reset code so it cannot be reused. A missing account returns the same
+ * generic "Code incorrect" error to avoid user enumeration.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
+const resetPassword = async (req, res) => {
+  const email = normalizeInput(req.body?.email);
+  const code = normalizeInput(req.body?.code);
+  const password = normalizeInput(req.body?.newPassword);
+
+  if (!email || !code || !password) {
+    return res.status(400).json({ error: 'Email, code et nouveau mot de passe sont obligatoires.' });
+  }
+  if (!validator.isEmail(email)) {
+    return res.status(400).json({ error: 'Email invalide.' });
+  }
+  if (!validator.isLength(password, { min: PASSWORD_MIN_LENGTH })) {
+    return res.status(400).json({ error: 'Mot de passe trop court.' });
+  }
+  if (!validator.matches(password, PASSWORD_COMPLEXITY_REGEX)) {
+    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.' });
+  }
+
+  try {
+    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'Code incorrect.' });
+    }
+
+    const userDb = rows[0];
+    if (!userDb.reset_code || userDb.reset_code !== code) {
+      return res.status(400).json({ error: 'Code incorrect.' });
+    }
+    if (!userDb.reset_code_expires || new Date() > new Date(userDb.reset_code_expires)) {
+      return res.status(400).json({ error: 'Code expiré. Veuillez en demander un nouveau.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+    await db.query(
+      'UPDATE users SET password = ?, password_updated_at = NOW(), reset_code = NULL, reset_code_expires = NULL WHERE email = ?',
+      [hashedPassword, email]
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('auth.reset_password.error', {
+      requestId: req.id,
+      emailFingerprint: getIdentifierFingerprint(email),
+      error
+    });
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
 module.exports = {
   getCsrfToken,
   register,
@@ -522,5 +641,7 @@ module.exports = {
   verify,
   resendCode,
   refresh,
-  logout
+  logout,
+  forgotPassword,
+  resetPassword
 };
