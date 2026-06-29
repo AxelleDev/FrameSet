@@ -50,6 +50,14 @@ function RouteFallback() {
   );
 }
 
+/** Redirects users who are already signed in away from the public auth pages. */
+function RedirectIfAuthenticated({ children }) {
+  const { user, authLoading } = useAuth();
+  if (authLoading) return <RouteFallback />;
+  if (user) return <Navigate to="/app/dashboard" replace />;
+  return children;
+}
+
 /**
  * Renders the global error banner and the full route tree. Kept separate from
  * <App /> so it can consume the auth context (it must live inside AuthProvider).
@@ -67,9 +75,9 @@ function AppRoutes() {
         <Suspense fallback={<RouteFallback />}>
           <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/login" element={<RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>} />
+          <Route path="/register" element={<RedirectIfAuthenticated><Register /></RedirectIfAuthenticated>} />
+          <Route path="/forgot-password" element={<RedirectIfAuthenticated><ForgotPassword /></RedirectIfAuthenticated>} />
           <Route path="/verify" element={<Verify />} />
           <Route path="/app" element={<MainLayout />}>
             <Route path="dashboard" element={<Dashboard />} />

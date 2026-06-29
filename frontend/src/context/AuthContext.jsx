@@ -16,7 +16,7 @@
  *            verifyPendingEmail, resendPendingEmailCode
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import api from '../services/api';
+import api, { setSessionExpiredHandler } from '../services/api';
 import logger from '../utils/logger';
 import { handleApiError } from '../utils/apiError';
 
@@ -109,6 +109,13 @@ export const AuthProvider = ({ children }) => {
       isMounted = false;
     };
   }, [refreshAccessToken]);
+
+  // Clear the session when the API reports a terminal auth failure (a 403 that a
+  // token refresh could not recover). Route guards then redirect to /login.
+  useEffect(() => {
+    setSessionExpiredHandler(() => setUser(null));
+    return () => setSessionExpiredHandler(null);
+  }, []);
 
   /** Replaces the current user (clears it when given a falsy value). */
   const setAuthenticatedUser = useCallback((userData) => {

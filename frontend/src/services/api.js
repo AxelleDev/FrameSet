@@ -22,6 +22,15 @@ const METHODS_REQUIRING_CSRF = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 let csrfTokenCache = null;
 let csrfTokenPromise = null;
 
+// Handler invoked when the session is terminally invalid (a 403 that a token
+// refresh could not recover — e.g. logged out elsewhere, refresh token expired,
+// or password changed on another device). The app registers it to clear the
+// user and bounce to the login page.
+let sessionExpiredHandler = null;
+export const setSessionExpiredHandler = (handler) => {
+  sessionExpiredHandler = handler;
+};
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -306,6 +315,11 @@ const request = async (path, {
           opts = await buildRequestOptions();
           await sleep(100); // brief pause so the new auth cookie is applied
           continue;
+        }
+        // Refresh failed: the session is terminally invalid. Notify the app so
+        // it can clear the user and redirect to login, then surface the error.
+        if (typeof sessionExpiredHandler === 'function') {
+          sessionExpiredHandler();
         }
       }
 

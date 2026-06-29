@@ -17,7 +17,8 @@ vi.mock('../../src/services/api', () => ({
     put: mockApiPut,
     patch: mockApiPatch,
     delete: mockApiDelete
-  }
+  },
+  setSessionExpiredHandler: () => {}
 }));
 
 vi.mock('../../src/utils/logger', () => ({
