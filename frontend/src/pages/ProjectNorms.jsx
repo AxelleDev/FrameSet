@@ -108,6 +108,9 @@ export default function ProjectNorms() {
           }
         });
       }
+      // googleFonts is intentionally excluded: it is only a static metadata
+      // catalog used to resolve weights, so re-running on its arrival is needless.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeProject?.typographyNorms, loadedFonts]);
   // Google Fonts catalog used to populate the font picker and resolve weights.
   const GOOGLE_FONTS_API_KEY = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;

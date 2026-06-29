@@ -49,6 +49,15 @@ export default [
     },
   },
 
+  // Context modules deliberately co-locate the provider component with the
+  // context object and its accessor hook; the fast-refresh "only export
+  // components" rule does not apply to this intentional pattern.
+  {
+    files: ['src/context/**/*.{js,jsx}'],
+    plugins: { 'react-refresh': reactRefresh },
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
+
   // Formatting is owned by Prettier; disable conflicting stylistic rules.
   prettier,
 ];

@@ -89,4 +89,15 @@ Workflow: `.github/workflows/ci.yml`
 
 ---
 
-© Axelle 2026. All rights reserved.
+## ✧･ﾟ: ✧･ﾟ Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the local
+setup and the pull-request workflow.
+
+---
+
+## ✧･ﾟ: ✧･ﾟ License
+
+Released under the [MIT License](LICENSE).
+
+© Axelle 2026.

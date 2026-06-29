@@ -442,7 +442,7 @@ const createProject = async (req, res) => {
     }
   try {
     const [result] = await db.query(
-      'INSERT INTO projects (user_id, name, progress) VALUES (?, ?, 0)',
+      'INSERT INTO projects (user_id, name) VALUES (?, ?)',
       [userId, name]
     );
     const newId = result.insertId;
