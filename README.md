@@ -1,49 +1,78 @@
 
 <div align="center">
-	<img src="frontend/public/FrameSet_Logo.png" alt="Logo FrameSet" width="120" />
-	<p><b>FRAMESET — Le référentiel graphique pensé pour l’illustration digitale.</b></p>
+	<img src="frontend/public/FrameSet_Logo.png" alt="FrameSet logo" width="120" />
+	<p><b>FRAMESET — The graphic reference, built for digital illustration.</b></p>
 	<p>
 		<a href="https://github.com/AxelleDev/frameset/actions/workflows/ci.yml">
-			<img src="https://github.com/AxelleDev/frameset/actions/workflows/ci.yml/badge.svg" alt="Statut CI" />
+			<img src="https://github.com/AxelleDev/frameset/actions/workflows/ci.yml/badge.svg" alt="CI status" />
 		</a>
 	</p>
 </div>
 
 ---
 
-## ✧･ﾟ: ✧･ﾟ Objectif du projet
+## ✧･ﾟ: ✧･ﾟ About the project
 
-FrameSet est une application web destinée aux illustrateurs et créateurs digitaux. Elle permet de centraliser, structurer et exporter les référentiels graphiques liés à un projet d’illustration (palettes, typographies, pinceaux, etc.).
+FrameSet is a full-stack web app for illustrators and digital creators. It lets you
+**centralise, structure and export** the graphic references of an illustration project —
+colour palettes, typographies and brush specs — so you keep a consistent visual identity
+from one drawing to the next.
 
 ---
 
-## ✧･ﾟ: ✧･ﾟ Structure du projet
+## ✧･ﾟ: ✧･ﾟ Features
+
+- **Accounts & authentication** — sign up, log in, e-mail verification and profile
+  management (JWT, hashed passwords, CSRF protection & rate-limiting).
+- **Projects** — a dashboard to create and manage multiple illustration projects.
+- **Palettes** — colour management with drag-and-drop reordering and quick code copy.
+- **Specs** — typographies (with Google Fonts loading) and brushes (size, opacity,
+  usage…).
+- **Export** — generate a PDF of the project's complete reference sheet.
+
+---
+
+## ✧･ﾟ: ✧･ﾟ Tech stack
+
+**Frontend** — React 18, Vite, React Router, Tailwind CSS, react-select, jsPDF
+**Backend** — Node.js, Express, MySQL, JWT, bcrypt, Helmet, Nodemailer
+**Quality** — Vitest (front), Jest + Supertest (back), GitHub Actions CI
+
+---
+
+## ✧･ﾟ: ✧･ﾟ Project structure
 
 ```
 frameset/
-├── backend/            # API Node.js (Express)
-└── frontend/           # Application React
-	├── index.html      # HTML du frontend
-	└── src/main.jsx    # Point d'entrée React
+├── backend/            # Node.js API (Express + MySQL)
+│   ├── migrations/     # Versioned SQL scripts
+│   ├── src/            # Routes, controllers, services, middlewares
+│   └── tests/          # Unit & integration tests
+├── frontend/           # React application
+│   └── src/            # Pages, components, contexts, hooks
+└── docs/               # Documentation (ERD…)
 ```
 
 ---
 
-## ✧･ﾟ: ✧･ﾟ Démarrage rapide
+## ✧･ﾟ: ✧･ﾟ Getting started
 
 ### Backend (API)
 
 ```bash
 cd backend
 npm install
+cp .env.example .env   # configure the DB, JWT and mail settings
+npm run migrate        # run the migrations
 npm start
 ```
 
-### Frontend (application)
+### Frontend (app)
 
 ```bash
 cd frontend
 npm install
+cp .env.example .env
 npm run dev
 ```
 
@@ -51,14 +80,14 @@ npm run dev
 
 ## ✧･ﾟ: ✧･ﾟ CI (GitHub Actions)
 
-La pipeline CI lance automatiquement :
+The CI pipeline automatically runs:
 
-- les tests backend
-- les tests frontend
-- le build frontend
+- backend tests
+- frontend tests
+- the frontend build
 
-Workflow : `.github/workflows/ci.yml`
+Workflow: `.github/workflows/ci.yml`
 
 ---
 
-© Axelle 2026. Tous droits réservés.
+© Axelle 2026. All rights reserved.
