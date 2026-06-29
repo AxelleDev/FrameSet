@@ -14,6 +14,7 @@ const {
   MAIL_USER,
   MAIL_PASS
 } = require('../config/mail.config');
+const { logger } = require('../utils/logger');
 
 const transporter = nodemailer.createTransport({
   host: MAIL_HOST,
@@ -69,13 +70,23 @@ const buildTemplate = ({ title, message, code, footer }) => {
  * @returns {Promise<void>}
  */
 const sendMail = async ({ to, subject, text, html }) => {
-  await transporter.sendMail({
+  const info = await transporter.sendMail({
     from: MAIL_USER,
     to,
     subject,
     text,
     html
   });
+
+  // In non-production, surface the Ethereal preview URL so the email (and the
+  // code it contains) can be read straight from the server console — no need to
+  // open a real inbox during local development.
+  if (process.env.NODE_ENV !== 'production' && typeof nodemailer.getTestMessageUrl === 'function') {
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    if (previewUrl) {
+      logger.info('mail.preview', { to, subject, previewUrl });
+    }
+  }
 };
 
 module.exports = {

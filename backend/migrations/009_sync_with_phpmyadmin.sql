@@ -1,20 +1,17 @@
-ALTER TABLE project_brush_norms ENGINE=InnoDB;
--- Add the opacity field for brush norms
-ALTER TABLE project_brush_norms ADD COLUMN IF NOT EXISTS opacity FLOAT NULL AFTER unit;
-ALTER TABLE project_palette ENGINE=InnoDB;
-ALTER TABLE project_typography_norms ENGINE=InnoDB;
+-- Ensure the project tables use InnoDB and add the brush opacity column.
+-- The foreign keys are already created by 001_init.sql, so they are NOT
+-- re-added here (re-adding them fails on a database built from the migrations).
+-- Portable across MySQL and MariaDB; the opacity add is guarded for idempotency.
+ALTER TABLE `project_brush_norms` ENGINE=InnoDB;
+ALTER TABLE `project_palette` ENGINE=InnoDB;
+ALTER TABLE `project_typography_norms` ENGINE=InnoDB;
 
-ALTER TABLE projects
-  ADD CONSTRAINT fk_projects_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE project_brush_norms
-  ADD CONSTRAINT fk_project_brush_norms_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE project_palette
-  ADD CONSTRAINT fk_project_palette_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE project_typography_norms
-  ADD CONSTRAINT fk_project_typography_norms_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE revoked_tokens
-  ADD CONSTRAINT fk_revoked_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE;
+SET @exist := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'project_brush_norms' AND COLUMN_NAME = 'opacity'
+);
+SET @sql := IF(@exist = 0,
+  'ALTER TABLE `project_brush_norms` ADD COLUMN `opacity` FLOAT NULL AFTER `unit`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
