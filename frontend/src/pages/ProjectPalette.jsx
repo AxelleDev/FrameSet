@@ -25,6 +25,10 @@ import PageHeader from '../components/PageHeader';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useClipboard from '../hooks/useClipboard';
 import useActiveProject from '../hooks/useActiveProject';
+import { extractColorsFromImage } from '../utils/extractColors';
+
+// Keep in sync with the backend cap (MAX_PALETTE_SIZE in projects.controller.js).
+const MAX_PALETTE_SIZE = 50;
 
 export default function ProjectPalette() {
   const { id } = useParams();
@@ -119,6 +123,16 @@ export default function ProjectPalette() {
   const [isAddingColor, setIsAddingColor] = useState(false);
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('');
+
+  // "Palette from an image" state:
+  //   imageColors: extracted colors as [{ hex, selected }] shown in the modal.
+  //   extracting: true while analyzing the chosen image.
+  //   fileInputRef: the hidden <input type="file"> opened by the import button.
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imageColors, setImageColors] = useState([]);
+  const [imageError, setImageError] = useState('');
+  const [extracting, setExtracting] = useState(false);
+  const fileInputRef = useRef(null);
 
   /**
    * Persists the given ordered palette and adopts the canonical result returned
@@ -247,6 +261,63 @@ export default function ProjectPalette() {
     }
   };
 
+  // Open the OS file picker to import a palette from an image.
+  const openImagePicker = () => {
+    setImageError('');
+    fileInputRef.current?.click();
+  };
+
+  // Extract dominant colors from the chosen image, then open the preview modal.
+  const handleImageSelected = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // reset so the same file can be re-selected later
+    if (!file) return;
+
+    setExtracting(true);
+    setImageError('');
+    try {
+      const hexes = await extractColorsFromImage(file, 8);
+      if (hexes.length === 0) {
+        setImageError("Aucune couleur n'a pu être extraite de cette image.");
+        return;
+      }
+      setImageColors(hexes.map((hex) => ({ hex, selected: true })));
+      setIsImageModalOpen(true);
+    } catch {
+      setImageError("Impossible d'analyser cette image.");
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  // Toggle whether an extracted color will be added to the palette.
+  const toggleImageColor = (hex) => {
+    setImageColors((prev) => prev.map((c) => (c.hex === hex ? { ...c, selected: !c.selected } : c)));
+  };
+
+  // Append the selected extracted colors (capped at MAX_PALETTE_SIZE) and persist.
+  const confirmAddImageColors = async () => {
+    const chosen = imageColors.filter((c) => c.selected);
+    if (chosen.length === 0) return;
+
+    const room = Math.max(0, MAX_PALETTE_SIZE - palette.length);
+    if (room === 0) {
+      setImageError(`La palette est pleine (maximum ${MAX_PALETTE_SIZE} couleurs).`);
+      return;
+    }
+
+    const toAdd = chosen.slice(0, room).map((c, i) => ({
+      name: `Couleur ${palette.length + i + 1}`,
+      hex: c.hex,
+    }));
+
+    const saved = await persistPalette([...palette, ...toAdd]);
+    if (saved) {
+      setIsImageModalOpen(false);
+      setImageColors([]);
+    }
+  };
+
   // Stage a color for deletion (by id). stopImmediatePropagation also prevents
   // sibling handlers (copy/drag) on the same swatch from firing.
   const handleDeleteColor = (e, colorId) => {
@@ -287,7 +358,32 @@ export default function ProjectPalette() {
       />
 
       {activeProject ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+        <>
+          <div className="flex justify-end mb-6">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelected}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={openImagePicker}
+              disabled={extracting}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-blue text-primary text-sm font-medium hover:border-pink hover:text-pink transition-colors disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {extracting ? 'Analyse…' : 'Palette depuis une image'}
+            </button>
+          </div>
+          {imageError && !isImageModalOpen && (
+            <p className="text-xs text-pink mb-4 text-right">{imageError}</p>
+          )}
+
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
            <AddTile
             onClick={openAddModal}
             className="aspect-[4/5]"
@@ -415,7 +511,8 @@ export default function ProjectPalette() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        </>
       ) : (
         <ProjectStatePlaceholder loading={projectsLoading || String(activeProjectId) !== String(id)} />
       )}
@@ -488,6 +585,40 @@ export default function ProjectPalette() {
           onSecondary={() => setIsAddingColor(false)}
           onPrimary={confirmAddColor}
           primaryDisabled={!newColorName || !isValidHex()}
+        />
+      </FormModal>
+
+      <FormModal
+        isOpen={isImageModalOpen}
+        onClose={() => { setIsImageModalOpen(false); setImageColors([]); }}
+        title="Palette depuis une image"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-primary">
+            Couleurs extraites de l'image — cliquez pour (dé)sélectionner celles à ajouter.
+          </p>
+          <div className="grid grid-cols-4 gap-3">
+            {imageColors.map(({ hex, selected }) => (
+              <button
+                type="button"
+                key={hex}
+                onClick={() => toggleImageColor(hex)}
+                aria-pressed={selected}
+                className={`flex flex-col items-center gap-1 rounded-xl p-2 border transition-all ${selected ? 'border-pink ring-2 ring-pink/40' : 'border-blue/30 opacity-50 hover:opacity-100'}`}
+              >
+                <span className="w-full h-12 rounded-lg shadow-inner" style={{ backgroundColor: hex }}></span>
+                <span className="text-[10px] font-mono text-primary uppercase">{hex}</span>
+              </button>
+            ))}
+          </div>
+          {imageError && <p className="text-xs text-pink">{imageError}</p>}
+        </div>
+        <ModalActions
+          secondaryLabel="Annuler"
+          primaryLabel={`Ajouter (${imageColors.filter((c) => c.selected).length})`}
+          onSecondary={() => { setIsImageModalOpen(false); setImageColors([]); }}
+          onPrimary={confirmAddImageColors}
+          primaryDisabled={imageColors.filter((c) => c.selected).length === 0}
         />
       </FormModal>
 
