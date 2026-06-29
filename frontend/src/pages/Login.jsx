@@ -1,3 +1,10 @@
+/**
+ * Login page (route: /login).
+ *
+ * Collects email + password, delegates authentication to the auth context, and
+ * navigates to the dashboard on success. When the failure indicates an
+ * unverified email, it offers a shortcut to the verification page.
+ */
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +30,8 @@ export default function Login() {
     setField(e.target.name, e.target.value);
   };
 
+  // Validate locally, then authenticate; on success go to the dashboard,
+  // otherwise show the returned business-error message inline.
   const handleLogin = async () => {
     if (!formData.email || !formData.password) {
       setError('Veuillez remplir tous les champs.');
@@ -73,6 +82,7 @@ export default function Login() {
         </div>
         
         {error && <div className="mb-4 p-3 bg-pink text-primary text-xs rounded-lg text-center font-medium">{error}
+          {/* Offer a verification shortcut when login failed due to an unverified email */}
           {error.includes('vérifier votre email') && (
             <button
               onClick={() => navigate(`/verify?email=${encodeURIComponent(formData.email)}`)}

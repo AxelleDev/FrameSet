@@ -1,3 +1,11 @@
+/**
+ * Email verification page (route: /verify?email=...&type=...).
+ *
+ * Used for two flows, distinguished by the `type` query param:
+ *   - default ("signup"): confirm a new account's email, then go to /login.
+ *   - "pending-email": confirm a pending email change, then go to the profile.
+ * The user enters the emailed code and can also request a new code.
+ */
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +15,7 @@ export default function Verify() {
   const navigate = useNavigate();
   const location = useLocation();
   const { verifyEmail, resendVerificationCode, verifyPendingEmail, resendPendingEmailCode } = useAuth();
+  // Email and flow type are passed via query string from the originating page.
   const params = new URLSearchParams(location.search);
   const email = params.get('email');
   const type = params.get('type');
@@ -16,6 +25,7 @@ export default function Verify() {
   const [success, setSuccess] = useState(false);
   const [resendMsg, setResendMsg] = useState('');
 
+  // Submit the code through the matching flow, then redirect after a short delay.
   const handleVerify = async () => {
     setError('');
     const result = type === 'pending-email'
@@ -24,12 +34,14 @@ export default function Verify() {
 
     if (result.success) {
       setSuccess(true);
+      // Brief success message before redirecting to the relevant destination.
       setTimeout(() => navigate(type === 'pending-email' ? '/app/profile' : '/login'), 2000);
     } else {
       setError(result.message || 'Code incorrect');
     }
   };
 
+  // Request a fresh code via the matching flow.
   const handleResend = async () => {
     setResendMsg('');
     setError('');

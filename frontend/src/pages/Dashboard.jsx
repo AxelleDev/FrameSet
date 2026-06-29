@@ -1,3 +1,10 @@
+/**
+ * Dashboard page (route: /app/dashboard).
+ *
+ * The landing screen after login: shows a greeting, project/norm totals, and a
+ * grid of project cards. From here the user can create, rename, delete and open
+ * projects. Opening a project navigates into its norms section.
+ */
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectContext';
@@ -23,12 +30,15 @@ export default function Dashboard() {
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(null);
   const [editProjectError, setEditProjectError] = useState("");
 
+  // Clear any active project when landing on the dashboard (we are not in a project).
   useEffect(() => {
     setActiveProjectId(null);
   }, [setActiveProjectId]);
 
+  // Aggregate norm count across all projects for the summary stat.
   const totalNorms = projects.reduce((acc, p) => acc + p.normsCount, 0);
 
+  // Create a project from the modal, ignoring blank names, then reset the form.
   const handleCreateProject = async () => {
     if (newProjectName && newProjectName.trim().length > 0) {
       await addProject(newProjectName);
@@ -37,6 +47,7 @@ export default function Dashboard() {
     }
   };
 
+  // Open the rename modal; stopPropagation prevents the card's open-project click.
   const openEditProject = (e, project) => {
     e.stopPropagation();
     setEditProjectId(project.id);
@@ -60,10 +71,12 @@ export default function Dashboard() {
     }
   };
 
+  // Navigate into a project (defaults to its norms section).
   const openProject = (id) => {
     navigate(`/app/project/${id}/norms`);
   };
 
+  // Stage a project for deletion (confirmation handled by ConfirmDialog).
   const handleDeleteProject = (e, id) => {
     e.stopPropagation();
     const project = projects.find((p) => p.id === id);

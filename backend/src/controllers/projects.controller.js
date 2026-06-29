@@ -1,10 +1,31 @@
-﻿const db = require('../database');
+﻿/**
+ * Projects controller.
+ *
+ * CRUD for projects and their nested style references: color palettes, brush
+ * norms and typography norms. Every mutating handler first asserts that the
+ * authenticated user owns the target project (ensureProjectOwnership), and all
+ * user-supplied fields are validated/sanitized before reaching the database.
+ * The list endpoint deliberately batches child queries to avoid an N+1 pattern.
+ */
+
+const db = require('../database');
 const validator = require('validator');
 const { getAuthenticatedUserId, createControllerLogger } = require('../utils/auth.utils');
 const { logger } = require('../utils/logger');
 
 const logProjectsControllerError = createControllerLogger('projects');
 
+/**
+ * Authorization guard: confirms the authenticated user owns the given project.
+ * Centralizing this check prevents IDOR (insecure direct object reference) where
+ * one user could read or mutate another user's project by guessing its id.
+ * Writes the appropriate error response (401/403) and returns false when access
+ * should be denied; the caller must stop processing on a false result.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ * @param {number|string} projectId Target project id.
+ * @returns {Promise<boolean>} True if the user owns the project.
+ */
 const ensureProjectOwnership = async (req, res, projectId) => {
   const userId = getAuthenticatedUserId(req);
   if (!userId) {
@@ -25,8 +46,17 @@ const ensureProjectOwnership = async (req, res, projectId) => {
   return true;
 };
 
+// Upper bound on palette size to cap per-request work and storage.
 const MAX_PALETTE_SIZE = 50;
 
+/**
+ * Normalizes an optional text field: accepts null/undefined as "no value",
+ * coerces numbers/strings, trims, and enforces a maximum length. Returns either
+ * { value } or { error } so callers can branch without throwing.
+ * @param {*} value Raw input value.
+ * @param {{maxLength:number}} options
+ * @returns {{value: string|null}|{error: string}}
+ */
 const sanitizeOptionalTextField = (value, { maxLength }) => {
   if (value === undefined || value === null) {
     return { value: null };
@@ -48,6 +78,13 @@ const sanitizeOptionalTextField = (value, { maxLength }) => {
   return { value: trimmedValue };
 };
 
+/**
+ * Like sanitizeOptionalTextField but the field is mandatory: an empty result is
+ * treated as an error.
+ * @param {*} value Raw input value.
+ * @param {{maxLength:number}} options
+ * @returns {{value: string}|{error: string}}
+ */
 const sanitizeRequiredTextField = (value, { maxLength }) => {
   if (typeof value !== 'string' && typeof value !== 'number') {
     return { error: 'invalid_type' };
@@ -61,10 +98,17 @@ const sanitizeRequiredTextField = (value, { maxLength }) => {
   return { value: trimmedValue };
 };
 
+/** Builds the standard user-facing error message for an invalid hex color. */
 const buildInvalidHexColorError = (value) => (
   `Couleur invalide : la valeur hex "${value}" n'est pas un format valide (#RGB ou #RRGGBB).`
 );
 
+/**
+ * Validates a hex color string, requiring a leading '#' and a valid #RGB/#RRGGBB
+ * form. Returns the trimmed value or an error marker.
+ * @param {*} value Candidate color.
+ * @returns {{value:string}|{error:string}}
+ */
 const validateHexColorField = (value) => {
   if (typeof value !== 'string') {
     return { error: 'invalid_hex' };
@@ -78,6 +122,11 @@ const validateHexColorField = (value) => {
   return { value: trimmedValue };
 };
 
+/**
+ * Validates the payload for deleting a single palette color (its hex value).
+ * @param {{hex:*}} payload
+ * @returns {{value:{hex:string}}|{error:string}}
+ */
 const validateDeletePaletteColorPayload = ({ hex }) => {
   const normalizedHex = validateHexColorField(hex);
   if (normalizedHex.error) {
@@ -91,6 +140,12 @@ const validateDeletePaletteColorPayload = ({ hex }) => {
   };
 };
 
+/**
+ * Validates the payload for updating a palette color: the existing hex to
+ * locate, plus the new hex and name to apply.
+ * @param {{oldHex:*, newHex:*, newName:*}} payload
+ * @returns {{value:{oldHex:string,newHex:string,newName:string}}|{error:string}}
+ */
 const validateUpdatePaletteColorPayload = ({ oldHex, newHex, newName }) => {
   const normalizedOldHex = validateHexColorField(oldHex);
   if (normalizedOldHex.error) {
@@ -116,6 +171,14 @@ const validateUpdatePaletteColorPayload = ({ oldHex, newHex, newName }) => {
   };
 };
 
+/**
+ * Validates and normalizes a brush norm payload: required name, a positive
+ * numeric value (capped), a unit restricted to letters/percent, an optional
+ * brush name, and an optional opacity in the 0-1 range. Returns the normalized
+ * fields or the first error encountered.
+ * @param {{name:*, value:*, unit:*, brushName:*, opacity:*}} payload
+ * @returns {{value:Object}|{error:string}}
+ */
 const validateBrushNormPayload = ({ name, value, unit, brushName, opacity }) => {
   if (typeof name !== 'string') {
     return { error: 'Le nom de la norme de trait est invalide.' };
@@ -175,6 +238,12 @@ const validateBrushNormPayload = ({ name, value, unit, brushName, opacity }) => 
   };
 };
 
+/**
+ * Validates and normalizes a typography norm payload: required font family plus
+ * optional weight, usage and style fields (each length-bounded).
+ * @param {{fontFamily:*, fontWeight:*, fontUsage:*, fontStyle:*}} payload
+ * @returns {{value:Object}|{error:string}}
+ */
 const validateTypographyNormPayload = ({ fontFamily, fontWeight, fontUsage, fontStyle }) => {
   if (typeof fontFamily !== 'string') {
     return { error: 'La famille de police est invalide.' };
@@ -210,6 +279,13 @@ const validateTypographyNormPayload = ({ fontFamily, fontWeight, fontUsage, font
   };
 };
 
+/**
+ * Runs a SQL query while measuring its wall-clock duration, returning the rows
+ * alongside timing metadata. Used to instrument the list endpoint's queries for
+ * performance logging.
+ * @param {{label:string, sql:string, params:Array}} options
+ * @returns {Promise<{rows:Array, timing:{label:string, durationMs:number, rowCount:number}}>}
+ */
 const runTimedQuery = async ({ label, sql, params }) => {
   const startedAt = process.hrtime.bigint();
   const [rows] = await db.query(sql, params);
@@ -225,6 +301,14 @@ const runTimedQuery = async ({ label, sql, params }) => {
   };
 };
 
+/**
+ * Buckets child rows by their project_id, applying a mapper to each row. This
+ * lets the list endpoint fetch all children in one query and then assemble them
+ * per project in memory, avoiding a separate query per project (N+1).
+ * @param {Array} rows Child rows carrying a project_id.
+ * @param {(row:Object)=>Object} mapper Transforms a row into its output shape.
+ * @returns {Map<number, Object[]>}
+ */
 const groupRowsByProjectId = (rows, mapper) => {
   const groupedRows = new Map();
 
@@ -245,7 +329,15 @@ const groupRowsByProjectId = (rows, mapper) => {
   return groupedRows;
 };
 
+/**
+ * Emits a performance log for the list endpoint, contrasting the number of
+ * queries actually issued against the count a naive N+1 implementation would
+ * have used (1 projects query + 3 per project), to make the optimization's
+ * benefit observable in production metrics.
+ * @param {{req:Object, userId:number, projectCount:number, queryTimings:Array}} params
+ */
 const logListProjectsPerformance = ({ req, userId, projectCount, queryTimings }) => {
+  // Baseline query count a per-project (N+1) approach would have incurred.
   const legacyNPlusOneQueryCount = 1 + (projectCount * 3);
   const optimizedSqlQueries = queryTimings.length;
   const queryReduction = legacyNPlusOneQueryCount - optimizedSqlQueries;
@@ -269,6 +361,14 @@ const logListProjectsPerformance = ({ req, userId, projectCount, queryTimings })
   });
 };
 
+/**
+ * Lists all projects owned by the authenticated user, each enriched with its
+ * brush norms, typography norms and palette. Children are fetched with three
+ * batched IN-list queries (run in parallel) and grouped in memory, avoiding the
+ * N+1 query pattern that fetching children per project would cause.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const listProjects = async (req, res) => {
   const userId = getAuthenticatedUserId(req);
   if (!userId) {
@@ -298,8 +398,11 @@ const listProjects = async (req, res) => {
     }
 
     const projectIds = projectsData.map((project) => Number(project.id));
+    // Build parameterized placeholders for an IN (...) clause; values are bound
+    // as query parameters to keep the query injection-safe.
     const placeholders = projectIds.map(() => '?').join(', ');
 
+    // Fetch all children for all projects in three parallel batched queries.
     const [brushNormsQuery, typographyNormsQuery, paletteQuery] = await Promise.all([
       runTimedQuery({
         label: 'project_brush_norms',
@@ -386,6 +489,12 @@ const listProjects = async (req, res) => {
   }
 };
 
+/**
+ * Creates a new empty project for the authenticated user after validating the
+ * project name length.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const createProject = async (req, res) => {
   const userId = getAuthenticatedUserId(req);
   let { name } = req.body;
@@ -421,6 +530,12 @@ const createProject = async (req, res) => {
   }
 };
 
+/**
+ * Renames a project owned by the authenticated user and refreshes its
+ * last_edited timestamp.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const updateProjectName = async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
@@ -437,6 +552,12 @@ const updateProjectName = async (req, res) => {
   }
 };
 
+/**
+ * Deletes a project owned by the authenticated user (cascading to its child
+ * norms and palette via the schema's foreign keys).
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const deleteProject = async (req, res) => {
   const { id } = req.params;
   try {
@@ -449,6 +570,12 @@ const deleteProject = async (req, res) => {
   }
 };
 
+/**
+ * Adds a brush norm to a project after ownership and payload validation, then
+ * touches the project's last_edited timestamp.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const addBrushNorm = async (req, res) => {
   const { id } = req.params;
   const { name, value, unit, brushName, opacity } = req.body;
@@ -479,6 +606,12 @@ const addBrushNorm = async (req, res) => {
   }
 };
 
+/**
+ * Adds a typography norm to a project after ownership and payload validation,
+ * then touches the project's last_edited timestamp.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const addTypographyNorm = async (req, res) => {
   const { id } = req.params;
   const { fontFamily, fontWeight, fontUsage, fontStyle } = req.body;
@@ -508,6 +641,14 @@ const addTypographyNorm = async (req, res) => {
   }
 };
 
+/**
+ * Replaces a project's color palette with the provided array of colors. Each
+ * color is validated up front, then all rows are written inside a single
+ * transaction so the palette update is atomic (committed in full or rolled back
+ * on any error). REPLACE INTO upserts by the table's unique key.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const updatePalette = async (req, res) => {
   const { id } = req.params;
   const colors = req.body;
@@ -529,6 +670,7 @@ const updatePalette = async (req, res) => {
     }
   }
 
+  // Use a dedicated connection so the multi-row write runs in one transaction.
   const connection = await db.getConnection();
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
@@ -547,14 +689,23 @@ const updatePalette = async (req, res) => {
     await connection.commit();
     res.json({ success: true });
   } catch (error) {
+    // Roll back the whole palette change so it never persists partially.
     await connection.rollback();
     logProjectsControllerError(req, 'update_palette', error, { projectId: id });
     res.status(500).json({ error: 'Erreur base de données' });
   } finally {
+    // Always return the connection to the pool.
     connection.release();
   }
 };
 
+/**
+ * Deletes a brush norm from a project. The DELETE is scoped by both norm id and
+ * project id (in addition to the ownership check) so a norm can only be removed
+ * from a project the caller owns.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const deleteBrushNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   try {
@@ -573,6 +724,12 @@ const deleteBrushNorm = async (req, res) => {
   }
 };
 
+/**
+ * Deletes a typography norm from a project, scoped by norm id and project id in
+ * addition to the ownership check.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const deleteTypographyNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   try {
@@ -591,6 +748,12 @@ const deleteTypographyNorm = async (req, res) => {
   }
 };
 
+/**
+ * Removes a single color (identified by its hex) from a project's palette and
+ * refreshes last_edited.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const deletePaletteColor = async (req, res) => {
   const { id } = req.params;
   const { hex } = req.body;
@@ -622,6 +785,12 @@ const deletePaletteColor = async (req, res) => {
   }
 };
 
+/**
+ * Updates a single palette color: locates it by its old hex within the project
+ * and applies the new name and hex, then refreshes last_edited.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const updatePaletteColor = async (req, res) => {
   const { id } = req.params;
   const { oldHex, newName, newHex } = req.body;
@@ -658,6 +827,12 @@ const updatePaletteColor = async (req, res) => {
   }
 };
 
+/**
+ * Updates an existing brush norm after ownership and payload validation. The
+ * UPDATE is scoped by norm id and project id, and last_edited is refreshed.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const updateBrushNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   const { name, value, unit, brushName, opacity } = req.body;
@@ -695,6 +870,12 @@ const updateBrushNorm = async (req, res) => {
   }
 };
 
+/**
+ * Updates an existing typography norm after ownership and payload validation.
+ * The UPDATE is scoped by norm id and project id, and last_edited is refreshed.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const updateTypographyNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   const { fontFamily, fontWeight, fontUsage, fontStyle } = req.body;

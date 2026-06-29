@@ -1,3 +1,10 @@
+/**
+ * Project export page (route: /app/project/:id/export).
+ *
+ * Lets the user download the active project's style guide as a structured PDF
+ * (built with jsPDF) or as raw JSON, and shows a live preview of the JSON
+ * output. The PDF lists brush and typography norms followed by the color palette.
+ */
 import React, { useEffect, useMemo } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
@@ -10,14 +17,17 @@ export default function ProjectExport() {
   const { id } = useParams();
   const { setActiveProjectId, activeProject } = useProjects();
 
+  // Sync the active project with the route id.
   useEffect(() => {
     if (id) setActiveProjectId(id);
   }, [id, setActiveProjectId]);
 
+  // Pretty-printed JSON of the project, used for both the preview and download.
   const projectJson = useMemo(() => {
     return activeProject ? JSON.stringify(activeProject, null, 2) : '';
   }, [activeProject]);
 
+  // Trigger a JSON file download via a transient data-URI anchor.
   const downloadJson = () => {
     if (!activeProject) return;
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(projectJson);
@@ -29,12 +39,17 @@ export default function ProjectExport() {
     downloadAnchorNode.remove();
   };
 
+  // Build and download the style-guide PDF. The layout is drawn imperatively
+  // with jsPDF: `y` is the running vertical cursor (in mm), advanced after each
+  // line, and we add a new page whenever it approaches the page bottom.
   const downloadPdf = () => {
     if (!activeProject) return;
 
     const doc = new jsPDF();
     let y = 20;
 
+    // Normalize both norm types into a common { category, name, value, details }
+    // shape so they can be rendered with one loop below.
     const norms = [
       ...(activeProject.brushNorms || []).map(n => ({
         category: 'Trait',
@@ -56,6 +71,7 @@ export default function ProjectExport() {
       }))
     ];
 
+    // Document header: project name + generation date, then a divider rule.
     doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
     doc.text(activeProject.name, 20, y);
@@ -70,8 +86,9 @@ export default function ProjectExport() {
     doc.setDrawColor(200);
     doc.line(20, y - 10, 190, y - 10);
 
+    // Section: graphic norms (brush + typography).
     if (norms.length > 0) {
-      // Section title for Normes Graphiques
+      // Page-break guard before the section title.
       if (y > 250) { doc.addPage(); y = 20; }
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
@@ -83,10 +100,12 @@ export default function ProjectExport() {
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0);
       norms.forEach(norm => {
+        // Start a new page if the next line would overflow.
         if (y > 270) { doc.addPage(); y = 20; }
         let line = `• [${norm.category}] ${norm.name}: ${norm.value}`;
         doc.text(line, 25, y);
         y += 6;
+        // Optional secondary line (smaller, grey) for extra details.
         if (norm.details) {
           doc.setFontSize(9);
           doc.setTextColor(100);
@@ -100,6 +119,7 @@ export default function ProjectExport() {
       y += 10;
     }
 
+    // Section: color palette, each entry drawn as a swatch + name + hex.
     if (activeProject.palette.length > 0) {
       if (y > 250) { doc.addPage(); y = 20; }
 
@@ -115,6 +135,7 @@ export default function ProjectExport() {
 
       activeProject.palette.forEach(color => {
         if (y > 270) { doc.addPage(); y = 20; }
+        // Filled swatch with a light border, then the color name and hex.
         doc.setFillColor(color.hex);
         doc.rect(25, y - 4, 6, 6, 'F');
         doc.setDrawColor(200);
@@ -125,6 +146,7 @@ export default function ProjectExport() {
       y += 10;
     }
 
+    // Save with a filesystem-safe filename derived from the project name.
     doc.save(`${activeProject.name.replace(/\s+/g, '_')}_guide_de_style.pdf`);
   };
 

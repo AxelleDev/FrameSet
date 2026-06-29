@@ -1,7 +1,16 @@
 import { useState, useCallback } from 'react';
 
-// Petit hook réutilisable pour gérer l'état d'un formulaire.
-// Fournit `values`, `setValues`, `setField` (mise à jour d'un champ) et `reset`.
+/**
+ * Small reusable hook for managing controlled-form state.
+ *
+ * @param {object} [initial] Initial field values.
+ * @returns {{
+ *   values: object,                         // current field values
+ *   setValues: Function,                    // replace the whole values object
+ *   setField: (key: string, val: *) => void,// update a single field
+ *   reset: () => void                       // restore the initial values
+ * }}
+ */
 export const useFormState = (initial = {}) => {
   const [values, setValues] = useState(initial);
   const setField = useCallback((key, val) => setValues(v => ({ ...v, [key]: val })), []);

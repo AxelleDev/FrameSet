@@ -1,16 +1,30 @@
-// Bouton icone d'action reutilisable.
+// Reusable action icon button.
 import React from 'react';
 
+// Hover color mapping by semantic intent (e.g. edit vs delete).
 const INTENT_CLASSES = {
   edit: 'hover:bg-[var(--color-blue)]',
   delete: 'hover:bg-red-500'
 };
 
+// Base background mapping for use on dark or light surfaces.
 const VARIANT_CLASSES = {
   dark: 'bg-black/20',
   light: 'bg-white/20'
 };
 
+/**
+ * Small circular icon button used for row/card actions (edit, delete, ...).
+ * Stays hidden until the parent `group` is hovered.
+ *
+ * @param {object} props
+ * @param {Function} props.onClick - Click handler.
+ * @param {string} props.title - Accessible title/label (also used as aria-label).
+ * @param {React.ReactNode} props.children - Icon element to render.
+ * @param {'edit'|'delete'} [props.intent] - Semantic intent driving the hover color.
+ * @param {'dark'|'light'} [props.variant] - Surface variant driving the base background.
+ * @param {string} [props.className] - Extra classes appended to the button.
+ */
 export default function ActionIconButton({
   onClick,
   title,
@@ -21,6 +35,7 @@ export default function ActionIconButton({
 }) {
   const intentClass = INTENT_CLASSES[intent] || INTENT_CLASSES.edit;
   const variantClass = VARIANT_CLASSES[variant] || VARIANT_CLASSES.dark;
+  // If the child is a raw <svg>, mark it decorative so screen readers rely on the button's aria-label.
   let icon = children;
   if (React.isValidElement(children)) {
     try {
@@ -29,7 +44,7 @@ export default function ActionIconButton({
         icon = React.cloneElement(children, { 'aria-hidden': true, focusable: false });
       }
     } catch (e) {
-      // ignore
+      // ignore non-element children
     }
   }
 

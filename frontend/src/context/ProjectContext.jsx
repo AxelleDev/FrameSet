@@ -1,3 +1,21 @@
+/**
+ * Project data context provider.
+ *
+ * Holds the authenticated user's projects and the currently active project, and
+ * exposes CRUD actions for projects plus their palette colors, brush norms and
+ * typography norms. All mutations call the API and then optimistically update
+ * local state so the UI stays in sync without a refetch; failures are surfaced
+ * through the auth context's global error banner.
+ *
+ * Exposed via useProjects():
+ *   State:   projects, activeProjectId, activeProject, projectsLoading
+ *   Setters: setActiveProjectId
+ *   Actions: fetchProjects, addProject, deleteProject, updateProjectName,
+ *            updateProjectPalette, updateProjectPaletteColor,
+ *            deleteProjectPaletteColor, addBrushNorm, addTypographyNorm,
+ *            deleteBrushNorm, deleteTypographyNorm, updateBrushNorm,
+ *            updateTypographyNorm
+ */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 import { useAuth } from './AuthContext';
@@ -12,6 +30,11 @@ export const ProjectProvider = ({ children }) => {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [projectsLoading, setProjectsLoading] = useState(false);
 
+  /**
+   * Fetches the current user's projects into state.
+   * @param {{ silent?: boolean }} [opts] When silent, suppress the global error banner.
+   * @returns {Promise<Array>} The fetched projects (empty array if none/failed).
+   */
   const fetchProjects = useCallback(async ({ silent = false } = {}) => {
     if (!user?.id) {
       setProjects([]);
@@ -35,6 +58,7 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [user?.id, setGlobalError]);
 
+  // Load projects once auth has settled. Logging out (no user) clears state.
   useEffect(() => {
     if (authLoading) return;
 
@@ -48,10 +72,13 @@ export const ProjectProvider = ({ children }) => {
     fetchProjects({ silent: true });
   }, [authLoading, user?.id, fetchProjects]);
 
+  // Resolve the active project object from its id. String() compares because
+  // the route param is a string while project ids may be numbers.
   const activeProject = useMemo(() => (
     projects.find((project) => String(project.id) === String(activeProjectId)) || null
   ), [projects, activeProjectId]);
 
+  /** Creates a project and prepends it to the local list. */
   const addProject = useCallback(async (name) => {
     if (!user) return;
 
@@ -64,6 +91,7 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [user, setGlobalError]);
 
+  /** Deletes a project and removes it locally, clearing the active id if it matched. */
   const deleteProject = useCallback(async (id) => {
     try {
       await api.delete(`/projects/${id}`, null, { onGlobalError: setGlobalError });
@@ -77,6 +105,10 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [activeProjectId, setGlobalError]);
 
+  /**
+   * Replaces a project's entire palette (used for adds and reorders).
+   * @returns {Promise<boolean>} Whether the update succeeded.
+   */
   const updateProjectPalette = useCallback(async (projectId, palette) => {
     try {
       await api.post(`/projects/${projectId}/palette`, palette, { onGlobalError: setGlobalError });
@@ -93,6 +125,10 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
+  /**
+   * Updates a single palette color, matched by its current hex (`oldHex`).
+   * @returns {Promise<boolean>} Whether the update succeeded.
+   */
   const updateProjectPaletteColor = useCallback(async (projectId, { oldHex, newName, newHex }) => {
     try {
       await api.patch(
@@ -120,6 +156,7 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
+  /** Renames a project and locally marks it as just edited. */
   const updateProjectName = useCallback(async (projectId, { name }) => {
     try {
       await api.patch(`/projects/${projectId}`, { name }, { onGlobalError: setGlobalError });
@@ -136,6 +173,10 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
+  /**
+   * Deletes a palette color by hex.
+   * @returns {Promise<boolean>} Whether the deletion succeeded.
+   */
   const deleteProjectPaletteColor = useCallback(async (projectId, colorHex) => {
     try {
       await api.delete(`/projects/${projectId}/palette`, { hex: colorHex }, { onGlobalError: setGlobalError });
@@ -154,6 +195,10 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
+  /**
+   * Adds a brush norm. Uses the server-assigned id and keeps normsCount in sync.
+   * @returns {Promise<object|null>} The created norm (with id), or null on failure.
+   */
   const addBrushNorm = useCallback(async (projectId, norm) => {
     try {
       const data = await api.post(`/projects/${projectId}/brush-norms`, norm, { onGlobalError: setGlobalError });
@@ -177,6 +222,10 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
+  /**
+   * Adds a typography norm. Uses the server-assigned id and bumps normsCount.
+   * @returns {Promise<object|null>} The created norm (with id), or null on failure.
+   */
   const addTypographyNorm = useCallback(async (projectId, norm) => {
     try {
       const data = await api.post(`/projects/${projectId}/typography-norms`, norm, { onGlobalError: setGlobalError });
@@ -200,6 +249,7 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
+  /** Deletes a brush norm by id and decrements normsCount. */
   const deleteBrushNorm = useCallback(async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
@@ -221,6 +271,7 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
+  /** Deletes a typography norm by id and decrements normsCount. */
   const deleteTypographyNorm = useCallback(async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
@@ -242,6 +293,7 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
+  /** Updates fields of an existing brush norm, merging `updates` locally. */
   const updateBrushNorm = useCallback(async (projectId, normId, updates) => {
     try {
       await api.put(`/projects/${projectId}/brush-norms/${normId}`, updates, { onGlobalError: setGlobalError });
@@ -263,6 +315,7 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
+  /** Updates fields of an existing typography norm, merging `updates` locally. */
   const updateTypographyNorm = useCallback(async (projectId, normId, updates) => {
     try {
       await api.put(`/projects/${projectId}/typography-norms/${normId}`, updates, { onGlobalError: setGlobalError });
@@ -284,6 +337,7 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
+  // Memoized context value so consumers only re-render when state/actions change.
   const value = useMemo(() => ({
     projects,
     activeProjectId,
@@ -330,6 +384,10 @@ export const ProjectProvider = ({ children }) => {
   );
 };
 
+/**
+ * Accessor hook for the project context. Throws if used outside a ProjectProvider.
+ * @returns The project context value (state + actions).
+ */
 export const useProjects = () => {
   const context = useContext(ProjectContext);
   if (!context) {

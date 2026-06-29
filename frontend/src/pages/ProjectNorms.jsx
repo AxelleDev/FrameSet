@@ -1,3 +1,13 @@
+/**
+ * Project norms page (route: /app/project/:id/norms).
+ *
+ * Lets the user define the project's graphic norms in two categories:
+ *   - Brush norms (usage, brush name, size/unit, opacity).
+ *   - Typography norms (Google Font family, weight, usage, style).
+ * Norms can be added, edited, deleted and filtered by type. Typography norms
+ * are previewed in their actual font, which requires dynamically loading the
+ * Google Font (see the effect below).
+ */
 import React, { useState, useRef } from 'react';
 import CustomSelect from '../components/CustomSelect';
 import FontFaceObserver from 'fontfaceobserver';
@@ -34,50 +44,64 @@ export default function ProjectNorms() {
   const { values: brushForm, setValues: setBrushForm, setField: setBrushField, reset: resetBrushForm } = useFormState({ usage: '', name: '', value: '', unit: 'px', opacity: '' });
   const { values: typoForm, setValues: setTypoForm, setField: setTypoField, reset: resetTypoForm } = useFormState({ fontFamily: '', fontWeight: '', fontUsage: '', fontStyle: '' });
 
+  // loadedFonts: families whose web font has finished loading (drives the
+  // preview switch from "Chargement..." to the rendered AaBbCc sample).
+  // loadingFontsRef: families currently being loaded, kept in a ref so it does
+  // not retrigger this effect and to dedupe concurrent loads.
   const [loadedFonts, setLoadedFonts] = useState([]);
   const loadingFontsRef = useRef({});
 
+    // For each typography norm, dynamically load its Google Font so the preview
+    // can render in the real typeface, then mark it as loaded. Each family is
+    // loaded at most once.
     React.useEffect(() => {
       if (activeProject?.typographyNorms) {
         activeProject.typographyNorms.forEach(async norm => {
           if (norm.fontFamily && !loadedFonts.includes(norm.fontFamily) && !loadingFontsRef.current[norm.fontFamily]) {
             loadingFontsRef.current[norm.fontFamily] = true;
             try {
-              // Cherche la police dans la liste Google Fonts
+              // Look up the font's metadata in the Google Fonts catalog.
               const fontMeta = (googleFonts || []).find(f => f.family === norm.fontFamily);
               let fontWeight = norm.fontWeight || '400';
               let availableWeights = [];
               if (fontMeta && fontMeta.variants) {
-                // Extrait les poids numériques des variantes (ex: 'regular', '700italic', '400', ...)
+                // Extract the numeric weights from variant labels (e.g. 'regular',
+                // '700italic', '400'), deduplicated.
                 availableWeights = fontMeta.variants
                   .map(v => v.replace(/[^0-9]/g, '') || '400')
                   .filter((v, i, arr) => arr.indexOf(v) === i); // unique
               }
-              // Si le poids demandé n'est pas dispo, prend le premier dispo ou 400
+              // Fall back to an available weight (or 400) if the requested one is missing.
               if (availableWeights.length === 0) {
                 fontWeight = '400';
               } else if (!availableWeights.includes(fontWeight)) {
                 fontWeight = availableWeights[0] || '400';
               }
+              // Inject the stylesheet; loadGoogleFont may return a promise to await.
               const maybePromise = loadGoogleFont(norm.fontFamily, fontWeight);
               if (maybePromise && typeof maybePromise.then === 'function') {
                 await maybePromise;
               }
-              // Si aucun poids, n'ajoute pas l'option weight à FontFaceObserver
+              // Wait until the font is actually usable. Omit the weight option when
+              // no weights were resolved so FontFaceObserver does not over-constrain.
               const fontObserverOpts = availableWeights.length > 0 ? { weight: fontWeight } : {};
               const font = new FontFaceObserver(norm.fontFamily, fontObserverOpts);
-              await font.load(null, 5000); // timeout 5s
+              await font.load(null, 5000); // give up after 5s
               setLoadedFonts(prev => [...prev, norm.fontFamily]);
             } catch (e) {
+              // On timeout/failure still mark as loaded so the UI stops waiting
+              // (the preview falls back to the system font).
               setLoadedFonts(prev => [...prev, norm.fontFamily]);
             }
           }
         });
       }
     }, [activeProject?.typographyNorms, loadedFonts]);
+  // Google Fonts catalog used to populate the font picker and resolve weights.
   const GOOGLE_FONTS_API_KEY = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
   const { fonts: googleFonts, loading: loadingFonts, error: errorFonts } = useGoogleFonts(GOOGLE_FONTS_API_KEY);
 
+  // Open the edit modal pre-filled from the selected norm (per its type).
   const openEditNorm = (norm, type) => {
     setEditingNorm(norm);
     setEditingType(type);
@@ -88,6 +112,7 @@ export default function ProjectNorms() {
     }
   };
 
+  // Persist edits for the norm currently open in the edit modal.
   const handleEditNorm = async () => {
     if (!id || !editingNorm) return;
     if (editingType === 'brush') {
@@ -109,8 +134,10 @@ export default function ProjectNorms() {
     setEditingNorm(null);
   };
 
+  // loadingDelete holds the id of the norm whose deletion spinner is showing.
   const [loadingDelete, setLoadingDelete] = useState(null);
   const [confirmDeleteNorm, setConfirmDeleteNorm] = useState(null);
+  // Stage a norm for deletion (actual delete runs from the confirm dialog).
   const handleDeleteNorm = async (e, normId, type) => {
     e.preventDefault();
     if (!id || !normId) return;
@@ -122,11 +149,14 @@ export default function ProjectNorms() {
 
   useActiveProject(id);
 
+  // Reset both add/edit form states.
   const resetForm = () => {
     resetBrushForm();
     resetTypoForm();
   };
 
+  // Create a norm of the currently selected type from the add modal. For
+  // typography, eagerly load the chosen font so its preview appears immediately.
   const handleAddNorm = async () => {
     if (!id) return;
     if (addType === 'brush') {
@@ -140,6 +170,7 @@ export default function ProjectNorms() {
       });
     } else {
       if (!typoForm.fontFamily) return;
+      // Preload the font (prefer the 'regular'/400 variant, else the first one).
       const selectedFont = googleFonts.find(f => f.family === typoForm.fontFamily);
       if (selectedFont) {
         loadGoogleFont(selectedFont.family, selectedFont.variants?.includes('regular') ? '400' : selectedFont.variants?.[0] || '400');
@@ -155,7 +186,7 @@ export default function ProjectNorms() {
     resetForm();
   };
 
-  // Filtre d'affichage : all, brush, typography
+  // Display filter: 'all', 'brush', or 'typography'.
   const [filterType, setFilterType] = useState('all');
 
   return (
@@ -190,7 +221,7 @@ export default function ProjectNorms() {
               onClick={() => { resetForm(); setAddType('brush'); setIsAddingNorm(true); }}
               className="min-h-[260px]"
             />
-            {/* Normes de trait */}
+            {/* Brush norm cards (hidden when filtering to typography only) */}
             {filterType !== 'typography' && activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
               <Card key={norm.id} clickable className="p-6 relative group flex flex-col justify-between h-full">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
@@ -246,7 +277,7 @@ export default function ProjectNorms() {
                 </div>
               </Card>
             ))}
-            {/* Normes typographiques */}
+            {/* Typography norm cards (hidden when filtering to brush only) */}
             {filterType !== 'brush' && activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
               <Card key={norm.id} clickable className="p-6 relative group flex flex-col justify-between h-full">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
@@ -290,6 +321,7 @@ export default function ProjectNorms() {
                 </div>
                 <div className="flex-1 flex flex-col justify-end">
                   <div className="h-16 bg-white rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
+                    {/* Show the live font sample only once the font has loaded */}
                     {loadedFonts.includes(norm.fontFamily) ? (
                       <span
                         className="text-primary text-xl font-medium tracking-tight"
@@ -458,6 +490,7 @@ export default function ProjectNorms() {
         onCancel={() => setConfirmDeleteNorm(null)}
         onConfirm={async () => {
           if (!confirmDeleteNorm) return;
+          // Show the spinner on the targeted card, delete by type, then clear state.
           setLoadingDelete(confirmDeleteNorm.id);
           if (confirmDeleteNorm.type === 'brush') {
             await deleteBrushNorm(id, confirmDeleteNorm.id);

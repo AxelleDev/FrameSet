@@ -1,7 +1,22 @@
-// Modale de formulaire avec decoration et titre.
+// Form modal with a decorative accent and title.
 import React from 'react';
 import AppModal from './AppModal';
 
+/**
+ * AppModal variant tailored for forms: adds a decorative corner blob, an
+ * optional title and a content area kept above the decoration via z-index.
+ *
+ * @param {object} props
+ * @param {boolean} props.isOpen - Whether the modal is shown.
+ * @param {Function} props.onClose - Close handler.
+ * @param {string} [props.title] - Optional heading text.
+ * @param {React.ReactNode} props.children - Form content.
+ * @param {string} [props.panelClassName] - Extra panel classes (sizing).
+ * @param {boolean} [props.showClose] - Whether to render the built-in close button.
+ * @param {string} [props.bodyClassName] - Extra classes for the content wrapper.
+ * @param {string} [props.decorationClassName] - Classes for the decorative blob.
+ * @param {string} [props.titleClassName] - Classes for the title heading.
+ */
 export default function FormModal({
   isOpen,
   onClose,

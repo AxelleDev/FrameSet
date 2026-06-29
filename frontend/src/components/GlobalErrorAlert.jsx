@@ -1,5 +1,6 @@
 import React from 'react';
 
+// Map raw/technical error messages to friendly, user-facing French text.
 function getFriendlyMessage(message) {
   if (!message) return null;
   if (typeof message === 'string') {
@@ -24,7 +25,7 @@ function getFriendlyMessage(message) {
     if (message.trim() === 'Not Found') {
       return "Le service demandé est indisponible ou n'existe pas. Veuillez vérifier l'URL ou réessayer plus tard.";
     }
-    // Ajout d'un fallback pour les messages techniques trop courts
+    // Fallback for technical messages that are too short to be meaningful.
     if (message.trim().length < 5) {
       return "Une erreur est survenue. Merci de réessayer.";
     }
@@ -33,8 +34,18 @@ function getFriendlyMessage(message) {
   return 'Une erreur est survenue.';
 }
 
+/**
+ * Fixed top-of-screen alert banner for global/application-level errors.
+ * Normalizes the raw message into a friendly string and renders nothing when
+ * there is no message to show.
+ *
+ * @param {object} props
+ * @param {string} props.message - Raw error message to display (translated to a friendly variant).
+ * @param {Function} [props.onClose] - Optional handler; when provided a dismiss button is shown.
+ */
 export default function GlobalErrorAlert({ message, onClose }) {
   const friendly = getFriendlyMessage(message);
+  // Render nothing when there is no message to surface.
   if (!friendly) return null;
   return (
     <div role="alert" style={{

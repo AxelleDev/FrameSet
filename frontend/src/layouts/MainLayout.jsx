@@ -1,12 +1,18 @@
-// Mise en page principale de l'application.
+// Main application layout.
 import React, { useState } from 'react';
 import { Outlet, NavLink, Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectContext';
 
+/**
+ * Authenticated application shell: collapsible sidebar navigation, top header
+ * with breadcrumb/title, and the routed page content via <Outlet />. Waits for
+ * auth/projects to load and redirects unauthenticated users to /login.
+ */
 export default function MainLayout() {
   const { user, authLoading } = useAuth();
   const { activeProject, projectsLoading } = useProjects();
+  // Combined loading flag while either auth or projects are still resolving.
   const loading = authLoading || projectsLoading;
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -15,20 +21,24 @@ export default function MainLayout() {
     setIsMobileMenuOpen(false);
   };
 
+  // Compute NavLink classes based on the active route state.
   const navLinkClass = ({ isActive }) =>
     `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
       isActive ? 'bg-white/80 text-blue shadow-sm' : 'text-primary hover:text-pink hover:bg-white/50'
     }`;
 
+  // Derive the header title from the active project or the current route.
   const getPageTitle = () => {
     if (activeProject) return activeProject.name;
     if (location.pathname.includes('profile')) return 'Mon Profil';
     return 'Tableau de bord';
   };
 
+  // Show a loading state until auth/projects resolve.
   if (loading) {
     return <div className="flex items-center justify-center h-screen text-lg text-slate-500">Chargement...</div>;
   }
+  // Redirect unauthenticated users to the login page.
   if (!user) {
     return <Navigate to="/login" replace />;
   }

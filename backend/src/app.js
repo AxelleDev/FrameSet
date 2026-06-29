@@ -1,3 +1,15 @@
+/**
+ * Express application setup.
+ *
+ * Wires together the global middleware stack and mounts the API routers. The
+ * ordering is security-significant: Helmet (incl. a strict Content-Security
+ * Policy) and CORS run first, the JSON body is size-limited to blunt payload
+ * abuse, every request is assigned a correlation id and access-logged, and the
+ * CSRF cookie/verification middleware guards all /api routes before the feature
+ * routers. A 404 handler and a centralized error handler terminate the chain.
+ * Exports the configured app (the HTTP server is started in server.js).
+ */
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -14,6 +26,9 @@ const app = express();
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
+// Helmet sets hardening response headers. The CSP locks content to same-origin
+// by default, forbids plugins/object embedding and framing (clickjacking), and
+// only upgrades to HTTPS outside development.
 app.use(helmet({
 	contentSecurityPolicy: {
 		useDefaults: true,
@@ -32,12 +47,18 @@ app.use(helmet({
 		}
 	}
 }));
+// Restrict cross-origin requests to the known frontend origin and allow
+// credentials so the browser sends/stores the httpOnly auth cookies.
 app.use(cors({
 	origin: FRONTEND_ORIGIN,
   credentials: true
 }));
+// Cap JSON body size to limit the impact of oversized/malicious payloads.
 app.use(express.json({ limit: '10kb' }));
 
+// Request correlation + access logging. Assigns (or honors) an x-request-id,
+// echoes it back on the response, and logs each completed request with timing
+// at a severity derived from the status (error >= 500, warn >= 400, else info).
 app.use((req, res, next) => {
 	const requestStartedAt = process.hrtime.bigint();
 	const incomingRequestId = req.headers['x-request-id'];
@@ -79,6 +100,8 @@ app.use((req, res, next) => {
 	next();
 });
 
+// Liveness/readiness probe: reports process uptime and verifies DB reachability,
+// returning 503 when the database cannot be pinged.
 app.get('/health', async (req, res) => {
 	const uptime = Number(process.uptime().toFixed(2));
 
@@ -103,6 +126,8 @@ app.get('/health', async (req, res) => {
 	}
 });
 
+// CSRF guard for the whole API: first guarantee the CSRF cookie exists, then
+// enforce the double-submit check on state-changing requests before any router.
 app.use('/api', ensureCsrfCookie);
 app.use('/api', csrfProtection);
 
@@ -110,7 +135,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectsRoutes);
 
-app.use((req, res, next) => {
+// 404 handler: reached when no route matched.
+app.use((req, res, _next) => {
 	logger.warn('http.route.not_found', {
 		requestId: req.id,
 		method: req.method,
@@ -123,7 +149,10 @@ app.use((req, res, next) => {
 	});
 });
 
-app.use((err, req, res, next) => {
+// Centralized error handler. Client errors (4xx) are logged at warn level and
+// their message is surfaced; everything else is treated as a 5xx and returns a
+// generic message so internal error details are never leaked to the client.
+app.use((err, req, res, _next) => {
 	const status = err.status || err.statusCode;
 
 	if (status && status >= 400 && status < 500) {

@@ -1,6 +1,15 @@
-// Tuile d'ajout pour creer un element.
+// "Add" tile used to create a new item.
 import React from 'react';
 
+/**
+ * Dashed placeholder tile that triggers creation of a new item when clicked.
+ *
+ * @param {object} props
+ * @param {Function} props.onClick - Click handler invoked to start creation.
+ * @param {string} [props.label] - Visible label (defaults to "Ajouter").
+ * @param {string} [props.className] - Extra classes for the outer button (sizing, layout).
+ * @param {string} [props.labelClassName] - Classes applied to the label text.
+ */
 export default function AddTile({
   onClick,
   label = 'Ajouter',

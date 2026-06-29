@@ -1,12 +1,25 @@
 import React from 'react';
 import Select from 'react-select';
 
+/**
+ * Themed wrapper around react-select. Accepts either plain string options or
+ * `{ value, label }` objects, and exposes a controlled string `value`/`onChange`
+ * API (the selected option is derived internally and onChange emits the value).
+ *
+ * @param {object} props
+ * @param {Array<string|{value:string,label:string}>} props.options - Available options.
+ * @param {string} props.value - Currently selected value (controlled).
+ * @param {Function} props.onChange - Called with the selected value (or '' when cleared).
+ * @param {string} [props.placeholder] - Placeholder text.
+ */
 export default function CustomSelect({ options, value, onChange, placeholder, ...props }) {
+  // Normalize string options into the { value, label } shape react-select expects.
   const selectOptions = options.map(opt =>
     typeof opt === 'string'
       ? { value: opt, label: opt }
       : opt
   );
+  // Derive the selected option object from the controlled string value.
   const selected = selectOptions.find(opt => opt.value === value) || null;
 
   return (

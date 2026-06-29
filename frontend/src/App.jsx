@@ -1,3 +1,25 @@
+/**
+ * Root application component and route configuration.
+ *
+ * Wires up the global provider stack (AuthProvider then ProjectProvider so
+ * project data can depend on the authenticated user) and declares every client
+ * route via a HashRouter. HashRouter is used so the app works on static hosting
+ * without server-side rewrite rules.
+ *
+ * Route map:
+ *   /              -> redirects to /login
+ *   /login         -> Login page
+ *   /register      -> Register page
+ *   /verify        -> email verification (signup or pending email change)
+ *   /app           -> authenticated shell (MainLayout)
+ *     dashboard    -> project list
+ *     profile      -> user profile
+ *     project/:id  -> per-project section, wrapped in an ErrorBoundary
+ *       norms      -> graphic norms (brush + typography)
+ *       palette    -> color palette
+ *       export     -> PDF / JSON export
+ *   *              -> NotFound (404)
+ */
 import React from 'react';
 import GlobalErrorAlert from './components/GlobalErrorAlert';
 import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
@@ -15,10 +37,15 @@ import Profile from './pages/Profile';
 import Verify from './pages/Verify';
 import NotFound from './pages/NotFound';
 
+/**
+ * Renders the global error banner and the full route tree. Kept separate from
+ * <App /> so it can consume the auth context (it must live inside AuthProvider).
+ */
 function AppRoutes() {
   const { globalError, setGlobalError } = useAuth();
   return (
     <>
+      {/* App-wide error alert fed by the auth context's globalError state */}
       <GlobalErrorAlert
         message={globalError}
         onClose={() => setGlobalError && setGlobalError(null)}
@@ -53,6 +80,10 @@ function AppRoutes() {
   );
 }
 
+/**
+ * Top-level component. Establishes the provider hierarchy that the rest of the
+ * app depends on (auth first, then projects).
+ */
 export default function App() {
   return (
     <AuthProvider>

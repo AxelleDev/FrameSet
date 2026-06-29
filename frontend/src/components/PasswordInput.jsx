@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 
+// Decorative icon: password currently visible.
 function EyeIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -9,6 +10,7 @@ function EyeIcon() {
   );
 }
 
+// Decorative icon: password currently hidden.
 function EyeOffIcon() {
   return (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -19,6 +21,17 @@ function EyeOffIcon() {
   );
 }
 
+/**
+ * Password text input with a toggle button to reveal/hide the value. All
+ * unrecognized props are forwarded to the underlying input (value, onChange,
+ * name, placeholder, ...).
+ *
+ * @param {object} props
+ * @param {string} [props.className] - Classes for the relative wrapper.
+ * @param {string} [props.inputClassName] - Classes for the input element.
+ * @param {string} [props.buttonClassName] - Classes for the toggle button.
+ * @param {boolean} [props.disabled] - Disables both the input and the toggle.
+ */
 export default function PasswordInput({
   className = '',
   inputClassName = '',
@@ -26,6 +39,7 @@ export default function PasswordInput({
   disabled = false,
   ...inputProps
 }) {
+  // Tracks whether the password is shown in plain text.
   const [isVisible, setIsVisible] = useState(false);
 
   return (

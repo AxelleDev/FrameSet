@@ -1,26 +1,65 @@
-// Service centralise pour les appels reseau vers l'API backend.
-// Fournit des fonctions utilitaires pour les methodes HTTP et gere la session via cookies HttpOnly.
+/**
+ * Centralized network layer for talking to the backend API.
+ *
+ * Exposes thin per-verb helpers (get/post/put/patch/delete) built on a single
+ * `request` function. The session is carried by HttpOnly cookies
+ * (credentials: 'include'), so this module never stores the access token; it
+ * only manages the CSRF token and transparently handles three concerns:
+ *   1. CSRF protection for mutating requests (with token caching + retry).
+ *   2. Silent access-token refresh on 403, then a single replay of the request.
+ *   3. Retrying transient failures (network errors, 5xx, timeouts) within a
+ *      bounded time window.
+ */
 const API_URL = import.meta.env.VITE_API_URL || '/api';
-const RETRY_WINDOW_MS = 5000;
-const RETRY_INTERVAL_MS = 500;
+const RETRY_WINDOW_MS = 5000;      // total budget for retrying a single request
+const RETRY_INTERVAL_MS = 500;     // delay between transient-failure retries
 const CSRF_HEADER_NAME = 'x-csrf-token';
 const METHODS_REQUIRING_CSRF = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+// Module-level CSRF token cache shared across all requests.
+// csrfTokenCache holds the last known good token; csrfTokenPromise de-dupes
+// concurrent fetches so simultaneous mutations only trigger one token request.
 let csrfTokenCache = null;
 let csrfTokenPromise = null;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Whether a request needs a CSRF token: only mutating methods, and never the
+ * CSRF token endpoint itself (which would otherwise create a chicken-and-egg).
+ * @param {string} method HTTP method.
+ * @param {string} path Request path (relative to API_URL).
+ * @returns {boolean}
+ */
 const isCsrfProtectedRequest = (method, path) => (
   METHODS_REQUIRING_CSRF.has(String(method || '').toUpperCase())
   && path !== '/auth/csrf-token'
 );
 
+/**
+ * Detects a 403 that was specifically caused by an invalid/expired CSRF token
+ * (as opposed to an expired access token), so we can refresh the CSRF token
+ * and replay rather than attempting a full auth refresh.
+ * @param {object} error Enriched error thrown by `request`.
+ * @returns {boolean}
+ */
 const isInvalidCsrfError = (error) => (
   error?.status === 403
   && String(error?.data?.error || '').toLowerCase().includes('csrf')
 );
 
+/**
+ * Returns a valid CSRF token, fetching it from the backend if needed.
+ *
+ * Caching matters: the token is reused across requests so we do not hit the
+ * CSRF endpoint before every mutation. An in-flight promise is shared so
+ * concurrent callers wait on a single request instead of racing. Pass
+ * `forceRefresh` to bypass both the cache and any in-flight promise (used after
+ * the server rejects the cached token as invalid).
+ *
+ * @param {{ forceRefresh?: boolean }} [opts]
+ * @returns {Promise<string>} The CSRF token.
+ */
 const fetchCsrfToken = async ({ forceRefresh = false } = {}) => {
   if (!forceRefresh && csrfTokenCache) {
     return csrfTokenCache;
@@ -52,18 +91,32 @@ const fetchCsrfToken = async ({ forceRefresh = false } = {}) => {
   try {
     return await csrfTokenPromise;
   } finally {
+    // Always clear the in-flight promise so the next call can refetch if needed.
     csrfTokenPromise = null;
   }
 };
 
-// Construit les headers pour la requête (JSON + Authorization si présent)
+/**
+ * Builds the request headers, adding the JSON content-type when a body is sent.
+ * @param {boolean} [isJson] Whether the request carries a JSON body.
+ * @param {object} [extra] Additional headers (e.g. the CSRF token).
+ * @returns {object} The merged headers object.
+ */
 const buildHeaders = (isJson = true, extra = {}) => {
   const headers = { ...extra };
   if (isJson) headers['Content-Type'] = 'application/json';
   return headers;
 };
 
-// Tente de rafraîchir le token et retourner true si succès
+/**
+ * Attempts to refresh the access token via the refresh-token cookie.
+ *
+ * The refresh endpoint is itself CSRF-protected, so we obtain a CSRF token
+ * first; if the server rejects it with 403 we force-refresh the CSRF token once
+ * and retry the refresh.
+ *
+ * @returns {Promise<boolean>} True if a new access token was issued.
+ */
 const attemptTokenRefresh = async () => {
   let csrfToken;
 
@@ -85,6 +138,7 @@ const attemptTokenRefresh = async () => {
   try {
     let res = await sendRefreshRequest(csrfToken);
 
+    // A 403 here likely means the cached CSRF token is stale; refresh and retry once.
     if (res.status === 403) {
       const refreshedCsrfToken = await fetchCsrfToken({ forceRefresh: true });
       res = await sendRefreshRequest(refreshedCsrfToken);
@@ -105,8 +159,32 @@ const attemptTokenRefresh = async () => {
   }
 };
 
-// Requete generique utilisee par les fonctions utilitaires ci-dessous.
-// Lance une erreur enrichie si le status HTTP n'est pas ok.
+/**
+ * Generic request driver used by the exported per-verb helpers.
+ *
+ * Responsibilities, in order:
+ *  - Attach a CSRF token to mutating requests.
+ *  - Enforce a total RETRY_WINDOW_MS budget across all attempts; each attempt
+ *    is aborted when the remaining budget elapses (acts as a timeout).
+ *  - On an invalid-CSRF 403: force-refresh the token and replay once.
+ *  - On a generic 403 (expired access token): try a silent token refresh and,
+ *    if it succeeds, replay once.
+ *  - Retry transient failures (network errors, 5xx, timeout aborts) until the
+ *    budget runs out; surface a user-facing message via `onGlobalError`.
+ *
+ * Throws an enriched Error (with `.status` and `.data`) when the HTTP status is
+ * not ok, or a REQUEST_RETRY_TIMEOUT error when the budget is exhausted.
+ *
+ * @param {string} path API path relative to API_URL.
+ * @param {object} [options]
+ * @param {string} [options.method] HTTP method (default GET).
+ * @param {*} [options.body] Request body; serialized to JSON unless a string.
+ * @param {object} [options.headers] Extra headers.
+ * @param {AbortSignal} [options.signal] Caller abort signal (e.g. component unmount).
+ * @param {(msg: string) => void} [options.onGlobalError] Callback for surfacing errors globally.
+ * @param {boolean} [options.skipTokenRefresh] Skip the 403 access-token refresh (used during session hydration).
+ * @returns {Promise<*>} Parsed JSON response body, or null when not JSON.
+ */
 const request = async (path, {
   method = 'GET',
   body,
@@ -141,10 +219,13 @@ const request = async (path, {
   const requestStartedAt = Date.now();
 
   let opts = await buildRequestOptions();
+  // Each recovery path (token refresh / CSRF refresh) is attempted at most once
+  // per request to avoid infinite replay loops.
   let hasAttemptedTokenRefresh = false;
   let hasAttemptedCsrfRefresh = false;
-  
+
   while (true) {
+    // Compute the time left in the retry budget before starting this attempt.
     const elapsedBeforeAttempt = Date.now() - requestStartedAt;
     const remainingBeforeAttempt = RETRY_WINDOW_MS - elapsedBeforeAttempt;
 
@@ -157,6 +238,8 @@ const request = async (path, {
       throw timeoutErr;
     }
 
+    // Per-attempt abort controller: fires when the remaining budget elapses
+    // (timeout) and is also chained to the caller's signal so unmounts cancel it.
     const attemptController = new AbortController();
     const timeoutId = setTimeout(() => {
       attemptController.abort();
@@ -185,6 +268,8 @@ const request = async (path, {
         data = null;
       }
       if (!res.ok) {
+        // Enrich the error with status/data so callers and the recovery logic
+        // below can branch on them (CSRF vs auth vs server errors).
         const errorMsg = data?.error || res.statusText || 'Erreur inconnue';
         const err = new Error(errorMsg);
         err.status = res.status;
@@ -193,11 +278,13 @@ const request = async (path, {
       }
       return data;
     } catch (e) {
+      // Caller-initiated abort: propagate without retrying.
       const parentAborted = signal?.aborted;
       if (e?.name === 'AbortError' && parentAborted) {
         throw e;
       }
 
+      // Stale CSRF token: refresh it once and replay the same request.
       if (isInvalidCsrfError(e) && requiresCsrf && !hasAttemptedCsrfRefresh) {
         hasAttemptedCsrfRefresh = true;
 
@@ -210,19 +297,22 @@ const request = async (path, {
         }
       }
 
-      // Gestion spéciale des tokens expirés (403)
+      // Expired access token (generic 403): attempt a silent refresh, then
+      // replay once. Skipped for the refresh endpoint itself to avoid recursion.
       if (e?.status === 403 && !skipTokenRefresh && !hasAttemptedTokenRefresh && path !== '/auth/refresh') {
         hasAttemptedTokenRefresh = true;
         const refreshSuccess = await attemptTokenRefresh();
         if (refreshSuccess) {
           opts = await buildRequestOptions();
-          await sleep(100);
+          await sleep(100); // brief pause so the new auth cookie is applied
           continue;
         }
       }
 
+      // Classify the failure to decide whether a retry is worthwhile.
       const isNetworkError = e instanceof TypeError || e.message === 'Failed to fetch';
       const isServerError = typeof e?.status === 'number' && e.status >= 500;
+      // Abort that was NOT caused by the caller means our own timeout fired.
       const isTimeoutAbort = e?.name === 'AbortError' && !parentAborted;
       const shouldRetry = isNetworkError || isServerError || isTimeoutAbort;
 
@@ -233,6 +323,7 @@ const request = async (path, {
       const elapsed = Date.now() - requestStartedAt;
       const remaining = RETRY_WINDOW_MS - elapsed;
 
+      // Budget exhausted: surface a friendly message globally and rethrow.
       if (remaining <= 0) {
         if (typeof onGlobalError === 'function') {
           if (isNetworkError || isTimeoutAbort) {
@@ -244,8 +335,10 @@ const request = async (path, {
         throw e;
       }
 
+      // Wait before the next attempt, but never longer than the budget left.
       await sleep(Math.min(RETRY_INTERVAL_MS, remaining));
     } finally {
+      // Tear down this attempt's timeout and signal listener before looping.
       clearTimeout(timeoutId);
       if (signal) {
         signal.removeEventListener('abort', onAbort);
@@ -254,6 +347,7 @@ const request = async (path, {
   }
 };
 
+// Public API: thin convenience wrappers around `request`, one per HTTP verb.
 export default {
   get: (p, opts) => request(p, { method: 'GET', ...opts }),
   post: (p, b, opts) => request(p, { method: 'POST', body: b, ...opts }),

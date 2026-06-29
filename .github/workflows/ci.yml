@@ -32,11 +32,14 @@ jobs:
       - name: Install backend dependencies
         run: npm ci
 
+      - name: Lint backend
+        run: npm run lint
+
       - name: Run backend tests
         run: npm test
 
   frontend:
-    name: Frontend Tests and Build
+    name: Frontend Lint, Tests and Build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -54,6 +57,9 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm ci
+
+      - name: Lint frontend
+        run: npm run lint
 
       - name: Run frontend tests
         run: npm test

@@ -6,7 +6,11 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "migrate": "node src/migrate.js",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -21,8 +25,13 @@
     "validator": "^13.15.26"
   },
   "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.14.0",
     "jest": "^30.2.0",
     "nodemon": "^3.0.1",
+    "prettier": "^3.4.2",
     "supertest": "^7.2.2"
   }
 }

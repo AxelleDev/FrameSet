@@ -1,5 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+/**
+ * Themed button with optional async loading state. If `onClick` returns a
+ * promise, the button shows a spinner and disables itself until it settles
+ * (respecting an optional minimum display time).
+ *
+ * @param {object} props
+ * @param {React.ReactNode} props.children - Button label/content.
+ * @param {Function} [props.onClick] - Click handler; may return a promise to drive the loading state.
+ * @param {string} [props.type] - Native button type (defaults to "button").
+ * @param {'primary'|'secondary'|'ghost'} [props.variant] - Visual variant.
+ * @param {boolean} [props.fullWidth] - Stretch to full width with larger padding.
+ * @param {string} [props.className] - Extra classes.
+ * @param {boolean} [props.disabled] - Disable the button.
+ * @param {boolean} [props.loading] - Externally controlled loading state.
+ * @param {number} [props.minLoadingMs] - Minimum spinner display time in ms for async clicks.
+ */
 export default function Button({
   children,
   onClick,
@@ -13,6 +29,7 @@ export default function Button({
   ...rest
 }) {
   const [internalLoading, setInternalLoading] = useState(false);
+  // Guards against state updates after unmount when an async onClick resolves late.
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -22,6 +39,7 @@ export default function Button({
     };
   }, []);
 
+  // Loading is driven either externally (prop) or internally (async onClick).
   const isLoading = loading || internalLoading;
 
   const base = 'font-medium rounded-xl transition-all inline-flex items-center justify-center gap-2';
@@ -42,6 +60,7 @@ export default function Button({
     if (!onClick || disabled || isLoading) return;
 
     const result = onClick(e);
+    // Only manage a loading state when the handler is asynchronous.
     const isPromise = result && typeof result.then === 'function';
     if (!isPromise) return;
 
@@ -50,6 +69,7 @@ export default function Button({
     try {
       await result;
     } finally {
+      // Keep the spinner visible for at least minLoadingMs to avoid flicker.
       const remaining = Math.max(0, Number(minLoadingMs || 0) - (Date.now() - startedAt));
       if (remaining > 0) {
         await new Promise((resolve) => setTimeout(resolve, remaining));

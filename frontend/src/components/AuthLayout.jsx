@@ -1,7 +1,18 @@
-// Mise en page pour les pages d'authentification.
+// Layout for authentication pages (login / register).
 import React from 'react';
 
+/**
+ * Two-column layout for auth screens: a hero/marketing column and a form column,
+ * over an animated decorative background.
+ *
+ * @param {object} props
+ * @param {React.ReactNode} props.hero - Content for the hero/marketing column.
+ * @param {React.ReactNode} props.children - The form (rendered in the second column).
+ * @param {'login'|'register'} [props.variant] - Selects the decorative blob arrangement.
+ * @param {boolean} [props.swapOnMobile] - When true, shows the form above the hero on mobile.
+ */
 export default function AuthLayout({ hero, children, variant = 'login', swapOnMobile = false }) {
+  // Reorder hero/form columns so the form can appear first on small screens.
   const heroOrderClass = swapOnMobile ? 'order-2 md:order-1' : 'order-1';
   const formOrderClass = swapOnMobile ? 'order-1 md:order-2' : 'order-2';
 

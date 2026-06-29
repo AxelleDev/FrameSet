@@ -1,6 +1,22 @@
-// Modale generique reutilisable.
+// Generic reusable modal.
 import React, { useRef, useEffect } from 'react';
 
+/**
+ * Low-level modal primitive: renders an overlay + focusable panel, supports
+ * backdrop-click close, an optional header (title/subtitle/close button) and a
+ * focus trap that keeps Tab navigation within the panel.
+ *
+ * @param {object} props
+ * @param {boolean} props.isOpen - Whether the modal is rendered (returns null when false).
+ * @param {Function} props.onClose - Close handler invoked by backdrop click and close button.
+ * @param {string} [props.title] - Optional header title (also wires aria-labelledby).
+ * @param {string} [props.subtitle] - Optional header subtitle.
+ * @param {React.ReactNode} props.children - Modal body content.
+ * @param {string} [props.overlayClassName] - Overlay styling classes.
+ * @param {string} [props.panelClassName] - Panel styling classes.
+ * @param {boolean} [props.showClose] - Whether to render the header close button.
+ * @param {boolean} [props.closeOnBackdrop] - Whether clicking the backdrop closes the modal.
+ */
 export default function Modal({
   isOpen,
   onClose,
@@ -13,13 +29,14 @@ export default function Modal({
   closeOnBackdrop = true
 }) {
   const panelRef = useRef(null);
-  // Focus trap : focus le panel à l'ouverture et empêche Tab de sortir
+  // Focus trap: focus the panel on open and prevent Tab from escaping it.
   useEffect(() => {
     if (isOpen && panelRef.current) {
       panelRef.current.focus();
     }
   }, [isOpen]);
 
+  // Cycle focus within the panel: wrap from last to first (and vice-versa with Shift).
   const handleKeyDown = (e) => {
     if (e.key !== 'Tab') return;
     const focusableEls = panelRef.current.querySelectorAll(
@@ -42,8 +59,10 @@ export default function Modal({
     }
   };
 
+  // Do not render anything while closed.
   if (!isOpen) return null;
 
+  // Close only when the click originated on the overlay itself, not its children.
   const handleBackdropClick = (e) => {
     if (!closeOnBackdrop) return;
     if (e.target === e.currentTarget) onClose?.();

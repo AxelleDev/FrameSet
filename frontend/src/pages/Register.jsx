@@ -1,3 +1,9 @@
+/**
+ * Registration page (route: /register).
+ *
+ * Collects name + email + password, creates the account via the auth context,
+ * and on success redirects to the verification page with the email prefilled.
+ */
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -33,6 +39,7 @@ export default function Register() {
     const result = await register(formData);
     if (result.success) {
       setError('');
+      // Prefer the server-confirmed email; fall back to what the user typed.
       const verificationEmail = result.data?.email || formData.email;
       navigate(`/verify?email=${encodeURIComponent(verificationEmail)}`);
     } else if (result.message) {

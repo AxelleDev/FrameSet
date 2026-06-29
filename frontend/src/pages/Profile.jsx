@@ -1,3 +1,10 @@
+/**
+ * Profile page (route: /app/profile).
+ *
+ * Lets the user view and edit their personal info (name/email), change their
+ * password, log out, and delete their account. Editing the email triggers a
+ * pending-email verification flow surfaced via a link to the verify page.
+ */
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
@@ -28,9 +35,10 @@ export default function Profile() {
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
-  // Ajout pour la modale de confirmation de déconnexion
+  // Controls the logout confirmation dialog.
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
+  // Keep the edit form fields in sync with the current user.
   useEffect(() => {
     if (user) {
       setEditForm({
@@ -40,6 +48,8 @@ export default function Profile() {
     }
   }, [user]);
 
+  // Single button toggles between view and edit: when leaving edit mode it
+  // persists the form; when entering it, it seeds the form from the user.
   const toggleEdit = () => {
     if (isEditing) {
       return updateUserProfile(editForm).finally(() => {
@@ -76,10 +86,13 @@ export default function Profile() {
   };
 
   const closePasswordModal = () => {
+    // Block closing while a save is in flight.
     if (isPasswordSaving) return;
     setIsPasswordModalOpen(false);
   };
 
+  // Validate the password form locally (all fields + matching confirmation),
+  // then submit; success/error feedback is shown inside the modal.
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     setPasswordError('');
@@ -115,6 +128,13 @@ export default function Profile() {
 
   if (!user) return null;
 
+  /**
+   * Formats a date into a French relative-time string (e.g. "il y a 3 jours").
+   * Returns "Jamais modifié" for missing/invalid dates. Used for the password's
+   * last-changed label.
+   * @param {string|number|Date} dateValue
+   * @returns {string}
+   */
   const formatRelativeTime = (dateValue) => {
     if (!dateValue) return 'Jamais modifié';
     const date = new Date(dateValue);

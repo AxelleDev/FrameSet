@@ -1,6 +1,14 @@
-// Badge d'etat pour la copie.
+// Status badge for copy-to-clipboard actions.
 import React from 'react';
 
+/**
+ * Small pill that reflects clipboard copy state, swapping its label once copied.
+ *
+ * @param {object} props
+ * @param {boolean} props.isCopied - Whether the value was just copied.
+ * @param {string} [props.copiedLabel] - Label shown after copying.
+ * @param {string} [props.defaultLabel] - Default label before copying.
+ */
 export default function CopyBadge({
   isCopied,
   copiedLabel = 'Copié !',

@@ -1,3 +1,12 @@
+/**
+ * Mail (SMTP) configuration module.
+ *
+ * Reads and validates the SMTP transport settings used to send verification
+ * and confirmation emails. Every value is validated at import time so the
+ * process fails fast on boot if any mail credential is missing or malformed,
+ * rather than failing later when an email needs to be sent.
+ */
+
 const MAIL_HOST = process.env.MAIL_HOST;
 if (!MAIL_HOST) {
   throw new Error('MAIL_HOST doit etre defini dans les variables d\'environnement');

@@ -1,3 +1,11 @@
+/**
+ * Mail service.
+ *
+ * Wraps a single nodemailer SMTP transport and provides a reusable branded HTML
+ * template. Used to deliver email verification and confirmation codes during
+ * registration, email-change and code-resend flows.
+ */
+
 const nodemailer = require('nodemailer');
 const {
   MAIL_HOST,
@@ -17,6 +25,16 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+/**
+ * Builds the branded HTML body for a transactional email. The code block is
+ * rendered only when a code is supplied.
+ * @param {Object} params
+ * @param {string} params.title Heading shown in the email header.
+ * @param {string} params.message Body message.
+ * @param {string} [params.code] Optional verification code to highlight.
+ * @param {string} [params.footer] Optional footer note (defaults to expiry text).
+ * @returns {string} HTML markup.
+ */
 const buildTemplate = ({ title, message, code, footer }) => {
   return `
   <div style="font-family: 'Segoe UI', Arial, sans-serif; background:#f6f7fb; padding:24px;">
@@ -41,6 +59,15 @@ const buildTemplate = ({ title, message, code, footer }) => {
   `;
 };
 
+/**
+ * Sends an email through the configured SMTP transport.
+ * @param {Object} params
+ * @param {string} params.to Recipient address.
+ * @param {string} params.subject Subject line.
+ * @param {string} params.text Plain-text fallback body.
+ * @param {string} params.html HTML body.
+ * @returns {Promise<void>}
+ */
 const sendMail = async ({ to, subject, text, html }) => {
   await transporter.sendMail({
     from: MAIL_USER,

@@ -1,3 +1,13 @@
+/**
+ * Authentication controller.
+ *
+ * Implements the auth lifecycle: registration with email verification, login,
+ * access/refresh token issuance via httpOnly cookies, refresh-token rotation
+ * with revocation, email verification and code resend, CSRF token issuance, and
+ * logout (which revokes the presented tokens). Failures are logged with
+ * privacy-preserving email fingerprints rather than raw addresses.
+ */
+
 const bcrypt = require('bcryptjs');
 const { randomBytes } = require('crypto');
 const validator = require('validator');
@@ -20,19 +30,33 @@ const {
 } = require('../utils/cookies.utils');
 const { logger } = require('../utils/logger');
 
+/** Coerces a value to a trimmed string, treating null/undefined as empty. */
 const normalizeInput = (value) => validator.trim(String(value ?? ''));
 
+/**
+ * Sets the access and refresh tokens as httpOnly cookies on the response so the
+ * browser stores credentials inaccessible to JavaScript (XSS mitigation).
+ * @param {Object} res Express response.
+ * @param {string} accessToken Signed access JWT.
+ * @param {string} refreshToken Signed refresh JWT.
+ */
 const setAuthCookies = (res, accessToken, refreshToken) => {
   res.cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, getAccessTokenCookieOptions());
   res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, getRefreshTokenCookieOptions());
 };
 
+/**
+ * Clears the auth cookies, using the same base options they were set with so
+ * the browser reliably removes them (path/flags must match).
+ * @param {Object} res Express response.
+ */
 const clearAuthCookies = (res) => {
   const cookieOptions = getCookieBaseOptions();
   res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, cookieOptions);
   res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
 };
 
+/** Extracts a Bearer token from the Authorization header, or null. */
 const getBearerToken = (req) => {
   const authHeader = req?.headers?.authorization;
   return authHeader && authHeader.startsWith('Bearer ')
@@ -40,8 +64,17 @@ const getBearerToken = (req) => {
     : null;
 };
 
+/** Resolves the access token from the Authorization header or the cookie. */
 const getAccessTokenFromRequest = (req) => getBearerToken(req) || getCookieValue(req, ACCESS_TOKEN_COOKIE_NAME);
 
+/**
+ * Verifies an access token, returning the decoded payload or null on failure.
+ * ignoreExpiration is used during logout so an expired-but-valid token can
+ * still be identified and revoked.
+ * @param {string} token Raw access JWT.
+ * @param {{ignoreExpiration?: boolean}} [options]
+ * @returns {Object|null}
+ */
 const verifyAccessToken = (token, { ignoreExpiration = false } = {}) => {
   if (!token) {
     return null;
@@ -54,14 +87,28 @@ const verifyAccessToken = (token, { ignoreExpiration = false } = {}) => {
   }
 };
 
+/**
+ * Signs a short-lived access token carrying the minimal identity claims.
+ * @param {{id:number, email:string}} user
+ * @returns {string} Signed access JWT.
+ */
 const createAccessToken = (user) => jwt.sign(
   { id: user.id, email: user.email },
   JWT_SECRET,
   { expiresIn: JWT_EXPIRES }
 );
 
+/** Generates a 256-bit random CSRF token. */
 const createCsrfToken = () => randomBytes(32).toString('hex');
 
+/**
+ * Issues (or reuses) the CSRF token used by the double-submit cookie pattern.
+ * Reuses the existing cookie token when present so the cookie and the returned
+ * value stay in sync; otherwise mints and sets a new one. The token is returned
+ * in the body so the SPA can attach it to the x-csrf-token header.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const getCsrfToken = (req, res) => {
   const existingCsrfToken = getCookieValue(req, CSRF_TOKEN_COOKIE_NAME);
   const csrfToken = existingCsrfToken || createCsrfToken();
@@ -70,6 +117,14 @@ const getCsrfToken = (req, res) => {
   return res.json({ csrfToken });
 };
 
+/**
+ * Registers a new user. Validates input, enforces the password policy, hashes
+ * the password with bcrypt, stores the account as unverified with a one-time
+ * verification code, and emails that code. A duplicate-email DB error is logged
+ * but surfaced with a generic message to avoid leaking which emails exist.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const register = async (req, res) => {
   const { name: rawName, email: rawEmail, password: rawPassword } = req.body || {};
 
@@ -95,6 +150,7 @@ const register = async (req, res) => {
   const { code: verificationCode, expires } = generateVerificationCode();
 
   try {
+    // Hash with the configured bcrypt cost factor; never store plaintext.
     const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
     const now = new Date();
 
@@ -142,6 +198,14 @@ const register = async (req, res) => {
   }
 };
 
+/**
+ * Authenticates a user with email and password. Rejects unverified accounts,
+ * compares the password against the bcrypt hash, and on success issues access
+ * and refresh tokens as httpOnly cookies. Identical generic error messages are
+ * returned for unknown email vs. wrong password to avoid user enumeration.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const login = async (req, res) => {
   let { email, password } = req.body;
   const emailFingerprint = getIdentifierFingerprint(email);
@@ -239,6 +303,15 @@ const login = async (req, res) => {
   }
 };
 
+/**
+ * Rotates the refresh token. Verifies the presented refresh token, ensures it
+ * has not been revoked, then issues a fresh access/refresh pair and revokes the
+ * old refresh token. Rotation limits replay: a stolen refresh token is useful
+ * only until its next use, after which it is revoked. If revocation of the old
+ * token fails the operation aborts to avoid leaving two valid tokens.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const refresh = async (req, res) => {
   const refreshToken = req.body?.refreshToken || getCookieValue(req, REFRESH_TOKEN_COOKIE_NAME);
 
@@ -295,6 +368,13 @@ const refresh = async (req, res) => {
   res.json({ success: true });
 };
 
+/**
+ * Confirms a newly registered email using the one-time verification code.
+ * Validates the code and its expiry, then marks the account verified and clears
+ * the code so it cannot be reused.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const verify = async (req, res) => {
   const { email, code } = req.body;
   if (!email || !code) {
@@ -331,6 +411,12 @@ const verify = async (req, res) => {
   }
 };
 
+/**
+ * Regenerates and re-sends the email verification code for an unverified
+ * account, replacing any previous code and its expiry.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const resendCode = async (req, res) => {
   const { email } = req.body;
   if (!email) {
@@ -374,6 +460,15 @@ const resendCode = async (req, res) => {
   }
 };
 
+/**
+ * Logs the user out. Identifies the user from the refresh and/or access token
+ * (accepting an expired access token via ignoreExpiration), revokes whichever
+ * tokens belong to that user so they cannot be reused, and clears the auth
+ * cookies. Always clears cookies and responds success even on partial failure,
+ * so the client ends up logged out.
+ * @param {Object} req Express request.
+ * @param {Object} res Express response.
+ */
 const logout = async (req, res) => {
   const token = req.token || getAccessTokenFromRequest(req);
   const refreshToken = req.body?.refreshToken || getCookieValue(req, REFRESH_TOKEN_COOKIE_NAME);

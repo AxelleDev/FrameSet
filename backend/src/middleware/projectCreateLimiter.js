@@ -1,3 +1,11 @@
+/**
+ * Rate limiter for project and norm creation endpoints.
+ *
+ * Caps how many projects/norms a single user (or anonymous IP) can create per
+ * hour. This curbs abuse and accidental loops that would otherwise flood the
+ * database with writes, while leaving normal usage unaffected.
+ */
+
 const rateLimit = require('express-rate-limit');
 const { ipKeyGenerator } = rateLimit;
 const { getAuthenticatedUserId } = require('../utils/auth.utils');
@@ -11,6 +19,8 @@ const projectCreateLimiter = rateLimit({
   max: PROJECT_CREATE_LIMIT,
   standardHeaders: true,
   legacyHeaders: false,
+  // Key the limit per authenticated user when possible so the quota follows the
+  // account; fall back to the client IP for unauthenticated callers.
   keyGenerator: (req) => {
     const userId = getAuthenticatedUserId(req);
     return userId ? `project-create:${userId}` : `project-create:anonymous:${ipKeyGenerator(req.ip)}`;

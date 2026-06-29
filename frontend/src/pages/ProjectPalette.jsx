@@ -1,3 +1,11 @@
+/**
+ * Project palette page (route: /app/project/:id/palette).
+ *
+ * Displays the project's color swatches and lets the user add, edit, delete,
+ * copy (hex to clipboard) and reorder colors via drag-and-drop. Reordering uses
+ * a FLIP animation so the non-dragged swatches smoothly slide into their new
+ * positions (see the drag handlers and the useLayoutEffect below).
+ */
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
@@ -26,11 +34,22 @@ export default function ProjectPalette() {
   const [editColorName, setEditColorName] = useState('');
   const [editColorHex, setEditColorHex] = useState('');
 
+  // Drag-and-drop state:
+  //   draggedIndex/draggedHex: the swatch being dragged (by index and hex).
+  //   dragOverIndex: the slot the dragged swatch would land in.
+  //   palette: the committed order; previewPalette: the live reordered order
+  //     shown during a drag (committed to `palette` only on drop).
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [draggedHex, setDraggedHex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [palette, setPalette] = useState([]);
   const [previewPalette, setPreviewPalette] = useState([]);
+  // Refs used by the FLIP animation:
+  //   itemRefs: hex -> DOM node, to measure positions.
+  //   prevPositions: hex -> bounding rect captured *before* a reorder (First).
+  //   skipFlip: suppress the animation for the next layout pass (e.g. on cancel).
+  //   didDrop: distinguishes a real drop from a cancelled drag in onDragEnd.
+  //   flipPending: marks that a reorder happened and the FLIP should run next.
   const itemRefs = useRef({});
   const prevPositions = useRef({});
   const skipFlip = useRef(false);
@@ -40,12 +59,14 @@ export default function ProjectPalette() {
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null);
   const { copy, copiedValue } = useClipboard({ timeout: 1200 });
 
+  // Copy a swatch's hex to the clipboard (stop the click from starting a drag).
   const handleCopyHex = async (e, hex) => {
     e.preventDefault();
     e.stopPropagation();
     await copy(hex);
   };
 
+  // Mirror the project's palette into local state whenever it loads/changes.
   useEffect(() => {
     if (activeProject && Array.isArray(activeProject.palette)) {
       setPalette(activeProject.palette);
@@ -53,7 +74,14 @@ export default function ProjectPalette() {
     }
   }, [activeProject]);
   
+    // FLIP animation (First-Last-Invert-Play). After the previewPalette reorder
+    // re-renders the swatches into their new ("Last") positions, this runs
+    // synchronously before paint to: measure each node's current position,
+    // compute the delta from its pre-reorder ("First") position captured in
+    // prevPositions, instantly translate it back to where it was (Invert), then
+    // clear the transform with a transition so it animates to its new spot (Play).
     useLayoutEffect(() => {
+      // Cancelled drag: clear any inline styles and skip animating this pass.
       if (skipFlip.current) {
         skipFlip.current = false;
         Object.values(itemRefs.current).forEach(el => {
@@ -61,10 +89,12 @@ export default function ProjectPalette() {
         });
         return;
       }
+      // Only animate while dragging and only when a reorder just occurred.
       if (draggedHex === null) return;
       if (!flipPending.current) return;
       flipPending.current = false;
       previewPalette.forEach(color => {
+        // The dragged swatch is shown semi-transparent and is not FLIP-animated.
         if (color.hex === draggedHex) return;
         const el = itemRefs.current[color.hex];
         const prev = prevPositions.current[color.hex];
@@ -73,9 +103,12 @@ export default function ProjectPalette() {
         const dx = Math.round(prev.left - curr.left);
         const dy = Math.round(prev.top - curr.top);
         if (dx !== 0 || dy !== 0) {
+          // Invert: jump back to the old position with no transition.
           el.style.transition = 'none';
           el.style.transform = `translate(${dx}px, ${dy}px)`;
+          // Force a reflow so the inverted transform is applied before we animate.
           el.getBoundingClientRect();
+          // Play: transition the transform away, sliding into the new position.
           el.style.transition = 'transform 280ms cubic-bezier(0.2, 0, 0, 1)';
           el.style.transform = '';
         }
@@ -86,6 +119,12 @@ export default function ProjectPalette() {
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('');
 
+  /**
+   * Normalizes a hex color input: always keeps a leading '#', strips any
+   * non-hex characters, and uppercases. Used to keep hex fields well-formed.
+   * @param {string} val Raw input value.
+   * @returns {string} Normalized hex string (e.g. "#FF00AA").
+   */
   const normalizeHexInput = (val) => {
     if (val == null) return '#';
     let v = String(val).trim();
@@ -102,6 +141,7 @@ export default function ProjectPalette() {
     setNewColorHex(normalizeHexInput(e.target.value));
   };
 
+  // Prevent deleting the mandatory leading '#' via Backspace/Delete.
   const handleHexKeyDown = (e) => {
     const el = e.target;
     const selStart = el.selectionStart || 0;
@@ -111,6 +151,8 @@ export default function ProjectPalette() {
     }
   };
 
+  // Normalize pasted content before it lands in the field.
+  // Returns a paste handler bound to the given state setter.
   const handleHexPaste = (setter) => (e) => {
     e.preventDefault();
     const paste = (e.clipboardData || window.clipboardData).getData('text') || '';
@@ -130,6 +172,7 @@ export default function ProjectPalette() {
     return null;
   };
 
+  // Open the edit modal pre-filled from the color at the given index.
   const openEditModal = (idx) => {
     setEditIdx(idx);
     setEditColorName(palette[idx]?.name || '');
@@ -137,6 +180,7 @@ export default function ProjectPalette() {
     setEditStatus(null);
   };
 
+  // Whether the edit field holds a valid 3- or 6-digit hex (drives the swatch preview).
   const isValidEditHex = () => {
     const hex = editColorHex.trim();
     return /^#([0-9A-F]{3}){1,2}$/i.test(hex.startsWith('#') ? hex : '#' + hex);
@@ -148,11 +192,13 @@ export default function ProjectPalette() {
     setIsAddingColor(true);
   };
 
+  // Same validation as isValidEditHex, for the add-color field.
   const isValidHex = () => {
     const hex = newColorHex.trim();
     return /^#([0-9A-F]{3}){1,2}$/i.test(hex.startsWith('#') ? hex : '#' + hex);
   };
 
+  // Persist a color edit, then mirror it into local palette state and show status.
   const confirmEditColor = async () => {
     if (editIdx === null || !editColorName || !editColorHex) return;
     const currentColor = palette[editIdx];
@@ -184,6 +230,7 @@ export default function ProjectPalette() {
     }
   };
 
+  // Append a new color (persisting the whole palette) and sync local state.
   const confirmAddColor = async () => {
     if (!id || !newColorName || !newColorHex) return;
     const normalizedName = newColorName.trim();
@@ -202,6 +249,8 @@ export default function ProjectPalette() {
     }
   };
 
+  // Stage a color for deletion. stopImmediatePropagation also prevents sibling
+  // handlers (copy/drag) on the same swatch from firing.
   const handleDeleteColor = (e, colorHex) => {
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
@@ -222,6 +271,8 @@ export default function ProjectPalette() {
             className="aspect-[4/5]"
            />
 
+          {/* Render the live (preview) order; each node is registered in itemRefs
+              for FLIP measurement, and the dragged swatch is dimmed. */}
           {previewPalette.map((color, idx) => (
             <div
               key={color.hex}
@@ -229,6 +280,7 @@ export default function ProjectPalette() {
               className={`group relative flex flex-col aspect-[4/5] ${color.hex === draggedHex ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
               draggable
               onDragStart={e => {
+                // Begin a drag: reset FLIP bookkeeping and record the source swatch.
                 didDrop.current = false;
                 flipPending.current = false;
                 prevPositions.current = {};
@@ -239,6 +291,9 @@ export default function ProjectPalette() {
               }}
               onDragOver={e => {
                 e.preventDefault();
+                // When hovering a new target slot, snapshot current positions
+                // (the FLIP "First") and compute the previewed reorder so the
+                // layout effect can animate the displaced swatches.
                 if (draggedHex !== null && color.hex !== draggedHex) {
                   if (idx === dragOverIndex) return;
                   const snapshots = {};
@@ -257,6 +312,9 @@ export default function ProjectPalette() {
               }}
               onDrop={e => {
                 e.preventDefault();
+                // Commit the reorder: mark didDrop so onDragEnd does not revert,
+                // update the committed palette, and persist after a short delay
+                // so the drop animation can settle first.
                 didDrop.current = true;
                 flipPending.current = false;
                 if (draggedHex !== null && draggedIndex !== dragOverIndex) {
@@ -273,6 +331,7 @@ export default function ProjectPalette() {
                 setDragOverIndex(null);
               }}
               onDragEnd={() => {
+                // Fires after every drag. If a drop already committed, just reset.
                 if (didDrop.current) {
                   didDrop.current = false;
                   flipPending.current = false;
@@ -281,6 +340,8 @@ export default function ProjectPalette() {
                   setDragOverIndex(null);
                   return;
                 }
+                // Otherwise the drag was cancelled (dropped outside): revert the
+                // preview to the committed order and skip the FLIP animation.
                 skipFlip.current = true;
                 flipPending.current = false;
                 setDraggedIndex(null);
@@ -411,6 +472,7 @@ export default function ProjectPalette() {
         onCancel={() => setConfirmDeleteColor(null)}
         onConfirm={async () => {
           if (confirmDeleteColor) {
+            // Delete on the server, then remove from both committed and preview state.
             const deleted = await deleteProjectPaletteColor(id, confirmDeleteColor);
             if (deleted) {
               setPalette((prevPalette) => prevPalette.filter((color) => color.hex !== confirmDeleteColor));
