@@ -13,6 +13,7 @@ const db = require('../database');
 const mailService = require('../services/mail.service');
 const { getAuthenticatedUserId, generateVerificationCode, createControllerLogger } = require('../utils/auth.utils');
 const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
+const { issueAuthCookies } = require('../utils/session.utils');
 
 const logUserControllerError = createControllerLogger('users');
 
@@ -262,6 +263,9 @@ const changePassword = async (req, res) => {
     }
     const hashedPassword = await bcrypt.hash(trimmedNewPassword, BCRYPT_SALT_ROUNDS);
     await db.query('UPDATE users SET password = ?, password_updated_at = NOW() WHERE id = ?', [hashedPassword, authenticatedUserId]);
+    // Re-issue a fresh token pair so the current session keeps working, while
+    // every other session (tokens issued before this change) is invalidated.
+    issueAuthCookies(res, { id: authenticatedUserId, email: req.user?.email });
     res.json({ success: true, passwordUpdatedAt: new Date() });
   } catch (error) {
     logUserControllerError(req, 'change_password', error);

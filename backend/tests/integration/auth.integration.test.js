@@ -107,6 +107,12 @@ jest.mock('../../src/database', () => {
       return [found ? [{ id: found.id }] : []];
     }
 
+    if (normalizedSql === 'SELECT password_updated_at FROM users WHERE id = ? LIMIT 1') {
+      const [id] = params;
+      const user = users.find((item) => item.id === id);
+      return [user ? [{ password_updated_at: user.password_updated_at }] : []];
+    }
+
     throw new Error(`Unhandled SQL in auth integration test: ${normalizedSql}`);
   });
 

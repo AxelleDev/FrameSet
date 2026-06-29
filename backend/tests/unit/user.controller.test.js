@@ -3,6 +3,8 @@ process.env.MAIL_PORT = process.env.MAIL_PORT || '465';
 process.env.MAIL_SECURE = process.env.MAIL_SECURE || 'true';
 process.env.MAIL_USER = process.env.MAIL_USER || 'mail@test.local';
 process.env.MAIL_PASS = process.env.MAIL_PASS || 'test_mail_password';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret';
+process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_jwt_refresh_secret';
 
 const userController = require('../../src/controllers/user.controller');
 const db = require('../../src/database');
@@ -98,8 +100,8 @@ describe('contrôleur utilisateur', () => {
       require('bcryptjs').compare = jest.fn().mockResolvedValue(true);
       require('bcryptjs').hash = jest.fn().mockResolvedValue('newHashed');
       db.query.mockResolvedValueOnce();
-      const req = { user: { id: 1 }, body: { id: 999, currentPassword: 'old', newPassword: 'NewPass123' } };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      const req = { user: { id: 1, email: 'axelle@example.com' }, body: { id: 999, currentPassword: 'old', newPassword: 'NewPass123' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
       await userController.changePassword(req, res);
       expect(db.query).toHaveBeenCalledWith('SELECT password FROM users WHERE id = ?', [1]);
       expect(res.json).toHaveBeenCalledWith({ success: true, passwordUpdatedAt: expect.any(Date) });

@@ -15,7 +15,7 @@ const db = require('../database');
 const mailService = require('../services/mail.service');
 const jwt = require('jsonwebtoken');
 const { generateVerificationCode, getIdentifierFingerprint, getInitials } = require('../utils/auth.utils');
-const { generateRefreshToken, verifyRefreshToken, revokeToken, isTokenRevoked } = require('../services/token.service');
+const { generateRefreshToken, verifyRefreshToken, revokeToken, isTokenRevoked, isTokenStaleByPasswordChange } = require('../services/token.service');
 const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
 const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
 const {
@@ -340,6 +340,24 @@ const refresh = async (req, res) => {
       requestId: req.id,
       userId: user.id,
       reason: 'revoked_refresh_token'
+    });
+
+    return res.status(403).json({ error: 'Refresh token invalide ou expiré' });
+  }
+
+  // Reject refresh tokens issued before the last password change/reset, so a
+  // password change cannot be "refreshed" back into a valid session.
+  let refreshTokenStale;
+  try {
+    refreshTokenStale = await isTokenStaleByPasswordChange(user.id, user.iat);
+  } catch (error) {
+    return res.status(503).json({ error: 'Service temporairement indisponible' });
+  }
+  if (refreshTokenStale) {
+    logger.warn('auth.refresh.failed', {
+      requestId: req.id,
+      userId: user.id,
+      reason: 'password_changed'
     });
 
     return res.status(403).json({ error: 'Refresh token invalide ou expiré' });

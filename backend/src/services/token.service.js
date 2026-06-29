@@ -112,6 +112,49 @@ async function isTokenRevoked(userId, token) {
 }
 
 /**
+ * Whether a token was issued before the user's password was last changed, so
+ * that every session minted before a password change/reset is invalidated
+ * (the token's `iat` predates `users.password_updated_at`). A 5-second leeway
+ * absorbs clock skew between the app and the database so a freshly re-issued
+ * token is never wrongly rejected. A missing user is treated as invalidated.
+ * @param {number} userId Owner of the token.
+ * @param {number} tokenIatSeconds The token's `iat` claim (seconds since epoch).
+ * @returns {Promise<boolean>} True if the token is stale and must be rejected.
+ * @throws {Error} CREDENTIALS_CHECK_FAILED when the lookup query fails.
+ */
+async function isTokenStaleByPasswordChange(userId, tokenIatSeconds) {
+  if (userId === null || userId === undefined) {
+    return true;
+  }
+  // No issue time -> cannot prove the token post-dates a password change.
+  if (!tokenIatSeconds) {
+    return false;
+  }
+
+  try {
+    const [rows] = await db.query(
+      'SELECT password_updated_at FROM users WHERE id = ? LIMIT 1',
+      [userId]
+    );
+    if (rows.length === 0) {
+      return true;
+    }
+
+    const changedAt = rows[0].password_updated_at;
+    if (!changedAt) {
+      return false;
+    }
+
+    const changedAtSeconds = Math.floor(new Date(changedAt).getTime() / 1000);
+    return changedAtSeconds > tokenIatSeconds + 5;
+  } catch (error) {
+    const credentialsCheckError = new Error('CREDENTIALS_CHECK_FAILED');
+    credentialsCheckError.cause = error;
+    throw credentialsCheckError;
+  }
+}
+
+/**
  * Purges revocation records older than the retention window. Once a token's JWT
  * has expired it can no longer be used, so its revocation entry is no longer
  * needed; pruning keeps the table bounded. Invoked periodically by the server's
@@ -135,5 +178,6 @@ module.exports = {
   verifyRefreshToken,
   revokeToken,
   isTokenRevoked,
+  isTokenStaleByPasswordChange,
   cleanupExpiredRevokedTokens
 };

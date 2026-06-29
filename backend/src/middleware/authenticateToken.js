@@ -9,7 +9,7 @@
 
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../config/jwt.config');
-const { isTokenRevoked } = require('../services/token.service');
+const { isTokenRevoked, isTokenStaleByPasswordChange } = require('../services/token.service');
 const { ACCESS_TOKEN_COOKIE_NAME, getCookieValue } = require('../utils/cookies.utils');
 
 /**
@@ -49,6 +49,13 @@ async function authenticateToken(req, res, next) {
     // Reject tokens that have been explicitly revoked (logout / rotation).
     const revoked = await isTokenRevoked(user.id, token);
     if (revoked) {
+      return res.status(403).json({ error: 'Token invalide ou expiré' });
+    }
+
+    // Reject tokens issued before the user's last password change/reset, so a
+    // password change invalidates every previously-issued session.
+    const stale = await isTokenStaleByPasswordChange(user.id, user.iat);
+    if (stale) {
       return res.status(403).json({ error: 'Token invalide ou expiré' });
     }
   } catch (error) {
