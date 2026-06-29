@@ -8,6 +8,7 @@
 
 const nodemailer = require('nodemailer');
 const {
+  hasSmtpConfig,
   MAIL_HOST,
   MAIL_PORT,
   MAIL_SECURE,
@@ -16,15 +17,51 @@ const {
 } = require('../config/mail.config');
 const { logger } = require('../utils/logger');
 
-const transporter = nodemailer.createTransport({
-  host: MAIL_HOST,
-  port: MAIL_PORT,
-  secure: MAIL_SECURE,
-  auth: {
-    user: MAIL_USER,
-    pass: MAIL_PASS
+// When SMTP is configured, build the transport eagerly from the env settings.
+// Otherwise (development with no email setup) it is created lazily from an
+// auto-generated Ethereal test account on the first send — see getTransporter().
+let transporter = hasSmtpConfig
+  ? nodemailer.createTransport({
+      host: MAIL_HOST,
+      port: MAIL_PORT,
+      secure: MAIL_SECURE,
+      auth: { user: MAIL_USER, pass: MAIL_PASS }
+    })
+  : null;
+
+// "From" address: the configured user, or the Ethereal test user once created.
+let mailFrom = hasSmtpConfig ? MAIL_USER : null;
+
+let transporterPromise = null;
+
+/**
+ * Returns the SMTP transport. When no SMTP is configured (dev convenience), an
+ * Ethereal test account is created on the first call so the app can send without
+ * any email setup; each send then logs a preview URL to read the message.
+ * @returns {Promise<object>} A nodemailer transport.
+ */
+const getTransporter = async () => {
+  if (transporter) {
+    return transporter;
   }
-});
+  if (!transporterPromise) {
+    transporterPromise = nodemailer.createTestAccount().then((account) => {
+      logger.info('mail.dev_account.created', {
+        message: 'Aucun SMTP configuré : compte Ethereal de test créé pour le développement.',
+        user: account.user
+      });
+      mailFrom = account.user;
+      transporter = nodemailer.createTransport({
+        host: account.smtp.host,
+        port: account.smtp.port,
+        secure: account.smtp.secure,
+        auth: { user: account.user, pass: account.pass }
+      });
+      return transporter;
+    });
+  }
+  return transporterPromise;
+};
 
 /**
  * Builds the branded HTML body for a transactional email. The code block is
@@ -70,8 +107,9 @@ const buildTemplate = ({ title, message, code, footer }) => {
  * @returns {Promise<void>}
  */
 const sendMail = async ({ to, subject, text, html }) => {
-  const info = await transporter.sendMail({
-    from: MAIL_USER,
+  const transport = await getTransporter();
+  const info = await transport.sendMail({
+    from: mailFrom,
     to,
     subject,
     text,
