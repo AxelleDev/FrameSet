@@ -48,9 +48,8 @@ frameset/
 │   ├── migrations/     # Versioned SQL scripts
 │   ├── src/            # Routes, controllers, services, middlewares
 │   └── tests/          # Unit & integration tests
-├── frontend/           # React application
-│   └── src/            # Pages, components, contexts, hooks
-└── docs/               # Documentation (ERD…)
+└── frontend/           # React application
+    └── src/            # Pages, components, contexts, hooks
 ```
 
 ---
