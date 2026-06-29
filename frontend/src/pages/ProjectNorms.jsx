@@ -25,11 +25,14 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
 import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
+import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 
 export default function ProjectNorms() {
   const { id } = useParams();
   const {
     activeProject,
+    projectsLoading,
+    activeProjectId,
     addBrushNorm,
     addTypographyNorm,
     deleteBrushNorm,
@@ -43,6 +46,15 @@ export default function ProjectNorms() {
 
   const { values: brushForm, setValues: setBrushForm, setField: setBrushField, reset: resetBrushForm } = useFormState({ usage: '', name: '', value: '', unit: 'px', opacity: '' });
   const { values: typoForm, setValues: setTypoForm, setField: setTypoField, reset: resetTypoForm } = useFormState({ fontFamily: '', fontWeight: '', fontUsage: '', fontStyle: '' });
+
+  // Brush form validation: the size must be a positive number (<= 1000) and the
+  // opacity, when provided, must be between 0 and 1. Gates the submit buttons so
+  // invalid values never reach the API.
+  const brushValueNum = parseFloat(brushForm.value);
+  const isBrushValueValid = brushForm.value !== '' && Number.isFinite(brushValueNum) && brushValueNum > 0 && brushValueNum <= 1000;
+  const opacityNum = parseFloat(brushForm.opacity);
+  const isOpacityValid = brushForm.opacity === '' || (Number.isFinite(opacityNum) && opacityNum >= 0 && opacityNum <= 1);
+  const isBrushFormValid = !!brushForm.usage && isBrushValueValid && isOpacityValid;
 
   // loadedFonts: families whose web font has finished loading (drives the
   // preview switch from "Chargement..." to the rendered AaBbCc sample).
@@ -116,6 +128,7 @@ export default function ProjectNorms() {
   const handleEditNorm = async () => {
     if (!id || !editingNorm) return;
     if (editingType === 'brush') {
+      if (!isBrushFormValid) return;
       await updateBrushNorm(id, editingNorm.id, {
         name: brushForm.usage,
         value: brushForm.value,
@@ -160,7 +173,7 @@ export default function ProjectNorms() {
   const handleAddNorm = async () => {
     if (!id) return;
     if (addType === 'brush') {
-      if (!brushForm.usage || !brushForm.value) return;
+      if (!isBrushFormValid) return;
       await addBrushNorm(id, {
         name: brushForm.usage,
         value: brushForm.value,
@@ -214,7 +227,7 @@ export default function ProjectNorms() {
         </div>
       </div>
 
-      {activeProject && (
+      {activeProject ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <AddTile
@@ -354,7 +367,8 @@ export default function ProjectNorms() {
                     <input type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="ex: Plume G" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
                   </FormField>
                   <FormField label="Taille (px)">
-                    <input type="text" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <input type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-pink mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
                   </FormField>
                   <FormField label="Unité">
                     <input type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
@@ -403,10 +417,12 @@ export default function ProjectNorms() {
               primaryLabel="Modifier"
               onSecondary={() => setEditingNorm(null)}
               onPrimary={handleEditNorm}
-              primaryDisabled={editingType === 'brush' ? !brushForm.usage || !brushForm.value : !typoForm.fontFamily}
+              primaryDisabled={editingType === 'brush' ? !isBrushFormValid : !typoForm.fontFamily}
             />
           </FormModal>
         </>
+      ) : (
+        <ProjectStatePlaceholder loading={projectsLoading || String(activeProjectId) !== String(id)} />
       )}
 
       <FormModal
@@ -430,7 +446,8 @@ export default function ProjectNorms() {
                 <input type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="ex: Plume G" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
               </FormField>
               <FormField label="Taille (px)">
-                <input type="text" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <input type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-pink mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
               </FormField>
               <FormField label="Unité">
                 <input type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
@@ -477,7 +494,7 @@ export default function ProjectNorms() {
           primaryLabel="Ajouter"
           onSecondary={() => setIsAddingNorm(false)}
           onPrimary={handleAddNorm}
-          primaryDisabled={addType === 'brush' ? !brushForm.usage || !brushForm.value : !typoForm.fontFamily}
+          primaryDisabled={addType === 'brush' ? !isBrushFormValid : !typoForm.fontFamily}
         />
       </FormModal>
 

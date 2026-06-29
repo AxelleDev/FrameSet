@@ -22,12 +22,13 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import CopyBadge from '../components/CopyBadge';
 import AddTile from '../components/AddTile';
 import PageHeader from '../components/PageHeader';
+import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useClipboard from '../hooks/useClipboard';
 import useActiveProject from '../hooks/useActiveProject';
 
 export default function ProjectPalette() {
   const { id } = useParams();
-  const { activeProject, updateProjectPalette } = useProjects();
+  const { activeProject, updateProjectPalette, projectsLoading, activeProjectId } = useProjects();
 
   const [editStatus, setEditStatus] = useState(null);
   const [editIdx, setEditIdx] = useState(null);
@@ -285,7 +286,7 @@ export default function ProjectPalette() {
         subtitle="Ensemble des couleurs de référence à utiliser pour ce projet."
       />
 
-      {activeProject && (
+      {activeProject ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
            <AddTile
             onClick={openAddModal}
@@ -415,6 +416,8 @@ export default function ProjectPalette() {
             </div>
           ))}
         </div>
+      ) : (
+        <ProjectStatePlaceholder loading={projectsLoading || String(activeProjectId) !== String(id)} />
       )}
 
       <FormModal

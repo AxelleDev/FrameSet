@@ -8,14 +8,14 @@
 import React, { useEffect, useMemo } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
-import { jsPDF } from 'jspdf';
 import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
 import Button from '../components/Button';
+import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 
 export default function ProjectExport() {
   const { id } = useParams();
-  const { setActiveProjectId, activeProject } = useProjects();
+  const { setActiveProjectId, activeProject, projectsLoading, activeProjectId } = useProjects();
 
   // Sync the active project with the route id.
   useEffect(() => {
@@ -42,9 +42,11 @@ export default function ProjectExport() {
   // Build and download the style-guide PDF. The layout is drawn imperatively
   // with jsPDF: `y` is the running vertical cursor (in mm), advanced after each
   // line, and we add a new page whenever it approaches the page bottom.
-  const downloadPdf = () => {
+  const downloadPdf = async () => {
     if (!activeProject) return;
 
+    // Load jsPDF on demand so its ~hundreds of KB are not in the initial bundle.
+    const { jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     let y = 20;
 
@@ -191,10 +193,7 @@ export default function ProjectExport() {
           </div>
         </>
       ) : (
-        <div className="text-center py-20">
-          <div className="spinner border-4 border-blue border-t-pink rounded-full w-10 h-10 mx-auto animate-spin"></div>
-          <p className="mt-4 text-blue">Chargement du projet...</p>
-        </div>
+        <ProjectStatePlaceholder loading={projectsLoading || String(activeProjectId) !== String(id)} />
       )}
     </>
   );

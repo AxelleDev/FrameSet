@@ -20,22 +20,34 @@
  *       export     -> PDF / JSON export
  *   *              -> NotFound (404)
  */
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import GlobalErrorAlert from './components/GlobalErrorAlert';
 import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProjectProvider } from './context/ProjectContext';
 import ErrorBoundary from './components/ErrorBoundary';
-import Login from './pages/Login';
-import Register from './pages/Register';
 import MainLayout from './layouts/MainLayout';
-import Dashboard from './pages/Dashboard';
-import ProjectNorms from './pages/ProjectNorms';
-import ProjectPalette from './pages/ProjectPalette';
-import ProjectExport from './pages/ProjectExport';
-import Profile from './pages/Profile';
-import Verify from './pages/Verify';
-import NotFound from './pages/NotFound';
+
+// Pages are code-split via React.lazy so each route's JS (and heavy deps like
+// jsPDF / react-select) is only downloaded when that route is first visited.
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ProjectNorms = lazy(() => import('./pages/ProjectNorms'));
+const ProjectPalette = lazy(() => import('./pages/ProjectPalette'));
+const ProjectExport = lazy(() => import('./pages/ProjectExport'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Verify = lazy(() => import('./pages/Verify'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+/** Spinner shown while a lazily-loaded route chunk is being fetched. */
+function RouteFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center" role="status" aria-live="polite">
+      <div className="border-4 border-blue border-t-pink rounded-full w-10 h-10 animate-spin"></div>
+    </div>
+  );
+}
 
 /**
  * Renders the global error banner and the full route tree. Kept separate from
@@ -51,7 +63,8 @@ function AppRoutes() {
         onClose={() => setGlobalError && setGlobalError(null)}
       />
       <HashRouter>
-        <Routes>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -74,7 +87,8 @@ function AppRoutes() {
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />
-        </Routes>
+          </Routes>
+        </Suspense>
       </HashRouter>
     </>
   );

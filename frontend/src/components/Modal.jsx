@@ -29,15 +29,33 @@ export default function Modal({
   closeOnBackdrop = true
 }) {
   const panelRef = useRef(null);
-  // Focus trap: focus the panel on open and prevent Tab from escaping it.
+  // Remembers the element focused before the modal opened, to restore it on close.
+  const previouslyFocused = useRef(null);
+
+  // Focus the panel on open, and restore focus to the opener when it closes so
+  // keyboard users are not dropped back at the top of the page.
   useEffect(() => {
-    if (isOpen && panelRef.current) {
+    if (!isOpen) return undefined;
+    previouslyFocused.current = document.activeElement;
+    if (panelRef.current) {
       panelRef.current.focus();
     }
+    return () => {
+      const opener = previouslyFocused.current;
+      if (opener && typeof opener.focus === 'function') {
+        opener.focus();
+      }
+    };
   }, [isOpen]);
 
-  // Cycle focus within the panel: wrap from last to first (and vice-versa with Shift).
+  // Keyboard handling: Escape closes the modal; Tab is trapped within the panel,
+  // wrapping from last to first (and vice-versa with Shift).
   const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      onClose?.();
+      return;
+    }
     if (e.key !== 'Tab') return;
     const focusableEls = panelRef.current.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
