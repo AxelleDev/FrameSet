@@ -54,6 +54,7 @@ describe('contrôleur de projets', () => {
       db.query.mockResolvedValueOnce([
         [
           {
+            id: 5,
             project_id: 1,
             name: 'Primary',
             hex: '#112233'
@@ -118,6 +119,7 @@ describe('contrôleur de projets', () => {
           normsCount: 2,
           palette: [
             {
+              id: 5,
               name: 'Primary',
               hex: '#112233'
             }
@@ -148,7 +150,7 @@ describe('contrôleur de projets', () => {
         ])
         .mockResolvedValueOnce([
           [
-            { project_id: 2, name: 'Primary', hex: '#AABBCC' }
+            { id: 7, project_id: 2, name: 'Primary', hex: '#AABBCC' }
           ]
         ]);
 
@@ -237,127 +239,129 @@ describe('contrôleur de projets', () => {
     });
   });
 
-  describe('operations palette', () => {
-    it('devrait retourner 400 si la couleur a supprimer est invalide', async () => {
-      const req = {
-        params: { id: '1' },
-        user: { id: 1 },
-        body: { hex: 'not-a-hex' }
-      };
+  describe('mise a jour de la palette', () => {
+    it('devrait retourner 400 si le corps n\'est pas un tableau', async () => {
+      const req = { params: { id: '1' }, user: { id: 1 }, body: { not: 'an array' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
-      await projectsController.deletePaletteColor(req, res);
+      await projectsController.updatePalette(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        error: 'Couleur invalide : la valeur hex "not-a-hex" n\'est pas un format valide (#RGB ou #RRGGBB).'
-      });
       expect(db.query).not.toHaveBeenCalled();
     });
 
-    it('devrait supprimer une couleur valide', async () => {
-      db.query
-        .mockResolvedValueOnce([[{ id: 1 }]]) // ensureProjectOwnership
-        .mockResolvedValueOnce([{ affectedRows: 1 }])
-        .mockResolvedValueOnce([{}]);
+    it('devrait retourner 400 si une couleur a un hex invalide', async () => {
+      const req = {
+        params: { id: '1' },
+        user: { id: 1 },
+        body: [{ name: 'X', hex: 'not-a-hex' }]
+      };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await projectsController.updatePalette(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(db.query).not.toHaveBeenCalled();
+    });
+
+    it('devrait remplacer la palette en persistant l\'ordre et en supprimant les couleurs absentes', async () => {
+      db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ensureProjectOwnership (pool)
+
+      const connection = {
+        beginTransaction: jest.fn().mockResolvedValue(),
+        commit: jest.fn().mockResolvedValue(),
+        rollback: jest.fn().mockResolvedValue(),
+        release: jest.fn(),
+        query: jest.fn()
+          .mockResolvedValueOnce([[{ id: 10 }, { id: 11 }]]) // SELECT existing ids
+          .mockResolvedValueOnce([{}]) // DELETE colors no longer present
+          .mockResolvedValueOnce([{}]) // UPDATE existing color (id 10)
+          .mockResolvedValueOnce([{}]) // INSERT new color
+          .mockResolvedValueOnce([{}]) // UPDATE projects.last_edited
+          .mockResolvedValueOnce([[ // SELECT canonical palette
+            { id: 10, name: 'Primary', hex: '#112233' },
+            { id: 12, name: 'Accent', hex: '#AA0000' }
+          ]])
+      };
+      db.getConnection.mockResolvedValue(connection);
 
       const req = {
         params: { id: '1' },
         user: { id: 1 },
-        body: { hex: '  #AABBCC  ' }
+        body: [
+          { id: 10, name: 'Primary', hex: '#112233' },
+          { name: 'Accent', hex: '#AA0000' }
+        ]
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
-      await projectsController.deletePaletteColor(req, res);
+      await projectsController.updatePalette(req, res);
 
-      expect(db.query).toHaveBeenNthCalledWith(
+      // The only kept id is 10, so every other color of the project is removed.
+      expect(connection.query).toHaveBeenNthCalledWith(
         2,
-        'DELETE FROM project_palette WHERE project_id = ? AND hex = ?',
-        ['1', '#AABBCC']
+        expect.stringContaining('DELETE FROM project_palette WHERE project_id = ? AND id NOT IN'),
+        ['1', 10]
       );
-      expect(res.json).toHaveBeenCalledWith({ success: true });
-    });
-
-    it('devrait retourner 400 si la couleur source est invalide lors de la modification', async () => {
-      const req = {
-        params: { id: '1' },
-        user: { id: 1 },
-        body: { oldHex: 'bad', newHex: '#123456', newName: 'Accent' }
-      };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-
-      await projectsController.updatePaletteColor(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
+      // The existing color keeps its id and is written at position 0.
+      expect(connection.query).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining('UPDATE project_palette SET name = ?, hex = ?, position = ?'),
+        ['Primary', '#112233', 0, 10, '1']
+      );
+      // The new color is inserted at position 1.
+      expect(connection.query).toHaveBeenNthCalledWith(
+        4,
+        expect.stringContaining('INSERT INTO project_palette'),
+        ['1', 'Accent', '#AA0000', 1]
+      );
+      expect(connection.commit).toHaveBeenCalled();
+      expect(connection.release).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Couleur invalide : la valeur hex "bad" n\'est pas un format valide (#RGB ou #RRGGBB).'
+        success: true,
+        palette: [
+          { id: 10, name: 'Primary', hex: '#112233' },
+          { id: 12, name: 'Accent', hex: '#AA0000' }
+        ]
       });
-      expect(db.query).not.toHaveBeenCalled();
     });
 
-    it('devrait retourner 400 si le nom de couleur est invalide lors de la modification', async () => {
-      const req = {
-        params: { id: '1' },
-        user: { id: 1 },
-        body: { oldHex: '#AABBCC', newHex: '#123456', newName: '   ' }
+    it('devrait tout supprimer puis reinserer quand aucune couleur existante n\'est conservee', async () => {
+      db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ensureProjectOwnership (pool)
+
+      const connection = {
+        beginTransaction: jest.fn().mockResolvedValue(),
+        commit: jest.fn().mockResolvedValue(),
+        rollback: jest.fn().mockResolvedValue(),
+        release: jest.fn(),
+        query: jest.fn()
+          .mockResolvedValueOnce([[]]) // SELECT existing ids (none kept)
+          .mockResolvedValueOnce([{}]) // DELETE all
+          .mockResolvedValueOnce([{}]) // INSERT new color
+          .mockResolvedValueOnce([{}]) // UPDATE projects.last_edited
+          .mockResolvedValueOnce([[{ id: 20, name: 'X', hex: '#000000' }]]) // SELECT canonical palette
       };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-
-      await projectsController.updatePaletteColor(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Le nom de la couleur est invalide.' });
-      expect(db.query).not.toHaveBeenCalled();
-    });
-
-    it('devrait modifier une couleur valide', async () => {
-      db.query
-        .mockResolvedValueOnce([[{ id: 1 }]]) // ensureProjectOwnership
-        .mockResolvedValueOnce([{ affectedRows: 1 }])
-        .mockResolvedValueOnce([{}]);
+      db.getConnection.mockResolvedValue(connection);
 
       const req = {
         params: { id: '1' },
         user: { id: 1 },
-        body: {
-          oldHex: ' #AABBCC ',
-          newHex: ' #123456 ',
-          newName: '  Accent principal  '
-        }
+        body: [{ name: 'X', hex: '#000000' }]
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
-      await projectsController.updatePaletteColor(req, res);
+      await projectsController.updatePalette(req, res);
 
-      expect(db.query).toHaveBeenNthCalledWith(
+      expect(connection.query).toHaveBeenNthCalledWith(
         2,
-        'UPDATE project_palette SET name = ?, hex = ? WHERE project_id = ? AND hex = ?',
-        ['Accent principal', '#123456', '1', '#AABBCC']
+        'DELETE FROM project_palette WHERE project_id = ?',
+        ['1']
       );
-      expect(res.json).toHaveBeenCalledWith({ success: true });
-    });
-
-    it('devrait retourner 404 si la couleur a modifier est introuvable', async () => {
-      db.query
-        .mockResolvedValueOnce([[{ id: 1 }]]) // ensureProjectOwnership
-        .mockResolvedValueOnce([{ affectedRows: 0 }]);
-
-      const req = {
-        params: { id: '1' },
-        user: { id: 1 },
-        body: {
-          oldHex: '#AABBCC',
-          newHex: '#123456',
-          newName: 'Accent'
-        }
-      };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-
-      await projectsController.updatePaletteColor(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Couleur non trouvée' });
-      expect(db.query).toHaveBeenCalledTimes(2);
+      expect(connection.commit).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        palette: [{ id: 20, name: 'X', hex: '#000000' }]
+      });
     });
   });
 });

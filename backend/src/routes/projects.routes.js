@@ -25,9 +25,7 @@ router.post('/:id/palette', authenticateToken, projectCreateLimiter, projectsCon
 
 router.delete('/:projectId/brush-norms/:normId', authenticateToken, projectsController.deleteBrushNorm);
 router.delete('/:projectId/typography-norms/:normId', authenticateToken, projectsController.deleteTypographyNorm);
-router.delete('/:id/palette', authenticateToken, projectsController.deletePaletteColor);
 
-router.patch('/:id/palette', authenticateToken, projectsController.updatePaletteColor);
 router.put('/:projectId/brush-norms/:normId', authenticateToken, projectsController.updateBrushNorm);
 router.put('/:projectId/typography-norms/:normId', authenticateToken, projectsController.updateTypographyNorm);
 

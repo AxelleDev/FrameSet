@@ -14,8 +14,6 @@ const buildTestApp = () => {
     updatePalette: jest.fn((req, res) => res.status(201).json({ success: true })),
     deleteBrushNorm: jest.fn((req, res) => res.status(200).json({ success: true })),
     deleteTypographyNorm: jest.fn((req, res) => res.status(200).json({ success: true })),
-    deletePaletteColor: jest.fn((req, res) => res.status(200).json({ success: true })),
-    updatePaletteColor: jest.fn((req, res) => res.status(200).json({ success: true })),
     updateBrushNorm: jest.fn((req, res) => res.status(200).json({ success: true })),
     updateTypographyNorm: jest.fn((req, res) => res.status(200).json({ success: true }))
   };

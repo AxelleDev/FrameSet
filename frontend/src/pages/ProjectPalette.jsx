@@ -2,9 +2,14 @@
  * Project palette page (route: /app/project/:id/palette).
  *
  * Displays the project's color swatches and lets the user add, edit, delete,
- * copy (hex to clipboard) and reorder colors via drag-and-drop. Reordering uses
- * a FLIP animation so the non-dragged swatches smoothly slide into their new
- * positions (see the drag handlers and the useLayoutEffect below).
+ * copy (hex to clipboard) and reorder colors. Reordering works both by
+ * drag-and-drop (with a FLIP animation so the other swatches slide smoothly)
+ * and by keyboard (arrow keys on a focused swatch).
+ *
+ * Every change persists the whole ordered palette through updateProjectPalette,
+ * which returns the canonical palette from the server (each color carrying a
+ * stable `id` and its saved order). Colors are identified by `id`, never by hex,
+ * so two colors may share the same hex without colliding.
  */
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useProjects } from '../context/ProjectContext';
@@ -22,12 +27,7 @@ import useActiveProject from '../hooks/useActiveProject';
 
 export default function ProjectPalette() {
   const { id } = useParams();
-  const {
-    activeProject,
-    updateProjectPalette,
-    updateProjectPaletteColor,
-    deleteProjectPaletteColor
-  } = useProjects();
+  const { activeProject, updateProjectPalette } = useProjects();
 
   const [editStatus, setEditStatus] = useState(null);
   const [editIdx, setEditIdx] = useState(null);
@@ -35,18 +35,18 @@ export default function ProjectPalette() {
   const [editColorHex, setEditColorHex] = useState('');
 
   // Drag-and-drop state:
-  //   draggedIndex/draggedHex: the swatch being dragged (by index and hex).
+  //   draggedIndex/draggedId: the swatch being dragged (by index and id).
   //   dragOverIndex: the slot the dragged swatch would land in.
   //   palette: the committed order; previewPalette: the live reordered order
   //     shown during a drag (committed to `palette` only on drop).
   const [draggedIndex, setDraggedIndex] = useState(null);
-  const [draggedHex, setDraggedHex] = useState(null);
+  const [draggedId, setDraggedId] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [palette, setPalette] = useState([]);
   const [previewPalette, setPreviewPalette] = useState([]);
   // Refs used by the FLIP animation:
-  //   itemRefs: hex -> DOM node, to measure positions.
-  //   prevPositions: hex -> bounding rect captured *before* a reorder (First).
+  //   itemRefs: color id -> DOM node, to measure positions.
+  //   prevPositions: color id -> bounding rect captured *before* a reorder (First).
   //   skipFlip: suppress the animation for the next layout pass (e.g. on cancel).
   //   didDrop: distinguishes a real drop from a cancelled drag in onDragEnd.
   //   flipPending: marks that a reorder happened and the FLIP should run next.
@@ -73,51 +73,66 @@ export default function ProjectPalette() {
       setPreviewPalette(activeProject.palette);
     }
   }, [activeProject]);
-  
-    // FLIP animation (First-Last-Invert-Play). After the previewPalette reorder
-    // re-renders the swatches into their new ("Last") positions, this runs
-    // synchronously before paint to: measure each node's current position,
-    // compute the delta from its pre-reorder ("First") position captured in
-    // prevPositions, instantly translate it back to where it was (Invert), then
-    // clear the transform with a transition so it animates to its new spot (Play).
-    useLayoutEffect(() => {
-      // Cancelled drag: clear any inline styles and skip animating this pass.
-      if (skipFlip.current) {
-        skipFlip.current = false;
-        Object.values(itemRefs.current).forEach(el => {
-          if (el) { el.style.transition = ''; el.style.transform = ''; }
-        });
-        return;
-      }
-      // Only animate while dragging and only when a reorder just occurred.
-      if (draggedHex === null) return;
-      if (!flipPending.current) return;
-      flipPending.current = false;
-      previewPalette.forEach(color => {
-        // The dragged swatch is shown semi-transparent and is not FLIP-animated.
-        if (color.hex === draggedHex) return;
-        const el = itemRefs.current[color.hex];
-        const prev = prevPositions.current[color.hex];
-        if (!el || !prev) return;
-        const curr = el.getBoundingClientRect();
-        const dx = Math.round(prev.left - curr.left);
-        const dy = Math.round(prev.top - curr.top);
-        if (dx !== 0 || dy !== 0) {
-          // Invert: jump back to the old position with no transition.
-          el.style.transition = 'none';
-          el.style.transform = `translate(${dx}px, ${dy}px)`;
-          // Force a reflow so the inverted transform is applied before we animate.
-          el.getBoundingClientRect();
-          // Play: transition the transform away, sliding into the new position.
-          el.style.transition = 'transform 280ms cubic-bezier(0.2, 0, 0, 1)';
-          el.style.transform = '';
-        }
+
+  // FLIP animation (First-Last-Invert-Play). After the previewPalette reorder
+  // re-renders the swatches into their new ("Last") positions, this runs
+  // synchronously before paint to: measure each node's current position,
+  // compute the delta from its pre-reorder ("First") position captured in
+  // prevPositions, instantly translate it back to where it was (Invert), then
+  // clear the transform with a transition so it animates to its new spot (Play).
+  useLayoutEffect(() => {
+    // Cancelled drag: clear any inline styles and skip animating this pass.
+    if (skipFlip.current) {
+      skipFlip.current = false;
+      Object.values(itemRefs.current).forEach(el => {
+        if (el) { el.style.transition = ''; el.style.transform = ''; }
       });
-    }, [previewPalette, draggedHex]);
+      return;
+    }
+    // Only animate while dragging and only when a reorder just occurred.
+    if (draggedId === null) return;
+    if (!flipPending.current) return;
+    flipPending.current = false;
+    previewPalette.forEach(color => {
+      // The dragged swatch is shown semi-transparent and is not FLIP-animated.
+      if (color.id === draggedId) return;
+      const el = itemRefs.current[color.id];
+      const prev = prevPositions.current[color.id];
+      if (!el || !prev) return;
+      const curr = el.getBoundingClientRect();
+      const dx = Math.round(prev.left - curr.left);
+      const dy = Math.round(prev.top - curr.top);
+      if (dx !== 0 || dy !== 0) {
+        // Invert: jump back to the old position with no transition.
+        el.style.transition = 'none';
+        el.style.transform = `translate(${dx}px, ${dy}px)`;
+        // Force a reflow so the inverted transform is applied before we animate.
+        el.getBoundingClientRect();
+        // Play: transition the transform away, sliding into the new position.
+        el.style.transition = 'transform 280ms cubic-bezier(0.2, 0, 0, 1)';
+        el.style.transform = '';
+      }
+    });
+  }, [previewPalette, draggedId]);
 
   const [isAddingColor, setIsAddingColor] = useState(false);
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('');
+
+  /**
+   * Persists the given ordered palette and adopts the canonical result returned
+   * by the server (with stable ids and saved order).
+   * @param {Array} nextPalette The desired palette, in order.
+   * @returns {Promise<Array|null>} The saved palette, or null on failure.
+   */
+  const persistPalette = async (nextPalette) => {
+    const saved = await updateProjectPalette(id, nextPalette);
+    if (saved) {
+      setPalette(saved);
+      setPreviewPalette(saved);
+    }
+    return saved;
+  };
 
   /**
    * Normalizes a hex color input: always keeps a leading '#', strips any
@@ -180,11 +195,14 @@ export default function ProjectPalette() {
     setEditStatus(null);
   };
 
-  // Whether the edit field holds a valid 3- or 6-digit hex (drives the swatch preview).
-  const isValidEditHex = () => {
-    const hex = editColorHex.trim();
+  // Whether the given hex string is a valid 3- or 6-digit hex color.
+  const isValidHexValue = (value) => {
+    const hex = (value || '').trim();
     return /^#([0-9A-F]{3}){1,2}$/i.test(hex.startsWith('#') ? hex : '#' + hex);
   };
+
+  const isValidEditHex = () => isValidHexValue(editColorHex);
+  const isValidHex = () => isValidHexValue(newColorHex);
 
   const openAddModal = () => {
     setNewColorName('');
@@ -192,15 +210,9 @@ export default function ProjectPalette() {
     setIsAddingColor(true);
   };
 
-  // Same validation as isValidEditHex, for the add-color field.
-  const isValidHex = () => {
-    const hex = newColorHex.trim();
-    return /^#([0-9A-F]{3}){1,2}$/i.test(hex.startsWith('#') ? hex : '#' + hex);
-  };
-
-  // Persist a color edit, then mirror it into local palette state and show status.
+  // Persist a color edit (the edited color keeps its id) and show status.
   const confirmEditColor = async () => {
-    if (editIdx === null || !editColorName || !editColorHex) return;
+    if (editIdx === null || !editColorName || !isValidEditHex()) return;
     const currentColor = palette[editIdx];
     if (!currentColor) return;
 
@@ -209,52 +221,61 @@ export default function ProjectPalette() {
 
     let newHex = editColorHex.trim();
     if (!newHex.startsWith('#')) newHex = '#' + newHex;
-    const oldHex = currentColor.hex;
 
-    const updated = await updateProjectPaletteColor(id, {
-      oldHex,
-      newName: normalizedName,
-      newHex
-    });
+    const nextPalette = palette.map((color, idx) => (
+      idx === editIdx ? { ...color, name: normalizedName, hex: newHex } : color
+    ));
 
-    if (updated) {
-      const nextPalette = palette.map((color, idx) => (
-        idx === editIdx ? { ...color, name: normalizedName, hex: newHex } : color
-      ));
-
-      setPalette(nextPalette);
-      setPreviewPalette(nextPalette);
-      setEditStatus('success');
-    } else {
-      setEditStatus('error');
-    }
+    const saved = await persistPalette(nextPalette);
+    setEditStatus(saved ? 'success' : 'error');
   };
 
-  // Append a new color (persisting the whole palette) and sync local state.
+  // Append a new color (no id yet; the server assigns one) and sync local state.
   const confirmAddColor = async () => {
-    if (!id || !newColorName || !newColorHex) return;
+    if (!id || !newColorName || !isValidHex()) return;
     const normalizedName = newColorName.trim();
     if (!normalizedName) return;
 
     let hex = newColorHex.trim();
     if (!hex.startsWith('#')) hex = '#' + hex;
 
-    const newPalette = [...palette, { name: normalizedName, hex }];
-    const updated = await updateProjectPalette(id, newPalette);
-
-    if (updated) {
-      setPalette(newPalette);
-      setPreviewPalette(newPalette);
+    const nextPalette = [...palette, { name: normalizedName, hex }];
+    const saved = await persistPalette(nextPalette);
+    if (saved) {
       setIsAddingColor(false);
     }
   };
 
-  // Stage a color for deletion. stopImmediatePropagation also prevents sibling
-  // handlers (copy/drag) on the same swatch from firing.
-  const handleDeleteColor = (e, colorHex) => {
+  // Stage a color for deletion (by id). stopImmediatePropagation also prevents
+  // sibling handlers (copy/drag) on the same swatch from firing.
+  const handleDeleteColor = (e, colorId) => {
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
-    setConfirmDeleteColor(colorHex);
+    setConfirmDeleteColor(colorId);
+  };
+
+  // Keyboard reordering: move the focused swatch with the arrow keys. Ignored
+  // when focus is on a nested button (delete/edit) rather than the swatch itself.
+  const handleSwatchKeyDown = (e, idx) => {
+    if (e.target !== e.currentTarget) return;
+    let target = null;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') target = idx - 1;
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') target = idx + 1;
+    else return;
+    if (target < 0 || target >= palette.length) return;
+
+    e.preventDefault();
+    const next = [...palette];
+    const [moved] = next.splice(idx, 1);
+    next.splice(target, 0, moved);
+    setPalette(next);
+    setPreviewPalette(next);
+    persistPalette(next);
+    // Keep focus on the moved swatch after it re-renders into its new slot.
+    requestAnimationFrame(() => {
+      const el = itemRefs.current[moved.id];
+      if (el) el.focus();
+    });
   };
 
   return (
@@ -272,20 +293,24 @@ export default function ProjectPalette() {
            />
 
           {/* Render the live (preview) order; each node is registered in itemRefs
-              for FLIP measurement, and the dragged swatch is dimmed. */}
+              (by id) for FLIP measurement, and the dragged swatch is dimmed. */}
           {previewPalette.map((color, idx) => (
             <div
-              key={color.hex}
-              ref={el => { itemRefs.current[color.hex] = el; }}
-              className={`group relative flex flex-col aspect-[4/5] ${color.hex === draggedHex ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
+              key={color.id}
+              ref={el => { itemRefs.current[color.id] = el; }}
+              tabIndex={0}
+              role="button"
+              aria-label={`Couleur ${color.name}, ${color.hex}. Utilisez les flèches pour réordonner.`}
+              className={`group relative flex flex-col aspect-[4/5] rounded-[2rem] outline-none focus-visible:ring-2 focus-visible:ring-pink/70 focus-visible:ring-offset-2 ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
               draggable
+              onKeyDown={e => handleSwatchKeyDown(e, idx)}
               onDragStart={e => {
                 // Begin a drag: reset FLIP bookkeeping and record the source swatch.
                 didDrop.current = false;
                 flipPending.current = false;
                 prevPositions.current = {};
                 setDraggedIndex(idx);
-                setDraggedHex(color.hex);
+                setDraggedId(color.id);
                 setDragOverIndex(idx);
                 e.dataTransfer.effectAllowed = 'move';
               }}
@@ -294,7 +319,7 @@ export default function ProjectPalette() {
                 // When hovering a new target slot, snapshot current positions
                 // (the FLIP "First") and compute the previewed reorder so the
                 // layout effect can animate the displaced swatches.
-                if (draggedHex !== null && color.hex !== draggedHex) {
+                if (draggedId !== null && color.id !== draggedId) {
                   if (idx === dragOverIndex) return;
                   const snapshots = {};
                   Object.keys(itemRefs.current).forEach(key => {
@@ -317,17 +342,17 @@ export default function ProjectPalette() {
                 // so the drop animation can settle first.
                 didDrop.current = true;
                 flipPending.current = false;
-                if (draggedHex !== null && draggedIndex !== dragOverIndex) {
+                if (draggedId !== null && draggedIndex !== dragOverIndex) {
                   const newPalette = [...palette];
                   const [moved] = newPalette.splice(draggedIndex, 1);
                   newPalette.splice(dragOverIndex, 0, moved);
                   setPalette(newPalette);
                   setTimeout(() => {
-                    updateProjectPalette(id, newPalette);
+                    persistPalette(newPalette);
                   }, 200);
                 }
                 setDraggedIndex(null);
-                setDraggedHex(null);
+                setDraggedId(null);
                 setDragOverIndex(null);
               }}
               onDragEnd={() => {
@@ -336,7 +361,7 @@ export default function ProjectPalette() {
                   didDrop.current = false;
                   flipPending.current = false;
                   setDraggedIndex(null);
-                  setDraggedHex(null);
+                  setDraggedId(null);
                   setDragOverIndex(null);
                   return;
                 }
@@ -345,7 +370,7 @@ export default function ProjectPalette() {
                 skipFlip.current = true;
                 flipPending.current = false;
                 setDraggedIndex(null);
-                setDraggedHex(null);
+                setDraggedId(null);
                 setDragOverIndex(null);
                 setPreviewPalette(palette);
               }}
@@ -355,7 +380,7 @@ export default function ProjectPalette() {
                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50 pointer-events-none"></div>
 
                    <ActionIconButton
-                      onClick={(e) => handleDeleteColor(e, color.hex)}
+                      onClick={(e) => handleDeleteColor(e, color.id)}
                       title="Supprimer la couleur"
                       intent="delete"
                       variant="light"
@@ -399,7 +424,7 @@ export default function ProjectPalette() {
       >
         <div className="space-y-4">
           <FormField label="Nom de la couleur">
-            <input type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="ex: Reflet Cheveux" 
+            <input type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="ex: Reflet Cheveux"
               className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
           </FormField>
           <FormField label="Code Hexadécimal">
@@ -423,7 +448,7 @@ export default function ProjectPalette() {
           primaryLabel="Confirmer"
           onSecondary={() => setEditIdx(null)}
           onPrimary={confirmEditColor}
-          primaryDisabled={!editColorName || !editColorHex}
+          primaryDisabled={!editColorName || !isValidEditHex()}
         />
       </FormModal>
 
@@ -434,10 +459,10 @@ export default function ProjectPalette() {
       >
         <div className="space-y-4">
           <FormField label="Nom de la couleur">
-            <input type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="ex: Reflet Cheveux" 
+            <input type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="ex: Reflet Cheveux"
               className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
           </FormField>
-          
+
           <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
                <div className="w-12 h-12 rounded-xl border border-blue shadow-inner flex-shrink-0" style={{ backgroundColor: isValidHex() ? newColorHex : '#ffffff' }}></div>
@@ -459,29 +484,25 @@ export default function ProjectPalette() {
           primaryLabel="Ajouter"
           onSecondary={() => setIsAddingColor(false)}
           onPrimary={confirmAddColor}
-          primaryDisabled={!newColorName || !newColorHex}
+          primaryDisabled={!newColorName || !isValidHex()}
         />
       </FormModal>
 
       <ConfirmDialog
-        isOpen={!!confirmDeleteColor}
+        isOpen={confirmDeleteColor !== null}
         title="Supprimer la couleur"
         message="Êtes-vous sûr de vouloir supprimer cette couleur ?"
         confirmLabel="Supprimer"
         confirmClassName="bg-pink text-white hover:bg-pink/10"
         onCancel={() => setConfirmDeleteColor(null)}
         onConfirm={async () => {
-          if (confirmDeleteColor) {
-            // Delete on the server, then remove from both committed and preview state.
-            const deleted = await deleteProjectPaletteColor(id, confirmDeleteColor);
-            if (deleted) {
-              setPalette((prevPalette) => prevPalette.filter((color) => color.hex !== confirmDeleteColor));
-              setPreviewPalette((prevPalette) => prevPalette.filter((color) => color.hex !== confirmDeleteColor));
-              setConfirmDeleteColor(null);
-            }
-            return;
+          if (confirmDeleteColor === null) return;
+          // Delete by removing the color (matched by id) and persisting the rest.
+          const nextPalette = palette.filter((color) => color.id !== confirmDeleteColor);
+          const saved = await persistPalette(nextPalette);
+          if (saved) {
+            setConfirmDeleteColor(null);
           }
-          setConfirmDeleteColor(null);
         }}
       />
     </>

@@ -78,26 +78,6 @@ const sanitizeOptionalTextField = (value, { maxLength }) => {
   return { value: trimmedValue };
 };
 
-/**
- * Like sanitizeOptionalTextField but the field is mandatory: an empty result is
- * treated as an error.
- * @param {*} value Raw input value.
- * @param {{maxLength:number}} options
- * @returns {{value: string}|{error: string}}
- */
-const sanitizeRequiredTextField = (value, { maxLength }) => {
-  if (typeof value !== 'string' && typeof value !== 'number') {
-    return { error: 'invalid_type' };
-  }
-
-  const trimmedValue = validator.trim(String(value));
-  if (!validator.isLength(trimmedValue, { min: 1, max: maxLength })) {
-    return { error: 'invalid_length' };
-  }
-
-  return { value: trimmedValue };
-};
-
 /** Builds the standard user-facing error message for an invalid hex color. */
 const buildInvalidHexColorError = (value) => (
   `Couleur invalide : la valeur hex "${value}" n'est pas un format valide (#RGB ou #RRGGBB).`
@@ -120,55 +100,6 @@ const validateHexColorField = (value) => {
   }
 
   return { value: trimmedValue };
-};
-
-/**
- * Validates the payload for deleting a single palette color (its hex value).
- * @param {{hex:*}} payload
- * @returns {{value:{hex:string}}|{error:string}}
- */
-const validateDeletePaletteColorPayload = ({ hex }) => {
-  const normalizedHex = validateHexColorField(hex);
-  if (normalizedHex.error) {
-    return { error: buildInvalidHexColorError(hex) };
-  }
-
-  return {
-    value: {
-      hex: normalizedHex.value
-    }
-  };
-};
-
-/**
- * Validates the payload for updating a palette color: the existing hex to
- * locate, plus the new hex and name to apply.
- * @param {{oldHex:*, newHex:*, newName:*}} payload
- * @returns {{value:{oldHex:string,newHex:string,newName:string}}|{error:string}}
- */
-const validateUpdatePaletteColorPayload = ({ oldHex, newHex, newName }) => {
-  const normalizedOldHex = validateHexColorField(oldHex);
-  if (normalizedOldHex.error) {
-    return { error: buildInvalidHexColorError(oldHex) };
-  }
-
-  const normalizedNewHex = validateHexColorField(newHex);
-  if (normalizedNewHex.error) {
-    return { error: buildInvalidHexColorError(newHex) };
-  }
-
-  const normalizedName = sanitizeRequiredTextField(newName, { maxLength: 255 });
-  if (normalizedName.error) {
-    return { error: 'Le nom de la couleur est invalide.' };
-  }
-
-  return {
-    value: {
-      oldHex: normalizedOldHex.value,
-      newHex: normalizedNewHex.value,
-      newName: normalizedName.value
-    }
-  };
 };
 
 /**
@@ -416,7 +347,7 @@ const listProjects = async (req, res) => {
       }),
       runTimedQuery({
         label: 'project_palette',
-        sql: `SELECT project_id, name, hex FROM project_palette WHERE project_id IN (${placeholders})`,
+        sql: `SELECT id, project_id, name, hex FROM project_palette WHERE project_id IN (${placeholders}) ORDER BY project_id ASC, position ASC, id ASC`,
         params: projectIds
       })
     ]);
@@ -453,6 +384,7 @@ const listProjects = async (req, res) => {
     const paletteByProjectId = groupRowsByProjectId(
       paletteQuery.rows,
       (color) => ({
+        id: color.id,
         name: color.name,
         hex: color.hex
       })
@@ -642,10 +574,15 @@ const addTypographyNorm = async (req, res) => {
 };
 
 /**
- * Replaces a project's color palette with the provided array of colors. Each
- * color is validated up front, then all rows are written inside a single
- * transaction so the palette update is atomic (committed in full or rolled back
- * on any error). REPLACE INTO upserts by the table's unique key.
+ * Replaces a project's color palette with the provided ordered array of colors,
+ * atomically (single transaction, rolled back on any error). The array order is
+ * persisted in the `position` column so the palette reloads in the same order.
+ *
+ * Each color may carry an `id` (an existing color to update in place) or none (a
+ * new color to insert). Existing colors absent from the array are deleted, so
+ * this endpoint genuinely *replaces* the palette. Colors are addressed by id
+ * rather than hex, so two colors may share the same hex without colliding.
+ * Responds with the canonical palette (with ids) in its persisted order.
  * @param {Object} req Express request.
  * @param {Object} res Express response.
  */
@@ -660,42 +597,92 @@ const updatePalette = async (req, res) => {
     return res.status(400).json({ error: `La palette ne peut pas dépasser ${MAX_PALETTE_SIZE} couleurs.` });
   }
 
+  // Validate and normalize every color up front, before opening a transaction.
+  const validatedColors = [];
   for (const color of colors) {
-    if (typeof color?.hex !== 'string' || !validator.isHexColor(color.hex)) {
-      return res.status(400).json({ error: `Couleur invalide : la valeur hex "${color?.hex}" n'est pas un format valide (#RGB ou #RRGGBB).` });
+    const hexCheck = validateHexColorField(color?.hex);
+    if (hexCheck.error) {
+      return res.status(400).json({ error: buildInvalidHexColorError(color?.hex) });
     }
-    const nameCheck = sanitizeOptionalTextField(color.name, { maxLength: 255 });
+    const nameCheck = sanitizeOptionalTextField(color?.name, { maxLength: 255 });
     if (nameCheck.error) {
       return res.status(400).json({ error: 'Le nom de la couleur est invalide.' });
     }
+    let colorId = null;
+    if (color?.id !== undefined && color?.id !== null) {
+      const parsedId = Number(color.id);
+      if (!Number.isInteger(parsedId) || parsedId <= 0) {
+        return res.status(400).json({ error: 'Identifiant de couleur invalide.' });
+      }
+      colorId = parsedId;
+    }
+    validatedColors.push({ id: colorId, name: nameCheck.value, hex: hexCheck.value });
   }
 
-  // Use a dedicated connection so the multi-row write runs in one transaction.
-  const connection = await db.getConnection();
+  let connection;
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
 
+    connection = await db.getConnection();
     await connection.beginTransaction();
 
-    for (const color of colors) {
-      const safeName = sanitizeOptionalTextField(color.name, { maxLength: 255 }).value;
+    // Ids that currently belong to this project, used both to detect removals
+    // and to ensure a client-supplied id can't target another project's color.
+    const [existingRows] = await connection.query(
+      'SELECT id FROM project_palette WHERE project_id = ?',
+      [id]
+    );
+    const existingIds = new Set(existingRows.map((row) => row.id));
+
+    // Keep only the ids the client sent that actually belong to this project.
+    const keptIds = validatedColors
+      .filter((color) => color.id !== null && existingIds.has(color.id))
+      .map((color) => color.id);
+
+    // Delete the colors that are no longer present in the new palette.
+    if (keptIds.length > 0) {
+      const placeholders = keptIds.map(() => '?').join(', ');
       await connection.query(
-        'REPLACE INTO project_palette (project_id, name, hex) VALUES (?, ?, ?)',
-        [id, safeName, color.hex]
+        `DELETE FROM project_palette WHERE project_id = ? AND id NOT IN (${placeholders})`,
+        [id, ...keptIds]
       );
+    } else {
+      await connection.query('DELETE FROM project_palette WHERE project_id = ?', [id]);
     }
+
+    // Upsert each color at its array index, which becomes its persisted position.
+    for (let position = 0; position < validatedColors.length; position += 1) {
+      const color = validatedColors[position];
+      if (color.id !== null && existingIds.has(color.id)) {
+        await connection.query(
+          'UPDATE project_palette SET name = ?, hex = ?, position = ? WHERE id = ? AND project_id = ?',
+          [color.name, color.hex, position, color.id, id]
+        );
+      } else {
+        await connection.query(
+          'INSERT INTO project_palette (project_id, name, hex, position) VALUES (?, ?, ?, ?)',
+          [id, color.name, color.hex, position]
+        );
+      }
+    }
+
     await connection.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
 
+    // Return the saved palette (with ids) in its persisted order so the client
+    // can adopt the canonical state.
+    const [paletteRows] = await connection.query(
+      'SELECT id, name, hex FROM project_palette WHERE project_id = ? ORDER BY position ASC, id ASC',
+      [id]
+    );
+
     await connection.commit();
-    res.json({ success: true });
+    res.json({ success: true, palette: paletteRows });
   } catch (error) {
-    // Roll back the whole palette change so it never persists partially.
-    await connection.rollback();
+    if (connection) await connection.rollback();
     logProjectsControllerError(req, 'update_palette', error, { projectId: id });
     res.status(500).json({ error: 'Erreur base de données' });
   } finally {
-    // Always return the connection to the pool.
-    connection.release();
+    if (connection) connection.release();
   }
 };
 
@@ -743,85 +730,6 @@ const deleteTypographyNorm = async (req, res) => {
     logProjectsControllerError(req, 'delete_typography_norm', error, {
       projectId,
       normId
-    });
-    res.status(500).json({ error: 'Erreur base de données' });
-  }
-};
-
-/**
- * Removes a single color (identified by its hex) from a project's palette and
- * refreshes last_edited.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
-const deletePaletteColor = async (req, res) => {
-  const { id } = req.params;
-  const { hex } = req.body;
-
-  const validatedPayload = validateDeletePaletteColorPayload({ hex });
-  if (validatedPayload.error) {
-    return res.status(400).json({ error: validatedPayload.error });
-  }
-
-  try {
-    if (!(await ensureProjectOwnership(req, res, id))) return;
-
-    const [result] = await db.query(
-      'DELETE FROM project_palette WHERE project_id = ? AND hex = ?',
-      [id, validatedPayload.value.hex]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Couleur non trouvée' });
-    }
-
-    await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
-    res.json({ success: true });
-  } catch (error) {
-    logProjectsControllerError(req, 'delete_palette_color', error, {
-      projectId: id
-    });
-    res.status(500).json({ error: 'Erreur base de données' });
-  }
-};
-
-/**
- * Updates a single palette color: locates it by its old hex within the project
- * and applies the new name and hex, then refreshes last_edited.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
-const updatePaletteColor = async (req, res) => {
-  const { id } = req.params;
-  const { oldHex, newName, newHex } = req.body;
-
-  const validatedPayload = validateUpdatePaletteColorPayload({ oldHex, newName, newHex });
-  if (validatedPayload.error) {
-    return res.status(400).json({ error: validatedPayload.error });
-  }
-
-  try {
-    if (!(await ensureProjectOwnership(req, res, id))) return;
-
-    const [result] = await db.query(
-      'UPDATE project_palette SET name = ?, hex = ? WHERE project_id = ? AND hex = ?',
-      [
-        validatedPayload.value.newName,
-        validatedPayload.value.newHex,
-        id,
-        validatedPayload.value.oldHex
-      ]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Couleur non trouvée' });
-    }
-
-    await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [id]);
-    res.json({ success: true });
-  } catch (error) {
-    logProjectsControllerError(req, 'update_palette_color', error, {
-      projectId: id
     });
     res.status(500).json({ error: 'Erreur base de données' });
   }
@@ -922,8 +830,6 @@ module.exports = {
   updatePalette,
   deleteBrushNorm,
   deleteTypographyNorm,
-  deletePaletteColor,
-  updatePaletteColor,
   updateBrushNorm,
   updateTypographyNorm
 };

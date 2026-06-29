@@ -11,8 +11,7 @@
  *   State:   projects, activeProjectId, activeProject, projectsLoading
  *   Setters: setActiveProjectId
  *   Actions: fetchProjects, addProject, deleteProject, updateProjectName,
- *            updateProjectPalette, updateProjectPaletteColor,
- *            deleteProjectPaletteColor, addBrushNorm, addTypographyNorm,
+ *            updateProjectPalette, addBrushNorm, addTypographyNorm,
  *            deleteBrushNorm, deleteTypographyNorm, updateBrushNorm,
  *            updateTypographyNorm
  */
@@ -106,53 +105,30 @@ export const ProjectProvider = ({ children }) => {
   }, [activeProjectId, setGlobalError]);
 
   /**
-   * Replaces a project's entire palette (used for adds and reorders).
-   * @returns {Promise<boolean>} Whether the update succeeded.
+   * Replaces a project's whole palette with the given ordered array of colors
+   * and adopts the canonical palette returned by the server (each color carries
+   * its id and persisted order). Used for every palette change: add, edit,
+   * delete and reorder.
+   * @returns {Promise<Array|null>} The saved palette on success, or null on failure.
    */
   const updateProjectPalette = useCallback(async (projectId, palette) => {
     try {
-      await api.post(`/projects/${projectId}/palette`, palette, { onGlobalError: setGlobalError });
+      const response = await api.post(
+        `/projects/${projectId}/palette`,
+        palette,
+        { onGlobalError: setGlobalError }
+      );
+      const savedPalette = response?.palette || [];
       setProjects((prevProjects) => (
         prevProjects.map((project) => (
-          String(project.id) === String(projectId) ? { ...project, palette } : project
+          String(project.id) === String(projectId) ? { ...project, palette: savedPalette } : project
         ))
       ));
-      return true;
+      return savedPalette;
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors de la modification de la palette.');
       logger.error('projects.updatePalette.error', error);
-      return false;
-    }
-  }, [setGlobalError]);
-
-  /**
-   * Updates a single palette color, matched by its current hex (`oldHex`).
-   * @returns {Promise<boolean>} Whether the update succeeded.
-   */
-  const updateProjectPaletteColor = useCallback(async (projectId, { oldHex, newName, newHex }) => {
-    try {
-      await api.patch(
-        `/projects/${projectId}/palette`,
-        { oldHex, newName, newHex },
-        { onGlobalError: setGlobalError }
-      );
-      setProjects((prevProjects) => (
-        prevProjects.map((project) => (
-          String(project.id) === String(projectId)
-            ? {
-              ...project,
-              palette: project.palette.map((color) => (
-                color.hex === oldHex ? { ...color, name: newName, hex: newHex } : color
-              ))
-            }
-            : project
-        ))
-      ));
-      return true;
-    } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors de la modification de la couleur.');
-      logger.error('projects.updatePaletteColor.error', error);
-      return false;
+      return null;
     }
   }, [setGlobalError]);
 
@@ -170,28 +146,6 @@ export const ProjectProvider = ({ children }) => {
     } catch (error) {
       setGlobalError(error?.message || 'Erreur lors du changement de nom du projet.');
       logger.error('projects.updateName.error', error);
-    }
-  }, [setGlobalError]);
-
-  /**
-   * Deletes a palette color by hex.
-   * @returns {Promise<boolean>} Whether the deletion succeeded.
-   */
-  const deleteProjectPaletteColor = useCallback(async (projectId, colorHex) => {
-    try {
-      await api.delete(`/projects/${projectId}/palette`, { hex: colorHex }, { onGlobalError: setGlobalError });
-      setProjects((prevProjects) => (
-        prevProjects.map((project) => (
-          String(project.id) === String(projectId)
-            ? { ...project, palette: project.palette.filter((color) => color.hex !== colorHex) }
-            : project
-        ))
-      ));
-      return true;
-    } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors de la suppression de la couleur.');
-      logger.error('projects.deletePaletteColor.error', error);
-      return false;
     }
   }, [setGlobalError]);
 
@@ -349,8 +303,6 @@ export const ProjectProvider = ({ children }) => {
     deleteProject,
     updateProjectName,
     updateProjectPalette,
-    updateProjectPaletteColor,
-    deleteProjectPaletteColor,
     addBrushNorm,
     addTypographyNorm,
     deleteBrushNorm,
@@ -367,8 +319,6 @@ export const ProjectProvider = ({ children }) => {
     deleteProject,
     updateProjectName,
     updateProjectPalette,
-    updateProjectPaletteColor,
-    deleteProjectPaletteColor,
     addBrushNorm,
     addTypographyNorm,
     deleteBrushNorm,
