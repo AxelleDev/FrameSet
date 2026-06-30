@@ -37,7 +37,6 @@ export default function Profile() {
     confirmPassword: ''
   });
   const [passwordError, setPasswordError] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
@@ -60,7 +59,11 @@ export default function Profile() {
     if (isEditing) {
       return updateUserProfile(editForm).then((result) => {
         setIsEditing(false);
-        if (result?.success !== false) showToast('Profil mis à jour.');
+        if (result?.success === false) {
+          if (result.message) showToast(result.message, 'error');
+        } else {
+          showToast('Profil mis à jour.');
+        }
       });
     } else {
       setEditForm({
@@ -88,7 +91,6 @@ export default function Profile() {
   const openPasswordModal = () => {
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     setPasswordError('');
-    setPasswordSuccess('');
     setIsPasswordModalOpen(true);
   };
 
@@ -103,10 +105,10 @@ export default function Profile() {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     setPasswordError('');
-    setPasswordSuccess('');
 
+    // Client-side validation stays inline (a small hint inside the modal).
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      setPasswordError('Entrez votre email et votre mot de passe.');
+      setPasswordError('Renseignez tous les champs.');
       return;
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -121,13 +123,16 @@ export default function Profile() {
         newPassword: passwordForm.newPassword
       });
 
+      // The action result (success or business error) is surfaced as a toast,
+      // like every other in-app action.
       if (!result.success) {
-        setPasswordError(result.message || 'Erreur lors de la modification.');
+        if (result.message) showToast(result.message, 'error');
         return;
       }
 
-      setPasswordSuccess('Votre mot de passe a été modifié.');
+      setIsPasswordModalOpen(false);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      showToast('Votre mot de passe a été modifié.');
     } finally {
       setIsPasswordSaving(false);
     }
@@ -292,7 +297,6 @@ export default function Profile() {
           </FormField>
 
           {passwordError && <Alert variant="error">{passwordError}</Alert>}
-          {passwordSuccess && <Alert variant="success">{passwordSuccess}</Alert>}
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <Button type="button" onClick={closePasswordModal} variant="ghost" className="text-sm">

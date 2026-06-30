@@ -20,6 +20,17 @@ import AddTile from '../components/AddTile';
 import Card from '../components/Card';
 import Button from '../components/Button';
 
+/**
+ * Formats a project's `lastEdited` value for display after the "Modifié " prefix.
+ * The API returns either the just-edited sentinel ("À l'instant") or a
+ * "DD/MM HH:MM" string; we render "à l'instant" or "le DD/MM à HH:MM".
+ */
+function formatModified(value) {
+  if (!value) return '';
+  const match = /^(\d{2}\/\d{2})\s+(\d{2}:\d{2})$/.exec(value);
+  return match ? `le ${match[1]} à ${match[2]}` : "à l'instant";
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { projects, setActiveProjectId, addProject, deleteProject, updateProjectName } = useProjects();
@@ -153,7 +164,7 @@ export default function Dashboard() {
             </div>
             <div className="relative z-10 flex flex-col h-full min-h-[160px]">
               <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">{project.name}</h3>
-              <p className="text-sm text-primary mb-auto">Modifié {project.lastEdited}</p>
+              <p className="text-sm text-primary mb-auto">Modifié {formatModified(project.lastEdited)}</p>
               <div className="mt-8 pt-4 flex -space-x-2 min-h-[40px] items-center">
                 {project.palette.map((color, i) => (
                   <div key={color.id ?? `${color.hex}-${i}`} className="w-6 h-6 rounded-full ring-2 ring-white"

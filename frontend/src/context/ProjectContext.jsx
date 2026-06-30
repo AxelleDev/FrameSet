@@ -139,7 +139,7 @@ export const ProjectProvider = ({ children }) => {
       setProjects((prevProjects) => (
         prevProjects.map((project) => (
           String(project.id) === String(projectId)
-            ? { ...project, name, lastEdited: "A l'instant" }
+            ? { ...project, name, lastEdited: "À l'instant" }
             : project
         ))
       ));

@@ -200,9 +200,13 @@ export const AuthProvider = ({ children }) => {
         pendingEmail: data.pendingEmail ?? user.pendingEmail
       };
       setUser(updatedUser);
+      return { success: true };
     } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors de la mise a jour du profil.');
       logger.error('auth.updateUserProfile.error', error);
+      // Business errors (4xx) are returned for an inline toast; server errors
+      // (5xx) already surfaced on the global banner via onGlobalError.
+      const isBusinessError = error.status && error.status < 500;
+      return { success: false, message: isBusinessError ? (error.data?.error || error.message) : undefined };
     }
   }, [user]);
 
