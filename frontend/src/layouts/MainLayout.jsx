@@ -27,7 +27,7 @@ export default function MainLayout() {
   // Compute NavLink classes based on the active route state.
   const navLinkClass = ({ isActive }) =>
     `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-base ${
-      isActive ? 'bg-blue/20 text-blue' : 'text-primary hover:text-blue hover:bg-blue/10'
+      isActive ? 'bg-blue/15 text-blue' : 'text-primary hover:text-blue hover:bg-blue/10'
     }`;
 
   // Derive the header title from the active project or the current route.
@@ -113,7 +113,7 @@ export default function MainLayout() {
         <NavLink
           to="/app/profile"
           onClick={closeMobileMenu}
-          className={({ isActive }) => `p-4 transition cursor-pointer group ${isActive ? 'bg-blue/20' : 'hover:bg-blue/10'}`}
+          className={({ isActive }) => `p-4 transition cursor-pointer group ${isActive ? 'bg-blue/15' : 'hover:bg-blue/10'}`}
         >
           {({ isActive }) => (
             <div className="flex items-center justify-between">
@@ -140,7 +140,7 @@ export default function MainLayout() {
                <nav className="flex text-sm font-medium items-center animate-fade-in">
                  <Link className="text-blue hover:text-primary transition cursor-pointer" to="/app/dashboard">Espace de travail</Link>
                  <svg className="w-4 h-4 mx-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-                 <span className="text-primary bg-blue/10 px-2.5 py-1 rounded-lg truncate max-w-[150px] md:max-w-none">{activeProject.name}</span>
+                 <span className="text-primary bg-blue/15 px-2.5 py-1 rounded-lg truncate max-w-[150px] md:max-w-none">{activeProject.name}</span>
                </nav>
              ) : (
                <span className="text-xl font-light text-primary">
