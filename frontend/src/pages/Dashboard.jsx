@@ -86,7 +86,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <Card className="overflow-hidden mb-12 animate-fade-in border border-white">
+      <Card className="overflow-hidden mb-12 animate-fade-in">
         <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-start justify-between">
           <div>
             <h2 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">Bonjour, {user.name.split(' ')[0]}.</h2>
@@ -145,16 +145,16 @@ export default function Dashboard() {
             <div className="relative z-10 flex flex-col h-full min-h-[160px]">
               <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">{project.name}</h3>
               <p className="text-sm text-primary mb-auto">Modifié {project.lastEdited}</p>
-              <div className="mt-8 pt-4 border-t border-blue flex -space-x-2 min-h-[40px] items-center">
+              <div className="mt-8 pt-4 flex -space-x-2 min-h-[40px] items-center">
                 {project.palette.map((color) => (
-                  <div key={color.hex} className="w-6 h-6 rounded-full border border-white  ring-1 ring-black/5" 
+                  <div key={color.hex} className="w-6 h-6 rounded-full ring-2 ring-white" 
                        style={{ backgroundColor: color.hex }} 
                        title={color.name}></div>
                 ))}
                 {project.palette.length === 0 && (
                   <div className="text-xs text-blue italic flex items-center">
-                    <div className="w-6 h-6 rounded-full bg-blue/10 border border-white mr-1"></div>
-                    <div className="w-6 h-6 rounded-full bg-blue/5 border border-white"></div>
+                    <div className="w-6 h-6 rounded-full bg-blue/10 ring-2 ring-white mr-1"></div>
+                    <div className="w-6 h-6 rounded-full bg-blue/5 ring-2 ring-white"></div>
                   </div>
                 )}
               </div>

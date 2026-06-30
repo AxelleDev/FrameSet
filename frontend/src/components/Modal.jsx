@@ -25,7 +25,7 @@ export default function Modal({
   subtitle,
   children,
   overlayClassName = 'bg-primary/40 backdrop-blur-sm',
-  panelClassName = 'glass-card w-full max-w-lg rounded-3xl border border-white p-8 ',
+  panelClassName = 'glass-card w-full max-w-lg rounded-3xl p-8 ',
   showClose = true,
   closeOnBackdrop = true
 }) {

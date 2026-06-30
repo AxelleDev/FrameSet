@@ -16,7 +16,6 @@ export default function Card({ clickable = false, className = '', children, styl
 
   const combinedStyle = {
     backgroundColor: 'white',
-    border: '1px solid rgba(60, 61, 72, 0.06)',
     ...style,
   };
 

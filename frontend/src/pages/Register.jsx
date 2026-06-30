@@ -87,7 +87,7 @@ export default function Register() {
           </p>
 
           <div className="space-y-4 pt-2">
-            <div className="border-l-2 border-blue/40 pl-5 space-y-1.5">
+            <div className="space-y-1.5">
               <p className="text-sm font-medium text-primary">"Un outil essentiel pour reprendre un projet sans perdre mes réglages graphiques."</p>
               <p className="text-xs text-blue uppercase tracking-widest">Alyse C., Illustratrice</p>
             </div>

@@ -276,7 +276,7 @@ export default function ProjectNorms() {
                   <div className="text-xs text-secondary mb-2">Opacité : {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}</div>
                 </div>
                 <div className="flex-1 flex flex-col justify-end">
-                  <div className="h-16 bg-white rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
+                  <div className="h-16 bg-blue/5 rounded-xl flex items-center justify-center relative overflow-hidden">
                     <div className="flex flex-col items-center justify-center w-full px-4">
                       <div
                         className="w-16 rounded-full mb-1 bg-primary"
@@ -336,7 +336,7 @@ export default function ProjectNorms() {
                   )}
                 </div>
                 <div className="flex-1 flex flex-col justify-end">
-                  <div className="h-16 bg-white rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
+                  <div className="h-16 bg-blue/5 rounded-xl flex items-center justify-center relative overflow-hidden">
                     {/* Show the live font sample only once the font has loaded */}
                     {loadedFonts.includes(norm.fontFamily) ? (
                       <span

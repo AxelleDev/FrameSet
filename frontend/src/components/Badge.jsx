@@ -10,16 +10,16 @@ import React from 'react';
  * @param {React.ReactNode} props.children - Label content.
  */
 const COLORS = {
-  primary: 'border-primary text-primary',
-  blue: 'border-blue text-blue',
-  danger: 'border-danger text-danger',
+  primary: 'bg-primary/10 text-primary',
+  blue: 'bg-blue/10 text-blue',
+  danger: 'bg-danger/10 text-danger',
 };
 
 export default function Badge({ color = 'primary', className = '', children, ...rest }) {
   const tone = COLORS[color] || COLORS.primary;
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full bg-white border  text-[10px] font-bold uppercase tracking-wider ${tone} ${className}`.trim()}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${tone} ${className}`.trim()}
       {...rest}
     >
       {children}

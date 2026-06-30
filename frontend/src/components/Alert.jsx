@@ -11,9 +11,9 @@ import React from 'react';
  * @param {React.ReactNode} props.children - Message content.
  */
 const VARIANTS = {
-  error: 'bg-danger/10 border border-danger/30 text-primary',
-  info: 'bg-blue/10 border border-blue/30 text-primary',
-  success: 'bg-success/10 border border-success/30 text-primary',
+  error: 'bg-danger/10 text-primary',
+  info: 'bg-blue/10 text-primary',
+  success: 'bg-success/10 text-primary',
 };
 
 export default function Alert({ variant = 'info', className = '', children, ...rest }) {

@@ -238,7 +238,7 @@ export default function Profile() {
           </div>
         </Card>
 
-          <Card className="p-8 border-l-4 border-l-danger">
+          <Card className="p-8">
             <h3 className="text-lg font-medium text-primary mb-2">Zone de Danger</h3>
             <p className="text-sm text-primary mb-6">La suppression de votre compte est irréversible. Toutes vos données seront perdues.</p>
            

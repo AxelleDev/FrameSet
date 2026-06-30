@@ -55,10 +55,10 @@ export default function Button({
   const size = fullWidth ? 'w-full py-4 text-sm' : 'px-6 py-2.5 text-sm';
 
   const variants = {
-    primary: 'bg-blue text-white  hover:brightness-95  ',
-    danger: 'bg-danger text-white  hover:brightness-95  ',
-    ghost: 'bg-transparent text-primary hover:bg-primary/5',
-    outline: 'bg-white border border-blue text-primary hover:bg-blue/5',
+    primary: 'bg-blue text-white hover:bg-blue/90',
+    danger: 'bg-danger text-white hover:bg-danger/90',
+    ghost: 'bg-transparent text-primary hover:bg-blue/10',
+    outline: 'bg-blue/10 text-blue hover:bg-blue/20',
   };
 
   const disabledClass = (disabled || isLoading) ? 'opacity-50 cursor-not-allowed' : '';
