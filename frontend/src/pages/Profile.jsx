@@ -198,8 +198,7 @@ export default function Profile() {
                     type="text"
                     value={editForm.name}
                     onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                    readOnly={!isEditing}
-                    className={isEditing ? '' : 'opacity-70 cursor-not-allowed'}
+                    disabled={!isEditing}
                   />
                 </FormField>
                 <FormField label="Adresse Email">
@@ -207,8 +206,7 @@ export default function Profile() {
                     type="email"
                     value={editForm.email}
                     onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-                    readOnly={!isEditing}
-                    className={isEditing ? '' : 'opacity-70 cursor-not-allowed'}
+                    disabled={!isEditing}
                   />
                   {user.pendingEmail && user.pendingEmail !== user.email && (
                     <p className="text-xs text-primary/60 mt-2">
