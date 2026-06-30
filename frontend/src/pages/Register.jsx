@@ -70,7 +70,7 @@ export default function Register() {
 
   return (
     <AuthLayout
-      variant="register"
+     
       swapOnMobile
       hero={
         <>

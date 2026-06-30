@@ -63,7 +63,7 @@ export default function Verify() {
 
   return (
     <AuthLayout
-      variant="login"
+     
       hero={
         <>
           <div className="flex items-center mb-2">

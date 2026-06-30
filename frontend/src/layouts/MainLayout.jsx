@@ -47,11 +47,6 @@ export default function MainLayout() {
   return (
     <div className="relative flex h-screen overflow-hidden bg-canvas text-primary transition-colors duration-500">
       
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-lavender-200/40 rounded-full blur-[100px] opacity-60"></div>
-        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-100/40 rounded-full blur-[100px] opacity-60"></div>
-      </div>
-
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 z-40 bg-primary/20 backdrop-blur-sm md:hidden animate-fade-in"

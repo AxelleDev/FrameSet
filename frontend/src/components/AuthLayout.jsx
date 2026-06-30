@@ -2,38 +2,21 @@
 import React from 'react';
 
 /**
- * Two-column layout for auth screens: a hero/marketing column and a form column,
- * over an animated decorative background.
+ * Two-column layout for auth screens: a hero/marketing column and a form column
+ * on a flat solid background.
  *
  * @param {object} props
  * @param {React.ReactNode} props.hero - Content for the hero/marketing column.
  * @param {React.ReactNode} props.children - The form (rendered in the second column).
- * @param {'login'|'register'} [props.variant] - Selects the decorative blob arrangement.
  * @param {boolean} [props.swapOnMobile] - When true, shows the form above the hero on mobile.
  */
-export default function AuthLayout({ hero, children, variant = 'login', swapOnMobile = false }) {
+export default function AuthLayout({ hero, children, swapOnMobile = false }) {
   // Reorder hero/form columns so the form can appear first on small screens.
   const heroOrderClass = swapOnMobile ? 'order-2 md:order-1' : 'order-1';
   const formOrderClass = swapOnMobile ? 'order-1 md:order-2' : 'order-2';
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center bg-canvas text-primary">
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-        {variant === 'register' ? (
-          <>
-            <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-            <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-blue/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-            <div className="absolute top-[20%] right-[20%] w-96 h-96 bg-blue/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
-          </>
-        ) : (
-          <>
-            <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-            <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-blue/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-            <div className="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-blue/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
-          </>
-        )}
-      </div>
-
       <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 p-8">
         <div className={`flex flex-col justify-center space-y-6 animate-fade-in ${heroOrderClass}`}>
           {hero}

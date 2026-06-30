@@ -81,7 +81,7 @@ export default function ForgotPassword() {
 
   return (
     <AuthLayout
-      variant="login"
+     
       hero={
         <>
           <div className="flex items-center mb-2">

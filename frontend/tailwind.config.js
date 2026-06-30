@@ -19,7 +19,7 @@ export default {
       colors: {
         primary: '#3C3D48',
         secondary: '#AFAFAF',
-        canvas: '#F8F9FF',
+        canvas: '#f6f7ff',
         success: '#3E9D7B',
         danger: '#DC2626',
         blue: { ...defaultColors.blue, DEFAULT: '#8994DF' },
