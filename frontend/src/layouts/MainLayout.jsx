@@ -6,6 +6,7 @@ import { useProjects } from '../context/ProjectContext';
 import Avatar from '../components/Avatar';
 import ThemeToggle from '../components/ThemeToggle';
 import Logo from '../components/Logo';
+import Seo from '../components/Seo';
 
 /**
  * Authenticated application shell: collapsible sidebar navigation, top header
@@ -53,6 +54,7 @@ export default function MainLayout() {
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-canvas text-primary transition-colors duration-slow">
+      <Seo title="Espace de travail" noindex />
       <a
         href="#contenu"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-toast focus:px-4 focus:py-2 focus:rounded-xl focus:bg-surface focus:text-primary focus:ring-2 focus:ring-blue"

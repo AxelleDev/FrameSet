@@ -13,6 +13,7 @@ import Logo from '../components/Logo';
 import FormField from '../components/FormField';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import Seo from '../components/Seo';
 import PasswordInput from '../components/PasswordInput';
 import TextInput from '../components/TextInput';
 import Alert from '../components/Alert';
@@ -100,6 +101,7 @@ export default function Register() {
       }
     >
       <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
+        <Seo title="Créer un compte" path="/register" description="Créez votre compte FrameSet et commencez à structurer les fondations graphiques de vos projets." />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Créez votre compte</h2>
           <p className="text-primary text-sm mt-2">Votre référence graphique commence ici.</p>

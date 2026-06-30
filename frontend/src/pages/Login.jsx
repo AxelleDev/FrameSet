@@ -13,6 +13,7 @@ import Logo from '../components/Logo';
 import FormField from '../components/FormField';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import Seo from '../components/Seo';
 import PasswordInput from '../components/PasswordInput';
 import TextInput from '../components/TextInput';
 import Alert from '../components/Alert';
@@ -86,6 +87,7 @@ export default function Login() {
       }
     >
       <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
+        <Seo title="Connexion" path="/login" description="Connectez-vous à votre espace FrameSet pour gérer les normes et palettes de vos projets." />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Bon retour</h2>
           <p className="text-primary text-sm mt-2">Reprenez là où vous vous êtes arrêté.</p>

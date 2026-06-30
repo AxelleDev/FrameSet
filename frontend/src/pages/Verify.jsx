@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
 import Logo from '../components/Logo';
 import Card from '../components/Card';
+import Seo from '../components/Seo';
 import FormField from '../components/FormField';
 import TextInput from '../components/TextInput';
 import Alert from '../components/Alert';
@@ -81,6 +82,7 @@ export default function Verify() {
       }
     >
       <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
+        <Seo title="Vérification de l’email" path="/verify" noindex />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Vérification</h2>
           <p className="text-primary text-sm mt-2">
