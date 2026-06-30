@@ -439,10 +439,15 @@ export default function ProjectNorms() {
       >
         <div className="space-y-4">
           <FormField label="Type">
-            <TextInput as="select" value={addType} onChange={e => setAddType(e.target.value)} className="appearance-none font-medium">
-              <option value="brush">Trait</option>
-              <option value="typography">Typographie</option>
-            </TextInput>
+            <CustomSelect
+              value={addType}
+              onChange={val => setAddType(val)}
+              options={[
+                { value: 'brush', label: 'Trait' },
+                { value: 'typography', label: 'Typographie' }
+              ]}
+              isSearchable={false}
+            />
           </FormField>
           {addType === 'brush' ? (
             <>
