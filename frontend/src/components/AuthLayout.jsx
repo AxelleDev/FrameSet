@@ -17,7 +17,7 @@ export default function AuthLayout({ hero, children, variant = 'login', swapOnMo
   const formOrderClass = swapOnMobile ? 'order-1 md:order-2' : 'order-2';
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center bg-[#F8F9FF] text-primary">
+    <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center bg-canvas text-primary">
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         {variant === 'register' ? (
           <>

@@ -275,7 +275,7 @@ export default function ProjectNorms() {
                     <span className="text-2xl font-light text-primary mr-1">{norm.value}</span>
                     <span className="text-base text-blue font-medium">{norm.unit}</span>
                   </div>
-                  <div className="text-xs text-slate-500 mb-2">Opacité : {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}</div>
+                  <div className="text-xs text-secondary mb-2">Opacité : {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}</div>
                 </div>
                 <div className="flex-1 flex flex-col justify-end">
                   <div className="h-16 bg-white rounded-xl flex items-center justify-center border border-primary relative overflow-hidden group-hover:border-blue transition-colors">
@@ -349,7 +349,7 @@ export default function ProjectNorms() {
                         AaBbCc
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-400">Chargement… <span style={{fontFamily: `'${norm.fontFamily}', Arial, sans-serif`}}>{norm.fontFamily}</span></span>
+                      <span className="text-xs text-secondary">Chargement… <span style={{fontFamily: `'${norm.fontFamily}', Arial, sans-serif`}}>{norm.fontFamily}</span></span>
                     )}
                   </div>
                 </div>
@@ -402,7 +402,7 @@ export default function ProjectNorms() {
                         noOptionsMessage={() => loadingFonts ? 'Chargement...' : 'Aucune police'}
                       />
                     </div>
-                    {loadingFonts && <div className="text-xs text-slate-400 mt-1">Chargement des polices...</div>}
+                    {loadingFonts && <div className="text-xs text-secondary mt-1">Chargement des polices...</div>}
                     {errorFonts && <div className="text-xs text-red-500 mt-1">Erreur de chargement des polices</div>}
                   </FormField>
                   <FormField label="Poids">
@@ -479,7 +479,7 @@ export default function ProjectNorms() {
                   isDisabled={loadingFonts}
                   noOptionsMessage={() => loadingFonts ? 'Chargement...' : 'Aucune police'}
                 />
-                {loadingFonts && <div className="text-xs text-slate-400 mt-1">Chargement des polices...</div>}
+                {loadingFonts && <div className="text-xs text-secondary mt-1">Chargement des polices...</div>}
                 {errorFonts && <div className="text-xs text-red-500 mt-1">Erreur de chargement des polices</div>}
               </FormField>
               <FormField label="Poids">

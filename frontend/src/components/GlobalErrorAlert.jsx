@@ -54,7 +54,7 @@ export default function GlobalErrorAlert({ message, onClose }) {
       left: 0,
       width: '100%',
       zIndex: 9999,
-      background: '#FF9292',
+      background: 'var(--color-pink)',
       color: '#fff',
       padding: '0.75rem 3rem',
       fontWeight: 'bold',
