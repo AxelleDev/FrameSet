@@ -399,7 +399,7 @@ export default function ProjectPalette() {
               tabIndex={0}
               role="button"
               aria-label={`Couleur ${color.name}, ${color.hex}. Utilisez les flèches pour réordonner.`}
-              className={`group relative flex flex-col aspect-[4/5] rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-blue/70 focus-visible:ring-offset-2 ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
+              className={`group relative flex flex-col aspect-[4/5] rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-blue/70 focus-visible:ring-offset-2 ring-offset-canvas ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
               draggable
               onKeyDown={e => handleSwatchKeyDown(e, idx)}
               onDragStart={e => {
