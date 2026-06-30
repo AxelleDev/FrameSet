@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
  * @param {React.ReactNode} props.children - Button label/content.
  * @param {Function} [props.onClick] - Click handler; may return a promise to drive the loading state.
  * @param {string} [props.type] - Native button type (defaults to "button").
- * @param {'primary'|'secondary'|'ghost'|'outline'} [props.variant] - Visual variant.
+ * @param {'primary'|'danger'|'ghost'|'outline'} [props.variant] - Visual variant.
  * @param {boolean} [props.fullWidth] - Stretch to full width with larger padding.
  * @param {string} [props.to] - Render as a react-router Link to this route.
  * @param {string} [props.href] - Render as an anchor to this URL.
@@ -50,15 +50,15 @@ export default function Button({
 
   const base =
     'font-medium rounded-xl transition-all inline-flex items-center justify-center gap-2 ' +
-    'focus:outline-none focus-visible:ring-2 focus-visible:ring-pink/50 focus-visible:ring-offset-2';
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue/50 focus-visible:ring-offset-2';
 
   const size = fullWidth ? 'w-full py-4 text-sm' : 'px-6 py-2.5 text-sm';
 
   const variants = {
     primary: 'bg-blue text-white shadow-sm hover:brightness-95 hover:shadow-md hover:shadow-blue/30',
-    secondary: 'bg-pink text-white shadow-sm hover:brightness-95 hover:shadow-md hover:shadow-pink/30',
+    danger: 'bg-danger text-white shadow-sm hover:brightness-95 hover:shadow-md hover:shadow-danger/30',
     ghost: 'bg-transparent text-primary hover:bg-primary/5',
-    outline: 'bg-white border border-blue text-primary hover:border-pink hover:text-pink',
+    outline: 'bg-white border border-blue text-primary hover:bg-blue/5',
   };
 
   const disabledClass = (disabled || isLoading) ? 'opacity-50 cursor-not-allowed' : '';

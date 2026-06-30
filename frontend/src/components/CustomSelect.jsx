@@ -3,7 +3,7 @@ import Select from 'react-select';
 
 /**
  * Themed wrapper around react-select, styled to match the app's TextInput
- * (soft blue fill, periwinkle border, pink focus ring, rounded menu with
+ * (soft blue fill, periwinkle border, blue focus ring, rounded menu with
  * pill-like options). Accepts plain string options or `{ value, label }`
  * objects and exposes a controlled string `value`/`onChange` API.
  *

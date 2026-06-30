@@ -132,7 +132,7 @@ export default function Register() {
               autoComplete="email"
             />
             {formData.email !== '' && !emailValid && (
-              <p className="text-xs text-pink mt-1">Format d'email invalide.</p>
+              <p className="text-xs text-danger mt-1">Format d'email invalide.</p>
             )}
           </FormField>
 
@@ -156,7 +156,7 @@ export default function Register() {
               autoComplete="new-password"
             />
             {formData.confirmPassword !== '' && !passwordsMatch && (
-              <p className="text-xs text-pink mt-1">Les mots de passe ne correspondent pas.</p>
+              <p className="text-xs text-danger mt-1">Les mots de passe ne correspondent pas.</p>
             )}
           </FormField>
 
@@ -167,7 +167,7 @@ export default function Register() {
 
         <div className="mt-8 text-center">
           <span className="text-sm text-primary">Vous avez déjà un compte ? </span>
-          <Link to="/login" className="text-sm font-medium text-blue hover:text-pink transition-colors">Se connecter</Link>
+          <Link to="/login" className="text-sm font-medium text-blue hover:text-primary transition-colors">Se connecter</Link>
         </div>
       </Card>
     </AuthLayout>

@@ -134,8 +134,8 @@ export default function Login() {
         </form>
 
         <div className="mt-8 text-center flex flex-col gap-2">
-          <Link to="/register" className="text-sm font-medium text-blue hover:text-pink transition-colors">Pas encore de compte ? Créer un compte</Link>
-          <Link to="/forgot-password" className="text-xs text-blue hover:text-pink transition-colors">Mot de passe oublié ?</Link>
+          <Link to="/register" className="text-sm font-medium text-blue hover:text-primary transition-colors">Pas encore de compte ? Créer un compte</Link>
+          <Link to="/forgot-password" className="text-xs text-blue hover:text-primary transition-colors">Mot de passe oublié ?</Link>
         </div>
       </Card>
     </AuthLayout>

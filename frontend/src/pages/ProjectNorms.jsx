@@ -323,7 +323,7 @@ export default function ProjectNorms() {
                   </ActionIconButton>
                 </div>
                 <div className="mb-4">
-                  <Badge color="pink" className="mb-2">Typographie</Badge>
+                  <Badge color="blue" className="mb-2">Typographie</Badge>
                   <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.fontUsage || norm.fontFamily}</h3>
                   <div className="flex items-baseline mb-2">
                     <span className="text-2xl font-light text-primary mr-1">{norm.fontFamily}</span>
@@ -371,7 +371,7 @@ export default function ProjectNorms() {
                   </FormField>
                   <FormField label="Taille (px)">
                     <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" />
-                    {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-pink mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
+                    {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-danger mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
                   </FormField>
                   <FormField label="Unité">
                     <TextInput type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" />
@@ -401,7 +401,7 @@ export default function ProjectNorms() {
                       />
                     </div>
                     {loadingFonts && <div className="text-xs text-secondary mt-1">Chargement des polices...</div>}
-                    {errorFonts && <div className="text-xs text-red-500 mt-1">Erreur de chargement des polices</div>}
+                    {errorFonts && <div className="text-xs text-danger mt-1">Erreur de chargement des polices</div>}
                   </FormField>
                   <FormField label="Poids">
                     <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" />
@@ -450,7 +450,7 @@ export default function ProjectNorms() {
               </FormField>
               <FormField label="Taille (px)">
                 <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" />
-                {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-pink mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
+                {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-danger mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
               </FormField>
               <FormField label="Unité">
                 <TextInput type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" />
@@ -478,7 +478,7 @@ export default function ProjectNorms() {
                   noOptionsMessage={() => loadingFonts ? 'Chargement...' : 'Aucune police'}
                 />
                 {loadingFonts && <div className="text-xs text-secondary mt-1">Chargement des polices...</div>}
-                {errorFonts && <div className="text-xs text-red-500 mt-1">Erreur de chargement des polices</div>}
+                {errorFonts && <div className="text-xs text-danger mt-1">Erreur de chargement des polices</div>}
               </FormField>
               <FormField label="Poids">
                 <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" />
@@ -506,7 +506,7 @@ export default function ProjectNorms() {
         title="Supprimer la norme"
         message="Êtes-vous sûr de vouloir supprimer cette norme ? Cette action est irréversible."
         confirmLabel="Supprimer"
-        confirmClassName="bg-pink text-white"
+       
         onCancel={() => setConfirmDeleteNorm(null)}
         onConfirm={async () => {
           if (!confirmDeleteNorm) return;

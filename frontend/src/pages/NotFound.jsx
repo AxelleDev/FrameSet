@@ -14,7 +14,7 @@ export default function NotFound() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-canvas text-primary px-6 text-center">
-      <p className="text-7xl font-light tracking-tight text-pink">404</p>
+      <p className="text-7xl font-light tracking-tight text-blue">404</p>
       <h1 className="text-2xl font-medium mt-4">Page non trouvée</h1>
       <p className="text-sm text-primary/60 mt-2 mb-8 max-w-sm">
         La page que vous cherchez n&apos;existe pas ou a été déplacée.

@@ -200,7 +200,7 @@ export default function Dashboard() {
             <TextInput type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="ex: Neo-Tokyo Editorial" autoFocus />
           </FormField>
           {editProjectError && (
-            <div className="text-pink text-sm font-medium mt-2">{editProjectError}</div>
+            <div className="text-danger text-sm font-medium mt-2">{editProjectError}</div>
           )}
         </div>
 
@@ -222,7 +222,7 @@ export default function Dashboard() {
             : 'Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.'
         }
         confirmLabel="Supprimer"
-        confirmClassName="bg-pink text-white"
+       
         onCancel={() => setConfirmDeleteProject(null)}
         onConfirm={async () => {
           if (!confirmDeleteProject?.id) return;

@@ -11,7 +11,7 @@ import React from 'react';
  * @param {React.ReactNode} props.children - Message content.
  */
 const VARIANTS = {
-  error: 'bg-pink/15 border border-pink/40 text-primary',
+  error: 'bg-danger/10 border border-danger/30 text-primary',
   info: 'bg-blue/10 border border-blue/30 text-primary',
   success: 'bg-success/10 border border-success/30 text-primary',
 };

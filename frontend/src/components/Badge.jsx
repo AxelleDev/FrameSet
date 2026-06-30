@@ -5,14 +5,14 @@ import React from 'react';
  * "Typographie"). Outlined on white with a per-color accent.
  *
  * @param {object} props
- * @param {'primary'|'pink'|'blue'} [props.color] - Accent color.
+ * @param {'primary'|'blue'|'danger'} [props.color] - Accent color.
  * @param {string} [props.className] - Extra classes.
  * @param {React.ReactNode} props.children - Label content.
  */
 const COLORS = {
   primary: 'border-primary text-primary',
-  pink: 'border-pink text-pink',
   blue: 'border-blue text-blue',
+  danger: 'border-danger text-danger',
 };
 
 export default function Badge({ color = 'primary', className = '', children, ...rest }) {

@@ -33,7 +33,7 @@ export default function ConfirmDialog({
   cancelLabel = 'Annuler',
   onConfirm,
   onCancel,
-  confirmClassName = 'bg-pink text-white',
+  confirmClassName = '',
   decorationClassName = 'absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50',
   confirmationWord = '',
   confirmationInputLabel = 'Mot de confirmation',
@@ -89,7 +89,7 @@ export default function ConfirmDialog({
             autoComplete="off"
           />
           {showConfirmationError ? (
-            <p className="mt-2 text-xs text-pink">La valeur saisie ne correspond pas.</p>
+            <p className="mt-2 text-xs text-danger">La valeur saisie ne correspond pas.</p>
           ) : null}
         </div>
       ) : null}
@@ -101,7 +101,7 @@ export default function ConfirmDialog({
         onPrimary={handleConfirm}
         primaryDisabled={!isConfirmationValid}
         primaryClassName={confirmClassName}
-        primaryVariant="secondary"
+        primaryVariant="danger"
       />
     </FormModal>
   );

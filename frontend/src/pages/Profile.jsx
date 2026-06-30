@@ -214,7 +214,7 @@ export default function Profile() {
                     <p className="text-xs text-blue mt-2">
                       Email en attente de vérification : {user.pendingEmail}
                       {' '}·{' '}
-                      <Link to={`/verify?email=${encodeURIComponent(user.pendingEmail)}&type=pending-email`} className="underline hover:text-pink">
+                      <Link to={`/verify?email=${encodeURIComponent(user.pendingEmail)}&type=pending-email`} className="underline hover:text-primary">
                         Vérifier
                       </Link>
                     </p>
@@ -238,11 +238,11 @@ export default function Profile() {
           </div>
         </Card>
 
-          <Card className="p-8 border-l-4 border-l-pink">
+          <Card className="p-8 border-l-4 border-l-danger">
             <h3 className="text-lg font-medium text-primary mb-2">Zone de Danger</h3>
             <p className="text-sm text-primary mb-6">La suppression de votre compte est irréversible. Toutes vos données seront perdues.</p>
            
-            <Button onClick={() => setIsDeleteAccountOpen(true)} variant="secondary" className="text-sm">
+            <Button onClick={() => setIsDeleteAccountOpen(true)} variant="danger" className="text-sm">
               Supprimer mon compte
             </Button>
         </Card>
@@ -310,7 +310,7 @@ export default function Profile() {
         message="Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible. Pour confirmer la suppression, saisissez exactement le mot 'Suppression' dans le champ ci-dessous."
         confirmLabel="Supprimer"
         cancelLabel="Annuler"
-        confirmClassName="bg-pink text-white"
+       
         confirmationWord="Suppression"
         confirmationInputLabel="Écrivez le mot de confirmation"
         confirmationInputPlaceholder="Suppression"

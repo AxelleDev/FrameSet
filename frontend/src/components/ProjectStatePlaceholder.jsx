@@ -16,7 +16,7 @@ export default function ProjectStatePlaceholder({ loading }) {
   if (loading) {
     return (
       <div className="text-center py-20" role="status" aria-live="polite">
-        <div className="border-4 border-blue border-t-pink rounded-full w-10 h-10 mx-auto animate-spin"></div>
+        <div className="border-4 border-blue/20 border-t-blue rounded-full w-10 h-10 mx-auto animate-spin"></div>
         <p className="mt-4 text-blue">Chargement du projet...</p>
       </div>
     );

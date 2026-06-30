@@ -126,7 +126,7 @@ export default function ForgotPassword() {
                 autoComplete="email"
               />
               {form.email !== '' && !emailValid && (
-                <p className="text-xs text-pink mt-1">Format d'email invalide.</p>
+                <p className="text-xs text-danger mt-1">Format d'email invalide.</p>
               )}
             </FormField>
 
@@ -169,7 +169,7 @@ export default function ForgotPassword() {
                 autoComplete="new-password"
               />
               {form.confirmPassword !== '' && !passwordsMatch && (
-                <p className="text-xs text-pink mt-1">Les mots de passe ne correspondent pas.</p>
+                <p className="text-xs text-danger mt-1">Les mots de passe ne correspondent pas.</p>
               )}
             </FormField>
 
@@ -180,7 +180,7 @@ export default function ForgotPassword() {
         )}
 
         <div className="mt-8 text-center">
-          <Link to="/login" className="text-sm font-medium text-blue hover:text-pink transition-colors">Retour à la connexion</Link>
+          <Link to="/login" className="text-sm font-medium text-blue hover:text-primary transition-colors">Retour à la connexion</Link>
         </div>
       </Card>
     </AuthLayout>

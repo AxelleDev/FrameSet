@@ -196,7 +196,7 @@ export default function ProjectPalette() {
 
   const renderEditStatus = () => {
     if (editStatus === 'error') {
-      return <div className="text-xs text-pink mt-2">Erreur lors de la modification.</div>;
+      return <div className="text-xs text-danger mt-2">Erreur lors de la modification.</div>;
     }
     if (editStatus === 'success') {
       return <div className="text-xs text-success mt-2">Modification enregistrée.</div>;
@@ -381,7 +381,7 @@ export default function ProjectPalette() {
       {activeProject ? (
         <>
           {imageError && !isImageModalOpen && (
-            <p className="text-xs text-pink mb-4 text-right">{imageError}</p>
+            <p className="text-xs text-danger mb-4 text-right">{imageError}</p>
           )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
@@ -399,7 +399,7 @@ export default function ProjectPalette() {
               tabIndex={0}
               role="button"
               aria-label={`Couleur ${color.name}, ${color.hex}. Utilisez les flèches pour réordonner.`}
-              className={`group relative flex flex-col aspect-[4/5] rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-pink/70 focus-visible:ring-offset-2 ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
+              className={`group relative flex flex-col aspect-[4/5] rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-blue/70 focus-visible:ring-offset-2 ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
               draggable
               onKeyDown={e => handleSwatchKeyDown(e, idx)}
               onDragStart={e => {
@@ -605,14 +605,14 @@ export default function ProjectPalette() {
                 key={hex}
                 onClick={() => toggleImageColor(hex)}
                 aria-pressed={selected}
-                className={`flex flex-col items-center gap-1 rounded-xl p-2 border transition-all ${selected ? 'border-pink ring-2 ring-pink/40' : 'border-blue/30 opacity-50 hover:opacity-100'}`}
+                className={`flex flex-col items-center gap-1 rounded-xl p-2 border transition-all ${selected ? 'border-blue ring-2 ring-blue/40' : 'border-blue/30 opacity-50 hover:opacity-100'}`}
               >
                 <span className="w-full h-12 rounded-lg shadow-inner" style={{ backgroundColor: hex }}></span>
                 <span className="text-xs font-mono text-primary uppercase">{hex}</span>
               </button>
             ))}
           </div>
-          {imageError && <p className="text-xs text-pink">{imageError}</p>}
+          {imageError && <p className="text-xs text-danger">{imageError}</p>}
         </div>
         <ModalActions
           secondaryLabel="Annuler"
@@ -628,7 +628,7 @@ export default function ProjectPalette() {
         title="Supprimer la couleur"
         message="Êtes-vous sûr de vouloir supprimer cette couleur ?"
         confirmLabel="Supprimer"
-        confirmClassName="bg-pink text-white"
+       
         onCancel={() => setConfirmDeleteColor(null)}
         onConfirm={async () => {
           if (confirmDeleteColor === null) return;

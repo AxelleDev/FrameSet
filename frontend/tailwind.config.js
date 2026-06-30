@@ -3,10 +3,11 @@ import defaultColors from 'tailwindcss/colors';
 /**
  * Design tokens for FrameSet.
  *
- * The brand colors (primary / secondary / blue / pink) are defined here as real
- * theme colors so opacity modifiers like `bg-blue/10` or `ring-pink/40` work.
- * `blue` and `pink` keep Tailwind's default numeric shades (used for decorative
- * blobs/shadows) and only override the bare `DEFAULT` with the brand hue.
+ * One brand color — `blue` (#8994DF, periwinkle) — drives actions, focus,
+ * accents and decoration. The rest are system colors: `danger` (red) for
+ * destructive/error states, `success` (green), and the neutrals `primary` /
+ * `secondary` / `canvas`. `blue` keeps Tailwind's default numeric shades (used
+ * for decorative blobs/shadows) and only overrides the bare `DEFAULT`.
  *
  * @type {import('tailwindcss').Config}
  */
@@ -20,8 +21,8 @@ export default {
         secondary: '#AFAFAF',
         canvas: '#F8F9FF',
         success: '#3E9D7B',
+        danger: '#DC2626',
         blue: { ...defaultColors.blue, DEFAULT: '#8994DF' },
-        pink: { ...defaultColors.pink, DEFAULT: '#FF9292' },
         lavender: {
           50: '#F5F3FF',
           100: '#EDE9FE',
