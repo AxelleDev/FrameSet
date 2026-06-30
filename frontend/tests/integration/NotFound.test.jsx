@@ -1,16 +1,19 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthContext } from '../../src/context/AuthContext';
 import NotFound from '../../src/pages/NotFound';
 
 const renderPage = (user = null) => {
   render(
-    <AuthContext.Provider value={{ user }}>
-      <MemoryRouter>
-        <NotFound />
-      </MemoryRouter>
-    </AuthContext.Provider>
+    <HelmetProvider>
+      <AuthContext.Provider value={{ user }}>
+        <MemoryRouter>
+          <NotFound />
+        </MemoryRouter>
+      </AuthContext.Provider>
+    </HelmetProvider>
   );
 };
 

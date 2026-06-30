@@ -9,7 +9,7 @@ describe('Alert', () => {
   });
 
   it('utilise le role "alert" pour une erreur', () => {
-    render(<Alert variant="error">Oups</Alert>);
+    render(<Alert variant="danger">Oups</Alert>);
     const el = screen.getByRole('alert');
     expect(el).toHaveTextContent('Oups');
     expect(el).toHaveClass('bg-danger/10');

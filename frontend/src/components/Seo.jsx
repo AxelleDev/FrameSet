@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Helmet } from 'react-helmet-async';
 
 /**
@@ -22,7 +23,9 @@ const SITE_NAME = 'FrameSet';
 const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://frameset.app').replace(/\/$/, '');
 const DEFAULT_DESCRIPTION =
   'FrameSet centralise les normes graphiques et la palette de couleurs de chaque projet, au même endroit.';
-const DEFAULT_IMAGE = `${SITE_URL}/og-cover.png`;
+// Social share image. Uses the brand logo as a safe default that always exists;
+// replace with a dedicated 1200×630 `og-cover.png` for richer link previews.
+const DEFAULT_IMAGE = `${SITE_URL}/FrameSet_Logo.png`;
 
 export default function Seo({
   title,
@@ -62,3 +65,13 @@ export default function Seo({
     </Helmet>
   );
 }
+
+Seo.propTypes = {
+  title: PropTypes.string,
+  description: PropTypes.string,
+  path: PropTypes.string,
+  image: PropTypes.string,
+  noindex: PropTypes.bool,
+  type: PropTypes.oneOf(['website', 'article']),
+  jsonLd: PropTypes.object,
+};

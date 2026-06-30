@@ -21,7 +21,7 @@ describe('accessibilité (axe-core)', () => {
   it('Alert : aucune violation pour toutes les variantes', async () => {
     const { container } = render(
       <>
-        <Alert variant="error">Une erreur est survenue.</Alert>
+        <Alert variant="danger">Une erreur est survenue.</Alert>
         <Alert variant="success">Action réussie.</Alert>
         <Alert variant="info">Information.</Alert>
       </>

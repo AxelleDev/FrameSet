@@ -1,5 +1,6 @@
 // Placeholder shown on project pages before the active project is available.
 import React from 'react';
+import PropTypes from 'prop-types';
 import Button from './Button';
 
 /**
@@ -30,3 +31,7 @@ export default function ProjectStatePlaceholder({ loading }) {
     </div>
   );
 }
+
+ProjectStatePlaceholder.propTypes = {
+  loading: PropTypes.bool,
+};

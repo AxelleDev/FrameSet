@@ -1,5 +1,6 @@
 // Standard action buttons for modals.
 import React from 'react';
+import PropTypes from 'prop-types';
 import Button from './Button';
 
 /**
@@ -44,3 +45,18 @@ export default function ModalActions({
     </div>
   );
 }
+
+ModalActions.propTypes = {
+  primaryLabel: PropTypes.node,
+  secondaryLabel: PropTypes.node,
+  onPrimary: PropTypes.func,
+  onSecondary: PropTypes.func,
+  primaryDisabled: PropTypes.bool,
+  primaryClassName: PropTypes.string,
+  secondaryClassName: PropTypes.string,
+  primaryType: PropTypes.string,
+  secondaryType: PropTypes.string,
+  primaryVariant: PropTypes.string,
+  secondaryVariant: PropTypes.string,
+  className: PropTypes.string,
+};

@@ -114,7 +114,7 @@ export default function ForgotPassword() {
           <Alert variant="info" className="mb-4">{info}</Alert>
         )}
         {error && (
-          <Alert variant="error" className="mb-4">{error}</Alert>
+          <Alert variant="danger" className="mb-4">{error}</Alert>
         )}
 
         {step === 'request' ? (

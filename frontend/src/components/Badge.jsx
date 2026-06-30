@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Small uppercase pill used to label sections/categories (e.g. "Trait",
@@ -26,3 +27,9 @@ export default function Badge({ color = 'primary', className = '', children, ...
     </span>
   );
 }
+
+Badge.propTypes = {
+  color: PropTypes.oneOf(['primary', 'blue', 'danger']),
+  className: PropTypes.string,
+  children: PropTypes.node,
+};

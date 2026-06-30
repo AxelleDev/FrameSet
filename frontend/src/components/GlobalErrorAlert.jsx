@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 // Map raw/technical error messages to friendly, user-facing French text.
 function getFriendlyMessage(message) {
@@ -37,7 +38,8 @@ function getFriendlyMessage(message) {
 /**
  * Fixed top-of-screen alert banner for global/application-level errors.
  * Normalizes the raw message into a friendly string and renders nothing when
- * there is no message to show.
+ * there is no message to show. Styled with theme tokens (the `danger` color and
+ * the `z-toast` stacking tier) so it stays consistent across light/dark mode.
  *
  * @param {object} props
  * @param {string} props.message - Raw error message to display (translated to a friendly variant).
@@ -48,40 +50,17 @@ export default function GlobalErrorAlert({ message, onClose }) {
   // Render nothing when there is no message to surface.
   if (!friendly) return null;
   return (
-    <div role="alert" style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100%',
-      zIndex: 9999,
-      background: 'rgb(var(--color-danger))',
-      color: '#fff',
-      padding: '0.75rem 3rem',
-      fontWeight: 'bold',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '3rem'
-    }}>
+    <div
+      role="alert"
+      className="fixed top-0 left-0 z-toast flex min-h-[3rem] w-full items-center justify-center px-12 py-3 text-center font-bold text-white bg-danger"
+    >
       <span>{friendly}</span>
       {onClose && (
         <button
-          style={{
-            position: 'absolute',
-            right: '1rem',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: 'transparent',
-            border: 'none',
-            color: '#fff',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '0.25rem'
-          }}
+          type="button"
           onClick={onClose}
           aria-label="Fermer l'alerte"
+          className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-lg p-1 text-white/90 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
             <path d="M18 6L6 18M6 6l12 12" />
@@ -91,3 +70,8 @@ export default function GlobalErrorAlert({ message, onClose }) {
     </div>
   );
 }
+
+GlobalErrorAlert.propTypes = {
+  message: PropTypes.string,
+  onClose: PropTypes.func,
+};

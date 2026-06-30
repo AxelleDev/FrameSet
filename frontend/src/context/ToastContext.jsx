@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useRef } from 
 import { createPortal } from 'react-dom';
 
 /**
- * Lightweight toast system for transient feedback (success / error / info).
+ * Lightweight toast system for transient feedback (success / danger / info).
  * Flat design (no shadow), opaque surface with a faint ring for separation, a
  * colored leading icon per variant, auto-dismiss, and an accessible live region.
  */
@@ -15,7 +15,7 @@ const ICONS = {
     className: 'text-success',
     path: 'M5 13l4 4L19 7',
   },
-  error: {
+  danger: {
     className: 'text-danger',
     path: 'M6 18L18 6M6 6l12 12',
   },
@@ -61,7 +61,7 @@ export function ToastProvider({ children }) {
             return (
               <div
                 key={toast.id}
-                role={toast.variant === 'error' ? 'alert' : 'status'}
+                role={toast.variant === 'danger' ? 'alert' : 'status'}
                 className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 text-sm font-medium text-primary ring-1 ring-black/5 animate-fade-in"
               >
                 <svg className={`h-5 w-5 flex-shrink-0 ${icon.className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">

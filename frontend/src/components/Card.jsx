@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Generic surface container with rounded corners and a subtle border.
@@ -24,3 +25,10 @@ export default function Card({ clickable = false, className = '', children, styl
 
   return React.createElement('div', props, children);
 }
+
+Card.propTypes = {
+  clickable: PropTypes.bool,
+  className: PropTypes.string,
+  children: PropTypes.node,
+  style: PropTypes.object,
+};

@@ -3,8 +3,10 @@
  *
  * Wires up the global provider stack (AuthProvider then ProjectProvider so
  * project data can depend on the authenticated user) and declares every client
- * route via a HashRouter. HashRouter is used so the app works on static hosting
- * without server-side rewrite rules.
+ * route via a BrowserRouter. Clean URLs work on static hosting thanks to the
+ * SPA fallback rewrites configured for the deploy targets (frontend/vercel.json
+ * for Vercel, frontend/public/_redirects for Netlify), which serve index.html
+ * for any non-asset path.
  *
  * Route map:
  *   /              -> redirects to /login
@@ -72,7 +74,7 @@ function AppRoutes() {
       {/* App-wide error alert fed by the auth context's globalError state */}
       <GlobalErrorAlert
         message={globalError}
-        onClose={() => setGlobalError && setGlobalError(null)}
+        onClose={() => setGlobalError(null)}
       />
       <BrowserRouter>
         <Suspense fallback={<RouteFallback />}>

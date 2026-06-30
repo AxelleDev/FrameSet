@@ -1,5 +1,6 @@
 // Standard confirmation dialog.
 import React, { useEffect, useId, useState } from 'react';
+import PropTypes from 'prop-types';
 import FormModal from './FormModal';
 import ModalActions from './ModalActions';
 import TextInput from './TextInput';
@@ -106,3 +107,19 @@ export default function ConfirmDialog({
     </FormModal>
   );
 }
+
+ConfirmDialog.propTypes = {
+  isOpen: PropTypes.bool,
+  title: PropTypes.string,
+  subtitle: PropTypes.string,
+  message: PropTypes.node,
+  confirmLabel: PropTypes.string,
+  cancelLabel: PropTypes.string,
+  onConfirm: PropTypes.func,
+  onCancel: PropTypes.func,
+  confirmClassName: PropTypes.string,
+  decorationClassName: PropTypes.string,
+  confirmationWord: PropTypes.string,
+  confirmationInputLabel: PropTypes.string,
+  confirmationInputPlaceholder: PropTypes.string,
+};

@@ -60,7 +60,7 @@ export default function Profile() {
       return updateUserProfile(editForm).then((result) => {
         setIsEditing(false);
         if (result?.success === false) {
-          if (result.message) showToast(result.message, 'error');
+          if (result.message) showToast(result.message, 'danger');
         } else {
           showToast('Profil mis à jour.');
         }
@@ -126,7 +126,7 @@ export default function Profile() {
       // The action result (success or business error) is surfaced as a toast,
       // like every other in-app action.
       if (!result.success) {
-        if (result.message) showToast(result.message, 'error');
+        if (result.message) showToast(result.message, 'danger');
         return;
       }
 
@@ -296,7 +296,7 @@ export default function Profile() {
             />
           </FormField>
 
-          {passwordError && <Alert variant="error">{passwordError}</Alert>}
+          {passwordError && <Alert variant="danger">{passwordError}</Alert>}
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <Button type="button" onClick={closePasswordModal} variant="ghost" className="text-sm">

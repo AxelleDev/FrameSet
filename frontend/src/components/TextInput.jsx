@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Canonical text control for the whole app: input, select or textarea sharing
@@ -24,3 +25,9 @@ export default function TextInput({ as = 'input', mono = false, className = '', 
     .trim();
   return <Tag className={classes} {...rest} />;
 }
+
+TextInput.propTypes = {
+  as: PropTypes.oneOf(['input', 'select', 'textarea']),
+  mono: PropTypes.bool,
+  className: PropTypes.string,
+};

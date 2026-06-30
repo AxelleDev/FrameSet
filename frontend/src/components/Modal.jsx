@@ -1,5 +1,6 @@
 // Generic reusable modal.
 import React, { useRef, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 
 /**
@@ -113,7 +114,7 @@ export default function Modal({
               {subtitle && <p className="text-sm text-primary/60">{subtitle}</p>}
             </div>
             {showClose && (
-              <button onClick={onClose} className="p-2 -m-2 rounded-lg text-blue hover:text-primary transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue" aria-label="Fermer">
+              <button onClick={onClose} className="p-2 -m-2 rounded-lg text-blue hover:text-primary transition focus-ring" aria-label="Fermer">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
                   <path d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -127,3 +128,15 @@ export default function Modal({
     document.body
   );
 }
+
+Modal.propTypes = {
+  isOpen: PropTypes.bool,
+  onClose: PropTypes.func,
+  title: PropTypes.string,
+  subtitle: PropTypes.string,
+  children: PropTypes.node,
+  overlayClassName: PropTypes.string,
+  panelClassName: PropTypes.string,
+  showClose: PropTypes.bool,
+  closeOnBackdrop: PropTypes.bool,
+};

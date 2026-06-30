@@ -94,7 +94,7 @@ export default function Login() {
         </div>
 
         {error && (
-          <Alert variant="error" className="mb-4">
+          <Alert variant="danger" className="mb-4">
             {error}
             {/* Offer a verification shortcut when login failed due to an unverified email */}
             {error.includes('vérifier votre email') && (

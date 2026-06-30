@@ -48,12 +48,16 @@ from one drawing to the next.
 ```
 frameset/
 ├── backend/            # Node.js API (Express + MySQL)
+│   ├── API.md          # REST API reference (endpoints, auth, errors)
 │   ├── migrations/     # Versioned SQL scripts
 │   ├── src/            # Routes, controllers, services, middlewares
 │   └── tests/          # Unit & integration tests
 └── frontend/           # React application
     └── src/            # Pages, components, contexts, hooks
 ```
+
+The full REST API (endpoints, authentication, CSRF, error conventions) is
+documented in [backend/API.md](backend/API.md).
 
 ---
 

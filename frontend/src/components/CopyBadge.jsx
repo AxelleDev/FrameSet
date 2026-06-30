@@ -1,5 +1,6 @@
 // Status badge for copy-to-clipboard actions.
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Small pill that reflects clipboard copy state, swapping its label once copied.
@@ -20,3 +21,9 @@ export default function CopyBadge({
     </span>
   );
 }
+
+CopyBadge.propTypes = {
+  isCopied: PropTypes.bool,
+  copiedLabel: PropTypes.string,
+  defaultLabel: PropTypes.string,
+};

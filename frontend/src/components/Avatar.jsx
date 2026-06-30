@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * User avatar showing initials on a soft tinted circle. Sizing and any extra
@@ -19,3 +20,8 @@ export default function Avatar({ initials, className = '' }) {
     </span>
   );
 }
+
+Avatar.propTypes = {
+  initials: PropTypes.string,
+  className: PropTypes.string,
+};
