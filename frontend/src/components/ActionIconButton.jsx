@@ -23,6 +23,8 @@ const VARIANT_CLASSES = {
  * @param {React.ReactNode} props.children - Icon element to render.
  * @param {'edit'|'delete'} [props.intent] - Semantic intent driving the hover color.
  * @param {'dark'|'light'} [props.variant] - Surface variant driving the base background.
+ * @param {boolean} [props.srOnly] - Render visually hidden but still operable by
+ *   keyboard/assistive tech (the action exists only for screen readers).
  * @param {string} [props.className] - Extra classes appended to the button.
  */
 export default function ActionIconButton({
@@ -32,6 +34,7 @@ export default function ActionIconButton({
   intent = 'edit',
   variant = 'dark',
   disabled = false,
+  srOnly = false,
   className = ''
 }) {
   const intentClass = INTENT_CLASSES[intent] || INTENT_CLASSES.edit;
@@ -47,6 +50,23 @@ export default function ActionIconButton({
     } catch (e) {
       // ignore non-element children
     }
+  }
+
+  // Visually hidden variant: kept in the accessibility tree (and keyboard
+  // focusable) but with no visual footprint, so the action is exposed only to
+  // assistive technologies.
+  if (srOnly) {
+    return (
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        title={title}
+        aria-label={title}
+        className={`sr-only ${className}`.trim()}
+      >
+        {icon}
+      </button>
+    );
   }
 
   return (

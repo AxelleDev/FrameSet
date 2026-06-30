@@ -30,6 +30,12 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
       placeholder={placeholder}
       isClearable={isClearable}
       menuPlacement="auto"
+      // Render the menu in a body-level portal (with fixed positioning) so it
+      // escapes the scrolling/overflow + stacking contexts of the page shell
+      // (the `overflow-auto relative` <main> and its `sticky` header). Without
+      // this the menu is trapped beneath the cards grid below it.
+      menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+      menuPosition="fixed"
       styles={{
         control: (provided, state) => ({
           ...provided,
@@ -62,6 +68,9 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
           zIndex: 1000, // matches the `dropdown` tier of the z-index scale (tailwind.config.js)
           marginTop: '0.4rem',
         }),
+        // The portal wrapper sits above the modal tier (1050) so the menu still
+        // shows when the select is used inside a FormModal (e.g. the font picker).
+        menuPortal: provided => ({ ...provided, zIndex: 1100 }),
         menuList: provided => ({
           ...provided,
           display: 'flex',
