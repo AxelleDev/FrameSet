@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TextInput from './TextInput';
 
 // Decorative icon: password currently visible.
@@ -43,6 +43,13 @@ export default function PasswordInput({
   // Tracks whether the password is shown in plain text.
   const [isVisible, setIsVisible] = useState(false);
 
+  // Only reveal the eye toggle once the field has content (Google/Microsoft
+  // pattern) to keep empty forms lighter. Reset visibility when it is cleared.
+  const hasValue = Boolean(inputProps.value);
+  useEffect(() => {
+    if (!hasValue) setIsVisible(false);
+  }, [hasValue]);
+
   return (
     <div className={`relative ${className}`.trim()}>
       <TextInput
@@ -52,16 +59,18 @@ export default function PasswordInput({
         className={`pr-12 ${inputClassName}`.trim()}
       />
 
-      <button
-        type="button"
-        onClick={() => setIsVisible((prev) => !prev)}
-        disabled={disabled}
-        className={`absolute inset-y-0 right-0 px-3 flex items-center justify-center transition-colors ${buttonClassName} ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`.trim()}
-        aria-label={isVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-        aria-pressed={isVisible}
-      >
-        {isVisible ? <EyeOffIcon /> : <EyeIcon />}
-      </button>
+      {hasValue && (
+        <button
+          type="button"
+          onClick={() => setIsVisible((prev) => !prev)}
+          disabled={disabled}
+          className={`absolute inset-y-0 right-0 px-3 flex items-center justify-center transition-colors ${buttonClassName} ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`.trim()}
+          aria-label={isVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+          aria-pressed={isVisible}
+        >
+          {isVisible ? <EyeOffIcon /> : <EyeIcon />}
+        </button>
+      )}
     </div>
   );
 }

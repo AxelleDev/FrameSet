@@ -4,9 +4,9 @@ import userEvent from '@testing-library/user-event';
 import PasswordInput from '../../src/components/PasswordInput';
 
 describe('PasswordInput', () => {
-  it('masque la valeur par défaut et bascule en clair au clic', async () => {
+  it('masque la valeur et bascule en clair au clic (champ rempli)', async () => {
     const user = userEvent.setup();
-    render(<PasswordInput value="" onChange={() => {}} placeholder="Mot de passe" />);
+    render(<PasswordInput value="secret" onChange={() => {}} placeholder="Mot de passe" />);
 
     const input = screen.getByPlaceholderText('Mot de passe');
     expect(input).toHaveAttribute('type', 'password');
@@ -18,8 +18,13 @@ describe('PasswordInput', () => {
     expect(input).toHaveAttribute('type', 'password');
   });
 
+  it("n'affiche pas l'icône œil quand le champ est vide", () => {
+    render(<PasswordInput value="" onChange={() => {}} placeholder="Mot de passe" />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
   it('peut être désactivé (champ + bouton)', () => {
-    render(<PasswordInput value="" onChange={() => {}} placeholder="pw" disabled />);
+    render(<PasswordInput value="secret" onChange={() => {}} placeholder="pw" disabled />);
     expect(screen.getByPlaceholderText('pw')).toBeDisabled();
     expect(screen.getByRole('button', { name: /afficher le mot de passe/i })).toBeDisabled();
   });
