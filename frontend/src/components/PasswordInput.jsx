@@ -36,7 +36,7 @@ function EyeOffIcon() {
 export default function PasswordInput({
   className = '',
   inputClassName = '',
-  buttonClassName = '[color:var(--color-primary)]',
+  buttonClassName = 'text-primary',
   disabled = false,
   ...inputProps
 }) {

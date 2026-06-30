@@ -9,6 +9,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
+import Logo from '../components/Logo';
 import FormField from '../components/FormField';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -75,7 +76,7 @@ export default function Register() {
       hero={
         <>
           <div className="flex items-center mb-2">
-            <img src="/FrameSet_Logo.png" alt="Logo FrameSet" className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
+            <Logo className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
           </div>
           <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
             Rejoignez le <br />

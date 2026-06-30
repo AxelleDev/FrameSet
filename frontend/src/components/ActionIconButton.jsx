@@ -3,7 +3,7 @@ import React from 'react';
 
 // Hover color mapping by semantic intent (e.g. edit vs delete).
 const INTENT_CLASSES = {
-  edit: 'hover:bg-[var(--color-blue)]',
+  edit: 'hover:bg-blue',
   delete: 'hover:bg-danger'
 };
 

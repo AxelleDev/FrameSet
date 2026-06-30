@@ -14,7 +14,7 @@ import React from 'react';
 const BASE =
   'w-full px-4 py-3 bg-blue/10 rounded-xl text-primary ' +
   'placeholder:text-primary/40 transition-all ' +
-  'focus:outline-none focus:ring-2 focus:ring-blue focus:bg-white ' +
+  'focus:outline-none focus:ring-2 focus:ring-blue focus:bg-surface ' +
   'disabled:opacity-60 disabled:cursor-not-allowed';
 
 export default function TextInput({ as = 'input', mono = false, className = '', ...rest }) {

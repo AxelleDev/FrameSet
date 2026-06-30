@@ -33,27 +33,28 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
       styles={{
         control: (provided, state) => ({
           ...provided,
-          backgroundColor: state.isFocused ? '#ffffff' : 'rgba(137,148,223,0.10)',
+          backgroundColor: state.isFocused ? 'rgb(var(--color-surface))' : 'rgb(var(--color-blue) / 0.1)',
           border: 'none',
           borderRadius: '0.75rem',
           minHeight: '3rem',
-          boxShadow: state.isFocused ? '0 0 0 2px rgba(137,148,223,0.5)' : 'none',
+          boxShadow: state.isFocused ? '0 0 0 2px rgb(var(--color-blue) / 0.5)' : 'none',
           transition: 'all 0.15s ease',
         }),
         valueContainer: provided => ({ ...provided, padding: '0.15rem 0.75rem' }),
-        placeholder: provided => ({ ...provided, color: 'var(--color-secondary)' }),
-        singleValue: provided => ({ ...provided, color: 'var(--color-primary)', fontWeight: 500 }),
-        input: provided => ({ ...provided, color: 'var(--color-primary)' }),
+        placeholder: provided => ({ ...provided, color: 'rgb(var(--color-secondary))' }),
+        singleValue: provided => ({ ...provided, color: 'rgb(var(--color-primary))', fontWeight: 500 }),
+        input: provided => ({ ...provided, color: 'rgb(var(--color-primary))' }),
         indicatorSeparator: () => ({ display: 'none' }),
         dropdownIndicator: (provided, state) => ({
           ...provided,
-          color: 'var(--color-blue)',
+          color: 'rgb(var(--color-blue))',
           transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'none',
           transition: 'transform 0.15s ease',
         }),
-        clearIndicator: provided => ({ ...provided, color: 'var(--color-secondary)' }),
+        clearIndicator: provided => ({ ...provided, color: 'rgb(var(--color-secondary))' }),
         menu: provided => ({
           ...provided,
+          backgroundColor: 'rgb(var(--color-surface))',
           borderRadius: '1rem',
           overflow: 'hidden',
           zIndex: 50,
@@ -71,11 +72,11 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
           borderRadius: '0.6rem',
           padding: '0.6rem 0.75rem',
           backgroundColor: state.isSelected
-            ? 'var(--color-blue)'
+            ? 'rgb(var(--color-blue))'
             : state.isFocused
-              ? 'rgba(137,148,223,0.15)'
+              ? 'rgb(var(--color-blue) / 0.15)'
               : 'transparent',
-          color: state.isSelected ? '#ffffff' : 'var(--color-primary)',
+          color: state.isSelected ? '#ffffff' : 'rgb(var(--color-primary))',
           fontWeight: state.isSelected ? 600 : 400,
           cursor: 'pointer',
         }),

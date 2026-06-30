@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
+import Logo from '../components/Logo';
 import Card from '../components/Card';
 import FormField from '../components/FormField';
 import TextInput from '../components/TextInput';
@@ -67,7 +68,7 @@ export default function Verify() {
       hero={
         <>
           <div className="flex items-center mb-2">
-            <img src="/FrameSet_Logo.png" alt="Logo FrameSet" className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
+            <Logo className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
           </div>
           <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
             Confirmez <br />
