@@ -101,7 +101,7 @@ export default function Register() {
     >
       <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
         <div className="mb-8 text-center">
-          <h2 className="text-2xl font-medium text-primary">Inscription</h2>
+          <h2 className="text-2xl font-medium text-primary">Créez votre compte</h2>
           <p className="text-primary text-sm mt-2">Votre référence graphique commence ici.</p>
         </div>
 

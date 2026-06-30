@@ -35,8 +35,8 @@ describe('Login', () => {
   it('refuse de soumettre des champs vides', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByRole('button', { name: /continuer/i }));
-    expect(await screen.findByText(/remplir tous les champs/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /se connecter/i }));
+    expect(await screen.findByText(/entrez votre email/i)).toBeInTheDocument();
     expect(mockLogin).not.toHaveBeenCalled();
   });
 
@@ -47,7 +47,7 @@ describe('Login', () => {
 
     await user.type(screen.getByPlaceholderText(/email@exemple/i), 'axelle@example.com');
     await user.type(screen.getByPlaceholderText('Votre mot de passe'), 'Pass1234');
-    await user.click(screen.getByRole('button', { name: /continuer/i }));
+    await user.click(screen.getByRole('button', { name: /se connecter/i }));
 
     expect(mockLogin).toHaveBeenCalledWith('axelle@example.com', 'Pass1234');
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/app/dashboard'));
@@ -60,7 +60,7 @@ describe('Login', () => {
 
     await user.type(screen.getByPlaceholderText(/email@exemple/i), 'axelle@example.com');
     await user.type(screen.getByPlaceholderText('Votre mot de passe'), 'wrong');
-    await user.click(screen.getByRole('button', { name: /continuer/i }));
+    await user.click(screen.getByRole('button', { name: /se connecter/i }));
 
     expect(await screen.findByText('Identifiants invalides')).toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();

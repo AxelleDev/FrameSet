@@ -41,7 +41,7 @@ export default function Login() {
     if (submitting) return;
 
     if (!formData.email || !formData.password) {
-      setError('Veuillez remplir tous les champs.');
+      setError('Entrez votre email et votre mot de passe.');
       return;
     }
 
@@ -87,7 +87,7 @@ export default function Login() {
     >
       <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
         <div className="mb-8 text-center">
-          <h2 className="text-2xl font-medium text-primary">Connexion</h2>
+          <h2 className="text-2xl font-medium text-primary">Bon retour</h2>
           <p className="text-primary text-sm mt-2">Reprenez là où vous vous êtes arrêté.</p>
         </div>
 
@@ -130,7 +130,7 @@ export default function Login() {
           </FormField>
 
           <Button type="submit" fullWidth className="mt-2" loading={submitting}>
-            Continuer
+            Se connecter
           </Button>
         </form>
 

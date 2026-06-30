@@ -14,7 +14,7 @@ export default function AddTile({
   onClick,
   label = 'Ajouter',
   className = '',
-  labelClassName = 'text-xs font-bold uppercase tracking-widest text-primary'
+  labelClassName = 'text-sm font-medium text-primary'
 }) {
   return (
     <button

@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectContext';
+import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
@@ -22,6 +23,7 @@ import Button from '../components/Button';
 export default function Dashboard() {
   const { user } = useAuth();
   const { projects, setActiveProjectId, addProject, deleteProject, updateProjectName } = useProjects();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -45,6 +47,7 @@ export default function Dashboard() {
       await addProject(newProjectName);
       setIsCreatingProject(false);
       setNewProjectName('');
+      showToast('Projet créé.');
     }
   };
 
@@ -59,7 +62,7 @@ export default function Dashboard() {
   const handleEditProject = async () => {
     setEditProjectError("");
     if (!editProjectId || !editProjectName || !editProjectName.trim()) {
-      setEditProjectError("Le nom du projet ne peut pas être vide.");
+      setEditProjectError("Donnez un nom à votre projet.");
       return;
     }
     try {
@@ -67,6 +70,7 @@ export default function Dashboard() {
       setIsEditingProject(false);
       setEditProjectId(null);
       setEditProjectName("");
+      showToast('Projet modifié.');
     } catch (e) {
       setEditProjectError(e?.message || "Erreur lors de la modification du projet.");
     }
@@ -89,9 +93,9 @@ export default function Dashboard() {
       <Card className="overflow-hidden mb-12 animate-fade-in">
         <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-start justify-between">
           <div>
-            <h2 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">Bonjour, {user.name.split(' ')[0]}.</h2>
+            <h1 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">Bonjour, {user.name.split(' ')[0]}.</h1>
             <p className="text-primary max-w-lg leading-relaxed font-medium">
-              Vous avez actuellement <strong className="text-blue">{projects.length} projet{projects.length === 1 ? '' : 's'} actif{projects.length === 1 ? '' : 's'}</strong>.
+              Vous avez actuellement <strong className="text-blue">{projects.length} projet{projects.length === 1 ? '' : 's'}</strong>.
             </p>
             <div className="mt-8 flex space-x-4">
                <Button onClick={() => setIsCreatingProject(true)} variant="primary" className="px-6 py-3">
@@ -113,9 +117,16 @@ export default function Dashboard() {
         </div>
       </Card>
 
-      <div className="flex items-end justify-between mb-6">
-        <h3 className="text-xl font-medium text-primary">{projects.length === 1 ? 'Projet Actif' : 'Projets Actifs'}</h3>
-      </div>
+      {projects.length === 0 ? (
+        <div className="text-center mb-6">
+          <h2 className="text-lg font-medium text-primary mb-1">Créez votre premier projet</h2>
+          <p className="text-sm text-primary/60 max-w-md mx-auto">Chaque projet regroupe ses normes graphiques et sa palette de couleurs, au même endroit.</p>
+        </div>
+      ) : (
+        <div className="flex items-end justify-between mb-6">
+          <h2 className="text-xl font-medium text-primary">{projects.length === 1 ? 'Projet actif' : 'Projets actifs'}</h2>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (
@@ -162,7 +173,7 @@ export default function Dashboard() {
         ))}
         <AddTile
           onClick={() => setIsCreatingProject(true)}
-          label="Nouveau Projet"
+          label="Nouveau projet"
           labelClassName="text-sm font-medium text-primary"
           className="p-6 min-h-[200px]"
         />
@@ -171,7 +182,7 @@ export default function Dashboard() {
       <FormModal
         isOpen={isCreatingProject}
         onClose={() => setIsCreatingProject(false)}
-        title="Nouveau Projet"
+        title="Nouveau projet"
       >
         <div className="space-y-4">
           <FormField label="Nom du projet">
@@ -181,7 +192,7 @@ export default function Dashboard() {
 
         <ModalActions
           secondaryLabel="Annuler"
-          primaryLabel="Créer"
+          primaryLabel="Créer le projet"
           onSecondary={() => setIsCreatingProject(false)}
           onPrimary={handleCreateProject}
           primaryDisabled={!newProjectName}
@@ -213,19 +224,19 @@ export default function Dashboard() {
 
       <ConfirmDialog
         isOpen={!!confirmDeleteProject}
-        title="Supprimer le projet"
+        title="Supprimer le projet ?"
         message={
           confirmDeleteProject?.name
-            ? `Êtes-vous sûr de vouloir supprimer « ${confirmDeleteProject.name} » ? Cette action est irréversible.`
-            : 'Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.'
+            ? `Toutes les normes et couleurs de « ${confirmDeleteProject.name} » seront définitivement perdues.`
+            : 'Toutes les normes et couleurs de ce projet seront définitivement perdues.'
         }
         confirmLabel="Supprimer"
-       
         onCancel={() => setConfirmDeleteProject(null)}
         onConfirm={async () => {
           if (!confirmDeleteProject?.id) return;
           await deleteProject(confirmDeleteProject.id);
           setConfirmDeleteProject(null);
+          showToast('Projet supprimé.');
         }}
       />
     </>

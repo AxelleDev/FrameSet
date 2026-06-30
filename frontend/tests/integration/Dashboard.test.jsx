@@ -53,7 +53,7 @@ describe('Dashboard', () => {
     await user.click(screen.getByRole('button', { name: /créer un projet/i }));
     const input = await screen.findByPlaceholderText(/neo-tokyo/i);
     await user.type(input, 'Mon Projet');
-    await user.click(screen.getByRole('button', { name: /^Créer$/ }));
+    await user.click(screen.getByRole('button', { name: /créer le projet/i }));
 
     await waitFor(() => expect(projectState.addProject).toHaveBeenCalledWith('Mon Projet'));
   });

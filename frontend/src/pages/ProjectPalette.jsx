@@ -13,6 +13,7 @@
  */
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useProjects } from '../context/ProjectContext';
+import { useToast } from '../context/ToastContext';
 import { useParams } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
@@ -35,6 +36,7 @@ const MAX_PALETTE_SIZE = 50;
 export default function ProjectPalette() {
   const { id } = useParams();
   const { activeProject, updateProjectPalette, projectsLoading, activeProjectId } = useProjects();
+  const { showToast } = useToast();
 
   const [editStatus, setEditStatus] = useState(null);
   const [editIdx, setEditIdx] = useState(null);
@@ -260,6 +262,7 @@ export default function ProjectPalette() {
     const saved = await persistPalette(nextPalette);
     if (saved) {
       setIsAddingColor(false);
+      showToast('Couleur ajoutée.');
     }
   };
 
@@ -317,6 +320,7 @@ export default function ProjectPalette() {
     if (saved) {
       setIsImageModalOpen(false);
       setImageColors([]);
+      showToast(`${toAdd.length} couleur${toAdd.length > 1 ? 's' : ''} ajoutée${toAdd.length > 1 ? 's' : ''}.`);
     }
   };
 
@@ -355,8 +359,8 @@ export default function ProjectPalette() {
   return (
     <>
       <PageHeader
-        title="Palette de Couleurs"
-        subtitle="Ensemble des couleurs de référence à utiliser pour ce projet."
+        title="Palette de couleurs"
+        subtitle="Les couleurs de référence de ce projet."
         actions={activeProject ? (
           <>
             <input
@@ -546,7 +550,7 @@ export default function ProjectPalette() {
         </div>
         <ModalActions
           secondaryLabel="Annuler"
-          primaryLabel="Confirmer"
+          primaryLabel="Enregistrer"
           onSecondary={() => setEditIdx(null)}
           onPrimary={confirmEditColor}
           primaryDisabled={!editColorName || !isValidEditHex()}
@@ -556,7 +560,7 @@ export default function ProjectPalette() {
       <FormModal
         isOpen={isAddingColor}
         onClose={() => setIsAddingColor(false)}
-        title="Nouvelle Couleur"
+        title="Nouvelle couleur"
       >
         <div className="space-y-4">
           <FormField label="Nom de la couleur">
@@ -625,8 +629,8 @@ export default function ProjectPalette() {
 
       <ConfirmDialog
         isOpen={confirmDeleteColor !== null}
-        title="Supprimer la couleur"
-        message="Êtes-vous sûr de vouloir supprimer cette couleur ?"
+        title="Supprimer la couleur ?"
+        message="Elle sera retirée de la palette."
         confirmLabel="Supprimer"
        
         onCancel={() => setConfirmDeleteColor(null)}
@@ -637,6 +641,7 @@ export default function ProjectPalette() {
           const saved = await persistPalette(nextPalette);
           if (saved) {
             setConfirmDeleteColor(null);
+            showToast('Couleur supprimée.');
           }
         }}
       />

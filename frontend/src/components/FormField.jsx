@@ -17,7 +17,7 @@ export default function FormField({
   children,
   id,
   className = '',
-  labelClassName = 'block text-xs font-bold text-primary uppercase tracking-widest mb-2'
+  labelClassName = 'block text-sm font-medium text-primary mb-2'
 }) {
   // Always call useId (hooks must run unconditionally), then prefer an
   // explicit caller-provided id over the generated fallback.

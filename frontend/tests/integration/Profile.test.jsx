@@ -65,7 +65,7 @@ describe('Profile', () => {
   it('ouvre la confirmation de déconnexion', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByRole('button', { name: /déconnexion/i }));
-    expect(await screen.findByText(/vous déconnecter/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /se déconnecter/i }));
+    expect(await screen.findByText(/vous devrez vous reconnecter/i)).toBeInTheDocument();
   });
 });

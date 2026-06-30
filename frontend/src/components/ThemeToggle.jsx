@@ -17,7 +17,7 @@ export default function ThemeToggle({ className = '' }) {
       onClick={toggleTheme}
       aria-label={isDark ? 'Activer le thème clair' : 'Activer le thème sombre'}
       title={isDark ? 'Thème clair' : 'Thème sombre'}
-      className={`inline-flex items-center justify-center w-9 h-9 rounded-xl text-primary hover:bg-blue/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue/40 ${className}`.trim()}
+      className={`inline-flex items-center justify-center w-10 h-10 rounded-xl text-primary hover:bg-blue/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue/40 ${className}`.trim()}
     >
       {isDark ? (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">

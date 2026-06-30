@@ -39,7 +39,12 @@ export default function MainLayout() {
 
   // Show a loading state until auth/projects resolve.
   if (loading) {
-    return <div className="flex items-center justify-center h-screen text-lg text-secondary">Chargement...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-canvas" role="status" aria-live="polite">
+        <div className="border-4 border-blue/20 border-t-blue rounded-full w-10 h-10 animate-spin"></div>
+        <p className="mt-4 text-primary/60">Chargement…</p>
+      </div>
+    );
   }
   // Redirect unauthenticated users to the login page.
   if (!user) {
@@ -72,7 +77,7 @@ export default function MainLayout() {
 
         <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
           <div className="mb-8">
-            <p className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4">Espace de Travail</p>
+            <p className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4">Espace de travail</p>
             <NavLink to="/app/dashboard" className={navLinkClass} onClick={closeMobileMenu}>
               <svg className="mr-3 h-5 w-5 text-blue group-hover:text-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -84,13 +89,13 @@ export default function MainLayout() {
           {activeProject && (
             <div className="animate-fade-in">
               <p className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4 truncate" title={activeProject.name}>
-                Projet Actif
+                Projet actif
               </p>
               
               <div className="space-y-1">
                 <NavLink to={`/app/project/${activeProject.id}/norms`} className={navLinkClass} onClick={closeMobileMenu}>
                    <svg className="mr-3 h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                   Normes Graphiques
+                   Normes graphiques
                 </NavLink>
                 <NavLink to={`/app/project/${activeProject.id}/palette`} className={navLinkClass} onClick={closeMobileMenu}>
                    <svg className="mr-3 h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
