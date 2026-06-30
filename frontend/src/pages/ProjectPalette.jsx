@@ -508,7 +508,7 @@ export default function ProjectPalette() {
               </div>
               <div className="mt-4 text-center">
                  <p className="text-sm font-semibold text-primary truncate" title={color.name}>{color.name}</p>
-                 <p className="text-[10px] text-primary font-mono mt-0.5 uppercase tracking-wide opacity-70 group-hover:opacity-100 transition-opacity">{color.hex}</p>
+                 <p className="text-xs text-primary font-mono mt-0.5 uppercase tracking-wide opacity-70 group-hover:opacity-100 transition-opacity">{color.hex}</p>
               </div>
             </div>
           ))}
@@ -608,7 +608,7 @@ export default function ProjectPalette() {
                 className={`flex flex-col items-center gap-1 rounded-xl p-2 border transition-all ${selected ? 'border-pink ring-2 ring-pink/40' : 'border-blue/30 opacity-50 hover:opacity-100'}`}
               >
                 <span className="w-full h-12 rounded-lg shadow-inner" style={{ backgroundColor: hex }}></span>
-                <span className="text-[10px] font-mono text-primary uppercase">{hex}</span>
+                <span className="text-xs font-mono text-primary uppercase">{hex}</span>
               </button>
             ))}
           </div>

@@ -219,11 +219,11 @@ export default function ProjectNorms() {
               value={filterType}
               onChange={val => setFilterType(val)}
               options={[
-                { value: 'all', label: 'Trier par : Tout' },
+                { value: 'all', label: 'Tout' },
                 { value: 'brush', label: 'Trait' },
                 { value: 'typography', label: 'Typographie' }
               ]}
-              placeholder="Trier par"
+              placeholder="Filtrer…"
               isSearchable={false}
             />
           </div>
