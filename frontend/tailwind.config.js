@@ -19,6 +19,7 @@ export default {
         primary: '#3C3D48',
         secondary: '#AFAFAF',
         canvas: '#F8F9FF',
+        success: '#3E9D7B',
         blue: { ...defaultColors.blue, DEFAULT: '#8994DF' },
         pink: { ...defaultColors.pink, DEFAULT: '#FF9292' },
         lavender: {

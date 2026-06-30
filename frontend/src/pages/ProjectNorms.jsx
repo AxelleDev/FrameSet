@@ -209,28 +209,26 @@ export default function ProjectNorms() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <PageHeader
-            title="Normes Graphiques"
-            subtitle="Ensemble des règles techniques qui garantissent la cohérence visuelle."
-            subtitleClassName="max-w-xl"
-          />
-        </div>
-        <div className="ml-4 flex-shrink-0 w-48">
-          <CustomSelect
-            value={filterType}
-            onChange={val => setFilterType(val)}
-            options={[
-              { value: 'all', label: 'Trier par : Tout' },
-              { value: 'brush', label: 'Trait' },
-              { value: 'typography', label: 'Typographie' }
-            ]}
-            placeholder="Trier par"
-            isSearchable={false}
-          />
-        </div>
-      </div>
+      <PageHeader
+        title="Normes Graphiques"
+        subtitle="Ensemble des règles techniques qui garantissent la cohérence visuelle."
+        subtitleClassName="max-w-xl"
+        actions={
+          <div className="w-48">
+            <CustomSelect
+              value={filterType}
+              onChange={val => setFilterType(val)}
+              options={[
+                { value: 'all', label: 'Trier par : Tout' },
+                { value: 'brush', label: 'Trait' },
+                { value: 'typography', label: 'Typographie' }
+              ]}
+              placeholder="Trier par"
+              isSearchable={false}
+            />
+          </div>
+        }
+      />
 
       {activeProject ? (
         <>

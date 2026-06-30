@@ -14,6 +14,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import FormField from '../components/FormField';
 import TextInput from '../components/TextInput';
+import Alert from '../components/Alert';
 import PasswordInput from '../components/PasswordInput';
 
 export default function Profile() {
@@ -163,24 +164,24 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">
       
-      <Card className="p-8 rounded-3xl mb-8 flex flex-col md:flex-row items-center gap-8 border border-white">
-        
-        <div className="w-32 h-32 rounded-full bg-blue/10 border-4 border-primary shadow-xl flex items-center justify-center text-primary text-4xl font-bold flex-shrink-0">
-           {user.avatarInitials}
+      <Card className="p-8 mb-8 flex flex-col md:flex-row items-center gap-8">
+        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue to-pink ring-4 ring-white shadow-lg flex items-center justify-center text-white text-4xl font-bold flex-shrink-0">
+          {user.avatarInitials}
         </div>
-        
-          <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1">
-            <h1 className="text-3xl font-light text-primary mb-4">{user.name}</h1>
 
-           <div className="flex flex-wrap justify-center md:justify-start gap-4">
-              <Button onClick={toggleEdit} variant="primary" className="min-w-[140px]">
-                {isEditing ? 'Enregistrer' : 'Éditer le profil'}
-              </Button>
+        <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1">
+          <h1 className="text-3xl font-light tracking-tight text-primary">{user.name}</h1>
+          <p className="text-sm text-primary/60 mt-1 mb-5">{user.email}</p>
 
-              <Button onClick={handleLogout} variant="ghost" className="min-w-[140px]">
-                Déconnexion
-              </Button>
-           </div>
+          <div className="flex flex-wrap justify-center md:justify-start gap-3">
+            <Button onClick={toggleEdit} variant="primary" className="min-w-[150px]">
+              {isEditing ? 'Enregistrer' : 'Éditer le profil'}
+            </Button>
+
+            <Button onClick={handleLogout} variant="ghost" className="min-w-[150px]">
+              Déconnexion
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -290,16 +291,8 @@ export default function Profile() {
             />
           </FormField>
 
-          {passwordError && (
-            <div className="text-sm text-pink bg-pink/10 border border-pink/30 rounded-xl px-4 py-2">
-              {passwordError}
-            </div>
-          )}
-          {passwordSuccess && (
-            <div className="text-sm text-green-700 bg-green-100/60 border border-green-200 rounded-xl px-4 py-2">
-              {passwordSuccess}
-            </div>
-          )}
+          {passwordError && <Alert variant="error">{passwordError}</Alert>}
+          {passwordSuccess && <Alert variant="success">{passwordSuccess}</Alert>}
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <Button type="button" onClick={closePasswordModal} variant="ghost" className="text-sm">

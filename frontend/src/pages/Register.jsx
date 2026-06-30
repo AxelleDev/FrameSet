@@ -86,12 +86,14 @@ export default function Register() {
             Commencez à structurer les fondations graphiques de vos projets et donnez à votre univers créatif une direction claire et cohérente.
           </p>
 
-          <div className="flex flex-col space-y-2 pt-4 border-l-2 border-primary pl-6">
-            <p className="text-sm font-medium text-primary">"Un outil essentiel pour reprendre un projet sans perdre mes réglages graphiques."</p>
-            <p className="text-xs text-blue uppercase tracking-widest">Alyse C., Illustratrice</p>
-            <span className="text-sm text-blue pt-2">
+          <div className="space-y-4 pt-2">
+            <div className="border-l-2 border-blue/40 pl-5 space-y-1.5">
+              <p className="text-sm font-medium text-primary">"Un outil essentiel pour reprendre un projet sans perdre mes réglages graphiques."</p>
+              <p className="text-xs text-blue uppercase tracking-widest">Alyse C., Illustratrice</p>
+            </div>
+            <p className="text-sm text-blue">
               {userCount !== null ? `Rejoint par ${userCount} Illustrateur${userCount > 1 ? 's' : ''}` : 'Rejoint par ... Illustrateurs'}
-            </span>
+            </p>
           </div>
         </>
       }

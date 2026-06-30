@@ -199,7 +199,7 @@ export default function ProjectPalette() {
       return <div className="text-xs text-pink mt-2">Erreur lors de la modification.</div>;
     }
     if (editStatus === 'success') {
-      return <div className="text-xs text-green-700 mt-2">Modification enregistrée.</div>;
+      return <div className="text-xs text-success mt-2">Modification enregistrée.</div>;
     }
     return null;
   };
@@ -357,11 +357,8 @@ export default function ProjectPalette() {
       <PageHeader
         title="Palette de Couleurs"
         subtitle="Ensemble des couleurs de référence à utiliser pour ce projet."
-      />
-
-      {activeProject ? (
-        <>
-          <div className="flex justify-end mb-6">
+        actions={activeProject ? (
+          <>
             <input
               ref={fileInputRef}
               type="file"
@@ -377,7 +374,12 @@ export default function ProjectPalette() {
             >
               {extracting ? 'Analyse…' : 'Palette depuis une image'}
             </Button>
-          </div>
+          </>
+        ) : null}
+      />
+
+      {activeProject ? (
+        <>
           {imageError && !isImageModalOpen && (
             <p className="text-xs text-pink mb-4 text-right">{imageError}</p>
           )}
