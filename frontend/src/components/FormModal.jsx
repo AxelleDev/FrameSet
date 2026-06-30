@@ -26,7 +26,7 @@ export default function FormModal({
   showClose = false,
   bodyClassName = '',
   decorationClassName = 'absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50',
-  titleClassName = 'text-xl font-light text-primary mb-6'
+  titleClassName = 'text-xl font-medium text-primary mb-6'
 }) {
   return (
     <AppModal

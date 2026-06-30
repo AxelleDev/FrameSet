@@ -211,7 +211,7 @@ export default function Profile() {
                     className={isEditing ? '' : 'opacity-70 cursor-not-allowed'}
                   />
                   {user.pendingEmail && user.pendingEmail !== user.email && (
-                    <p className="text-xs text-blue mt-2">
+                    <p className="text-xs text-primary/60 mt-2">
                       Email en attente de vérification : {user.pendingEmail}
                       {' '}·{' '}
                       <Link to={`/verify?email=${encodeURIComponent(user.pendingEmail)}&type=pending-email`} className="underline hover:text-primary">
@@ -232,7 +232,7 @@ export default function Profile() {
           <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-primary">Mot de passe</p>
-                <p className="text-xs text-blue">Dernière modification : {formatRelativeTime(user.passwordUpdatedAt)}</p>
+                <p className="text-xs text-primary/60">Dernière modification : {formatRelativeTime(user.passwordUpdatedAt)}</p>
               </div>
               <Button onClick={openPasswordModal} variant="ghost" className="text-sm font-medium">Modifier</Button>
           </div>

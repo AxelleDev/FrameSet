@@ -25,7 +25,7 @@ export default function Modal({
   subtitle,
   children,
   overlayClassName = 'bg-primary/40 backdrop-blur-sm',
-  panelClassName = 'glass-card w-full max-w-lg rounded-3xl p-8 ',
+  panelClassName = 'bg-white w-full max-w-lg rounded-3xl p-8',
   showClose = true,
   closeOnBackdrop = true
 }) {
@@ -105,7 +105,7 @@ export default function Modal({
           <div className="flex items-start justify-between mb-6">
             <div>
               {title && <h4 id="modal-title" className="text-xl font-medium text-primary">{title}</h4>}
-              {subtitle && <p className="text-sm text-blue">{subtitle}</p>}
+              {subtitle && <p className="text-sm text-primary/60">{subtitle}</p>}
             </div>
             {showClose && (
               <button onClick={onClose} className="text-blue hover:text-primary transition" aria-label="Fermer">

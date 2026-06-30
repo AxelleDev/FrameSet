@@ -120,8 +120,6 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (
           <Card key={project.id} clickable onClick={() => openProject(project.id)} className="group p-6 overflow-hidden">
-            <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-br from-lavender-100 to-transparent rounded-bl-full -mr-14 -mt-14 transition-transform group-hover:scale-110"></div>
-
             <div className="absolute top-4 right-4 flex gap-2 z-30">
               <ActionIconButton
                 onClick={(e) => openEditProject(e, project)}

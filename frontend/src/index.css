@@ -37,19 +37,6 @@
 }
 
 @layer components {
-  .glass-panel {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-  }
-
-  .glass-card {
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-  }
-
   .stat-bg {
     background-color: rgba(137, 148, 223, 0.1);
   }

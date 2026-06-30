@@ -17,7 +17,7 @@ export default function ProjectStatePlaceholder({ loading }) {
     return (
       <div className="text-center py-20" role="status" aria-live="polite">
         <div className="border-4 border-blue/20 border-t-blue rounded-full w-10 h-10 mx-auto animate-spin"></div>
-        <p className="mt-4 text-blue">Chargement du projet...</p>
+        <p className="mt-4 text-primary/60">Chargement du projet...</p>
       </div>
     );
   }
@@ -25,7 +25,7 @@ export default function ProjectStatePlaceholder({ loading }) {
   return (
     <div className="text-center py-20">
       <p className="text-lg font-medium text-primary mb-2">Projet introuvable</p>
-      <p className="text-sm text-blue mb-6">Ce projet n'existe pas ou a été supprimé.</p>
+      <p className="text-sm text-primary/60 mb-6">Ce projet n'existe pas ou a été supprimé.</p>
       <Button to="/app/dashboard">Retour au tableau de bord</Button>
     </div>
   );

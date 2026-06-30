@@ -69,10 +69,10 @@ export default function ConfirmDialog({
       showClose={false}
       panelClassName="max-w-md"
       title={title}
-      titleClassName="text-xl font-light text-primary mb-3"
+      titleClassName="text-xl font-medium text-primary mb-3"
       decorationClassName={decorationClassName}
     >
-      {subtitle ? <p className="text-sm text-blue mb-2">{subtitle}</p> : null}
+      {subtitle ? <p className="text-sm text-primary/60 mb-2">{subtitle}</p> : null}
       <p className="text-sm text-primary mb-4">{message}</p>
 
       {requiresConfirmationWord ? (
