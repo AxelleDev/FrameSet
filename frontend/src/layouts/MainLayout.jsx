@@ -26,7 +26,7 @@ export default function MainLayout() {
 
   // Compute NavLink classes based on the active route state.
   const navLinkClass = ({ isActive }) =>
-    `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+    `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-base ${
       isActive ? 'bg-blue/20 text-blue' : 'text-primary hover:text-blue hover:bg-blue/10'
     }`;
 
@@ -52,17 +52,17 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-canvas text-primary transition-colors duration-500">
+    <div className="relative flex h-screen overflow-hidden bg-canvas text-primary transition-colors duration-slow">
       
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden animate-fade-in"
+          className="fixed inset-0 z-overlay bg-black/40 backdrop-blur-sm md:hidden animate-fade-in"
           onClick={closeMobileMenu}
         ></div>
       )}
 
       <aside className={`
-        fixed inset-y-0 left-0 z-50 flex flex-col w-72 m-4 rounded-3xl bg-surface overflow-hidden transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-drawer flex flex-col w-72 m-4 rounded-3xl bg-surface overflow-hidden transition-transform duration-slow ease-in-out
         md:relative md:translate-x-0
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'}
       `}>
@@ -129,8 +129,8 @@ export default function MainLayout() {
         </NavLink>
       </aside>
 
-      <main className="flex-1 overflow-auto focus:outline-none relative z-0 md:z-10 custom-scrollbar">
-        <header className="h-20 flex items-center justify-between px-8 sticky top-0 z-50 bg-canvas/90 backdrop-blur-md md:bg-transparent md:backdrop-blur-0 transition-all duration-300">
+      <main className="flex-1 overflow-auto focus:outline-none relative custom-scrollbar">
+        <header className="h-20 flex items-center justify-between px-8 sticky top-0 z-sticky bg-canvas/90 backdrop-blur-md md:bg-transparent md:backdrop-blur-0 transition-all duration-slow">
           <div className="flex items-center">
              <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden mr-4 text-primary hover:text-blue transition-colors p-2 -ml-2 rounded-lg hover:bg-blue/10">
                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>

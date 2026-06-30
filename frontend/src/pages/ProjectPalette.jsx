@@ -477,9 +477,8 @@ export default function ProjectPalette() {
                 setPreviewPalette(palette);
               }}
             >
-              <div className="flex-1 w-full rounded-3xl  relative overflow-hidden transition-transform duration-300 group-hover:-translate-y-2 "
+              <div className="flex-1 w-full rounded-3xl relative overflow-hidden transition-transform duration-slow group-hover:-translate-y-2"
                    style={{ backgroundColor: color.hex }}>
-                   <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50 pointer-events-none"></div>
 
                    <ActionIconButton
                       onClick={(e) => handleDeleteColor(e, color.id)}

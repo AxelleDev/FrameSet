@@ -155,9 +155,9 @@ export default function Dashboard() {
               <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">{project.name}</h3>
               <p className="text-sm text-primary mb-auto">Modifié {project.lastEdited}</p>
               <div className="mt-8 pt-4 flex -space-x-2 min-h-[40px] items-center">
-                {project.palette.map((color) => (
-                  <div key={color.hex} className="w-6 h-6 rounded-full ring-2 ring-white" 
-                       style={{ backgroundColor: color.hex }} 
+                {project.palette.map((color, i) => (
+                  <div key={color.id ?? `${color.hex}-${i}`} className="w-6 h-6 rounded-full ring-2 ring-white"
+                       style={{ backgroundColor: color.hex }}
                        title={color.name}></div>
                 ))}
                 {project.palette.length === 0 && (
