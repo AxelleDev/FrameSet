@@ -12,6 +12,7 @@ import AppModal from '../components/AppModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import Avatar from '../components/Avatar';
 import FormField from '../components/FormField';
 import TextInput from '../components/TextInput';
 import Alert from '../components/Alert';
@@ -165,9 +166,7 @@ export default function Profile() {
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">
       
       <Card className="p-8 mb-8 flex flex-col md:flex-row items-center gap-8">
-        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue to-pink ring-4 ring-white shadow-lg flex items-center justify-center text-white text-4xl font-bold flex-shrink-0">
-          {user.avatarInitials}
-        </div>
+        <Avatar initials={user.avatarInitials} className="w-28 h-28 text-4xl shadow-sm" />
 
         <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1">
           <h1 className="text-3xl font-light tracking-tight text-primary">{user.name}</h1>

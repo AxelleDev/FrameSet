@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Outlet, NavLink, Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectContext';
+import Avatar from '../components/Avatar';
 
 /**
  * Authenticated application shell: collapsible sidebar navigation, top header
@@ -110,9 +111,7 @@ export default function MainLayout() {
         <Link to="/app/profile" onClick={closeMobileMenu} className="p-4 border-t border-white/20 bg-white/30 hover:bg-white/50 transition cursor-pointer group">
            <div className="flex items-center justify-between mb-0">
               <div className="flex items-center">
-                 <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue to-pink border-2 border-primary shadow-md flex items-center justify-center text-primary text-xs font-bold group-hover:scale-105 transition-transform">
-                    {user.avatarInitials}
-                 </div>
+                 <Avatar initials={user.avatarInitials} className="h-9 w-9 text-xs group-hover:scale-105 transition-transform" />
                  <div className="ml-3">
                    <p className="text-xs font-bold text-primary group-hover:text-blue transition-colors">{user.name}</p>
                  </div>
