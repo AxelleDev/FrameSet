@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthContext } from '../../src/context/AuthContext';
 import Register from '../../src/pages/Register';
 
@@ -24,11 +25,11 @@ vi.mock('../../src/hooks/useUserCount', () => ({
 
 const renderPage = () => {
   render(
-    <AuthContext.Provider value={{ register: mockRegister }}>
+    <HelmetProvider><AuthContext.Provider value={{ register: mockRegister }}>
       <MemoryRouter>
         <Register />
       </MemoryRouter>
-    </AuthContext.Provider>
+    </AuthContext.Provider></HelmetProvider>
   );
 };
 

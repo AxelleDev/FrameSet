@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+# Private, authenticated app screens — keep out of the index.
+Disallow: /app/
+# Verification page carries a one-time email/token in the query string.
+Disallow: /verify
+
+Sitemap: https://frameset.app/sitemap.xml

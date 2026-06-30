@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthContext } from '../../src/context/AuthContext';
 import ForgotPassword from '../../src/pages/ForgotPassword';
 
@@ -18,11 +19,11 @@ vi.mock('react-router-dom', async () => {
 
 const renderPage = () =>
   render(
-    <AuthContext.Provider value={{ requestPasswordReset: mockRequest, resetPassword: mockReset }}>
+    <HelmetProvider><AuthContext.Provider value={{ requestPasswordReset: mockRequest, resetPassword: mockReset }}>
       <MemoryRouter>
         <ForgotPassword />
       </MemoryRouter>
-    </AuthContext.Provider>
+    </AuthContext.Provider></HelmetProvider>
   );
 
 describe('ForgotPassword', () => {

@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthContext } from '../../src/context/AuthContext';
 import Verify from '../../src/pages/Verify';
 
@@ -18,7 +19,7 @@ vi.mock('react-router-dom', async () => {
 
 const renderPage = () =>
   render(
-    <AuthContext.Provider
+    <HelmetProvider><AuthContext.Provider
       value={{
         verifyEmail: mockVerify,
         resendVerificationCode: mockResend,
@@ -29,7 +30,7 @@ const renderPage = () =>
       <MemoryRouter initialEntries={['/verify?email=axelle%40example.com']}>
         <Verify />
       </MemoryRouter>
-    </AuthContext.Provider>
+    </AuthContext.Provider></HelmetProvider>
   );
 
 describe('Verify', () => {

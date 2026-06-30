@@ -15,6 +15,7 @@ import Logo from '../components/Logo';
 import FormField from '../components/FormField';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import Seo from '../components/Seo';
 import PasswordInput from '../components/PasswordInput';
 import TextInput from '../components/TextInput';
 import Alert from '../components/Alert';
@@ -99,6 +100,7 @@ export default function ForgotPassword() {
       }
     >
       <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
+        <Seo title="Mot de passe oublié" path="/forgot-password" description="Réinitialisez le mot de passe de votre compte FrameSet." />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Réinitialisation</h2>
           <p className="text-primary text-sm mt-2">

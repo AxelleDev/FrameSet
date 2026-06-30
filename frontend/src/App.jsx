@@ -21,8 +21,9 @@
  *   *              -> NotFound (404)
  */
 import React, { Suspense, lazy } from 'react';
+import { HelmetProvider } from 'react-helmet-async';
 import GlobalErrorAlert from './components/GlobalErrorAlert';
-import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProjectProvider } from './context/ProjectContext';
 import { ToastProvider } from './context/ToastContext';
@@ -31,6 +32,7 @@ import MainLayout from './layouts/MainLayout';
 
 // Pages are code-split via React.lazy so each route's JS (and heavy deps like
 // jsPDF / react-select) is only downloaded when that route is first visited.
+const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
@@ -72,10 +74,10 @@ function AppRoutes() {
         message={globalError}
         onClose={() => setGlobalError && setGlobalError(null)}
       />
-      <HashRouter>
+      <BrowserRouter>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>} />
           <Route path="/register" element={<RedirectIfAuthenticated><Register /></RedirectIfAuthenticated>} />
           <Route path="/forgot-password" element={<RedirectIfAuthenticated><ForgotPassword /></RedirectIfAuthenticated>} />
@@ -100,7 +102,7 @@ function AppRoutes() {
           <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
-      </HashRouter>
+      </BrowserRouter>
     </>
   );
 }
@@ -111,12 +113,14 @@ function AppRoutes() {
  */
 export default function App() {
   return (
-    <AuthProvider>
-      <ProjectProvider>
-        <ToastProvider>
-          <AppRoutes />
-        </ToastProvider>
-      </ProjectProvider>
-    </AuthProvider>
+    <HelmetProvider>
+      <AuthProvider>
+        <ProjectProvider>
+          <ToastProvider>
+            <AppRoutes />
+          </ToastProvider>
+        </ProjectProvider>
+      </AuthProvider>
+    </HelmetProvider>
   );
 }
