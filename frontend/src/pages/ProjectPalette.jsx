@@ -505,7 +505,7 @@ export default function ProjectPalette() {
                       </svg>
                     </ActionIconButton>
 
-                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 backdrop-blur-[2px] cursor-pointer z-10"
+                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10"
                         onClick={e => handleCopyHex(e, color.hex)}>
                       <CopyBadge isCopied={copiedValue === color.hex} />
                    </div>
@@ -533,7 +533,13 @@ export default function ProjectPalette() {
           </FormField>
           <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
-               <div className="w-12 h-12 rounded-xl flex-shrink-0" style={{ backgroundColor: isValidEditHex() ? editColorHex : '#ffffff' }}></div>
+               <input
+                 type="color"
+                 value={isValidEditHex() ? editColorHex : '#ffffff'}
+                 onChange={(e) => setEditColorHex(e.target.value.toUpperCase())}
+                 aria-label="Choisir la couleur"
+                 className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0"
+               />
                <TextInput
                  type="text"
                  value={editColorHex}
@@ -569,7 +575,13 @@ export default function ProjectPalette() {
 
           <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
-               <div className="w-12 h-12 rounded-xl flex-shrink-0" style={{ backgroundColor: isValidHex() ? newColorHex : '#ffffff' }}></div>
+               <input
+                 type="color"
+                 value={isValidHex() ? newColorHex : '#ffffff'}
+                 onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
+                 aria-label="Choisir la couleur"
+                 className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0"
+               />
                <TextInput
                  type="text"
                  value={newColorHex}

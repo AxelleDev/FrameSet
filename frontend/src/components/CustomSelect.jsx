@@ -55,9 +55,12 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
         menu: provided => ({
           ...provided,
           backgroundColor: 'rgb(var(--color-surface))',
-          borderRadius: '1rem',
+          borderRadius: '0.75rem',
           overflow: 'hidden',
+          boxShadow: 'none',
+          border: '1px solid rgb(var(--color-primary) / 0.1)',
           zIndex: 50,
+          marginTop: '0.4rem',
         }),
         menuList: provided => ({
           ...provided,
