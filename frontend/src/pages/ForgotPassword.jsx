@@ -15,6 +15,8 @@ import FormField from '../components/FormField';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PasswordInput from '../components/PasswordInput';
+import TextInput from '../components/TextInput';
+import Alert from '../components/Alert';
 import PasswordChecklist from '../components/PasswordChecklist';
 import useFormState from '../hooks/useFormState';
 import { isPasswordValid, isValidEmail } from '../utils/passwordRules';
@@ -41,9 +43,6 @@ export default function ForgotPassword() {
   const passwordsMatch = form.newPassword === form.confirmPassword;
   const canRequest = emailValid;
   const canReset = form.code.trim() !== '' && passwordValid && passwordsMatch;
-
-  const inputClass =
-    'w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all';
 
   // Step 1: request a reset code by email.
   const handleRequest = async (e) => {
@@ -82,7 +81,7 @@ export default function ForgotPassword() {
 
   return (
     <AuthLayout
-      variant="login"
+     
       hero={
         <>
           <div className="flex items-center mb-2">
@@ -98,7 +97,7 @@ export default function ForgotPassword() {
         </>
       }
     >
-      <Card variant="card" className="w-full max-w-md p-10 rounded-3xl shadow-2xl animate-fade-in" style={{ animationDelay: '150ms' }}>
+      <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Réinitialisation</h2>
           <p className="text-primary text-sm mt-2">
@@ -109,30 +108,25 @@ export default function ForgotPassword() {
         </div>
 
         {info && (
-          <div className="mb-4 p-3 bg-blue/10 text-primary text-xs rounded-lg text-center font-medium" aria-live="polite">
-            {info}
-          </div>
+          <Alert variant="info" className="mb-4">{info}</Alert>
         )}
         {error && (
-          <div className="mb-4 p-3 bg-pink text-primary text-xs rounded-lg text-center font-medium" aria-live="polite" role="alert">
-            {error}
-          </div>
+          <Alert variant="error" className="mb-4">{error}</Alert>
         )}
 
         {step === 'request' ? (
           <form className="space-y-5" onSubmit={handleRequest} noValidate>
-            <FormField label="Email" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
-              <input
+            <FormField label="Email">
+              <TextInput
                 type="email"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                className={inputClass}
                 placeholder="email@exemple.com"
                 autoComplete="email"
               />
               {form.email !== '' && !emailValid && (
-                <p className="text-xs text-pink mt-1">Format d'email invalide.</p>
+                <p className="text-xs text-danger mt-1">Format d'email invalide.</p>
               )}
             </FormField>
 
@@ -142,42 +136,40 @@ export default function ForgotPassword() {
           </form>
         ) : (
           <form className="space-y-4" onSubmit={handleReset} noValidate>
-            <FormField label="Code de réinitialisation" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
-              <input
+            <FormField label="Code de réinitialisation">
+              <TextInput
                 type="text"
                 name="code"
                 value={form.code}
                 onChange={handleChange}
-                className={`${inputClass} tracking-widest`}
+                className="tracking-widest"
                 placeholder="123456"
                 inputMode="numeric"
                 autoComplete="one-time-code"
               />
             </FormField>
 
-            <FormField label="Nouveau mot de passe" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
+            <FormField label="Nouveau mot de passe">
               <PasswordInput
                 name="newPassword"
                 value={form.newPassword}
                 onChange={handleChange}
-                inputClassName={inputClass}
                 placeholder="Votre nouveau mot de passe"
                 autoComplete="new-password"
               />
               <PasswordChecklist password={form.newPassword} />
             </FormField>
 
-            <FormField label="Confirmer le mot de passe" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
+            <FormField label="Confirmer le mot de passe">
               <PasswordInput
                 name="confirmPassword"
                 value={form.confirmPassword}
                 onChange={handleChange}
-                inputClassName={inputClass}
                 placeholder="Retapez le mot de passe"
                 autoComplete="new-password"
               />
               {form.confirmPassword !== '' && !passwordsMatch && (
-                <p className="text-xs text-pink mt-1">Les mots de passe ne correspondent pas.</p>
+                <p className="text-xs text-danger mt-1">Les mots de passe ne correspondent pas.</p>
               )}
             </FormField>
 
@@ -188,7 +180,7 @@ export default function ForgotPassword() {
         )}
 
         <div className="mt-8 text-center">
-          <Link to="/login" className="text-sm font-medium text-blue hover:text-pink transition-colors">Retour à la connexion</Link>
+          <Link to="/login" className="text-sm font-medium text-blue hover:text-primary transition-colors">Retour à la connexion</Link>
         </div>
       </Card>
     </AuthLayout>

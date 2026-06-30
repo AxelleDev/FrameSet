@@ -45,7 +45,7 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 function RouteFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center" role="status" aria-live="polite">
-      <div className="border-4 border-blue border-t-pink rounded-full w-10 h-10 animate-spin"></div>
+      <div className="border-4 border-blue/20 border-t-blue rounded-full w-10 h-10 animate-spin"></div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // Placeholder shown on project pages before the active project is available.
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Button from './Button';
 
 /**
  * Renders the project pages' non-ready states:
@@ -16,8 +16,8 @@ export default function ProjectStatePlaceholder({ loading }) {
   if (loading) {
     return (
       <div className="text-center py-20" role="status" aria-live="polite">
-        <div className="border-4 border-blue border-t-pink rounded-full w-10 h-10 mx-auto animate-spin"></div>
-        <p className="mt-4 text-blue">Chargement du projet...</p>
+        <div className="border-4 border-blue/20 border-t-blue rounded-full w-10 h-10 mx-auto animate-spin"></div>
+        <p className="mt-4 text-primary/60">Chargement du projet...</p>
       </div>
     );
   }
@@ -25,13 +25,8 @@ export default function ProjectStatePlaceholder({ loading }) {
   return (
     <div className="text-center py-20">
       <p className="text-lg font-medium text-primary mb-2">Projet introuvable</p>
-      <p className="text-sm text-blue mb-6">Ce projet n'existe pas ou a été supprimé.</p>
-      <Link
-        to="/app/dashboard"
-        className="inline-flex px-5 py-2.5 bg-pink text-white rounded-full text-sm font-medium hover:bg-pink/80 transition-colors"
-      >
-        Retour au tableau de bord
-      </Link>
+      <p className="text-sm text-primary/60 mb-6">Ce projet n'existe pas ou a été supprimé.</p>
+      <Button to="/app/dashboard">Retour au tableau de bord</Button>
     </div>
   );
 }

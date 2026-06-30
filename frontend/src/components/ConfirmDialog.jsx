@@ -2,6 +2,7 @@
 import React, { useEffect, useId, useState } from 'react';
 import FormModal from './FormModal';
 import ModalActions from './ModalActions';
+import TextInput from './TextInput';
 
 /**
  * Confirmation modal with optional "type to confirm" safeguard for destructive
@@ -32,8 +33,8 @@ export default function ConfirmDialog({
   cancelLabel = 'Annuler',
   onConfirm,
   onCancel,
-  confirmClassName = 'bg-pink text-white hover:bg-pink/10',
-  decorationClassName = 'absolute top-0 right-0 w-32 h-32 bg-pink/10 rounded-full -mr-16 -mt-16 opacity-50',
+  confirmClassName = '',
+  decorationClassName = 'absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50',
   confirmationWord = '',
   confirmationInputLabel = 'Mot de confirmation',
   confirmationInputPlaceholder = ''
@@ -68,10 +69,10 @@ export default function ConfirmDialog({
       showClose={false}
       panelClassName="max-w-md"
       title={title}
-      titleClassName="text-xl font-light text-primary mb-3"
+      titleClassName="text-xl font-medium text-primary mb-3"
       decorationClassName={decorationClassName}
     >
-      {subtitle ? <p className="text-sm text-blue mb-2">{subtitle}</p> : null}
+      {subtitle ? <p className="text-sm text-primary/60 mb-2">{subtitle}</p> : null}
       <p className="text-sm text-primary mb-4">{message}</p>
 
       {requiresConfirmationWord ? (
@@ -79,17 +80,16 @@ export default function ConfirmDialog({
           <label htmlFor={confirmationInputId} className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">
             {confirmationInputLabel}
           </label>
-          <input
+          <TextInput
             id={confirmationInputId}
             type="text"
             value={confirmationValue}
             onChange={(event) => setConfirmationValue(event.target.value)}
             placeholder={confirmationInputPlaceholder || confirmationWord}
             autoComplete="off"
-            className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary"
           />
           {showConfirmationError ? (
-            <p className="mt-2 text-xs text-pink">La valeur saisie ne correspond pas.</p>
+            <p className="mt-2 text-xs text-danger">La valeur saisie ne correspond pas.</p>
           ) : null}
         </div>
       ) : null}
@@ -101,7 +101,7 @@ export default function ConfirmDialog({
         onPrimary={handleConfirm}
         primaryDisabled={!isConfirmationValid}
         primaryClassName={confirmClassName}
-        primaryVariant="secondary"
+        primaryVariant="danger"
       />
     </FormModal>
   );

@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Self-hosted brand font. */
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter.ttf') format('truetype');
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+@layer base {
+  /* CSS variables kept for the few inline `var(--color-*)` usages
+     (CustomSelect, ActionIconButton, …) — same values as the Tailwind tokens. */
+  :root {
+    --color-primary: #3c3d48;
+    --color-secondary: #afafaf;
+    --color-blue: #8994df;
+    --color-danger: #dc2626;
+  }
+
+  body {
+    @apply bg-canvas text-primary font-sans antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #e5e7eb;
+    border-radius: 20px;
+  }
+}
+
+@layer components {
+  .stat-bg {
+    background-color: rgba(137, 148, 223, 0.1);
+  }
+}

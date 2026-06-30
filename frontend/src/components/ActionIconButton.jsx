@@ -4,7 +4,7 @@ import React from 'react';
 // Hover color mapping by semantic intent (e.g. edit vs delete).
 const INTENT_CLASSES = {
   edit: 'hover:bg-[var(--color-blue)]',
-  delete: 'hover:bg-red-500'
+  delete: 'hover:bg-danger'
 };
 
 // Base background mapping for use on dark or light surfaces.
@@ -53,7 +53,7 @@ export default function ActionIconButton({
       onClick={onClick}
       title={title}
       aria-label={title}
-      className={`w-8 h-8 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-pink focus-visible:ring-offset-2 ${className}`.trim()}
+      className={`w-8 h-8 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110  focus:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 ${className}`.trim()}
     >
       {icon}
     </button>

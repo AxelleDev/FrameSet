@@ -5,20 +5,21 @@
  * the user is authenticated, otherwise to the login page.
  */
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Button from '../components/Button';
 
 export default function NotFound() {
   const { user } = useAuth();
   const homeLink = user ? '/app/dashboard' : '/login';
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '10vh' }}>
-      <h1 style={{ fontSize: '3rem', color: '#FF9292' }}>404</h1>
-      <p style={{ fontSize: '1.5rem' }}>Page non trouvée</p>
-      <Link to={homeLink} style={{ color: '#8994DF', fontSize: '1.2rem' }}>
-        Retour à l'accueil
-      </Link>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-canvas text-primary px-6 text-center">
+      <p className="text-7xl font-light tracking-tight text-blue">404</p>
+      <h1 className="text-2xl font-medium mt-4">Page non trouvée</h1>
+      <p className="text-sm text-primary/60 mt-2 mb-8 max-w-sm">
+        La page que vous cherchez n&apos;existe pas ou a été déplacée.
+      </p>
+      <Button to={homeLink}>Retour à l&apos;accueil</Button>
     </div>
   );
-};
+}

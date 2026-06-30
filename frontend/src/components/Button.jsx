@@ -1,16 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 /**
  * Themed button with optional async loading state. If `onClick` returns a
  * promise, the button shows a spinner and disables itself until it settles
- * (respecting an optional minimum display time).
+ * (respecting an optional minimum display time). When `to` or `href` is given,
+ * it renders a router Link / anchor with the exact same styling instead.
  *
  * @param {object} props
  * @param {React.ReactNode} props.children - Button label/content.
  * @param {Function} [props.onClick] - Click handler; may return a promise to drive the loading state.
  * @param {string} [props.type] - Native button type (defaults to "button").
- * @param {'primary'|'secondary'|'ghost'} [props.variant] - Visual variant.
+ * @param {'primary'|'danger'|'ghost'|'outline'} [props.variant] - Visual variant.
  * @param {boolean} [props.fullWidth] - Stretch to full width with larger padding.
+ * @param {string} [props.to] - Render as a react-router Link to this route.
+ * @param {string} [props.href] - Render as an anchor to this URL.
  * @param {string} [props.className] - Extra classes.
  * @param {boolean} [props.disabled] - Disable the button.
  * @param {boolean} [props.loading] - Externally controlled loading state.
@@ -22,6 +26,8 @@ export default function Button({
   type = 'button',
   variant = 'primary',
   fullWidth = false,
+  to,
+  href,
   className = '',
   disabled = false,
   loading = false,
@@ -42,19 +48,30 @@ export default function Button({
   // Loading is driven either externally (prop) or internally (async onClick).
   const isLoading = loading || internalLoading;
 
-  const base = 'font-medium rounded-xl transition-all inline-flex items-center justify-center gap-2';
+  const base =
+    'font-medium rounded-xl transition-all inline-flex items-center justify-center gap-2 ' +
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue/50 focus-visible:ring-offset-2';
 
-  const size = fullWidth ? 'w-full py-4' : 'px-6 py-2.5 text-sm';
+  const size = fullWidth ? 'w-full py-4 text-sm' : 'px-6 py-2.5 text-sm';
 
   const variants = {
-    primary: 'bg-blue text-white hover:bg-pink/10 hover:shadow-lg',
-    secondary: 'bg-pink text-white hover:bg-pink/10 hover:shadow-lg',
-    ghost: 'bg-transparent text-primary',
+    primary: 'bg-blue text-white hover:bg-blue/90',
+    danger: 'bg-danger text-white hover:bg-danger/90',
+    ghost: 'bg-transparent text-primary hover:bg-blue/10',
+    outline: 'bg-blue/10 text-blue hover:bg-blue/20',
   };
 
   const disabledClass = (disabled || isLoading) ? 'opacity-50 cursor-not-allowed' : '';
 
   const classes = `${base} ${size} ${variants[variant] || ''} ${disabledClass} ${className}`.trim();
+
+  // Render as a navigation link when `to`/`href` is provided (no async loading).
+  if (to) {
+    return <Link to={to} className={classes} {...rest}>{children}</Link>;
+  }
+  if (href) {
+    return <a href={href} className={classes} {...rest}>{children}</a>;
+  }
 
   const handleClick = async (e) => {
     if (!onClick || disabled || isLoading) return;

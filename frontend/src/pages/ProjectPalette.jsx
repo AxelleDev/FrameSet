@@ -16,6 +16,8 @@ import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
+import TextInput from '../components/TextInput';
+import Button from '../components/Button';
 import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -194,10 +196,10 @@ export default function ProjectPalette() {
 
   const renderEditStatus = () => {
     if (editStatus === 'error') {
-      return <div className="text-xs text-pink mt-2">Erreur lors de la modification.</div>;
+      return <div className="text-xs text-danger mt-2">Erreur lors de la modification.</div>;
     }
     if (editStatus === 'success') {
-      return <div className="text-xs text-green-700 mt-2">Modification enregistrée.</div>;
+      return <div className="text-xs text-success mt-2">Modification enregistrée.</div>;
     }
     return null;
   };
@@ -355,11 +357,8 @@ export default function ProjectPalette() {
       <PageHeader
         title="Palette de Couleurs"
         subtitle="Ensemble des couleurs de référence à utiliser pour ce projet."
-      />
-
-      {activeProject ? (
-        <>
-          <div className="flex justify-end mb-6">
+        actions={activeProject ? (
+          <>
             <input
               ref={fileInputRef}
               type="file"
@@ -367,20 +366,22 @@ export default function ProjectPalette() {
               onChange={handleImageSelected}
               className="hidden"
             />
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={openImagePicker}
               disabled={extracting}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-blue text-primary text-sm font-medium hover:border-pink hover:text-pink transition-colors disabled:opacity-50"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
               {extracting ? 'Analyse…' : 'Palette depuis une image'}
-            </button>
-          </div>
+            </Button>
+          </>
+        ) : null}
+      />
+
+      {activeProject ? (
+        <>
           {imageError && !isImageModalOpen && (
-            <p className="text-xs text-pink mb-4 text-right">{imageError}</p>
+            <p className="text-xs text-danger mb-4 text-right">{imageError}</p>
           )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
@@ -398,7 +399,7 @@ export default function ProjectPalette() {
               tabIndex={0}
               role="button"
               aria-label={`Couleur ${color.name}, ${color.hex}. Utilisez les flèches pour réordonner.`}
-              className={`group relative flex flex-col aspect-[4/5] rounded-[2rem] outline-none focus-visible:ring-2 focus-visible:ring-pink/70 focus-visible:ring-offset-2 ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
+              className={`group relative flex flex-col aspect-[4/5] rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-blue/70 focus-visible:ring-offset-2 ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
               draggable
               onKeyDown={e => handleSwatchKeyDown(e, idx)}
               onDragStart={e => {
@@ -472,7 +473,7 @@ export default function ProjectPalette() {
                 setPreviewPalette(palette);
               }}
             >
-              <div className="flex-1 w-full rounded-[2rem] shadow-lg relative overflow-hidden transition-transform duration-300 group-hover:-translate-y-2 group-hover:shadow-xl"
+              <div className="flex-1 w-full rounded-3xl  relative overflow-hidden transition-transform duration-300 group-hover:-translate-y-2 "
                    style={{ backgroundColor: color.hex }}>
                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50 pointer-events-none"></div>
 
@@ -507,7 +508,7 @@ export default function ProjectPalette() {
               </div>
               <div className="mt-4 text-center">
                  <p className="text-sm font-semibold text-primary truncate" title={color.name}>{color.name}</p>
-                 <p className="text-[10px] text-primary font-mono mt-0.5 uppercase tracking-wide opacity-70 group-hover:opacity-100 transition-opacity">{color.hex}</p>
+                 <p className="text-xs text-primary font-mono mt-0.5 uppercase tracking-wide opacity-70 group-hover:opacity-100 transition-opacity">{color.hex}</p>
               </div>
             </div>
           ))}
@@ -524,20 +525,20 @@ export default function ProjectPalette() {
       >
         <div className="space-y-4">
           <FormField label="Nom de la couleur">
-            <input type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="ex: Reflet Cheveux"
-              className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+            <TextInput type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="ex: Reflet Cheveux" />
           </FormField>
           <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
-               <div className="w-12 h-12 rounded-xl border border-blue shadow-inner flex-shrink-0" style={{ backgroundColor: isValidEditHex() ? editColorHex : '#ffffff' }}></div>
-               <input
+               <div className="w-12 h-12 rounded-xl flex-shrink-0" style={{ backgroundColor: isValidEditHex() ? editColorHex : '#ffffff' }}></div>
+               <TextInput
                  type="text"
                  value={editColorHex}
                  onChange={handleEditHexChange}
                  onKeyDown={handleHexKeyDown}
                  onPaste={handleHexPaste(setEditColorHex)}
                  placeholder="ex: #FF5500"
-                 className="flex-1 px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary font-mono uppercase"
+                 mono
+                 className="flex-1"
                />
             </div>
           </FormField>
@@ -559,21 +560,21 @@ export default function ProjectPalette() {
       >
         <div className="space-y-4">
           <FormField label="Nom de la couleur">
-            <input type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="ex: Reflet Cheveux"
-              className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+            <TextInput type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="ex: Reflet Cheveux" />
           </FormField>
 
           <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
-               <div className="w-12 h-12 rounded-xl border border-blue shadow-inner flex-shrink-0" style={{ backgroundColor: isValidHex() ? newColorHex : '#ffffff' }}></div>
-               <input
+               <div className="w-12 h-12 rounded-xl flex-shrink-0" style={{ backgroundColor: isValidHex() ? newColorHex : '#ffffff' }}></div>
+               <TextInput
                  type="text"
                  value={newColorHex}
                  onChange={handleNewHexChange}
                  onKeyDown={handleHexKeyDown}
                  onPaste={handleHexPaste(setNewColorHex)}
                  placeholder="ex: #FF5500"
-                 className="flex-1 px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary font-mono uppercase"
+                 mono
+                 className="flex-1"
                />
             </div>
           </FormField>
@@ -604,14 +605,14 @@ export default function ProjectPalette() {
                 key={hex}
                 onClick={() => toggleImageColor(hex)}
                 aria-pressed={selected}
-                className={`flex flex-col items-center gap-1 rounded-xl p-2 border transition-all ${selected ? 'border-pink ring-2 ring-pink/40' : 'border-blue/30 opacity-50 hover:opacity-100'}`}
+                className={`flex flex-col items-center gap-1 rounded-xl p-2 transition-all ${selected ? 'ring-2 ring-blue/40' : 'opacity-50 hover:opacity-100'}`}
               >
-                <span className="w-full h-12 rounded-lg shadow-inner" style={{ backgroundColor: hex }}></span>
-                <span className="text-[10px] font-mono text-primary uppercase">{hex}</span>
+                <span className="w-full h-12 rounded-lg " style={{ backgroundColor: hex }}></span>
+                <span className="text-xs font-mono text-primary uppercase">{hex}</span>
               </button>
             ))}
           </div>
-          {imageError && <p className="text-xs text-pink">{imageError}</p>}
+          {imageError && <p className="text-xs text-danger">{imageError}</p>}
         </div>
         <ModalActions
           secondaryLabel="Annuler"
@@ -627,7 +628,7 @@ export default function ProjectPalette() {
         title="Supprimer la couleur"
         message="Êtes-vous sûr de vouloir supprimer cette couleur ?"
         confirmLabel="Supprimer"
-        confirmClassName="bg-pink text-white hover:bg-pink/10"
+       
         onCancel={() => setConfirmDeleteColor(null)}
         onConfirm={async () => {
           if (confirmDeleteColor === null) return;

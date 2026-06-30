@@ -162,8 +162,8 @@ export default function ProjectExport() {
       {activeProject ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="p-8 rounded-xl flex flex-col items-start text-left">
-                <div className="h-12 w-12 bg-[rgba(255,146,146,0.15)] text-pink rounded-full flex items-center justify-center mb-6">
+            <Card className="p-8 flex flex-col items-start text-left">
+                <div className="h-12 w-12 bg-blue/15 text-blue rounded-full flex items-center justify-center mb-6">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                 </div>
               <h3 className="text-lg font-medium text-primary mb-2">Guide de style PDF</h3>
@@ -173,8 +173,8 @@ export default function ProjectExport() {
                 </Button>
             </Card>
 
-            <Card className="p-8 rounded-xl flex flex-col items-start text-left">
-                <div className="h-12 w-12 bg-[rgba(137,148,223,0.15)] text-blue rounded-full flex items-center justify-center mb-6">
+            <Card className="p-8 flex flex-col items-start text-left">
+                <div className="h-12 w-12 bg-blue/15 text-blue rounded-full flex items-center justify-center mb-6">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
                 </div>
               <h3 className="text-lg font-medium text-primary mb-2">Données JSON</h3>
@@ -185,10 +185,10 @@ export default function ProjectExport() {
             </Card>
           </div>
 
-          <div className="mt-12" style={{ animationDelay: '100ms' }}>
+          <div className="mt-12">
             <h4 className="text-sm font-bold text-primary uppercase tracking-wider mb-4">Aperçu de la sortie JSON</h4>
-            <div className="bg-primary/90 rounded-lg p-6 overflow-x-auto shadow-inner">
-              <pre className="text-xs text-primary font-mono leading-relaxed">{projectJson}</pre>
+            <div className="bg-primary rounded-2xl p-6 overflow-x-auto ">
+              <pre className="text-xs text-white/80 font-mono leading-relaxed">{projectJson}</pre>
             </div>
           </div>
         </>

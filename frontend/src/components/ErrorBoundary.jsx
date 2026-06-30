@@ -38,7 +38,7 @@ export default class ErrorBoundary extends React.Component {
       return (
         <div
           role="alert"
-          className="rounded-2xl border border-pink/30 bg-white/90 px-6 py-8 text-center text-primary shadow-sm"
+          className="rounded-2xl bg-white px-6 py-8 text-center text-primary "
         >
           {FALLBACK_MESSAGE}
         </div>

@@ -1,5 +1,6 @@
 // Generic reusable modal.
 import React, { useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Low-level modal primitive: renders an overlay + focusable panel, supports
@@ -24,7 +25,7 @@ export default function Modal({
   subtitle,
   children,
   overlayClassName = 'bg-primary/40 backdrop-blur-sm',
-  panelClassName = 'glass-card w-full max-w-lg rounded-3xl border border-white p-8 shadow-2xl',
+  panelClassName = 'bg-white w-full max-w-lg rounded-3xl p-8',
   showClose = true,
   closeOnBackdrop = true
 }) {
@@ -86,7 +87,7 @@ export default function Modal({
     if (e.target === e.currentTarget) onClose?.();
   };
 
-  return (
+  return createPortal(
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center px-4 ${overlayClassName}`}
       onClick={handleBackdropClick}
@@ -104,10 +105,10 @@ export default function Modal({
           <div className="flex items-start justify-between mb-6">
             <div>
               {title && <h4 id="modal-title" className="text-xl font-medium text-primary">{title}</h4>}
-              {subtitle && <p className="text-sm text-blue">{subtitle}</p>}
+              {subtitle && <p className="text-sm text-primary/60">{subtitle}</p>}
             </div>
             {showClose && (
-              <button onClick={onClose} className="text-blue hover:text-pink transition" aria-label="Fermer">
+              <button onClick={onClose} className="text-blue hover:text-primary transition" aria-label="Fermer">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
                   <path d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -117,6 +118,7 @@ export default function Modal({
         )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

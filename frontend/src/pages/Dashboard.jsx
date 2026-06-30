@@ -11,6 +11,7 @@ import { useProjects } from '../context/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
+import TextInput from '../components/TextInput';
 import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -85,7 +86,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <Card className="overflow-hidden mb-12 animate-fade-in border border-white">
+      <Card className="overflow-hidden mb-12 animate-fade-in">
         <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-start justify-between">
           <div>
             <h2 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">Bonjour, {user.name.split(' ')[0]}.</h2>
@@ -119,8 +120,6 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (
           <Card key={project.id} clickable onClick={() => openProject(project.id)} className="group p-6 overflow-hidden">
-            <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-br from-lavender-100 to-transparent rounded-bl-full -mr-14 -mt-14 transition-transform group-hover:scale-110"></div>
-
             <div className="absolute top-4 right-4 flex gap-2 z-30">
               <ActionIconButton
                 onClick={(e) => openEditProject(e, project)}
@@ -144,16 +143,16 @@ export default function Dashboard() {
             <div className="relative z-10 flex flex-col h-full min-h-[160px]">
               <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">{project.name}</h3>
               <p className="text-sm text-primary mb-auto">Modifié {project.lastEdited}</p>
-              <div className="mt-8 pt-4 border-t border-blue flex -space-x-2 min-h-[40px] items-center">
+              <div className="mt-8 pt-4 flex -space-x-2 min-h-[40px] items-center">
                 {project.palette.map((color) => (
-                  <div key={color.hex} className="w-6 h-6 rounded-full border border-white shadow-sm ring-1 ring-black/5" 
+                  <div key={color.hex} className="w-6 h-6 rounded-full ring-2 ring-white" 
                        style={{ backgroundColor: color.hex }} 
                        title={color.name}></div>
                 ))}
                 {project.palette.length === 0 && (
                   <div className="text-xs text-blue italic flex items-center">
-                    <div className="w-6 h-6 rounded-full bg-blue/10 border border-white mr-1"></div>
-                    <div className="w-6 h-6 rounded-full bg-blue/5 border border-white"></div>
+                    <div className="w-6 h-6 rounded-full bg-blue/10 ring-2 ring-white mr-1"></div>
+                    <div className="w-6 h-6 rounded-full bg-blue/5 ring-2 ring-white"></div>
                   </div>
                 )}
               </div>
@@ -176,7 +175,7 @@ export default function Dashboard() {
       >
         <div className="space-y-4">
           <FormField label="Nom du projet">
-            <input type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()} placeholder="ex: Neo-Tokyo Editorial" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" autoFocus />
+            <TextInput type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()} placeholder="ex: Neo-Tokyo Editorial" autoFocus />
           </FormField>
         </div>
 
@@ -196,10 +195,10 @@ export default function Dashboard() {
       >
         <div className="space-y-4">
           <FormField label="Nom du projet">
-            <input type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="ex: Neo-Tokyo Editorial" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" autoFocus />
+            <TextInput type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="ex: Neo-Tokyo Editorial" autoFocus />
           </FormField>
           {editProjectError && (
-            <div className="text-pink text-sm font-medium mt-2">{editProjectError}</div>
+            <div className="text-danger text-sm font-medium mt-2">{editProjectError}</div>
           )}
         </div>
 
@@ -221,7 +220,7 @@ export default function Dashboard() {
             : 'Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.'
         }
         confirmLabel="Supprimer"
-        confirmClassName="bg-pink text-white hover:bg-pink/10"
+       
         onCancel={() => setConfirmDeleteProject(null)}
         onConfirm={async () => {
           if (!confirmDeleteProject?.id) return;
