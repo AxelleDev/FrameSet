@@ -469,7 +469,12 @@ export default function ProjectPalette() {
                 setPreviewPalette(palette);
               }}
             >
-              <div className="flex-1 w-full rounded-3xl relative overflow-hidden transition-transform duration-slow group-hover:-translate-y-2"
+              {/* No `overflow-hidden` here on purpose: combined with `rounded-3xl`
+                  and the hover transform below, Chrome drops the rounded clip
+                  mid-animation and the inset overlay flashes square corners.
+                  The swatch keeps its own rounded background, and the only
+                  full-bleed child (the copy overlay) is rounded to match. */}
+              <div className="flex-1 w-full rounded-3xl relative transition-transform duration-slow group-hover:-translate-y-2"
                    style={{ backgroundColor: color.hex }}>
 
                    <ActionIconButton
@@ -496,13 +501,16 @@ export default function ProjectPalette() {
                       </svg>
                     </ActionIconButton>
 
-                   {/* Reorder controls: a single-pointer (non-drag) alternative to
-                       the mouse drag-and-drop, also operable by keyboard (WCAG 2.5.7). */}
+                   {/* Reorder controls: a keyboard-operable, non-drag alternative
+                       (WCAG 2.5.7). Rendered visually hidden (srOnly) so sighted
+                       users reorder by drag-and-drop while assistive-tech users
+                       still get explicit "move left/right" actions. */}
                    <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
                      <ActionIconButton
                        onClick={(e) => { e.stopPropagation(); moveColor(idx, idx - 1); }}
                        title="Déplacer la couleur vers la gauche"
                        variant="light"
+                       srOnly
                        disabled={idx === 0}
                      >
                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -513,6 +521,7 @@ export default function ProjectPalette() {
                        onClick={(e) => { e.stopPropagation(); moveColor(idx, idx + 1); }}
                        title="Déplacer la couleur vers la droite"
                        variant="light"
+                       srOnly
                        disabled={idx === previewPalette.length - 1}
                      >
                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -527,7 +536,7 @@ export default function ProjectPalette() {
                      type="button"
                      onClick={e => handleCopyHex(e, color.hex)}
                      aria-label={`Copier ${color.hex}`}
-                     className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+                     className="absolute inset-0 flex items-center justify-center rounded-3xl opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
                    >
                       <CopyBadge isCopied={copiedValue === color.hex} />
                    </button>

@@ -12,7 +12,9 @@ import React from 'react';
  * @param {object} [props.style] - Inline style overrides merged over the defaults.
  */
 export default function Card({ clickable = false, className = '', children, style = {}, ...rest }) {
-  const clickableClasses = clickable ? 'cursor-pointer hover:brightness-[0.98] transform hover:-translate-y-1 duration-slow' : '';
+  // Lift on hover as the affordance; the surface color stays unchanged (no
+  // brightness filter) so cards never read as "greyed out" on hover.
+  const clickableClasses = clickable ? 'cursor-pointer transform hover:-translate-y-1 duration-slow' : '';
 
   const props = {
     className: `relative rounded-3xl bg-surface transition-all overflow-hidden ${clickableClasses} ${className}`.trim(),
