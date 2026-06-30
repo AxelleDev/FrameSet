@@ -39,7 +39,7 @@ describe('contrôleur d’authentification', () => {
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
       const payload = res.json.mock.calls[0][0];
       expect(payload.name).toBe('Prénom   Nom');
-      expect(payload.avatarInitials).toBe('AT');
+      expect(payload.avatarInitials).toBe('PN');
       expect(payload.token).toBeUndefined();
       expect(payload.refreshToken).toBeUndefined();
       expect(db.query).toHaveBeenCalledWith(
@@ -63,7 +63,7 @@ describe('contrôleur d’authentification', () => {
 
   describe('connexion', () => {
     it('devrait connecter un utilisateur et définir les cookies HttpOnly', async () => {
-      db.query.mockResolvedValueOnce([[{ id: 1, name: 'Prénom Nom', email: 'axelle@example.com', password: 'hashed', avatar_initials: 'AT', is_verified: true }]]);
+      db.query.mockResolvedValueOnce([[{ id: 1, name: 'Prénom Nom', email: 'axelle@example.com', password: 'hashed', avatar_initials: 'PN', is_verified: true }]]);
       require('bcryptjs').compare = jest.fn().mockResolvedValue(true);
       tokenService.generateRefreshToken.mockReturnValue('refreshToken');
       const req = { body: { email: 'axelle@example.com', password: 'pass' } };

@@ -9,8 +9,8 @@ describe('useFormState', () => {
 
   it('met à jour un seul champ avec setField', () => {
     const { result } = renderHook(() => useFormState({ name: '', email: '' }));
-    act(() => result.current.setField('name', 'Axelle'));
-    expect(result.current.values).toEqual({ name: 'Axelle', email: '' });
+    act(() => result.current.setField('name', 'Prénom'));
+    expect(result.current.values).toEqual({ name: 'Prénom', email: '' });
   });
 
   it('remplace tout avec setValues', () => {

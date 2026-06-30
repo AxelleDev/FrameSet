@@ -32,7 +32,7 @@ describe('Profile', () => {
       user: {
         name: 'Prénom Nom',
         email: 'axelle@example.com',
-        avatarInitials: 'AT',
+        avatarInitials: 'PN',
         passwordUpdatedAt: null,
       },
       updateUserProfile: vi.fn().mockResolvedValue({ success: true }),
@@ -46,7 +46,7 @@ describe('Profile', () => {
     renderPage();
     expect(screen.getByText('Prénom Nom')).toBeInTheDocument();
     expect(screen.getByText('axelle@example.com')).toBeInTheDocument();
-    expect(screen.getByText('AT')).toBeInTheDocument();
+    expect(screen.getByText('PN')).toBeInTheDocument();
   });
 
   it('bascule en mode édition (champs éditables + bouton Enregistrer)', async () => {

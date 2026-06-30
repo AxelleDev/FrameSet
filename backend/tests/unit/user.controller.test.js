@@ -34,7 +34,7 @@ describe('contrôleur utilisateur', () => {
         id: 1,
         name: 'Prénom Nom',
         email: 'axelle@example.com',
-        avatar_initials: 'AT',
+        avatar_initials: 'PN',
         password_updated_at: new Date('2026-01-01T00:00:00.000Z'),
         pending_email: null
       }]]);
@@ -52,7 +52,7 @@ describe('contrôleur utilisateur', () => {
         id: 1,
         name: 'Prénom Nom',
         email: 'axelle@example.com',
-        avatarInitials: 'AT'
+        avatarInitials: 'PN'
       }));
     });
   });
@@ -73,7 +73,7 @@ describe('contrôleur utilisateur', () => {
   describe('vérifier l’email en attente', () => {
     it('devrait vérifier l’email en attente', async () => {
       db.query
-        .mockResolvedValueOnce([[{ id: 1, name: 'Prénom Nom', pending_email: 'axelle@example.com', pending_email_code: '123456', pending_email_expires: new Date(Date.now() + 10000), avatar_initials: 'AT', password_updated_at: null }]])
+        .mockResolvedValueOnce([[{ id: 1, name: 'Prénom Nom', pending_email: 'axelle@example.com', pending_email_code: '123456', pending_email_expires: new Date(Date.now() + 10000), avatar_initials: 'PN', password_updated_at: null }]])
         .mockResolvedValueOnce([[]]);
       const req = { user: { id: 1 }, body: { email: 'axelle@example.com', code: '123456' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };

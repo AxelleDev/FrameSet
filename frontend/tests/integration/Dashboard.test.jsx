@@ -15,7 +15,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 vi.mock('../../src/context/AuthContext', () => ({
-  useAuth: () => ({ user: { name: 'Prénom Nom', avatarInitials: 'AT' } }),
+  useAuth: () => ({ user: { name: 'Prénom Nom', avatarInitials: 'PN' } }),
 }));
 
 vi.mock('../../src/context/ProjectContext', () => ({
@@ -43,7 +43,7 @@ describe('Dashboard', () => {
 
   it('affiche le prénom de la personne connectée', () => {
     renderPage();
-    expect(screen.getByText(/Bonjour, Axelle\./i)).toBeInTheDocument();
+    expect(screen.getByText(/Bonjour, Prénom\./i)).toBeInTheDocument();
   });
 
   it('crée un projet via la modale', async () => {

@@ -4,13 +4,13 @@ import Avatar from '../../src/components/Avatar';
 
 describe('Avatar', () => {
   it('affiche les initiales', () => {
-    render(<Avatar initials="AT" />);
-    expect(screen.getByText('AT')).toBeInTheDocument();
+    render(<Avatar initials="PN" />);
+    expect(screen.getByText('PN')).toBeInTheDocument();
   });
 
   it('applique le fond teinté et les classes de taille passées', () => {
-    render(<Avatar initials="AT" className="w-28 h-28 text-4xl" />);
-    const el = screen.getByText('AT');
+    render(<Avatar initials="PN" className="w-28 h-28 text-4xl" />);
+    const el = screen.getByText('PN');
     expect(el).toHaveClass('bg-blue/10', 'text-blue', 'w-28', 'h-28', 'text-4xl');
   });
 });
