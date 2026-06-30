@@ -1,5 +1,6 @@
 // Reusable action icon button.
 import React from 'react';
+import PropTypes from 'prop-types';
 
 // Hover color mapping by semantic intent (e.g. edit vs delete).
 const INTENT_CLASSES = {
@@ -81,3 +82,14 @@ export default function ActionIconButton({
     </button>
   );
 }
+
+ActionIconButton.propTypes = {
+  onClick: PropTypes.func,
+  title: PropTypes.string,
+  children: PropTypes.node,
+  intent: PropTypes.oneOf(['edit', 'delete']),
+  variant: PropTypes.oneOf(['dark', 'light']),
+  disabled: PropTypes.bool,
+  srOnly: PropTypes.bool,
+  className: PropTypes.string,
+};

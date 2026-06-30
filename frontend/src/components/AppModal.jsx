@@ -1,5 +1,6 @@
 // Modal wrapper applying the app's default styling.
 import React from 'react';
+import PropTypes from 'prop-types';
 import Modal from './Modal';
 
 // Default overlay/panel styling shared across application modals.
@@ -46,3 +47,12 @@ export default function AppModal({
     </Modal>
   );
 }
+
+AppModal.propTypes = {
+  isOpen: PropTypes.bool,
+  onClose: PropTypes.func,
+  children: PropTypes.node,
+  overlayClassName: PropTypes.string,
+  panelClassName: PropTypes.string,
+  showClose: PropTypes.bool,
+};

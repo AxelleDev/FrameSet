@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Brand logo. Shows the standard logo in light mode and the reversed
@@ -28,3 +29,8 @@ export default function Logo({ className = '', style }) {
     </>
   );
 }
+
+Logo.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object,
+};

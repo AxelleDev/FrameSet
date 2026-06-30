@@ -1,5 +1,6 @@
 // Generic reusable modal.
 import React, { useRef, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 
 /**
@@ -127,3 +128,15 @@ export default function Modal({
     document.body
   );
 }
+
+Modal.propTypes = {
+  isOpen: PropTypes.bool,
+  onClose: PropTypes.func,
+  title: PropTypes.string,
+  subtitle: PropTypes.string,
+  children: PropTypes.node,
+  overlayClassName: PropTypes.string,
+  panelClassName: PropTypes.string,
+  showClose: PropTypes.bool,
+  closeOnBackdrop: PropTypes.bool,
+};

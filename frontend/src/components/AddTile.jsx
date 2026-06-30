@@ -1,5 +1,6 @@
 // "Add" tile used to create a new item.
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Dashed placeholder tile that triggers creation of a new item when clicked.
@@ -30,3 +31,10 @@ export default function AddTile({
     </button>
   );
 }
+
+AddTile.propTypes = {
+  onClick: PropTypes.func,
+  label: PropTypes.string,
+  className: PropTypes.string,
+  labelClassName: PropTypes.string,
+};

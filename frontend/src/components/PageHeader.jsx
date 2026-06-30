@@ -1,5 +1,6 @@
 // Page header with title, optional subtitle and an optional right-aligned action slot.
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Standard page heading block: a title + optional subtitle on the left, and an
@@ -24,3 +25,10 @@ export default function PageHeader({ title, subtitle, subtitleClassName = '', ac
     </div>
   );
 }
+
+PageHeader.propTypes = {
+  title: PropTypes.node,
+  subtitle: PropTypes.node,
+  subtitleClassName: PropTypes.string,
+  actions: PropTypes.node,
+};

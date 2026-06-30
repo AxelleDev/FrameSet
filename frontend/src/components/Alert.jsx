@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Inline feedback banner (form errors, info, success) with a consistent soft
@@ -39,3 +40,9 @@ export default function Alert({ variant = 'info', className = '', children, ...r
     </div>
   );
 }
+
+Alert.propTypes = {
+  variant: PropTypes.oneOf(['error', 'info', 'success']),
+  className: PropTypes.string,
+  children: PropTypes.node,
+};

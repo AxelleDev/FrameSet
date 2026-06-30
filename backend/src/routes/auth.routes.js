@@ -13,8 +13,16 @@ const authController = require('../controllers/auth.controller');
 
 const router = express.Router();
 
-// Login/register: tight per-IP limit to slow credential stuffing / spam signups.
-const authLimiter = rateLimit({
+// Login: tight per-IP limit to slow credential stuffing. Kept separate from the
+// register limiter so a burst of one cannot consume the other's quota.
+const loginLimiter = rateLimit({
+	windowMs: 60 * 1000,
+	max: 5,
+	message: 'Trop de tentatives, veuillez réessayer dans une minute.'
+});
+
+// Register: per-IP limit to slow spam signups, independent from login.
+const registerLimiter = rateLimit({
 	windowMs: 60 * 1000,
 	max: 5,
 	message: 'Trop de tentatives, veuillez réessayer dans une minute.'
@@ -41,8 +49,8 @@ const refreshLimiter = rateLimit({
 	message: 'Trop de demandes de rafraîchissement, veuillez réessayer dans une minute.'
 });
 
-router.post('/register', authLimiter, authController.register);
-router.post('/login', authLimiter, authController.login);
+router.post('/register', registerLimiter, authController.register);
+router.post('/login', loginLimiter, authController.login);
 router.get('/csrf-token', authController.getCsrfToken);
 router.post('/verify', verifyCodeLimiter, authController.verify);
 router.post('/resend-code', resendCodeLimiter, authController.resendCode);

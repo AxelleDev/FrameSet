@@ -1,5 +1,6 @@
 // Form field with an associated label.
 import React, { useId } from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Labelled form field wrapper. Generates a stable id when none is provided and
@@ -53,3 +54,13 @@ export default function FormField({
     </div>
   );
 }
+
+FormField.propTypes = {
+  label: PropTypes.string,
+  children: PropTypes.node,
+  id: PropTypes.string,
+  error: PropTypes.string,
+  required: PropTypes.bool,
+  className: PropTypes.string,
+  labelClassName: PropTypes.string,
+};

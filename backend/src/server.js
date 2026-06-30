@@ -128,9 +128,15 @@ const shutdownGracefully = async (signal) => {
   }
 };
 
-// Trigger a graceful shutdown when the process is asked to terminate.
+// Trigger a graceful shutdown when the process is asked to terminate. SIGTERM
+// is sent by orchestrators/process managers; SIGINT is the local Ctrl+C in
+// development. Both drain connections and close the pool before exiting.
 process.on('SIGTERM', () => {
   void shutdownGracefully('SIGTERM');
+});
+
+process.on('SIGINT', () => {
+  void shutdownGracefully('SIGINT');
 });
 
 module.exports = {

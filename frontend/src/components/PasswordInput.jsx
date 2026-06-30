@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import TextInput from './TextInput';
 
 // Decorative icon: password currently visible.
@@ -74,3 +75,10 @@ export default function PasswordInput({
     </div>
   );
 }
+
+PasswordInput.propTypes = {
+  className: PropTypes.string,
+  inputClassName: PropTypes.string,
+  buttonClassName: PropTypes.string,
+  disabled: PropTypes.bool,
+};

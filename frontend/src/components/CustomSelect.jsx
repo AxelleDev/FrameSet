@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import Select from 'react-select';
 
 /**
@@ -97,3 +98,16 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
     />
   );
 }
+
+CustomSelect.propTypes = {
+  options: PropTypes.arrayOf(
+    PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.shape({ value: PropTypes.string, label: PropTypes.string }),
+    ])
+  ),
+  value: PropTypes.string,
+  onChange: PropTypes.func,
+  placeholder: PropTypes.string,
+  isClearable: PropTypes.bool,
+};

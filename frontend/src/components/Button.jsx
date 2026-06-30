@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 
 /**
@@ -116,3 +117,17 @@ export default function Button({
     </button>
   );
 }
+
+Button.propTypes = {
+  children: PropTypes.node,
+  onClick: PropTypes.func,
+  type: PropTypes.string,
+  variant: PropTypes.oneOf(['primary', 'danger', 'ghost', 'outline']),
+  fullWidth: PropTypes.bool,
+  to: PropTypes.string,
+  href: PropTypes.string,
+  className: PropTypes.string,
+  disabled: PropTypes.bool,
+  loading: PropTypes.bool,
+  minLoadingMs: PropTypes.number,
+};

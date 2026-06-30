@@ -1,5 +1,6 @@
 // Live password-policy checklist: each rule turns green as the password meets it.
 import React from 'react';
+import PropTypes from 'prop-types';
 import { PASSWORD_RULES } from '../utils/passwordRules';
 
 /**
@@ -31,3 +32,7 @@ export default function PasswordChecklist({ password }) {
     </ul>
   );
 }
+
+PasswordChecklist.propTypes = {
+  password: PropTypes.string,
+};

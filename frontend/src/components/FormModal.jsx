@@ -1,5 +1,6 @@
 // Form modal with a decorative accent and title.
 import React from 'react';
+import PropTypes from 'prop-types';
 import AppModal from './AppModal';
 
 /**
@@ -43,3 +44,15 @@ export default function FormModal({
     </AppModal>
   );
 }
+
+FormModal.propTypes = {
+  isOpen: PropTypes.bool,
+  onClose: PropTypes.func,
+  title: PropTypes.string,
+  children: PropTypes.node,
+  panelClassName: PropTypes.string,
+  showClose: PropTypes.bool,
+  bodyClassName: PropTypes.string,
+  decorationClassName: PropTypes.string,
+  titleClassName: PropTypes.string,
+};

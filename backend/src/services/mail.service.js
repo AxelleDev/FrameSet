@@ -32,6 +32,12 @@ let transporter = hasSmtpConfig
 // "From" address: the configured user, or the Ethereal test user once created.
 let mailFrom = hasSmtpConfig ? MAIL_USER : null;
 
+// Display name shown in recipients' inboxes, for a consistent sender identity.
+const MAIL_FROM_NAME = 'FrameSet';
+
+/** Formats the "from" header with the brand display name (e.g. "FrameSet <addr>"). */
+const formatFromAddress = (address) => (address ? `${MAIL_FROM_NAME} <${address}>` : address);
+
 let transporterPromise = null;
 
 /**
@@ -109,7 +115,7 @@ const buildTemplate = ({ title, message, code, footer }) => {
 const sendMail = async ({ to, subject, text, html }) => {
   const transport = await getTransporter();
   const info = await transport.sendMail({
-    from: mailFrom,
+    from: formatFromAddress(mailFrom),
     to,
     subject,
     text,

@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Helmet } from 'react-helmet-async';
 
 /**
@@ -62,3 +63,13 @@ export default function Seo({
     </Helmet>
   );
 }
+
+Seo.propTypes = {
+  title: PropTypes.string,
+  description: PropTypes.string,
+  path: PropTypes.string,
+  image: PropTypes.string,
+  noindex: PropTypes.bool,
+  type: PropTypes.oneOf(['website', 'article']),
+  jsonLd: PropTypes.object,
+};
