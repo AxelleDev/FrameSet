@@ -53,12 +53,20 @@ export default function MainLayout() {
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-canvas text-primary transition-colors duration-slow">
-      
+      <a
+        href="#contenu"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-toast focus:px-4 focus:py-2 focus:rounded-xl focus:bg-surface focus:text-primary focus:ring-2 focus:ring-blue"
+      >
+        Aller au contenu
+      </a>
+
       {isMobileMenuOpen && (
-        <div 
+        <button
+          type="button"
+          aria-label="Fermer le menu"
           className="fixed inset-0 z-overlay bg-black/40 backdrop-blur-sm md:hidden animate-fade-in"
           onClick={closeMobileMenu}
-        ></div>
+        ></button>
       )}
 
       <aside className={`
@@ -75,7 +83,7 @@ export default function MainLayout() {
             </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
+        <nav aria-label="Navigation principale" className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
           <div className="mb-8">
             <p className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4">Espace de travail</p>
             <NavLink to="/app/dashboard" className={navLinkClass} onClick={closeMobileMenu}>
@@ -137,7 +145,7 @@ export default function MainLayout() {
              </button>
 
              {activeProject ? (
-               <nav className="flex text-sm font-medium items-center animate-fade-in">
+               <nav aria-label="Fil d'Ariane" className="flex text-sm font-medium items-center animate-fade-in">
                  <Link className="text-blue hover:text-primary transition cursor-pointer" to="/app/dashboard">Espace de travail</Link>
                  <svg className="w-4 h-4 mx-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
                  <span className="text-primary bg-blue/15 px-2.5 py-1 rounded-lg truncate max-w-[150px] md:max-w-none">{activeProject.name}</span>
@@ -152,7 +160,7 @@ export default function MainLayout() {
           <ThemeToggle />
         </header>
 
-        <div className="p-4 md:p-8 max-w-7xl mx-auto pb-24">
+        <div id="contenu" tabIndex={-1} className="p-4 md:p-8 max-w-7xl mx-auto pb-24 outline-none">
           <Outlet />
         </div>
       </main>

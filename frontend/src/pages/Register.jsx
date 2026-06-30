@@ -112,7 +112,7 @@ export default function Register() {
         )}
 
         <form className="space-y-4" onSubmit={handleRegister} noValidate>
-          <FormField label="Nom Complet">
+          <FormField label="Nom Complet" required>
             <TextInput
               type="text"
               name="name"
@@ -123,7 +123,11 @@ export default function Register() {
             />
           </FormField>
 
-          <FormField label="Email">
+          <FormField
+            label="Email"
+            required
+            error={formData.email !== '' && !emailValid ? "Format d'email invalide." : undefined}
+          >
             <TextInput
               type="email"
               name="email"
@@ -132,23 +136,26 @@ export default function Register() {
               placeholder="email@exemple.com"
               autoComplete="email"
             />
-            {formData.email !== '' && !emailValid && (
-              <p className="text-xs text-danger mt-1">Format d'email invalide.</p>
-            )}
           </FormField>
 
-          <FormField label="Mot de passe">
-            <PasswordInput
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Votre mot de passe"
-              autoComplete="new-password"
-            />
+          <div>
+            <FormField label="Mot de passe" required>
+              <PasswordInput
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Votre mot de passe"
+                autoComplete="new-password"
+              />
+            </FormField>
             <PasswordChecklist password={formData.password} />
-          </FormField>
+          </div>
 
-          <FormField label="Confirmer le mot de passe">
+          <FormField
+            label="Confirmer le mot de passe"
+            required
+            error={formData.confirmPassword !== '' && !passwordsMatch ? 'Les mots de passe ne correspondent pas.' : undefined}
+          >
             <PasswordInput
               name="confirmPassword"
               value={formData.confirmPassword}
@@ -156,9 +163,6 @@ export default function Register() {
               placeholder="Confirmez votre mot de passe"
               autoComplete="new-password"
             />
-            {formData.confirmPassword !== '' && !passwordsMatch && (
-              <p className="text-xs text-danger mt-1">Les mots de passe ne correspondent pas.</p>
-            )}
           </FormField>
 
           <Button type="submit" fullWidth className="mt-2" disabled={!canSubmit} loading={submitting}>

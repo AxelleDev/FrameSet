@@ -108,7 +108,7 @@ export default function Login() {
         )}
 
         <form className="space-y-5" onSubmit={handleLogin} noValidate>
-          <FormField label="Email">
+          <FormField label="Email" required>
             <TextInput
               type="email"
               name="email"
@@ -119,7 +119,7 @@ export default function Login() {
             />
           </FormField>
 
-          <FormField label="Mot de passe">
+          <FormField label="Mot de passe" required>
             <PasswordInput
               name="password"
               value={formData.password}

@@ -332,17 +332,11 @@ export default function ProjectPalette() {
     setConfirmDeleteColor(colorId);
   };
 
-  // Keyboard reordering: move the focused swatch with the arrow keys. Ignored
-  // when focus is on a nested button (delete/edit) rather than the swatch itself.
-  const handleSwatchKeyDown = (e, idx) => {
-    if (e.target !== e.currentTarget) return;
-    let target = null;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') target = idx - 1;
-    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') target = idx + 1;
-    else return;
+  // Move the swatch at `idx` to position `target`, persist, and keep focus on it.
+  // Shared by the arrow-key handler and the on-tile reorder buttons (so the
+  // reorder works by keyboard AND by a single pointer click, not only by drag).
+  const moveColor = (idx, target) => {
     if (target < 0 || target >= palette.length) return;
-
-    e.preventDefault();
     const next = [...palette];
     const [moved] = next.splice(idx, 1);
     next.splice(target, 0, moved);
@@ -400,12 +394,10 @@ export default function ProjectPalette() {
             <div
               key={color.id}
               ref={el => { itemRefs.current[color.id] = el; }}
-              tabIndex={0}
-              role="button"
-              aria-label={`Couleur ${color.name}, ${color.hex}. Utilisez les flèches pour réordonner.`}
-              className={`group relative flex flex-col aspect-[4/5] rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-blue/70 focus-visible:ring-offset-2 ring-offset-canvas ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
+              tabIndex={-1}
+              aria-label={`Couleur ${color.name}, ${color.hex}`}
+              className={`group relative flex flex-col aspect-[4/5] rounded-3xl outline-none ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
               draggable
-              onKeyDown={e => handleSwatchKeyDown(e, idx)}
               onDragStart={e => {
                 // Begin a drag: reset FLIP bookkeeping and record the source swatch.
                 didDrop.current = false;
@@ -504,10 +496,41 @@ export default function ProjectPalette() {
                       </svg>
                     </ActionIconButton>
 
-                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10"
-                        onClick={e => handleCopyHex(e, color.hex)}>
-                      <CopyBadge isCopied={copiedValue === color.hex} />
+                   {/* Reorder controls: a single-pointer (non-drag) alternative to
+                       the mouse drag-and-drop, also operable by keyboard (WCAG 2.5.7). */}
+                   <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
+                     <ActionIconButton
+                       onClick={(e) => { e.stopPropagation(); moveColor(idx, idx - 1); }}
+                       title="Déplacer la couleur vers la gauche"
+                       variant="light"
+                       disabled={idx === 0}
+                     >
+                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                       </svg>
+                     </ActionIconButton>
+                     <ActionIconButton
+                       onClick={(e) => { e.stopPropagation(); moveColor(idx, idx + 1); }}
+                       title="Déplacer la couleur vers la droite"
+                       variant="light"
+                       disabled={idx === previewPalette.length - 1}
+                     >
+                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                       </svg>
+                     </ActionIconButton>
                    </div>
+
+                   {/* Copy-to-clipboard: a real button so it is keyboard-operable
+                       (WCAG 2.1.1), revealed on hover or keyboard focus. */}
+                   <button
+                     type="button"
+                     onClick={e => handleCopyHex(e, color.hex)}
+                     aria-label={`Copier ${color.hex}`}
+                     className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+                   >
+                      <CopyBadge isCopied={copiedValue === color.hex} />
+                   </button>
               </div>
               <div className="mt-4 text-center">
                  <p className="text-sm font-semibold text-primary truncate" title={color.name}>{color.name}</p>

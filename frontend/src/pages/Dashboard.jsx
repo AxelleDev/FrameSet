@@ -197,6 +197,8 @@ export default function Dashboard() {
       >
         <div className="space-y-4">
           <FormField label="Nom du projet">
+            {/* autoFocus is intentional: focus the field when the modal opens. */}
+            {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
             <TextInput type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()} placeholder="Neo-Tokyo Editorial" autoFocus />
           </FormField>
         </div>
@@ -217,6 +219,8 @@ export default function Dashboard() {
       >
         <div className="space-y-4">
           <FormField label="Nom du projet">
+            {/* autoFocus is intentional: focus the field when the modal opens. */}
+            {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
             <TextInput type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="Neo-Tokyo Editorial" autoFocus />
           </FormField>
           {editProjectError && (
