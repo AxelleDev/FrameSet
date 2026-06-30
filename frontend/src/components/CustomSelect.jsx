@@ -34,12 +34,11 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
         control: (provided, state) => ({
           ...provided,
           backgroundColor: state.isFocused ? '#ffffff' : 'rgba(137,148,223,0.10)',
-          borderColor: 'var(--color-blue)',
+          border: 'none',
           borderRadius: '0.75rem',
           minHeight: '3rem',
           boxShadow: state.isFocused ? '0 0 0 2px rgba(137,148,223,0.5)' : 'none',
           transition: 'all 0.15s ease',
-          '&:hover': { borderColor: 'var(--color-blue)' },
         }),
         valueContainer: provided => ({ ...provided, padding: '0.15rem 0.75rem' }),
         placeholder: provided => ({ ...provided, color: 'var(--color-secondary)' }),
@@ -55,15 +54,22 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
         clearIndicator: provided => ({ ...provided, color: 'var(--color-secondary)' }),
         menu: provided => ({
           ...provided,
-          borderRadius: '0.75rem',
+          borderRadius: '1rem',
           overflow: 'hidden',
-          border: '1px solid rgba(137,148,223,0.3)',
           zIndex: 50,
         }),
-        menuList: provided => ({ ...provided, padding: '0.35rem', maxHeight: 288 }),
+        menuList: provided => ({
+          ...provided,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.25rem',
+          padding: '0.25rem',
+          maxHeight: 288,
+        }),
         option: (provided, state) => ({
           ...provided,
-          borderRadius: '0.5rem',
+          borderRadius: '0.6rem',
+          padding: '0.6rem 0.75rem',
           backgroundColor: state.isSelected
             ? 'var(--color-blue)'
             : state.isFocused
