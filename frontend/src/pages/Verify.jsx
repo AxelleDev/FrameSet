@@ -90,7 +90,7 @@ export default function Verify() {
           </p>
         </div>
 
-        {error && <Alert variant="error" className="mb-4">{error}</Alert>}
+        {error && <Alert variant="danger" className="mb-4">{error}</Alert>}
         {resendMsg && <Alert variant="info" className="mb-4">{resendMsg}</Alert>}
         {success && <Alert variant="success" className="mb-4">Vérifié ! Redirection en cours…</Alert>}
 

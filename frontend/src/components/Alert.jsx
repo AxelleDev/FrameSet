@@ -8,18 +8,18 @@ import PropTypes from 'prop-types';
  * icon so the meaning is not conveyed by color alone (WCAG 1.4.1).
  *
  * @param {object} props
- * @param {'error'|'info'|'success'} [props.variant] - Visual tone.
+ * @param {'danger'|'info'|'success'} [props.variant] - Visual tone.
  * @param {string} [props.className] - Extra classes.
  * @param {React.ReactNode} props.children - Message content.
  */
 const VARIANTS = {
-  error: { tone: 'bg-danger/10 text-primary', icon: 'M6 18L18 6M6 6l12 12' },
+  danger: { tone: 'bg-danger/10 text-primary', icon: 'M6 18L18 6M6 6l12 12' },
   info: { tone: 'bg-blue/10 text-primary', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
   success: { tone: 'bg-success/10 text-primary', icon: 'M5 13l4 4L19 7' },
 };
 
 const ICON_COLOR = {
-  error: 'text-danger',
+  danger: 'text-danger',
   info: 'text-blue',
   success: 'text-success',
 };
@@ -28,7 +28,7 @@ export default function Alert({ variant = 'info', className = '', children, ...r
   const { tone, icon } = VARIANTS[variant] || VARIANTS.info;
   return (
     <div
-      role={variant === 'error' ? 'alert' : 'status'}
+      role={variant === 'danger' ? 'alert' : 'status'}
       aria-live="polite"
       className={`flex items-center justify-center gap-2 p-3 rounded-xl text-xs text-center font-medium ${tone} ${className}`.trim()}
       {...rest}
@@ -42,7 +42,7 @@ export default function Alert({ variant = 'info', className = '', children, ...r
 }
 
 Alert.propTypes = {
-  variant: PropTypes.oneOf(['error', 'info', 'success']),
+  variant: PropTypes.oneOf(['danger', 'info', 'success']),
   className: PropTypes.string,
   children: PropTypes.node,
 };

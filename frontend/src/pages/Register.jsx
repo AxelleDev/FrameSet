@@ -108,7 +108,7 @@ export default function Register() {
         </div>
 
         {error && (
-          <Alert variant="error" className="mb-4">
+          <Alert variant="danger" className="mb-4">
             {error}
           </Alert>
         )}
