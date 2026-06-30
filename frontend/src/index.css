@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Self-hosted brand font. */
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter.ttf') format('truetype');
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+@layer base {
+  /* CSS variables kept for the few inline `var(--color-*)` usages
+     (CustomSelect, ActionIconButton, …) — same values as the Tailwind tokens. */
+  :root {
+    --color-primary: #3c3d48;
+    --color-secondary: #afafaf;
+    --color-blue: #8994df;
+    --color-pink: #ff9292;
+  }
+
+  body {
+    @apply bg-canvas text-primary font-sans antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #e5e7eb;
+    border-radius: 20px;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  }
+
+  .stat-bg {
+    background-color: rgba(137, 148, 223, 0.1);
+  }
+}

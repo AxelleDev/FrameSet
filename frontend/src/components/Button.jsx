@@ -42,14 +42,17 @@ export default function Button({
   // Loading is driven either externally (prop) or internally (async onClick).
   const isLoading = loading || internalLoading;
 
-  const base = 'font-medium rounded-xl transition-all inline-flex items-center justify-center gap-2';
+  const base =
+    'font-medium rounded-xl transition-all inline-flex items-center justify-center gap-2 ' +
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-pink/50 focus-visible:ring-offset-2';
 
-  const size = fullWidth ? 'w-full py-4' : 'px-6 py-2.5 text-sm';
+  const size = fullWidth ? 'w-full py-4 text-sm' : 'px-6 py-2.5 text-sm';
 
   const variants = {
-    primary: 'bg-blue text-white hover:bg-pink/10 hover:shadow-lg',
-    secondary: 'bg-pink text-white hover:bg-pink/10 hover:shadow-lg',
-    ghost: 'bg-transparent text-primary',
+    primary: 'bg-blue text-white shadow-sm hover:brightness-95 hover:shadow-md hover:shadow-blue/30',
+    secondary: 'bg-pink text-white shadow-sm hover:brightness-95 hover:shadow-md hover:shadow-pink/30',
+    ghost: 'bg-transparent text-primary hover:bg-primary/5',
+    outline: 'bg-white border border-blue text-primary hover:border-pink hover:text-pink',
   };
 
   const disabledClass = (disabled || isLoading) ? 'opacity-50 cursor-not-allowed' : '';

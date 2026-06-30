@@ -11,6 +11,7 @@ import { useProjects } from '../context/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
+import TextInput from '../components/TextInput';
 import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -176,7 +177,7 @@ export default function Dashboard() {
       >
         <div className="space-y-4">
           <FormField label="Nom du projet">
-            <input type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()} placeholder="ex: Neo-Tokyo Editorial" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" autoFocus />
+            <TextInput type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()} placeholder="ex: Neo-Tokyo Editorial" autoFocus />
           </FormField>
         </div>
 
@@ -196,7 +197,7 @@ export default function Dashboard() {
       >
         <div className="space-y-4">
           <FormField label="Nom du projet">
-            <input type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="ex: Neo-Tokyo Editorial" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" autoFocus />
+            <TextInput type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="ex: Neo-Tokyo Editorial" autoFocus />
           </FormField>
           {editProjectError && (
             <div className="text-pink text-sm font-medium mt-2">{editProjectError}</div>
@@ -221,7 +222,7 @@ export default function Dashboard() {
             : 'Êtes-vous sûr de vouloir supprimer ce projet ? Cette action est irréversible.'
         }
         confirmLabel="Supprimer"
-        confirmClassName="bg-pink text-white hover:bg-pink/10"
+        confirmClassName="bg-pink text-white"
         onCancel={() => setConfirmDeleteProject(null)}
         onConfirm={async () => {
           if (!confirmDeleteProject?.id) return;

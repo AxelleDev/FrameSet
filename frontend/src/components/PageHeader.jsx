@@ -13,9 +13,9 @@ export default function PageHeader({ title, subtitle, subtitleClassName = '' }) 
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6 animate-fade-in">
       <div>
-        <h2 className="text-3xl font-light text-primary">{title}</h2>
+        <h2 className="text-3xl font-light tracking-tight text-primary">{title}</h2>
         {subtitle && (
-          <p className={`text-primary mt-2 ${subtitleClassName}`.trim()}>{subtitle}</p>
+          <p className={`text-sm text-primary/60 mt-2 max-w-2xl ${subtitleClassName}`.trim()}>{subtitle}</p>
         )}
       </div>
     </div>

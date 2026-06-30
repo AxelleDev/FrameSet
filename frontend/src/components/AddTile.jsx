@@ -19,7 +19,7 @@ export default function AddTile({
   return (
     <button
       onClick={onClick}
-      className={`group rounded-2xl border-2 border-dashed [border-color:var(--color-secondary)] flex flex-col items-center justify-center cursor-pointer hover:![border-color:var(--color-blue)] hover:bg-pink/10 transition-all ${className}`.trim()}
+      className={`group rounded-3xl border-2 border-dashed [border-color:var(--color-secondary)] flex flex-col items-center justify-center cursor-pointer hover:![border-color:var(--color-blue)] hover:bg-blue/5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue/40 focus-visible:ring-offset-2 ${className}`.trim()}
     >
       <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center [color:var(--color-secondary)] group-hover:[color:var(--color-blue)] group-hover:bg-blue/10 transition-colors mb-3 transition-transform group-hover:scale-110">
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

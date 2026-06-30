@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import TextInput from './TextInput';
 
 // Decorative icon: password currently visible.
 function EyeIcon() {
@@ -44,11 +45,11 @@ export default function PasswordInput({
 
   return (
     <div className={`relative ${className}`.trim()}>
-      <input
+      <TextInput
         {...inputProps}
         type={isVisible ? 'text' : 'password'}
         disabled={disabled}
-        className={`${inputClassName} pr-12`.trim()}
+        className={`pr-12 ${inputClassName}`.trim()}
       />
 
       <button

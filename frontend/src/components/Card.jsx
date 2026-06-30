@@ -17,12 +17,12 @@ export default function Card({ clickable = false, className = '', children, styl
   const combinedStyle = {
     backgroundColor: 'white',
     boxShadow: '0 4px 30px rgba(0, 0, 0, 0.05)',
-    border: '1px solid rgba(255, 255, 255, 0.6)',
+    border: '1px solid rgba(60, 61, 72, 0.06)',
     ...style,
   };
 
   const props = {
-    className: `relative rounded-2xl transition-all overflow-hidden ${clickableClasses} ${className}`.trim(),
+    className: `relative rounded-3xl transition-all overflow-hidden ${clickableClasses} ${className}`.trim(),
     style: combinedStyle,
     ...rest,
   };

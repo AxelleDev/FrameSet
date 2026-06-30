@@ -13,6 +13,8 @@ import FormField from '../components/FormField';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PasswordInput from '../components/PasswordInput';
+import TextInput from '../components/TextInput';
+import Alert from '../components/Alert';
 import useUserCount from '../hooks/useUserCount';
 import useFormState from '../hooks/useFormState';
 
@@ -56,9 +58,6 @@ export default function Login() {
 
   const userCount = useUserCount();
 
-  const inputClass =
-    'w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all';
-
   return (
     <AuthLayout
       variant="login"
@@ -85,47 +84,45 @@ export default function Login() {
         </>
       }
     >
-      <Card variant="card" className="w-full max-w-md p-10 rounded-3xl shadow-2xl animate-fade-in" style={{ animationDelay: '150ms' }}>
+      <Card className="w-full max-w-md p-10 rounded-3xl shadow-2xl animate-fade-in" style={{ animationDelay: '150ms' }}>
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Connexion</h2>
           <p className="text-primary text-sm mt-2">Reprenez là où vous vous êtes arrêté.</p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-pink text-primary text-xs rounded-lg text-center font-medium" aria-live="polite" role="alert">
+          <Alert variant="error" className="mb-4">
             {error}
             {/* Offer a verification shortcut when login failed due to an unverified email */}
             {error.includes('vérifier votre email') && (
-              <button
+              <Button
                 type="button"
                 onClick={() => navigate(`/verify?email=${encodeURIComponent(formData.email.trim())}`)}
-                className="mt-2 w-full py-2 bg-blue text-white rounded-xl hover:bg-pink transition-all text-sm font-medium"
+                className="mt-3 w-full"
               >
                 Vérifier mon email
-              </button>
+              </Button>
             )}
-          </div>
+          </Alert>
         )}
 
         <form className="space-y-5" onSubmit={handleLogin} noValidate>
-          <FormField label="Email" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
-            <input
+          <FormField label="Email">
+            <TextInput
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className={inputClass}
               placeholder="email@exemple.com"
               autoComplete="email"
             />
           </FormField>
 
-          <FormField label="Mot de passe" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
+          <FormField label="Mot de passe">
             <PasswordInput
               name="password"
               value={formData.password}
               onChange={handleChange}
-              inputClassName={inputClass}
               placeholder="••••••••"
               autoComplete="current-password"
             />

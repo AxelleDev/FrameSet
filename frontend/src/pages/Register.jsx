@@ -13,6 +13,8 @@ import FormField from '../components/FormField';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PasswordInput from '../components/PasswordInput';
+import TextInput from '../components/TextInput';
+import Alert from '../components/Alert';
 import PasswordChecklist from '../components/PasswordChecklist';
 import useUserCount from '../hooks/useUserCount';
 import useFormState from '../hooks/useFormState';
@@ -66,9 +68,6 @@ export default function Register() {
 
   const userCount = useUserCount();
 
-  const inputClass =
-    'w-full px-4 py-3 bg-white/50 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue focus:border-blue transition-all';
-
   return (
     <AuthLayout
       variant="register"
@@ -97,38 +96,36 @@ export default function Register() {
         </>
       }
     >
-      <Card variant="card" className="w-full max-w-md p-10 rounded-3xl shadow-2xl animate-fade-in" style={{ animationDelay: '150ms' }}>
+      <Card className="w-full max-w-md p-10 rounded-3xl shadow-2xl animate-fade-in" style={{ animationDelay: '150ms' }}>
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Inscription</h2>
           <p className="text-primary text-sm mt-2">Votre référence graphique commence ici.</p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-pink text-primary text-xs rounded-lg text-center font-medium" aria-live="polite" role="alert">
+          <Alert variant="error" className="mb-4">
             {error}
-          </div>
+          </Alert>
         )}
 
         <form className="space-y-4" onSubmit={handleRegister} noValidate>
-          <FormField label="Nom Complet" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
-            <input
+          <FormField label="Nom Complet">
+            <TextInput
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className={inputClass}
               placeholder="ex: Prénom Nom"
               autoComplete="name"
             />
           </FormField>
 
-          <FormField label="Email" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
-            <input
+          <FormField label="Email">
+            <TextInput
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className={inputClass}
               placeholder="email@exemple.com"
               autoComplete="email"
             />
@@ -137,24 +134,22 @@ export default function Register() {
             )}
           </FormField>
 
-          <FormField label="Mot de passe" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
+          <FormField label="Mot de passe">
             <PasswordInput
               name="password"
               value={formData.password}
               onChange={handleChange}
-              inputClassName={inputClass}
               placeholder="Votre mot de passe"
               autoComplete="new-password"
             />
             <PasswordChecklist password={formData.password} />
           </FormField>
 
-          <FormField label="Confirmer le mot de passe" labelClassName="block text-xs font-semibold text-primary uppercase tracking-wider mb-2" className="group">
+          <FormField label="Confirmer le mot de passe">
             <PasswordInput
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              inputClassName={inputClass}
               placeholder="Retapez votre mot de passe"
               autoComplete="new-password"
             />

@@ -19,6 +19,8 @@ import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
+import TextInput from '../components/TextInput';
+import Badge from '../components/Badge';
 import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -267,7 +269,7 @@ export default function ProjectNorms() {
                   </ActionIconButton>
                 </div>
                 <div className="mb-4">
-                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white border border-primary shadow-sm text-primary mb-2">Trait</span>
+                  <Badge color="primary" className="mb-2">Trait</Badge>
                   <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.name}</h3>
                   <div className="flex items-baseline mb-2">
                     <span className="text-2xl font-light text-primary mr-1">{norm.value}</span>
@@ -323,7 +325,7 @@ export default function ProjectNorms() {
                   </ActionIconButton>
                 </div>
                 <div className="mb-4">
-                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white border border-pink shadow-sm text-pink mb-2">Typographie</span>
+                  <Badge color="pink" className="mb-2">Typographie</Badge>
                   <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.fontUsage || norm.fontFamily}</h3>
                   <div className="flex items-baseline mb-2">
                     <span className="text-2xl font-light text-primary mr-1">{norm.fontFamily}</span>
@@ -364,20 +366,20 @@ export default function ProjectNorms() {
               {editingType === 'brush' ? (
                 <>
                   <FormField label="Usage du pinceau">
-                    <input type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="ex: Contour cheveux" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="ex: Contour cheveux" />
                   </FormField>
                   <FormField label="Nom du pinceau">
-                    <input type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="ex: Plume G" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="ex: Plume G" />
                   </FormField>
                   <FormField label="Taille (px)">
-                    <input type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" />
                     {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-pink mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
                   </FormField>
                   <FormField label="Unité">
-                    <input type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <TextInput type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" />
                   </FormField>
                   <FormField label="Opacité (0 à 1)">
-                    <input type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="ex: 1.0" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <TextInput type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="ex: 1.0" />
                   </FormField>
                 </>
               ) : (
@@ -404,13 +406,13 @@ export default function ProjectNorms() {
                     {errorFonts && <div className="text-xs text-red-500 mt-1">Erreur de chargement des polices</div>}
                   </FormField>
                   <FormField label="Poids">
-                    <input type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" />
                   </FormField>
                   <FormField label="Usage">
-                    <input type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="ex: Titre" />
                   </FormField>
                   <FormField label="Style">
-                    <input type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="ex: Italique" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                    <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="ex: Italique" />
                   </FormField>
                 </>
               )}
@@ -435,28 +437,28 @@ export default function ProjectNorms() {
       >
         <div className="space-y-4">
           <FormField label="Type">
-            <select value={addType} onChange={e => setAddType(e.target.value)} className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary appearance-none font-medium">
+            <TextInput as="select" value={addType} onChange={e => setAddType(e.target.value)} className="appearance-none font-medium">
               <option value="brush">Trait</option>
               <option value="typography">Typographie</option>
-            </select>
+            </TextInput>
           </FormField>
           {addType === 'brush' ? (
             <>
               <FormField label="Usage du pinceau">
-                <input type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="ex: Contour cheveux" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="ex: Contour cheveux" />
               </FormField>
               <FormField label="Nom du pinceau">
-                <input type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="ex: Plume G" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="ex: Plume G" />
               </FormField>
               <FormField label="Taille (px)">
-                <input type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" />
                 {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-pink mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
               </FormField>
               <FormField label="Unité">
-                <input type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <TextInput type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" />
               </FormField>
               <FormField label="Opacité (0 à 1)">
-                <input type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="ex: 1.0" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <TextInput type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="ex: 1.0" />
               </FormField>
             </>
           ) : (
@@ -481,13 +483,13 @@ export default function ProjectNorms() {
                 {errorFonts && <div className="text-xs text-red-500 mt-1">Erreur de chargement des polices</div>}
               </FormField>
               <FormField label="Poids">
-                <input type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" />
               </FormField>
               <FormField label="Usage">
-                <input type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="ex: Titre" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="ex: Titre" />
               </FormField>
               <FormField label="Style">
-                <input type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="ex: Italique" className="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:ring-2 focus:ring-pink focus:bg-white transition-all text-primary" />
+                <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="ex: Italique" />
               </FormField>
             </>
           )}
@@ -506,7 +508,7 @@ export default function ProjectNorms() {
         title="Supprimer la norme"
         message="Êtes-vous sûr de vouloir supprimer cette norme ? Cette action est irréversible."
         confirmLabel="Supprimer"
-        confirmClassName="bg-pink text-white hover:bg-pink/10"
+        confirmClassName="bg-pink text-white"
         onCancel={() => setConfirmDeleteNorm(null)}
         onConfirm={async () => {
           if (!confirmDeleteNorm) return;

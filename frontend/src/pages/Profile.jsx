@@ -12,6 +12,8 @@ import AppModal from '../components/AppModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import FormField from '../components/FormField';
+import TextInput from '../components/TextInput';
 import PasswordInput from '../components/PasswordInput';
 
 export default function Profile() {
@@ -183,7 +185,7 @@ export default function Profile() {
       </Card>
 
       <div className="space-y-8">
-        <Card className="p-8 rounded-2xl">
+        <Card className="p-8">
           <h3 className="text-lg font-medium text-primary mb-6 flex items-center">
             <svg className="w-5 h-5 mr-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             Informations Personnelles
@@ -191,15 +193,23 @@ export default function Profile() {
           
           <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Nom complet</label>
-                  <input type="text" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} readOnly={!isEditing}
-                         className={`w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none transition ${isEditing ? 'focus:border-pink' : 'opacity-70 cursor-not-allowed'}`} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Adresse Email</label>
-                  <input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} readOnly={!isEditing}
-                         className={`w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none transition ${isEditing ? 'focus:border-pink' : 'opacity-70 cursor-not-allowed'}`} />
+                <FormField label="Nom complet">
+                  <TextInput
+                    type="text"
+                    value={editForm.name}
+                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                    readOnly={!isEditing}
+                    className={isEditing ? '' : 'opacity-70 cursor-not-allowed'}
+                  />
+                </FormField>
+                <FormField label="Adresse Email">
+                  <TextInput
+                    type="email"
+                    value={editForm.email}
+                    onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                    readOnly={!isEditing}
+                    className={isEditing ? '' : 'opacity-70 cursor-not-allowed'}
+                  />
                   {user.pendingEmail && user.pendingEmail !== user.email && (
                     <p className="text-xs text-blue mt-2">
                       Email en attente de vérification : {user.pendingEmail}
@@ -209,12 +219,12 @@ export default function Profile() {
                       </Link>
                     </p>
                   )}
-                </div>
+                </FormField>
               </div>
           </div>
         </Card>
 
-        <Card className="p-8 rounded-2xl">
+        <Card className="p-8">
           <h3 className="text-lg font-medium text-primary mb-6 flex items-center">
             <svg className="w-5 h-5 mr-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
             Sécurité & Connexion
@@ -228,7 +238,7 @@ export default function Profile() {
           </div>
         </Card>
 
-          <Card className="p-8 rounded-2xl border-l-4 border-l-pink">
+          <Card className="p-8 border-l-4 border-l-pink">
             <h3 className="text-lg font-medium text-primary mb-2">Zone de Danger</h3>
             <p className="text-sm text-primary mb-6">La suppression de votre compte est irréversible. Toutes vos données seront perdues.</p>
            
@@ -246,7 +256,7 @@ export default function Profile() {
         cancelLabel="Annuler"
         onConfirm={confirmLogout}
         onCancel={cancelLogout}
-        confirmClassName="bg-blue text-white hover:bg-blue/10"
+        confirmClassName="bg-blue text-white"
       />
 
       <AppModal
@@ -258,33 +268,27 @@ export default function Profile() {
         panelClassName="max-w-lg"
       >
         <form onSubmit={handlePasswordChange} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Ancien mot de passe</label>
+          <FormField label="Ancien mot de passe">
             <PasswordInput
               value={passwordForm.currentPassword}
               onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-              inputClassName="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:border-pink transition"
               autoComplete="current-password"
             />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Nouveau mot de passe</label>
+          </FormField>
+          <FormField label="Nouveau mot de passe">
             <PasswordInput
               value={passwordForm.newPassword}
               onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-              inputClassName="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:border-pink transition"
               autoComplete="new-password"
             />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">Confirmation du nouveau mot de passe</label>
+          </FormField>
+          <FormField label="Confirmation du nouveau mot de passe">
             <PasswordInput
               value={passwordForm.confirmPassword}
               onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-              inputClassName="w-full px-4 py-3 bg-blue/10 border border-blue rounded-xl focus:outline-none focus:border-pink transition"
               autoComplete="new-password"
             />
-          </div>
+          </FormField>
 
           {passwordError && (
             <div className="text-sm text-pink bg-pink/10 border border-pink/30 rounded-xl px-4 py-2">
@@ -314,7 +318,7 @@ export default function Profile() {
         message="Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible. Pour confirmer la suppression, saisissez exactement le mot 'Suppression' dans le champ ci-dessous."
         confirmLabel="Supprimer"
         cancelLabel="Annuler"
-        confirmClassName="bg-pink text-white hover:bg-pink/10"
+        confirmClassName="bg-pink text-white"
         confirmationWord="Suppression"
         confirmationInputLabel="Écrivez le mot de confirmation"
         confirmationInputPlaceholder="Suppression"

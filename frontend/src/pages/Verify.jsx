@@ -9,6 +9,11 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import AuthLayout from '../components/AuthLayout';
+import Card from '../components/Card';
+import FormField from '../components/FormField';
+import TextInput from '../components/TextInput';
+import Alert from '../components/Alert';
 import Button from '../components/Button';
 
 export default function Verify() {
@@ -57,42 +62,58 @@ export default function Verify() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#F8F9FF] text-primary">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md border border-primary">
-        <h2 className="text-2xl font-bold mb-4 text-blue">Vérification de l'email</h2>
-        <p className="mb-6 text-primary">Entrez le code envoyé à <strong>{email}</strong>.</p>
-        <input
-          type="text"
-          value={code}
-          onChange={e => setCode(e.target.value)}
-          placeholder="Code de vérification"
-          className="w-full px-4 py-3 mb-4 border border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue"
-        />
-        {error && <div className="text-pink mb-4" aria-live="polite" role="alert">{error}</div>}
-        {resendMsg && <div className="text-blue mb-4">{resendMsg}</div>}
-        <div className="flex gap-2">
-          {!success && (
-            <>
-              <Button
-                onClick={handleVerify}
-                fullWidth
-                className="py-3"
-              >
-                Vérifier
-              </Button>
-              <Button
-                onClick={handleResend}
-                fullWidth
-                variant="ghost"
-                className="py-3 bg-blue/10 text-blue font-medium hover:bg-pink/10"
-              >
+    <AuthLayout
+      variant="login"
+      hero={
+        <>
+          <div className="flex items-center mb-2">
+            <img src="/FrameSet_Logo.png" alt="Logo FrameSet" className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
+          </div>
+          <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
+            Confirmez <br />
+            <span className="font-bold text-primary">votre email.</span>
+          </h1>
+          <p className="text-lg text-primary max-w-md leading-relaxed">
+            Une dernière étape : saisissez le code que nous venons de vous envoyer pour activer votre accès.
+          </p>
+        </>
+      }
+    >
+      <Card className="w-full max-w-md p-10 rounded-3xl shadow-2xl animate-fade-in" style={{ animationDelay: '150ms' }}>
+        <div className="mb-8 text-center">
+          <h2 className="text-2xl font-medium text-primary">Vérification</h2>
+          <p className="text-primary text-sm mt-2">
+            Entrez le code envoyé à <strong>{email}</strong>.
+          </p>
+        </div>
+
+        {error && <Alert variant="error" className="mb-4">{error}</Alert>}
+        {resendMsg && <Alert variant="info" className="mb-4">{resendMsg}</Alert>}
+        {success && <Alert variant="success" className="mb-4">Vérifié ! Redirection en cours…</Alert>}
+
+        {!success && (
+          <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleVerify(); }} noValidate>
+            <FormField label="Code de vérification">
+              <TextInput
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className="tracking-widest"
+                placeholder="123456"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+              />
+            </FormField>
+
+            <div className="flex flex-col gap-3">
+              <Button type="submit" fullWidth>Vérifier</Button>
+              <Button type="button" onClick={handleResend} variant="ghost" className="w-full">
                 Renvoyer le code
               </Button>
-            </>
-          )}
-        </div>
-        {success && <div className="text-pink font-semibold">Vérifié ! Redirection...</div>}
-      </div>
-    </div>
+            </div>
+          </form>
+        )}
+      </Card>
+    </AuthLayout>
   );
 }
