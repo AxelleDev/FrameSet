@@ -1,5 +1,6 @@
 // Generic reusable modal.
 import React, { useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Low-level modal primitive: renders an overlay + focusable panel, supports
@@ -86,7 +87,7 @@ export default function Modal({
     if (e.target === e.currentTarget) onClose?.();
   };
 
-  return (
+  return createPortal(
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center px-4 ${overlayClassName}`}
       onClick={handleBackdropClick}
@@ -117,6 +118,7 @@ export default function Modal({
         )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

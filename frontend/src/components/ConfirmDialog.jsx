@@ -34,7 +34,7 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
   confirmClassName = 'bg-pink text-white',
-  decorationClassName = 'absolute top-0 right-0 w-32 h-32 bg-pink/10 rounded-full -mr-16 -mt-16 opacity-50',
+  decorationClassName = 'absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50',
   confirmationWord = '',
   confirmationInputLabel = 'Mot de confirmation',
   confirmationInputPlaceholder = ''
