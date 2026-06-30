@@ -55,9 +55,12 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
         menu: provided => ({
           ...provided,
           backgroundColor: 'rgb(var(--color-surface))',
-          borderRadius: '1rem',
+          borderRadius: '0.75rem',
           overflow: 'hidden',
-          zIndex: 50,
+          boxShadow: 'none',
+          border: '1px solid rgb(var(--color-primary) / 0.1)',
+          zIndex: 1000, // matches the `dropdown` tier of the z-index scale (tailwind.config.js)
+          marginTop: '0.4rem',
         }),
         menuList: provided => ({
           ...provided,

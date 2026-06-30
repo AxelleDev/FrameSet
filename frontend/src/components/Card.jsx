@@ -12,7 +12,7 @@ import React from 'react';
  * @param {object} [props.style] - Inline style overrides merged over the defaults.
  */
 export default function Card({ clickable = false, className = '', children, style = {}, ...rest }) {
-  const clickableClasses = clickable ? 'cursor-pointer hover:brightness-[0.98] transform hover:-translate-y-1 duration-300' : '';
+  const clickableClasses = clickable ? 'cursor-pointer hover:brightness-[0.98] transform hover:-translate-y-1 duration-slow' : '';
 
   const props = {
     className: `relative rounded-3xl bg-surface transition-all overflow-hidden ${clickableClasses} ${className}`.trim(),

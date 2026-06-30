@@ -11,6 +11,6 @@ describe('Avatar', () => {
   it('applique le fond teinté et les classes de taille passées', () => {
     render(<Avatar initials="PN" className="w-28 h-28 text-4xl" />);
     const el = screen.getByText('PN');
-    expect(el).toHaveClass('bg-blue/10', 'text-blue', 'w-28', 'h-28', 'text-4xl');
+    expect(el).toHaveClass('bg-blue/15', 'text-blue', 'w-28', 'h-28', 'text-4xl');
   });
 });

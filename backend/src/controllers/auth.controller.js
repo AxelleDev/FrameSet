@@ -1,22 +1,20 @@
 /**
  * Authentication controller.
  *
- * Implements the auth lifecycle: registration with email verification, login,
- * access/refresh token issuance via httpOnly cookies, refresh-token rotation
- * with revocation, email verification and code resend, CSRF token issuance, and
- * logout (which revokes the presented tokens). Failures are logged with
- * privacy-preserving email fingerprints rather than raw addresses.
+ * Thin HTTP layer for the auth lifecycle: registration with email verification,
+ * login, access/refresh token issuance via httpOnly cookies, refresh-token
+ * rotation with revocation, email verification and code resend, CSRF token
+ * issuance, and logout (which revokes the presented tokens). Business logic and
+ * SQL live in auth.service; this layer parses the request, issues/clears tokens
+ * and cookies, logs outcomes (with privacy-preserving email fingerprints rather
+ * than raw addresses), and maps results/typed service errors to HTTP responses.
  */
 
-const bcrypt = require('bcryptjs');
 const { randomBytes } = require('crypto');
-const validator = require('validator');
-const db = require('../database');
-const mailService = require('../services/mail.service');
 const jwt = require('jsonwebtoken');
-const { generateVerificationCode, getIdentifierFingerprint, getInitials } = require('../utils/auth.utils');
-const { generateRefreshToken, verifyRefreshToken, revokeToken, isTokenRevoked, isTokenStaleByPasswordChange } = require('../services/token.service');
-const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
+const authService = require('../services/auth.service');
+const { getIdentifierFingerprint } = require('../utils/auth.utils');
+const { generateRefreshToken, verifyRefreshToken, revokeToken, isTokenRevoked } = require('../services/token.service');
 const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
 const {
   ACCESS_TOKEN_COOKIE_NAME,
@@ -29,9 +27,6 @@ const {
   getCookieValue
 } = require('../utils/cookies.utils');
 const { logger } = require('../utils/logger');
-
-/** Coerces a value to a trimmed string, treating null/undefined as empty. */
-const normalizeInput = (value) => validator.trim(String(value ?? ''));
 
 /**
  * Sets the access and refresh tokens as httpOnly cookies on the response so the
@@ -118,69 +113,23 @@ const getCsrfToken = (req, res) => {
 };
 
 /**
- * Registers a new user. Validates input, enforces the password policy, hashes
- * the password with bcrypt, stores the account as unverified with a one-time
- * verification code, and emails that code. A duplicate-email DB error is logged
- * but surfaced with a generic message to avoid leaking which emails exist.
+ * Registers a new user. Delegates validation, hashing, persistence and the
+ * confirmation email to the service. A duplicate-email error is logged but
+ * surfaced with a generic message to avoid leaking which emails exist.
  * @param {Object} req Express request.
  * @param {Object} res Express response.
  */
 const register = async (req, res) => {
-  const { name: rawName, email: rawEmail, password: rawPassword } = req.body || {};
-
-  const name = normalizeInput(rawName);
-  const email = normalizeInput(rawEmail);
-  const password = normalizeInput(rawPassword);
-
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: 'Tous les champs sont obligatoires.' });
-  }
-
-  if (!validator.isEmail(email)) {
-    return res.status(400).json({ error: 'Email invalide.' });
-  }
-  if (!validator.isLength(password, { min: PASSWORD_MIN_LENGTH })) {
-    return res.status(400).json({ error: 'Mot de passe trop court.' });
-  }
-  if (!validator.matches(password, PASSWORD_COMPLEXITY_REGEX)) {
-    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.' });
-  }
-
-  const initials = getInitials(name);
-  const { code: verificationCode, expires } = generateVerificationCode();
-
+  const body = req.body || {};
   try {
-    // Hash with the configured bcrypt cost factor; never store plaintext.
-    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
-    const now = new Date();
-
-    const [result] = await db.query(
-      'INSERT INTO users (name, email, password, avatar_initials, is_verified, verification_code, verification_code_expires, password_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, email, hashedPassword, initials, false, verificationCode, expires, now]
-    );
-
-    await mailService.sendMail({
-      to: email,
-      subject: 'Confirmation de votre inscription',
-      text: `Votre code de confirmation est : ${verificationCode}\nCe code expire dans 10 minutes.`,
-      html: mailService.buildTemplate({
-        title: 'Confirmation de votre inscription',
-        message: 'Utilisez le code ci-dessous pour confirmer votre adresse email.',
-        code: verificationCode
-      })
-    });
-
-    const newUser = {
-      id: result.insertId,
-      name,
-      email,
-      avatarInitials: initials,
-      is_verified: false,
-      passwordUpdatedAt: now
-    };
-    res.json({ success: true, ...newUser });
+    const { user } = await authService.registerUser(body);
+    res.json({ success: true, ...user });
   } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
+    const email = body.email;
+    if (error.code === 'validation') {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error.code === 'duplicate_email') {
       logger.warn('auth.register.duplicate_email', {
         requestId: req.id,
         emailFingerprint: getIdentifierFingerprint(email)
@@ -199,15 +148,15 @@ const register = async (req, res) => {
 };
 
 /**
- * Authenticates a user with email and password. Rejects unverified accounts,
- * compares the password against the bcrypt hash, and on success issues access
- * and refresh tokens as httpOnly cookies. Identical generic error messages are
- * returned for unknown email vs. wrong password to avoid user enumeration.
+ * Authenticates a user with email and password. Delegates credential checking
+ * to the service; on success issues access and refresh tokens as httpOnly
+ * cookies. Identical generic error messages are returned for unknown email vs.
+ * wrong password to avoid user enumeration.
  * @param {Object} req Express request.
  * @param {Object} res Express response.
  */
 const login = async (req, res) => {
-  let { email, password } = req.body;
+  const { email, password } = req.body;
   const emailFingerprint = getIdentifierFingerprint(email);
 
   logger.info('auth.login.attempt', {
@@ -215,72 +164,8 @@ const login = async (req, res) => {
     emailFingerprint
   });
 
-  if (!email || !password) {
-    logger.warn('auth.login.validation_failed', {
-      requestId: req.id,
-      emailFingerprint,
-      reason: 'missing_credentials'
-    });
-
-    return res.status(400).json({ error: 'Tous les champs sont obligatoires.' });
-  }
-
-  email = validator.trim(email);
-  password = validator.trim(password);
-
-  if (!validator.isEmail(email)) {
-    logger.warn('auth.login.validation_failed', {
-      requestId: req.id,
-      emailFingerprint,
-      reason: 'invalid_email_format'
-    });
-
-    return res.status(400).json({ error: 'Email invalide.' });
-  }
-
   try {
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (rows.length === 0) {
-      logger.warn('auth.login.failed', {
-        requestId: req.id,
-        emailFingerprint,
-        reason: 'invalid_credentials'
-      });
-
-      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
-    }
-
-    const userDb = rows[0];
-    if (!userDb.is_verified) {
-      logger.info('auth.login.blocked', {
-        requestId: req.id,
-        userId: userDb.id,
-        reason: 'email_not_verified'
-      });
-
-      return res.status(401).json({ error: 'Veuillez vérifier votre email avant de vous connecter.' });
-    }
-
-    const isMatch = await bcrypt.compare(password, userDb.password);
-    if (!isMatch) {
-      logger.warn('auth.login.failed', {
-        requestId: req.id,
-        userId: userDb.id,
-        emailFingerprint,
-        reason: 'invalid_credentials'
-      });
-
-      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
-    }
-
-    const user = {
-      id: userDb.id,
-      name: userDb.name,
-      email: userDb.email,
-      avatarInitials: userDb.avatar_initials,
-      passwordUpdatedAt: userDb.password_updated_at,
-      pendingEmail: userDb.pending_email
-    };
+    const user = await authService.authenticateUser({ email, password });
 
     logger.info('auth.login.success', {
       requestId: req.id,
@@ -293,6 +178,44 @@ const login = async (req, res) => {
     setAuthCookies(res, token, refreshToken);
     res.json({ success: true, ...user });
   } catch (error) {
+    if (error.code === 'missing_credentials') {
+      logger.warn('auth.login.validation_failed', {
+        requestId: req.id,
+        emailFingerprint,
+        reason: 'missing_credentials'
+      });
+
+      return res.status(400).json({ error: error.message });
+    }
+    if (error.code === 'invalid_email_format') {
+      logger.warn('auth.login.validation_failed', {
+        requestId: req.id,
+        emailFingerprint,
+        reason: 'invalid_email_format'
+      });
+
+      return res.status(400).json({ error: error.message });
+    }
+    if (error.code === 'not_verified') {
+      logger.info('auth.login.blocked', {
+        requestId: req.id,
+        userId: error.userId,
+        reason: 'email_not_verified'
+      });
+
+      return res.status(401).json({ error: 'Veuillez vérifier votre email avant de vous connecter.' });
+    }
+    if (error.code === 'invalid_credentials') {
+      logger.warn('auth.login.failed', {
+        requestId: req.id,
+        ...(error.userId ? { userId: error.userId } : {}),
+        emailFingerprint,
+        reason: 'invalid_credentials'
+      });
+
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
+    }
+
     logger.error('auth.login.error', {
       requestId: req.id,
       emailFingerprint,
@@ -305,10 +228,11 @@ const login = async (req, res) => {
 
 /**
  * Rotates the refresh token. Verifies the presented refresh token, ensures it
- * has not been revoked, then issues a fresh access/refresh pair and revokes the
- * old refresh token. Rotation limits replay: a stolen refresh token is useful
- * only until its next use, after which it is revoked. If revocation of the old
- * token fails the operation aborts to avoid leaving two valid tokens.
+ * has not been revoked and is not stale relative to the last password change,
+ * then issues a fresh access/refresh pair and revokes the old refresh token.
+ * Rotation limits replay: a stolen refresh token is useful only until its next
+ * use, after which it is revoked. If revocation of the old token fails the
+ * operation aborts to avoid leaving two valid tokens.
  * @param {Object} req Express request.
  * @param {Object} res Express response.
  */
@@ -349,7 +273,7 @@ const refresh = async (req, res) => {
   // password change cannot be "refreshed" back into a valid session.
   let refreshTokenStale;
   try {
-    refreshTokenStale = await isTokenStaleByPasswordChange(user.id, user.iat);
+    refreshTokenStale = await authService.isRefreshTokenStale(user.id, user.iat);
   } catch (error) {
     return res.status(503).json({ error: 'Service temporairement indisponible' });
   }
@@ -388,37 +312,18 @@ const refresh = async (req, res) => {
 
 /**
  * Confirms a newly registered email using the one-time verification code.
- * Validates the code and its expiry, then marks the account verified and clears
- * the code so it cannot be reused.
+ * Delegates code/expiry checking and the verification update to the service.
  * @param {Object} req Express request.
  * @param {Object} res Express response.
  */
 const verify = async (req, res) => {
   const { email, code } = req.body;
-  if (!email || !code) {
-    return res.status(400).json({ error: 'Email et code sont obligatoires.' });
-  }
-  if (!validator.isEmail(validator.trim(String(email)))) {
-    return res.status(400).json({ error: 'Email invalide.' });
-  }
   try {
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [validator.trim(String(email))]);
-    if (rows.length === 0) {
-      return res.status(400).json({ error: 'Utilisateur non trouvé.' });
-    }
-    const userDb = rows[0];
-    if (userDb.is_verified) {
-      return res.status(400).json({ error: 'Utilisateur déjà vérifié.' });
-    }
-    if (!userDb.verification_code || userDb.verification_code !== code) {
-      return res.status(400).json({ error: 'Code incorrect.' });
-    }
-    if (!userDb.verification_code_expires || new Date() > new Date(userDb.verification_code_expires)) {
-      return res.status(400).json({ error: 'Code expiré. Veuillez en demander un nouveau.' });
-    }
-    await db.query('UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL WHERE email = ?', [email]);
-    res.json({ success: true });
+    res.json(await authService.verifyEmailCode({ email, code }));
   } catch (error) {
+    if (error.code === 'validation') {
+      return res.status(400).json({ error: error.message });
+    }
     logger.error('auth.verify.error', {
       requestId: req.id,
       emailFingerprint: getIdentifierFingerprint(email),
@@ -431,43 +336,19 @@ const verify = async (req, res) => {
 
 /**
  * Regenerates and re-sends the email verification code for an unverified
- * account, replacing any previous code and its expiry.
+ * account. Delegates the account lookup, code regeneration and mail to the
+ * service.
  * @param {Object} req Express request.
  * @param {Object} res Express response.
  */
 const resendCode = async (req, res) => {
   const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ error: 'Email obligatoire.' });
-  }
-  if (!validator.isEmail(validator.trim(String(email)))) {
-    return res.status(400).json({ error: 'Email invalide.' });
-  }
   try {
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [validator.trim(String(email))]);
-    if (rows.length === 0) {
-      return res.status(400).json({ error: 'Utilisateur non trouvé.' });
-    }
-    const userDb = rows[0];
-    if (userDb.is_verified) {
-      return res.status(400).json({ error: 'Utilisateur déjà vérifié.' });
-    }
-    const { code: newCode, expires } = generateVerificationCode();
-    await db.query('UPDATE users SET verification_code = ?, verification_code_expires = ? WHERE email = ?', [newCode, expires, email]);
-
-    await mailService.sendMail({
-      to: email,
-      subject: 'Nouveau code de vérification',
-      text: `Votre nouveau code de vérification est : ${newCode}\nCe code expire dans 10 minutes.`,
-      html: mailService.buildTemplate({
-        title: 'Nouveau code de vérification',
-        message: 'Voici votre nouveau code de vérification.',
-        code: newCode
-      })
-    });
-
-    res.json({ success: true });
+    res.json(await authService.resendVerificationCode({ email }));
   } catch (error) {
+    if (error.code === 'validation') {
+      return res.status(400).json({ error: error.message });
+    }
     logger.error('auth.resend_code.error', {
       requestId: req.id,
       emailFingerprint: getIdentifierFingerprint(email),
@@ -534,58 +415,36 @@ const logout = async (req, res) => {
 };
 
 /**
- * Starts the "forgot password" flow: if the email matches an account, stores a
- * one-time reset code (with expiry) and emails it. The response is identical
- * whether or not the email exists, to avoid revealing which emails are
- * registered; a mail-send failure is logged but does not change the response
- * (the stored code remains usable).
+ * Starts the "forgot password" flow. Delegates to the service, which stores a
+ * one-time reset code and emails it when the account exists. The response is
+ * identical whether or not the email exists, to avoid revealing which emails
+ * are registered; a mail-send failure is logged but does not change the
+ * response (the stored code remains usable).
  * @param {Object} req Express request.
  * @param {Object} res Express response.
  */
 const forgotPassword = async (req, res) => {
-  const email = normalizeInput(req.body?.email);
-  if (!email) {
-    return res.status(400).json({ error: 'Email obligatoire.' });
-  }
-  if (!validator.isEmail(email)) {
-    return res.status(400).json({ error: 'Email invalide.' });
-  }
-
+  const email = req.body?.email;
   try {
-    const [rows] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
-
-    if (rows.length > 0) {
-      const { code, expires } = generateVerificationCode();
-      await db.query(
-        'UPDATE users SET reset_code = ?, reset_code_expires = ? WHERE email = ?',
-        [code, expires, email]
-      );
-
-      try {
-        await mailService.sendMail({
-          to: email,
-          subject: 'Réinitialisation de votre mot de passe',
-          text: `Votre code de réinitialisation est : ${code}\nCe code expire dans 10 minutes.`,
-          html: mailService.buildTemplate({
-            title: 'Réinitialisation de votre mot de passe',
-            message: 'Utilisez le code ci-dessous pour choisir un nouveau mot de passe.',
-            code
-          })
-        });
-      } catch (mailError) {
-        // Never leak whether the email exists: log the send failure but keep the
-        // generic success response. The stored code stays valid.
-        logger.error('auth.forgot_password.mail_failed', {
-          requestId: req.id,
-          emailFingerprint: getIdentifierFingerprint(email),
-          error: mailError
-        });
+    await authService.startPasswordReset(
+      { email },
+      {
+        onMailError: (mailError) => {
+          logger.error('auth.forgot_password.mail_failed', {
+            requestId: req.id,
+            emailFingerprint: getIdentifierFingerprint(email),
+            error: mailError
+          });
+        }
       }
-    }
+    );
 
     // Same response regardless of whether the account exists.
     res.json({ success: true });
   } catch (error) {
+    if (error.code === 'validation') {
+      return res.status(400).json({ error: error.message });
+    }
     logger.error('auth.forgot_password.error', {
       requestId: req.id,
       emailFingerprint: getIdentifierFingerprint(email),
@@ -596,53 +455,20 @@ const forgotPassword = async (req, res) => {
 };
 
 /**
- * Completes the "forgot password" flow: validates the reset code and its expiry,
- * enforces the password policy, hashes and stores the new password, and clears
- * the reset code so it cannot be reused. A missing account returns the same
- * generic "Code incorrect" error to avoid user enumeration.
+ * Completes the "forgot password" flow. Delegates code/expiry checking, the
+ * password policy, hashing and persistence to the service. A missing account
+ * returns the same generic "Code incorrect" error to avoid user enumeration.
  * @param {Object} req Express request.
  * @param {Object} res Express response.
  */
 const resetPassword = async (req, res) => {
-  const email = normalizeInput(req.body?.email);
-  const code = normalizeInput(req.body?.code);
-  const password = normalizeInput(req.body?.newPassword);
-
-  if (!email || !code || !password) {
-    return res.status(400).json({ error: 'Email, code et nouveau mot de passe sont obligatoires.' });
-  }
-  if (!validator.isEmail(email)) {
-    return res.status(400).json({ error: 'Email invalide.' });
-  }
-  if (!validator.isLength(password, { min: PASSWORD_MIN_LENGTH })) {
-    return res.status(400).json({ error: 'Mot de passe trop court.' });
-  }
-  if (!validator.matches(password, PASSWORD_COMPLEXITY_REGEX)) {
-    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.' });
-  }
-
+  const { email, code, newPassword } = req.body || {};
   try {
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (rows.length === 0) {
-      return res.status(400).json({ error: 'Code incorrect.' });
-    }
-
-    const userDb = rows[0];
-    if (!userDb.reset_code || userDb.reset_code !== code) {
-      return res.status(400).json({ error: 'Code incorrect.' });
-    }
-    if (!userDb.reset_code_expires || new Date() > new Date(userDb.reset_code_expires)) {
-      return res.status(400).json({ error: 'Code expiré. Veuillez en demander un nouveau.' });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
-    await db.query(
-      'UPDATE users SET password = ?, password_updated_at = NOW(), reset_code = NULL, reset_code_expires = NULL WHERE email = ?',
-      [hashedPassword, email]
-    );
-
-    res.json({ success: true });
+    res.json(await authService.completePasswordReset({ email, code, newPassword }));
   } catch (error) {
+    if (error.code === 'validation') {
+      return res.status(400).json({ error: error.message });
+    }
     logger.error('auth.reset_password.error', {
       requestId: req.id,
       emailFingerprint: getIdentifierFingerprint(email),

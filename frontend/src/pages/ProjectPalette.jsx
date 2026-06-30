@@ -13,6 +13,7 @@
  */
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useProjects } from '../context/ProjectContext';
+import { useToast } from '../context/ToastContext';
 import { useParams } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
@@ -35,6 +36,7 @@ const MAX_PALETTE_SIZE = 50;
 export default function ProjectPalette() {
   const { id } = useParams();
   const { activeProject, updateProjectPalette, projectsLoading, activeProjectId } = useProjects();
+  const { showToast } = useToast();
 
   const [editStatus, setEditStatus] = useState(null);
   const [editIdx, setEditIdx] = useState(null);
@@ -260,6 +262,7 @@ export default function ProjectPalette() {
     const saved = await persistPalette(nextPalette);
     if (saved) {
       setIsAddingColor(false);
+      showToast('Couleur ajoutée.');
     }
   };
 
@@ -317,6 +320,7 @@ export default function ProjectPalette() {
     if (saved) {
       setIsImageModalOpen(false);
       setImageColors([]);
+      showToast(`${toAdd.length} couleur${toAdd.length > 1 ? 's' : ''} ajoutée${toAdd.length > 1 ? 's' : ''}.`);
     }
   };
 
@@ -328,17 +332,11 @@ export default function ProjectPalette() {
     setConfirmDeleteColor(colorId);
   };
 
-  // Keyboard reordering: move the focused swatch with the arrow keys. Ignored
-  // when focus is on a nested button (delete/edit) rather than the swatch itself.
-  const handleSwatchKeyDown = (e, idx) => {
-    if (e.target !== e.currentTarget) return;
-    let target = null;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') target = idx - 1;
-    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') target = idx + 1;
-    else return;
+  // Move the swatch at `idx` to position `target`, persist, and keep focus on it.
+  // Shared by the arrow-key handler and the on-tile reorder buttons (so the
+  // reorder works by keyboard AND by a single pointer click, not only by drag).
+  const moveColor = (idx, target) => {
     if (target < 0 || target >= palette.length) return;
-
-    e.preventDefault();
     const next = [...palette];
     const [moved] = next.splice(idx, 1);
     next.splice(target, 0, moved);
@@ -355,8 +353,8 @@ export default function ProjectPalette() {
   return (
     <>
       <PageHeader
-        title="Palette de Couleurs"
-        subtitle="Ensemble des couleurs de référence à utiliser pour ce projet."
+        title="Palette de couleurs"
+        subtitle="Les couleurs de référence de ce projet."
         actions={activeProject ? (
           <>
             <input
@@ -384,7 +382,7 @@ export default function ProjectPalette() {
             <p className="text-xs text-danger mb-4 text-right">{imageError}</p>
           )}
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
            <AddTile
             onClick={openAddModal}
             className="aspect-[4/5]"
@@ -396,12 +394,10 @@ export default function ProjectPalette() {
             <div
               key={color.id}
               ref={el => { itemRefs.current[color.id] = el; }}
-              tabIndex={0}
-              role="button"
-              aria-label={`Couleur ${color.name}, ${color.hex}. Utilisez les flèches pour réordonner.`}
-              className={`group relative flex flex-col aspect-[4/5] rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-blue/70 focus-visible:ring-offset-2 ring-offset-canvas ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
+              tabIndex={-1}
+              aria-label={`Couleur ${color.name}, ${color.hex}`}
+              className={`group relative flex flex-col aspect-[4/5] rounded-3xl outline-none ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
               draggable
-              onKeyDown={e => handleSwatchKeyDown(e, idx)}
               onDragStart={e => {
                 // Begin a drag: reset FLIP bookkeeping and record the source swatch.
                 didDrop.current = false;
@@ -473,9 +469,8 @@ export default function ProjectPalette() {
                 setPreviewPalette(palette);
               }}
             >
-              <div className="flex-1 w-full rounded-3xl  relative overflow-hidden transition-transform duration-300 group-hover:-translate-y-2 "
+              <div className="flex-1 w-full rounded-3xl relative overflow-hidden transition-transform duration-slow group-hover:-translate-y-2"
                    style={{ backgroundColor: color.hex }}>
-                   <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50 pointer-events-none"></div>
 
                    <ActionIconButton
                       onClick={(e) => handleDeleteColor(e, color.id)}
@@ -501,10 +496,41 @@ export default function ProjectPalette() {
                       </svg>
                     </ActionIconButton>
 
-                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 backdrop-blur-[2px] cursor-pointer z-10"
-                        onClick={e => handleCopyHex(e, color.hex)}>
-                      <CopyBadge isCopied={copiedValue === color.hex} />
+                   {/* Reorder controls: a single-pointer (non-drag) alternative to
+                       the mouse drag-and-drop, also operable by keyboard (WCAG 2.5.7). */}
+                   <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
+                     <ActionIconButton
+                       onClick={(e) => { e.stopPropagation(); moveColor(idx, idx - 1); }}
+                       title="Déplacer la couleur vers la gauche"
+                       variant="light"
+                       disabled={idx === 0}
+                     >
+                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                       </svg>
+                     </ActionIconButton>
+                     <ActionIconButton
+                       onClick={(e) => { e.stopPropagation(); moveColor(idx, idx + 1); }}
+                       title="Déplacer la couleur vers la droite"
+                       variant="light"
+                       disabled={idx === previewPalette.length - 1}
+                     >
+                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                       </svg>
+                     </ActionIconButton>
                    </div>
+
+                   {/* Copy-to-clipboard: a real button so it is keyboard-operable
+                       (WCAG 2.1.1), revealed on hover or keyboard focus. */}
+                   <button
+                     type="button"
+                     onClick={e => handleCopyHex(e, color.hex)}
+                     aria-label={`Copier ${color.hex}`}
+                     className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+                   >
+                      <CopyBadge isCopied={copiedValue === color.hex} />
+                   </button>
               </div>
               <div className="mt-4 text-center">
                  <p className="text-sm font-semibold text-primary truncate" title={color.name}>{color.name}</p>
@@ -525,18 +551,24 @@ export default function ProjectPalette() {
       >
         <div className="space-y-4">
           <FormField label="Nom de la couleur">
-            <TextInput type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="ex: Reflet Cheveux" />
+            <TextInput type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="Reflet Cheveux" />
           </FormField>
           <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
-               <div className="w-12 h-12 rounded-xl flex-shrink-0" style={{ backgroundColor: isValidEditHex() ? editColorHex : '#ffffff' }}></div>
+               <input
+                 type="color"
+                 value={isValidEditHex() ? editColorHex : '#ffffff'}
+                 onChange={(e) => setEditColorHex(e.target.value.toUpperCase())}
+                 aria-label="Choisir la couleur"
+                 className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0"
+               />
                <TextInput
                  type="text"
                  value={editColorHex}
                  onChange={handleEditHexChange}
                  onKeyDown={handleHexKeyDown}
                  onPaste={handleHexPaste(setEditColorHex)}
-                 placeholder="ex: #FF5500"
+                 placeholder="#FF5500"
                  mono
                  className="flex-1"
                />
@@ -546,7 +578,7 @@ export default function ProjectPalette() {
         </div>
         <ModalActions
           secondaryLabel="Annuler"
-          primaryLabel="Confirmer"
+          primaryLabel="Enregistrer"
           onSecondary={() => setEditIdx(null)}
           onPrimary={confirmEditColor}
           primaryDisabled={!editColorName || !isValidEditHex()}
@@ -556,23 +588,29 @@ export default function ProjectPalette() {
       <FormModal
         isOpen={isAddingColor}
         onClose={() => setIsAddingColor(false)}
-        title="Nouvelle Couleur"
+        title="Nouvelle couleur"
       >
         <div className="space-y-4">
           <FormField label="Nom de la couleur">
-            <TextInput type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="ex: Reflet Cheveux" />
+            <TextInput type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="Reflet Cheveux" />
           </FormField>
 
           <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
-               <div className="w-12 h-12 rounded-xl flex-shrink-0" style={{ backgroundColor: isValidHex() ? newColorHex : '#ffffff' }}></div>
+               <input
+                 type="color"
+                 value={isValidHex() ? newColorHex : '#ffffff'}
+                 onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
+                 aria-label="Choisir la couleur"
+                 className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0"
+               />
                <TextInput
                  type="text"
                  value={newColorHex}
                  onChange={handleNewHexChange}
                  onKeyDown={handleHexKeyDown}
                  onPaste={handleHexPaste(setNewColorHex)}
-                 placeholder="ex: #FF5500"
+                 placeholder="#FF5500"
                  mono
                  className="flex-1"
                />
@@ -625,8 +663,8 @@ export default function ProjectPalette() {
 
       <ConfirmDialog
         isOpen={confirmDeleteColor !== null}
-        title="Supprimer la couleur"
-        message="Êtes-vous sûr de vouloir supprimer cette couleur ?"
+        title="Supprimer la couleur ?"
+        message="Elle sera retirée de la palette."
         confirmLabel="Supprimer"
        
         onCancel={() => setConfirmDeleteColor(null)}
@@ -637,6 +675,7 @@ export default function ProjectPalette() {
           const saved = await persistPalette(nextPalette);
           if (saved) {
             setConfirmDeleteColor(null);
+            showToast('Couleur supprimée.');
           }
         }}
       />

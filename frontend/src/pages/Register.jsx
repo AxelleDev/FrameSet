@@ -88,7 +88,7 @@ export default function Register() {
           </p>
 
           <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
+            <div className="border-l-2 border-blue/40 pl-5 space-y-1.5">
               <p className="text-sm font-medium text-primary">"Un outil essentiel pour reprendre un projet sans perdre mes réglages graphiques."</p>
               <p className="text-xs text-blue uppercase tracking-widest">Alyse C., Illustratrice</p>
             </div>
@@ -101,7 +101,7 @@ export default function Register() {
     >
       <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
         <div className="mb-8 text-center">
-          <h2 className="text-2xl font-medium text-primary">Inscription</h2>
+          <h2 className="text-2xl font-medium text-primary">Créez votre compte</h2>
           <p className="text-primary text-sm mt-2">Votre référence graphique commence ici.</p>
         </div>
 
@@ -112,18 +112,22 @@ export default function Register() {
         )}
 
         <form className="space-y-4" onSubmit={handleRegister} noValidate>
-          <FormField label="Nom Complet">
+          <FormField label="Nom Complet" required>
             <TextInput
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="ex: Prénom Nom"
+              placeholder="Prénom Nom"
               autoComplete="name"
             />
           </FormField>
 
-          <FormField label="Email">
+          <FormField
+            label="Email"
+            required
+            error={formData.email !== '' && !emailValid ? "Format d'email invalide." : undefined}
+          >
             <TextInput
               type="email"
               name="email"
@@ -132,33 +136,33 @@ export default function Register() {
               placeholder="email@exemple.com"
               autoComplete="email"
             />
-            {formData.email !== '' && !emailValid && (
-              <p className="text-xs text-danger mt-1">Format d'email invalide.</p>
-            )}
           </FormField>
 
-          <FormField label="Mot de passe">
-            <PasswordInput
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Votre mot de passe"
-              autoComplete="new-password"
-            />
+          <div>
+            <FormField label="Mot de passe" required>
+              <PasswordInput
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Votre mot de passe"
+                autoComplete="new-password"
+              />
+            </FormField>
             <PasswordChecklist password={formData.password} />
-          </FormField>
+          </div>
 
-          <FormField label="Confirmer le mot de passe">
+          <FormField
+            label="Confirmer le mot de passe"
+            required
+            error={formData.confirmPassword !== '' && !passwordsMatch ? 'Les mots de passe ne correspondent pas.' : undefined}
+          >
             <PasswordInput
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              placeholder="Retapez votre mot de passe"
+              placeholder="Confirmez votre mot de passe"
               autoComplete="new-password"
             />
-            {formData.confirmPassword !== '' && !passwordsMatch && (
-              <p className="text-xs text-danger mt-1">Les mots de passe ne correspondent pas.</p>
-            )}
           </FormField>
 
           <Button type="submit" fullWidth className="mt-2" disabled={!canSubmit} loading={submitting}>

@@ -7,6 +7,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { useNavigate, Link } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -20,6 +21,7 @@ import PasswordInput from '../components/PasswordInput';
 
 export default function Profile() {
   const { user, updateUserProfile, logout, changePassword, deleteAccount } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -35,7 +37,6 @@ export default function Profile() {
     confirmPassword: ''
   });
   const [passwordError, setPasswordError] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
@@ -56,8 +57,13 @@ export default function Profile() {
   // persists the form; when entering it, it seeds the form from the user.
   const toggleEdit = () => {
     if (isEditing) {
-      return updateUserProfile(editForm).finally(() => {
+      return updateUserProfile(editForm).then((result) => {
         setIsEditing(false);
+        if (result?.success === false) {
+          if (result.message) showToast(result.message, 'error');
+        } else {
+          showToast('Profil mis à jour.');
+        }
       });
     } else {
       setEditForm({
@@ -85,7 +91,6 @@ export default function Profile() {
   const openPasswordModal = () => {
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     setPasswordError('');
-    setPasswordSuccess('');
     setIsPasswordModalOpen(true);
   };
 
@@ -100,14 +105,14 @@ export default function Profile() {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     setPasswordError('');
-    setPasswordSuccess('');
 
+    // Client-side validation stays inline (a small hint inside the modal).
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      setPasswordError('Veuillez remplir tous les champs.');
+      setPasswordError('Renseignez tous les champs.');
       return;
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordError('La confirmation ne correspond pas au nouveau mot de passe.');
+      setPasswordError('Les mots de passe ne correspondent pas.');
       return;
     }
 
@@ -118,13 +123,16 @@ export default function Profile() {
         newPassword: passwordForm.newPassword
       });
 
+      // The action result (success or business error) is surfaced as a toast,
+      // like every other in-app action.
       if (!result.success) {
-        setPasswordError(result.message || 'Erreur lors de la modification.');
+        if (result.message) showToast(result.message, 'error');
         return;
       }
 
-      setPasswordSuccess('Mot de passe modifié avec succès.');
+      setIsPasswordModalOpen(false);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      showToast('Votre mot de passe a été modifié.');
     } finally {
       setIsPasswordSaving(false);
     }
@@ -178,7 +186,7 @@ export default function Profile() {
             </Button>
 
             <Button onClick={handleLogout} variant="ghost" className="min-w-[150px]">
-              Déconnexion
+              Se déconnecter
             </Button>
           </div>
         </div>
@@ -232,12 +240,12 @@ export default function Profile() {
                 <p className="text-sm font-medium text-primary">Mot de passe</p>
                 <p className="text-xs text-primary/60">Dernière modification : {formatRelativeTime(user.passwordUpdatedAt)}</p>
               </div>
-              <Button onClick={openPasswordModal} variant="ghost" className="text-sm font-medium">Modifier</Button>
+              <Button onClick={openPasswordModal} variant="ghost" className="text-sm font-medium">Modifier le mot de passe</Button>
           </div>
         </Card>
 
           <Card className="p-8">
-            <h3 className="text-lg font-medium text-primary mb-2">Zone de Danger</h3>
+            <h3 className="text-lg font-medium text-primary mb-2">Zone de danger</h3>
             <p className="text-sm text-primary mb-6">La suppression de votre compte est irréversible. Toutes vos données seront perdues.</p>
            
             <Button onClick={() => setIsDeleteAccountOpen(true)} variant="danger" className="text-sm">
@@ -248,9 +256,9 @@ export default function Profile() {
 
       <ConfirmDialog
         isOpen={isLogoutConfirmOpen}
-        title="Confirmation de déconnexion"
-        message="Êtes-vous sûr de vouloir vous déconnecter ?"
-        confirmLabel="Déconnexion"
+        title="Se déconnecter ?"
+        message="Vous devrez vous reconnecter pour accéder à vos projets."
+        confirmLabel="Se déconnecter"
         cancelLabel="Annuler"
         onConfirm={confirmLogout}
         onCancel={cancelLogout}
@@ -289,7 +297,6 @@ export default function Profile() {
           </FormField>
 
           {passwordError && <Alert variant="error">{passwordError}</Alert>}
-          {passwordSuccess && <Alert variant="success">{passwordSuccess}</Alert>}
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <Button type="button" onClick={closePasswordModal} variant="ghost" className="text-sm">
@@ -304,8 +311,8 @@ export default function Profile() {
 
       <ConfirmDialog
         isOpen={isDeleteAccountOpen}
-        title="Supprimer mon compte"
-        message="Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible. Pour confirmer la suppression, saisissez exactement le mot 'Suppression' dans le champ ci-dessous."
+        title="Supprimer votre compte ?"
+        message="Toutes vos données seront définitivement perdues. Cette action est irréversible. Pour confirmer, saisissez « Suppression » ci-dessous."
         confirmLabel="Supprimer"
         cancelLabel="Annuler"
        

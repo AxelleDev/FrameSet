@@ -28,6 +28,23 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
       },
+      // Named stacking scale for global floating layers. Component-local z values
+      // (e.g. content inside a relative card) stay as plain z-10/z-20 since they
+      // never interact with these. Toasts sit above modals by design.
+      zIndex: {
+        dropdown: '1000',
+        sticky: '1020',
+        overlay: '1035',
+        drawer: '1040',
+        modal: '1050',
+        toast: '1060',
+      },
+      // Named motion durations. Use these three everywhere instead of raw values.
+      transitionDuration: {
+        fast: '150ms',
+        base: '200ms',
+        slow: '300ms',
+      },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out forwards',
       },

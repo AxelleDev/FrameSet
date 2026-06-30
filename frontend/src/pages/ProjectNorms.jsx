@@ -16,6 +16,7 @@ import { loadGoogleFont } from '../utils/loadGoogleFont';
 import useFormState from '../hooks/useFormState';
 import useActiveProject from '../hooks/useActiveProject';
 import { useProjects } from '../context/ProjectContext';
+import { useToast } from '../context/ToastContext';
 import { useParams } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
@@ -42,6 +43,7 @@ export default function ProjectNorms() {
     updateBrushNorm,
     updateTypographyNorm
   } = useProjects();
+  const { showToast } = useToast();
 
   const [editingNorm, setEditingNorm] = useState(null);
   const [editingType, setEditingType] = useState('brush');
@@ -59,7 +61,7 @@ export default function ProjectNorms() {
   const isBrushFormValid = !!brushForm.usage && isBrushValueValid && isOpacityValid;
 
   // loadedFonts: families whose web font has finished loading (drives the
-  // preview switch from "Chargement..." to the rendered AaBbCc sample).
+  // preview switch from "Chargement…" to the rendered AaBbCc sample).
   // loadingFontsRef: families currently being loaded, kept in a ref so it does
   // not retrigger this effect and to dedupe concurrent loads.
   const [loadedFonts, setLoadedFonts] = useState([]);
@@ -150,6 +152,7 @@ export default function ProjectNorms() {
       });
     }
     setEditingNorm(null);
+    showToast('Norme modifiée.');
   };
 
   // loadingDelete holds the id of the norm whose deletion spinner is showing.
@@ -202,6 +205,7 @@ export default function ProjectNorms() {
     }
     setIsAddingNorm(false);
     resetForm();
+    showToast('Norme ajoutée.');
   };
 
   // Display filter: 'all', 'brush', or 'typography'.
@@ -210,8 +214,8 @@ export default function ProjectNorms() {
   return (
     <>
       <PageHeader
-        title="Normes Graphiques"
-        subtitle="Ensemble des règles techniques qui garantissent la cohérence visuelle."
+        title="Normes graphiques"
+        subtitle="Les règles graphiques de ce projet, au même endroit."
         subtitleClassName="max-w-xl"
         actions={
           <div className="w-48">
@@ -364,20 +368,20 @@ export default function ProjectNorms() {
               {editingType === 'brush' ? (
                 <>
                   <FormField label="Usage du pinceau">
-                    <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="ex: Contour cheveux" />
+                    <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="Contour cheveux" />
                   </FormField>
                   <FormField label="Nom du pinceau">
-                    <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="ex: Plume G" />
+                    <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="Plume G" />
                   </FormField>
                   <FormField label="Taille (px)">
-                    <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" />
+                    <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="8" />
                     {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-danger mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
                   </FormField>
                   <FormField label="Unité">
                     <TextInput type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" />
                   </FormField>
                   <FormField label="Opacité (0 à 1)">
-                    <TextInput type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="ex: 1.0" />
+                    <TextInput type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="1.0" />
                   </FormField>
                 </>
               ) : (
@@ -397,20 +401,20 @@ export default function ProjectNorms() {
                         placeholder="Sélectionnez la typographie"
                         isLoading={loadingFonts}
                         isDisabled={loadingFonts}
-                        noOptionsMessage={() => loadingFonts ? 'Chargement...' : 'Aucune police'}
+                        noOptionsMessage={() => loadingFonts ? 'Chargement…' : 'Aucune police'}
                       />
                     </div>
-                    {loadingFonts && <div className="text-xs text-secondary mt-1">Chargement des polices...</div>}
+                    {loadingFonts && <div className="text-xs text-secondary mt-1">Chargement des polices…</div>}
                     {errorFonts && <div className="text-xs text-danger mt-1">Erreur de chargement des polices</div>}
                   </FormField>
                   <FormField label="Poids">
-                    <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" />
+                    <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="700" />
                   </FormField>
                   <FormField label="Usage">
-                    <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="ex: Titre" />
+                    <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="Titre" />
                   </FormField>
                   <FormField label="Style">
-                    <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="ex: Italique" />
+                    <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="Italique" />
                   </FormField>
                 </>
               )}
@@ -443,20 +447,20 @@ export default function ProjectNorms() {
           {addType === 'brush' ? (
             <>
               <FormField label="Usage du pinceau">
-                <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="ex: Contour cheveux" />
+                <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="Contour cheveux" />
               </FormField>
               <FormField label="Nom du pinceau">
-                <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="ex: Plume G" />
+                <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="Plume G" />
               </FormField>
               <FormField label="Taille (px)">
-                <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" />
+                <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="8" />
                 {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-danger mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
               </FormField>
               <FormField label="Unité">
                 <TextInput type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" />
               </FormField>
               <FormField label="Opacité (0 à 1)">
-                <TextInput type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="ex: 1.0" />
+                <TextInput type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="1.0" />
               </FormField>
             </>
           ) : (
@@ -475,19 +479,19 @@ export default function ProjectNorms() {
                   placeholder="Sélectionnez la typographie"
                   isLoading={loadingFonts}
                   isDisabled={loadingFonts}
-                  noOptionsMessage={() => loadingFonts ? 'Chargement...' : 'Aucune police'}
+                  noOptionsMessage={() => loadingFonts ? 'Chargement…' : 'Aucune police'}
                 />
-                {loadingFonts && <div className="text-xs text-secondary mt-1">Chargement des polices...</div>}
+                {loadingFonts && <div className="text-xs text-secondary mt-1">Chargement des polices…</div>}
                 {errorFonts && <div className="text-xs text-danger mt-1">Erreur de chargement des polices</div>}
               </FormField>
               <FormField label="Poids">
-                <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" />
+                <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="700" />
               </FormField>
               <FormField label="Usage">
-                <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="ex: Titre" />
+                <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="Titre" />
               </FormField>
               <FormField label="Style">
-                <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="ex: Italique" />
+                <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="Italique" />
               </FormField>
             </>
           )}
@@ -503,8 +507,8 @@ export default function ProjectNorms() {
 
       <ConfirmDialog
         isOpen={!!confirmDeleteNorm}
-        title="Supprimer la norme"
-        message="Êtes-vous sûr de vouloir supprimer cette norme ? Cette action est irréversible."
+        title="Supprimer la norme ?"
+        message="Cette norme sera définitivement supprimée."
         confirmLabel="Supprimer"
        
         onCancel={() => setConfirmDeleteNorm(null)}
@@ -519,6 +523,7 @@ export default function ProjectNorms() {
           }
           setLoadingDelete(null);
           setConfirmDeleteNorm(null);
+          showToast('Norme supprimée.');
         }}
       />
     </>

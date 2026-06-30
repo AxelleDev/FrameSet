@@ -95,7 +95,7 @@ export default function ProjectExport() {
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(50);
-      doc.text('Normes Graphiques', 20, y);
+      doc.text('Normes graphiques', 20, y);
       y += 12;
 
       doc.setFontSize(11);

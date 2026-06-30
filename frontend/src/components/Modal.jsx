@@ -88,10 +88,15 @@ export default function Modal({
   };
 
   return createPortal(
+    // Backdrop: clicking it closes the modal (mouse convenience). Keyboard users
+    // close via Escape or the header close button, so no key handler is needed here.
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center px-4 ${overlayClassName}`}
+      className={`fixed inset-0 z-modal flex items-center justify-center px-4 ${overlayClassName}`}
       onClick={handleBackdropClick}
     >
+      {/* The dialog panel owns the focus trap + Escape handling (keyboard support). */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         className={panelClassName}
         role="dialog"
@@ -108,7 +113,7 @@ export default function Modal({
               {subtitle && <p className="text-sm text-primary/60">{subtitle}</p>}
             </div>
             {showClose && (
-              <button onClick={onClose} className="text-blue hover:text-primary transition" aria-label="Fermer">
+              <button onClick={onClose} className="p-2 -m-2 rounded-lg text-blue hover:text-primary transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue" aria-label="Fermer">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
                   <path d="M6 18L18 6M6 6l12 12" />
                 </svg>

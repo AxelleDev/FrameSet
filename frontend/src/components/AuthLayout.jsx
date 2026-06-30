@@ -21,14 +21,14 @@ export default function AuthLayout({ hero, children, swapOnMobile = false }) {
       <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
       </div>
-      <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 p-8">
+      <main className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 p-8">
         <div className={`flex flex-col justify-center space-y-6 animate-fade-in ${heroOrderClass}`}>
           {hero}
         </div>
         <div className={`flex items-center justify-center md:justify-end ${formOrderClass}`}>
           {children}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

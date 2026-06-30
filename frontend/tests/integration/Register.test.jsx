@@ -54,7 +54,7 @@ describe('Register', () => {
     await user.type(screen.getByPlaceholderText(/prénom nom/i), 'Prénom Nom');
     await user.type(screen.getByPlaceholderText(/email@exemple.com/i), 'axelle@example.com');
     await user.type(screen.getByPlaceholderText('Votre mot de passe'), 'Pass1234');
-    await user.type(screen.getByPlaceholderText(/retapez votre mot de passe/i), 'Pass1234');
+    await user.type(screen.getByPlaceholderText(/confirmez votre mot de passe/i), 'Pass1234');
     await user.click(screen.getByRole('button', { name: /créer un compte/i }));
 
     expect(mockRegister).toHaveBeenCalledWith({

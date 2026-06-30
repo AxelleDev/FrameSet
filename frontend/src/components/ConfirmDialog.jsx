@@ -77,7 +77,7 @@ export default function ConfirmDialog({
 
       {requiresConfirmationWord ? (
         <div className="mb-4">
-          <label htmlFor={confirmationInputId} className="block text-xs font-semibold text-primary uppercase tracking-wider mb-2">
+          <label htmlFor={confirmationInputId} className="block text-sm font-medium text-primary mb-2">
             {confirmationInputLabel}
           </label>
           <TextInput

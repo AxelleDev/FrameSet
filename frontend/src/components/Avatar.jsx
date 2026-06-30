@@ -13,7 +13,7 @@ export default function Avatar({ initials, className = '' }) {
   return (
     <span
       aria-hidden="true"
-      className={`inline-flex items-center justify-center rounded-full bg-blue/10 text-blue font-semibold flex-shrink-0 ${className}`.trim()}
+      className={`inline-flex items-center justify-center rounded-full bg-blue/15 text-blue font-semibold flex-shrink-0 ${className}`.trim()}
     >
       {initials}
     </span>

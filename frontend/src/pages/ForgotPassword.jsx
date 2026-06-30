@@ -103,8 +103,8 @@ export default function ForgotPassword() {
           <h2 className="text-2xl font-medium text-primary">Réinitialisation</h2>
           <p className="text-primary text-sm mt-2">
             {step === 'request'
-              ? 'Entrez votre email pour recevoir un code.'
-              : 'Entrez le code reçu et votre nouveau mot de passe.'}
+              ? 'Étape 1 sur 2 — entrez votre email pour recevoir un code.'
+              : 'Étape 2 sur 2 — entrez le code reçu et votre nouveau mot de passe.'}
           </p>
         </div>
 
@@ -166,7 +166,7 @@ export default function ForgotPassword() {
                 name="confirmPassword"
                 value={form.confirmPassword}
                 onChange={handleChange}
-                placeholder="Retapez le mot de passe"
+                placeholder="Confirmez votre mot de passe"
                 autoComplete="new-password"
               />
               {form.confirmPassword !== '' && !passwordsMatch && (
