@@ -5,6 +5,18 @@
   <title>FrameSet</title>
   <link rel="icon" type="image/png" href="/FrameSet_Favicon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    // Apply the saved/preferred theme before paint to avoid a flash of the wrong theme.
+    (function () {
+      try {
+        var t = localStorage.getItem('frameset-theme');
+        if (t !== 'dark' && t !== 'light') {
+          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        if (t === 'dark') document.documentElement.classList.add('dark');
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
 </head>
 <body>
   <div id="root"></div>

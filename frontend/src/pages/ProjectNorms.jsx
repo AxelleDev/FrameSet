@@ -283,7 +283,7 @@ export default function ProjectNorms() {
                         style={{
                           height: `${norm.value}px`,
                           minHeight: '1px',
-                          backgroundColor: 'var(--color-primary)',
+                          backgroundColor: 'rgb(var(--color-primary))',
                           opacity: typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ? parseFloat(norm.opacity) : 1)
                         }}
                       ></div>

@@ -11,13 +11,27 @@
 }
 
 @layer base {
-  /* CSS variables kept for the few inline `var(--color-*)` usages
-     (CustomSelect, ActionIconButton, …) — same values as the Tailwind tokens. */
+  /* Design tokens as RGB channels so Tailwind `rgb(var(--x) / <alpha>)` colors
+     and opacity modifiers work, and the whole palette can switch in dark mode.
+     Inline/JS usages read them as `rgb(var(--color-x))`. */
   :root {
-    --color-primary: #3c3d48;
-    --color-secondary: #afafaf;
-    --color-blue: #8994df;
-    --color-danger: #dc2626;
+    --color-canvas: 246 247 255;
+    --color-surface: 255 255 255;
+    --color-primary: 60 61 72;
+    --color-secondary: 175 175 175;
+    --color-blue: 137 148 223;
+    --color-danger: 220 38 38;
+    --color-success: 62 157 123;
+  }
+
+  .dark {
+    --color-canvas: 22 23 30;
+    --color-surface: 32 34 44;
+    --color-primary: 232 233 240;
+    --color-secondary: 138 140 156;
+    --color-blue: 137 148 223;
+    --color-danger: 248 113 113;
+    --color-success: 110 200 165;
   }
 
   body {
@@ -31,13 +45,13 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background-color: #e5e7eb;
+    background-color: rgb(var(--color-secondary) / 0.4);
     border-radius: 20px;
   }
 }
 
 @layer components {
   .stat-bg {
-    background-color: rgba(137, 148, 223, 0.1);
+    background-color: rgb(var(--color-blue) / 0.1);
   }
 }

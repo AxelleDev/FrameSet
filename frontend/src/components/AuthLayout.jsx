@@ -1,5 +1,6 @@
 // Layout for authentication pages (login / register).
 import React from 'react';
+import ThemeToggle from './ThemeToggle';
 
 /**
  * Two-column layout for auth screens: a hero/marketing column and a form column
@@ -17,6 +18,9 @@ export default function AuthLayout({ hero, children, swapOnMobile = false }) {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center bg-canvas text-primary">
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
       <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 p-8">
         <div className={`flex flex-col justify-center space-y-6 animate-fade-in ${heroOrderClass}`}>
           {hero}

@@ -24,8 +24,8 @@ export default function Modal({
   title,
   subtitle,
   children,
-  overlayClassName = 'bg-primary/40 backdrop-blur-sm',
-  panelClassName = 'bg-white w-full max-w-lg rounded-3xl p-8',
+  overlayClassName = 'bg-black/40 backdrop-blur-sm',
+  panelClassName = 'bg-surface w-full max-w-lg rounded-3xl p-8',
   showClose = true,
   closeOnBackdrop = true
 }) {

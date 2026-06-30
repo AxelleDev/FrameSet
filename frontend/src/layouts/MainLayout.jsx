@@ -4,6 +4,8 @@ import { Outlet, NavLink, Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectContext';
 import Avatar from '../components/Avatar';
+import ThemeToggle from '../components/ThemeToggle';
+import Logo from '../components/Logo';
 
 /**
  * Authenticated application shell: collapsible sidebar navigation, top header
@@ -49,19 +51,19 @@ export default function MainLayout() {
       
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-primary/20 backdrop-blur-sm md:hidden animate-fade-in"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden animate-fade-in"
           onClick={closeMobileMenu}
         ></div>
       )}
 
       <aside className={`
-        fixed inset-y-0 left-0 z-50 flex flex-col w-72 m-4 rounded-3xl bg-white overflow-hidden transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-50 flex flex-col w-72 m-4 rounded-3xl bg-surface overflow-hidden transition-transform duration-300 ease-in-out
         md:relative md:translate-x-0
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'}
       `}>
         <div className="p-8 flex items-center justify-between">
             <div className="flex justify-center w-full">
-              <img src="/FrameSet_Logo.png" alt="Logo FrameSet" className="w-[65%] h-auto object-contain" style={{ maxWidth: '260px' }} />
+              <Logo className="w-[65%] h-auto object-contain" style={{ maxWidth: '260px' }} />
             </div>
             <button onClick={closeMobileMenu} className="md:hidden text-secondary hover:text-primary">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -125,7 +127,7 @@ export default function MainLayout() {
       <main className="flex-1 overflow-auto focus:outline-none relative z-0 md:z-10 custom-scrollbar">
         <header className="h-20 flex items-center justify-between px-8 sticky top-0 z-50 bg-canvas/90 backdrop-blur-md md:bg-transparent md:backdrop-blur-0 transition-all duration-300">
           <div className="flex items-center">
-             <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden mr-4 text-primary hover:text-blue transition-colors p-2 -ml-2 rounded-lg hover:bg-white/50">
+             <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden mr-4 text-primary hover:text-blue transition-colors p-2 -ml-2 rounded-lg hover:bg-blue/10">
                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
              </button>
 
@@ -141,6 +143,8 @@ export default function MainLayout() {
                </span>
              )}
           </div>
+
+          <ThemeToggle />
         </header>
 
         <div className="p-4 md:p-8 max-w-7xl mx-auto pb-24">

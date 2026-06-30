@@ -15,7 +15,7 @@ export default function CopyBadge({
   defaultLabel = 'Copier'
 }) {
   return (
-    <span className="px-3 py-1 bg-white/90 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary  transform scale-90 group-hover:scale-100 transition-transform">
+    <span className="px-3 py-1 bg-surface/90 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary  transform scale-90 group-hover:scale-100 transition-transform">
       {isCopied ? copiedLabel : defaultLabel}
     </span>
   );

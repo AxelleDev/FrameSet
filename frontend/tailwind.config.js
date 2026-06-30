@@ -1,13 +1,13 @@
-import defaultColors from 'tailwindcss/colors';
-
 /**
  * Design tokens for FrameSet.
  *
- * One brand color — `blue` (#8994DF, periwinkle) — drives actions, focus,
- * accents and decoration. The rest are system colors: `danger` (red) for
- * destructive/error states, `success` (green), and the neutrals `primary` /
- * `secondary` / `canvas`. `blue` keeps Tailwind's default numeric shades (used
- * for decorative blobs/shadows) and only overrides the bare `DEFAULT`.
+ * Colors are driven by CSS variables (RGB channels) defined in `src/index.css`,
+ * so the whole palette switches automatically in dark mode (`.dark` class on
+ * <html>) without per-component `dark:` classes. The `rgb(var(--x) / <alpha>)`
+ * form keeps Tailwind opacity modifiers (e.g. `bg-blue/10`) working.
+ *
+ * One brand color (`blue`); the rest are system colors: `danger`, `success`,
+ * and the neutrals `primary` / `secondary` / `canvas` (page) / `surface` (cards).
  *
  * @type {import('tailwindcss').Config}
  */
@@ -17,12 +17,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#3C3D48',
-        secondary: '#AFAFAF',
-        canvas: '#f6f7ff',
-        success: '#3E9D7B',
-        danger: '#DC2626',
-        blue: { ...defaultColors.blue, DEFAULT: '#8994DF' },
+        canvas: 'rgb(var(--color-canvas) / <alpha-value>)',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
+        primary: 'rgb(var(--color-primary) / <alpha-value>)',
+        secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
+        blue: 'rgb(var(--color-blue) / <alpha-value>)',
+        danger: 'rgb(var(--color-danger) / <alpha-value>)',
+        success: 'rgb(var(--color-success) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],

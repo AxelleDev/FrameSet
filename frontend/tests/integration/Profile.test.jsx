@@ -53,13 +53,13 @@ describe('Profile', () => {
     const user = userEvent.setup();
     renderPage();
 
-    // Au repos : le champ nom est en lecture seule.
-    expect(screen.getByDisplayValue('Prénom Nom')).toHaveAttribute('readonly');
+    // Au repos : le champ nom est désactivé (non éditable).
+    expect(screen.getByDisplayValue('Prénom Nom')).toBeDisabled();
 
     await user.click(screen.getByRole('button', { name: /éditer le profil/i }));
 
     expect(screen.getByRole('button', { name: /enregistrer/i })).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Prénom Nom')).not.toHaveAttribute('readonly');
+    expect(screen.getByDisplayValue('Prénom Nom')).toBeEnabled();
   });
 
   it('ouvre la confirmation de déconnexion', async () => {
