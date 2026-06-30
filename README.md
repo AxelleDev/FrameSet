@@ -99,6 +99,13 @@ setup and the pull-request workflow.
 
 ---
 
+## ✧･ﾟ: ✧･ﾟ Contact
+
+Questions, feedback or bug reports? Open an issue, or reach out at
+**axelle.tempier@gmail.com**.
+
+---
+
 ## ✧･ﾟ: ✧･ﾟ License
 
 Released under the [MIT License](LICENSE).

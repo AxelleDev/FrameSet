@@ -57,4 +57,4 @@ npm run build    # frontend only
 
 ## Reporting bugs / requesting features
 
-Open an issue using the provided templates.
+Open an issue using the provided templates, or reach out at **axelle.tempier@gmail.com**.
