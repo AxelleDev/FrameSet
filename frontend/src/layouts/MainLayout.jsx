@@ -108,17 +108,23 @@ export default function MainLayout() {
           )}
         </nav>
 
-        <Link to="/app/profile" onClick={closeMobileMenu} className="p-4 hover:bg-blue/10 transition cursor-pointer group">
-           <div className="flex items-center justify-between mb-0">
+        <NavLink
+          to="/app/profile"
+          onClick={closeMobileMenu}
+          className={({ isActive }) => `p-4 transition cursor-pointer group ${isActive ? 'bg-blue/20' : 'hover:bg-blue/10'}`}
+        >
+          {({ isActive }) => (
+            <div className="flex items-center justify-between">
               <div className="flex items-center">
-                 <Avatar initials={user.avatarInitials} className="h-9 w-9 text-xs group-hover:scale-105 transition-transform" />
-                 <div className="ml-3">
-                   <p className="text-xs font-bold text-primary group-hover:text-blue transition-colors">{user.name}</p>
-                 </div>
+                <Avatar initials={user.avatarInitials} className="h-9 w-9 text-xs group-hover:scale-105 transition-transform" />
+                <div className="ml-3">
+                  <p className={`text-xs font-bold transition-colors ${isActive ? 'text-blue' : 'text-primary group-hover:text-blue'}`}>{user.name}</p>
+                </div>
               </div>
-              <svg className="w-4 h-4 text-blue group-hover:text-blue transition-colors opacity-0 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-           </div>
-        </Link>
+              <svg className={`w-4 h-4 text-blue transition-all ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+            </div>
+          )}
+        </NavLink>
       </aside>
 
       <main className="flex-1 overflow-auto focus:outline-none relative z-0 md:z-10 custom-scrollbar">
