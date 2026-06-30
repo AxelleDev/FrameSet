@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * User avatar showing initials on a soft tinted circle. Sizing and any extra
- * styling (shadow, hover) are passed via `className` so the same component fits
+ * styling (hover, etc.) are passed via `className` so the same component fits
  * the small sidebar avatar and the large profile one.
  *
  * @param {object} props

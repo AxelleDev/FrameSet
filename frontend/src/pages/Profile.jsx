@@ -166,7 +166,7 @@ export default function Profile() {
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">
       
       <Card className="p-8 mb-8 flex flex-col md:flex-row items-center gap-8">
-        <Avatar initials={user.avatarInitials} className="w-28 h-28 text-4xl shadow-sm" />
+        <Avatar initials={user.avatarInitials} className="w-28 h-28 text-4xl " />
 
         <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1">
           <h1 className="text-3xl font-light tracking-tight text-primary">{user.name}</h1>

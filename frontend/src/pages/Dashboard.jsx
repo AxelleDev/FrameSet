@@ -147,7 +147,7 @@ export default function Dashboard() {
               <p className="text-sm text-primary mb-auto">Modifié {project.lastEdited}</p>
               <div className="mt-8 pt-4 border-t border-blue flex -space-x-2 min-h-[40px] items-center">
                 {project.palette.map((color) => (
-                  <div key={color.hex} className="w-6 h-6 rounded-full border border-white shadow-sm ring-1 ring-black/5" 
+                  <div key={color.hex} className="w-6 h-6 rounded-full border border-white  ring-1 ring-black/5" 
                        style={{ backgroundColor: color.hex }} 
                        title={color.name}></div>
                 ))}

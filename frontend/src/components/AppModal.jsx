@@ -4,7 +4,7 @@ import Modal from './Modal';
 
 // Default overlay/panel styling shared across application modals.
 const DEFAULT_OVERLAY_CLASS = 'p-4 bg-primary/40 backdrop-blur-sm animate-fade-in';
-const DEFAULT_PANEL_CLASS = 'bg-white rounded-3xl shadow-2xl p-8 w-full border border-blue relative overflow-hidden';
+const DEFAULT_PANEL_CLASS = 'bg-white rounded-3xl  p-8 w-full border border-blue relative overflow-hidden';
 
 // Append caller-provided classes onto the defaults when present.
 const mergeClasses = (base, extra) => {

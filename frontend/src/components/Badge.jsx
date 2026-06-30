@@ -19,7 +19,7 @@ export default function Badge({ color = 'primary', className = '', children, ...
   const tone = COLORS[color] || COLORS.primary;
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full bg-white border shadow-sm text-[10px] font-bold uppercase tracking-wider ${tone} ${className}`.trim()}
+      className={`inline-flex items-center px-3 py-1 rounded-full bg-white border  text-[10px] font-bold uppercase tracking-wider ${tone} ${className}`.trim()}
       {...rest}
     >
       {children}

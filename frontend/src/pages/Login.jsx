@@ -84,7 +84,7 @@ export default function Login() {
         </>
       }
     >
-      <Card className="w-full max-w-md p-10 rounded-3xl shadow-2xl animate-fade-in" style={{ animationDelay: '150ms' }}>
+      <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Connexion</h2>
           <p className="text-primary text-sm mt-2">Reprenez là où vous vous êtes arrêté.</p>

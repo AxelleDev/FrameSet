@@ -25,7 +25,7 @@ export default function MainLayout() {
   // Compute NavLink classes based on the active route state.
   const navLinkClass = ({ isActive }) =>
     `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
-      isActive ? 'bg-white/80 text-blue shadow-sm' : 'text-primary hover:text-blue hover:bg-white/50'
+      isActive ? 'bg-white/80 text-blue ' : 'text-primary hover:text-blue hover:bg-white/50'
     }`;
 
   // Derive the header title from the active project or the current route.
@@ -60,7 +60,7 @@ export default function MainLayout() {
       )}
 
       <aside className={`
-        fixed inset-y-0 left-0 z-50 flex flex-col w-72 m-4 rounded-3xl glass-panel shadow-xl overflow-hidden transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-50 flex flex-col w-72 m-4 rounded-3xl glass-panel  overflow-hidden transition-transform duration-300 ease-in-out
         md:relative md:translate-x-0
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'}
       `}>
@@ -132,7 +132,7 @@ export default function MainLayout() {
                <nav className="flex text-sm font-medium items-center animate-fade-in">
                  <Link className="text-blue hover:text-blue transition cursor-pointer" to="/app/dashboard">Espace de travail</Link>
                  <svg className="w-4 h-4 mx-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-                 <span className="text-primary bg-white/50 px-2.5 py-1 rounded-lg shadow-sm border border-blue/20 truncate max-w-[150px] md:max-w-none">{activeProject.name}</span>
+                 <span className="text-primary bg-white/50 px-2.5 py-1 rounded-lg  border border-blue/20 truncate max-w-[150px] md:max-w-none">{activeProject.name}</span>
                </nav>
              ) : (
                <span className="text-xl font-light text-primary">

@@ -55,8 +55,8 @@ export default function Button({
   const size = fullWidth ? 'w-full py-4 text-sm' : 'px-6 py-2.5 text-sm';
 
   const variants = {
-    primary: 'bg-blue text-white shadow-sm hover:brightness-95 hover:shadow-md hover:shadow-blue/30',
-    danger: 'bg-danger text-white shadow-sm hover:brightness-95 hover:shadow-md hover:shadow-danger/30',
+    primary: 'bg-blue text-white  hover:brightness-95  ',
+    danger: 'bg-danger text-white  hover:brightness-95  ',
     ghost: 'bg-transparent text-primary hover:bg-primary/5',
     outline: 'bg-white border border-blue text-primary hover:bg-blue/5',
   };

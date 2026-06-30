@@ -473,7 +473,7 @@ export default function ProjectPalette() {
                 setPreviewPalette(palette);
               }}
             >
-              <div className="flex-1 w-full rounded-3xl shadow-lg relative overflow-hidden transition-transform duration-300 group-hover:-translate-y-2 group-hover:shadow-xl"
+              <div className="flex-1 w-full rounded-3xl  relative overflow-hidden transition-transform duration-300 group-hover:-translate-y-2 "
                    style={{ backgroundColor: color.hex }}>
                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50 pointer-events-none"></div>
 
@@ -529,7 +529,7 @@ export default function ProjectPalette() {
           </FormField>
           <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
-               <div className="w-12 h-12 rounded-xl border border-blue shadow-inner flex-shrink-0" style={{ backgroundColor: isValidEditHex() ? editColorHex : '#ffffff' }}></div>
+               <div className="w-12 h-12 rounded-xl border border-blue  flex-shrink-0" style={{ backgroundColor: isValidEditHex() ? editColorHex : '#ffffff' }}></div>
                <TextInput
                  type="text"
                  value={editColorHex}
@@ -565,7 +565,7 @@ export default function ProjectPalette() {
 
           <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
-               <div className="w-12 h-12 rounded-xl border border-blue shadow-inner flex-shrink-0" style={{ backgroundColor: isValidHex() ? newColorHex : '#ffffff' }}></div>
+               <div className="w-12 h-12 rounded-xl border border-blue  flex-shrink-0" style={{ backgroundColor: isValidHex() ? newColorHex : '#ffffff' }}></div>
                <TextInput
                  type="text"
                  value={newColorHex}
@@ -607,7 +607,7 @@ export default function ProjectPalette() {
                 aria-pressed={selected}
                 className={`flex flex-col items-center gap-1 rounded-xl p-2 border transition-all ${selected ? 'border-blue ring-2 ring-blue/40' : 'border-blue/30 opacity-50 hover:opacity-100'}`}
               >
-                <span className="w-full h-12 rounded-lg shadow-inner" style={{ backgroundColor: hex }}></span>
+                <span className="w-full h-12 rounded-lg " style={{ backgroundColor: hex }}></span>
                 <span className="text-xs font-mono text-primary uppercase">{hex}</span>
               </button>
             ))}
