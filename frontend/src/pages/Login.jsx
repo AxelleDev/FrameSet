@@ -124,7 +124,7 @@ export default function Login() {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="••••••••"
+              placeholder="Votre mot de passe"
               autoComplete="current-password"
             />
           </FormField>

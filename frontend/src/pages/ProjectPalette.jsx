@@ -525,7 +525,7 @@ export default function ProjectPalette() {
       >
         <div className="space-y-4">
           <FormField label="Nom de la couleur">
-            <TextInput type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="ex: Reflet Cheveux" />
+            <TextInput type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="Reflet Cheveux" />
           </FormField>
           <FormField label="Code Hexadécimal">
             <div className="flex gap-3">
@@ -536,7 +536,7 @@ export default function ProjectPalette() {
                  onChange={handleEditHexChange}
                  onKeyDown={handleHexKeyDown}
                  onPaste={handleHexPaste(setEditColorHex)}
-                 placeholder="ex: #FF5500"
+                 placeholder="#FF5500"
                  mono
                  className="flex-1"
                />
@@ -560,7 +560,7 @@ export default function ProjectPalette() {
       >
         <div className="space-y-4">
           <FormField label="Nom de la couleur">
-            <TextInput type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="ex: Reflet Cheveux" />
+            <TextInput type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="Reflet Cheveux" />
           </FormField>
 
           <FormField label="Code Hexadécimal">
@@ -572,7 +572,7 @@ export default function ProjectPalette() {
                  onChange={handleNewHexChange}
                  onKeyDown={handleHexKeyDown}
                  onPaste={handleHexPaste(setNewColorHex)}
-                 placeholder="ex: #FF5500"
+                 placeholder="#FF5500"
                  mono
                  className="flex-1"
                />

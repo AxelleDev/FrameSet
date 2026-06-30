@@ -46,7 +46,7 @@ describe('Login', () => {
     renderPage();
 
     await user.type(screen.getByPlaceholderText(/email@exemple/i), 'axelle@example.com');
-    await user.type(screen.getByPlaceholderText('••••••••'), 'Pass1234');
+    await user.type(screen.getByPlaceholderText('Votre mot de passe'), 'Pass1234');
     await user.click(screen.getByRole('button', { name: /continuer/i }));
 
     expect(mockLogin).toHaveBeenCalledWith('axelle@example.com', 'Pass1234');
@@ -59,7 +59,7 @@ describe('Login', () => {
     renderPage();
 
     await user.type(screen.getByPlaceholderText(/email@exemple/i), 'axelle@example.com');
-    await user.type(screen.getByPlaceholderText('••••••••'), 'wrong');
+    await user.type(screen.getByPlaceholderText('Votre mot de passe'), 'wrong');
     await user.click(screen.getByRole('button', { name: /continuer/i }));
 
     expect(await screen.findByText('Identifiants invalides')).toBeInTheDocument();

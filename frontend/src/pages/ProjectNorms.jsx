@@ -364,20 +364,20 @@ export default function ProjectNorms() {
               {editingType === 'brush' ? (
                 <>
                   <FormField label="Usage du pinceau">
-                    <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="ex: Contour cheveux" />
+                    <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="Contour cheveux" />
                   </FormField>
                   <FormField label="Nom du pinceau">
-                    <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="ex: Plume G" />
+                    <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="Plume G" />
                   </FormField>
                   <FormField label="Taille (px)">
-                    <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" />
+                    <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="8" />
                     {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-danger mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
                   </FormField>
                   <FormField label="Unité">
                     <TextInput type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" />
                   </FormField>
                   <FormField label="Opacité (0 à 1)">
-                    <TextInput type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="ex: 1.0" />
+                    <TextInput type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="1.0" />
                   </FormField>
                 </>
               ) : (
@@ -404,13 +404,13 @@ export default function ProjectNorms() {
                     {errorFonts && <div className="text-xs text-danger mt-1">Erreur de chargement des polices</div>}
                   </FormField>
                   <FormField label="Poids">
-                    <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" />
+                    <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="700" />
                   </FormField>
                   <FormField label="Usage">
-                    <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="ex: Titre" />
+                    <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="Titre" />
                   </FormField>
                   <FormField label="Style">
-                    <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="ex: Italique" />
+                    <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="Italique" />
                   </FormField>
                 </>
               )}
@@ -443,20 +443,20 @@ export default function ProjectNorms() {
           {addType === 'brush' ? (
             <>
               <FormField label="Usage du pinceau">
-                <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="ex: Contour cheveux" />
+                <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="Contour cheveux" />
               </FormField>
               <FormField label="Nom du pinceau">
-                <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="ex: Plume G" />
+                <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="Plume G" />
               </FormField>
               <FormField label="Taille (px)">
-                <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="ex: 8" />
+                <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="8" />
                 {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-danger mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
               </FormField>
               <FormField label="Unité">
                 <TextInput type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" />
               </FormField>
               <FormField label="Opacité (0 à 1)">
-                <TextInput type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="ex: 1.0" />
+                <TextInput type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="1.0" />
               </FormField>
             </>
           ) : (
@@ -481,13 +481,13 @@ export default function ProjectNorms() {
                 {errorFonts && <div className="text-xs text-danger mt-1">Erreur de chargement des polices</div>}
               </FormField>
               <FormField label="Poids">
-                <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="ex: 700" />
+                <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="700" />
               </FormField>
               <FormField label="Usage">
-                <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="ex: Titre" />
+                <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="Titre" />
               </FormField>
               <FormField label="Style">
-                <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="ex: Italique" />
+                <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="Italique" />
               </FormField>
             </>
           )}

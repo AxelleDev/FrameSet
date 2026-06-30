@@ -175,7 +175,7 @@ export default function Dashboard() {
       >
         <div className="space-y-4">
           <FormField label="Nom du projet">
-            <TextInput type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()} placeholder="ex: Neo-Tokyo Editorial" autoFocus />
+            <TextInput type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()} placeholder="Neo-Tokyo Editorial" autoFocus />
           </FormField>
         </div>
 
@@ -195,7 +195,7 @@ export default function Dashboard() {
       >
         <div className="space-y-4">
           <FormField label="Nom du projet">
-            <TextInput type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="ex: Neo-Tokyo Editorial" autoFocus />
+            <TextInput type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="Neo-Tokyo Editorial" autoFocus />
           </FormField>
           {editProjectError && (
             <div className="text-danger text-sm font-medium mt-2">{editProjectError}</div>

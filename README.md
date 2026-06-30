@@ -1,6 +1,9 @@
 
 <div align="center">
-	<img src="frontend/public/FrameSet_Logo.png" alt="FrameSet logo" width="120" />
+	<picture>
+		<source media="(prefers-color-scheme: dark)" srcset="frontend/public/FrameSet_Logo_Reversed.png">
+		<img src="frontend/public/FrameSet_Logo.png" alt="FrameSet logo" width="120" />
+	</picture>
 	<p><b>FRAMESET — The graphic reference, built for digital illustration.</b></p>
 	<p>
 		<a href="https://github.com/AxelleDev/frameset/actions/workflows/ci.yml">

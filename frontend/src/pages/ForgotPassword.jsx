@@ -166,7 +166,7 @@ export default function ForgotPassword() {
                 name="confirmPassword"
                 value={form.confirmPassword}
                 onChange={handleChange}
-                placeholder="Retapez le mot de passe"
+                placeholder="Confirmez votre mot de passe"
                 autoComplete="new-password"
               />
               {form.confirmPassword !== '' && !passwordsMatch && (

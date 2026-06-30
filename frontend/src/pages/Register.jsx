@@ -88,7 +88,7 @@ export default function Register() {
           </p>
 
           <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
+            <div className="border-l-2 border-blue/40 pl-5 space-y-1.5">
               <p className="text-sm font-medium text-primary">"Un outil essentiel pour reprendre un projet sans perdre mes réglages graphiques."</p>
               <p className="text-xs text-blue uppercase tracking-widest">Alyse C., Illustratrice</p>
             </div>
@@ -118,7 +118,7 @@ export default function Register() {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="ex: Prénom Nom"
+              placeholder="Prénom Nom"
               autoComplete="name"
             />
           </FormField>
@@ -153,7 +153,7 @@ export default function Register() {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              placeholder="Retapez votre mot de passe"
+              placeholder="Confirmez votre mot de passe"
               autoComplete="new-password"
             />
             {formData.confirmPassword !== '' && !passwordsMatch && (

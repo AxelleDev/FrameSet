@@ -47,7 +47,7 @@ describe('ForgotPassword', () => {
     const code = await screen.findByPlaceholderText('123456');
     await user.type(code, '654321');
     await user.type(screen.getByPlaceholderText(/votre nouveau mot de passe/i), 'Pass1234');
-    await user.type(screen.getByPlaceholderText(/retapez le mot de passe/i), 'Pass1234');
+    await user.type(screen.getByPlaceholderText(/confirmez votre mot de passe/i), 'Pass1234');
     await user.click(screen.getByRole('button', { name: /réinitialiser le mot de passe/i }));
 
     expect(mockReset).toHaveBeenCalledWith('axelle@example.com', '654321', 'Pass1234');
