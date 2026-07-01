@@ -15,7 +15,7 @@
      and opacity modifiers work, and the whole palette can switch in dark mode.
      Inline/JS usages read them as `rgb(var(--color-x))`. */
   :root {
-    --color-canvas: 245 249 255;    /* #F5F9FF */
+    --color-canvas: 242 243 255;    /* #F2F3FF */
     --color-surface: 255 255 255;   /* #FFFFFF */
     --color-primary: 60 61 72;      /* #3C3D48 */
     --color-secondary: 107 107 107; /* #6B6B6B */
