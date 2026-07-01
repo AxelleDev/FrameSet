@@ -66,10 +66,12 @@ export default function Login() {
       hero={
         <>
           <div className="flex items-center mb-2">
-            <Logo className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
+            <Link to="/" aria-label="Go to homepage" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring" style={{ width: '20%', maxWidth: '80px' }}>
+              <Logo className="object-contain w-full h-auto" />
+            </Link>
           </div>
 
-          <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-primary leading-tight">
             Define your <br />
             <span className="font-bold text-primary">visual identity.</span>
           </h1>

@@ -9,7 +9,7 @@
  * for any non-asset path.
  *
  * Route map:
- *   /              -> redirects to /login
+ *   /              -> public Landing page
  *   /login         -> Login page
  *   /register      -> Register page
  *   /verify        -> email verification (signup or pending email change)
@@ -75,7 +75,7 @@ function AppRoutes() {
 
   useEffect(() => {
     if (!globalError) return;
-    showToast(getFriendlyMessage(globalError), 'error');
+    showToast(getFriendlyMessage(globalError), 'danger');
     setGlobalError(null);
   }, [globalError, showToast, setGlobalError]);
 

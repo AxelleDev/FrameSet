@@ -241,16 +241,19 @@ describe('projects controller', () => {
 
   describe('palette update', () => {
     it('returns 400 when the body is not an array', async () => {
+      db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ensureProjectOwnership passes
       const req = { params: { id: '1' }, user: { id: 1 }, body: { not: 'an array' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
       await projectsController.updatePalette(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(db.query).not.toHaveBeenCalled();
+      // Ownership is checked first (1 query); the palette is never written.
+      expect(db.query).toHaveBeenCalledTimes(1);
     });
 
     it('returns 400 when a color has an invalid hex', async () => {
+      db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ensureProjectOwnership passes
       const req = {
         params: { id: '1' },
         user: { id: 1 },
@@ -261,7 +264,7 @@ describe('projects controller', () => {
       await projectsController.updatePalette(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(db.query).not.toHaveBeenCalled();
+      expect(db.query).toHaveBeenCalledTimes(1);
     });
 
     it('replaces the palette while persisting the order and removing missing colors', async () => {

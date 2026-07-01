@@ -4,5 +4,7 @@ Allow: /
 Disallow: /app/
 # Verification page carries a one-time email/token in the query string.
 Disallow: /verify
+# Password-reset flow — no value in the index.
+Disallow: /forgot-password
 
 Sitemap: https://frameset.app/sitemap.xml

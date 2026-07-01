@@ -168,14 +168,14 @@ export default function Dashboard() {
               <p className="text-sm text-primary mb-auto">Edited {formatModified(project.lastEdited)}</p>
               <div className="mt-8 pt-4 flex -space-x-2 min-h-[40px] items-center">
                 {project.palette.map((color, i) => (
-                  <div key={color.id ?? `${color.hex}-${i}`} className="w-6 h-6 rounded-full ring-2 ring-white"
+                  <div key={color.id ?? `${color.hex}-${i}`} className="w-6 h-6 rounded-full ring-2 ring-surface"
                        style={{ backgroundColor: color.hex }}
                        title={color.name}></div>
                 ))}
                 {project.palette.length === 0 && (
                   <div className="text-xs text-blue italic flex items-center">
-                    <div className="w-6 h-6 rounded-full bg-blue/10 ring-2 ring-white mr-1"></div>
-                    <div className="w-6 h-6 rounded-full bg-blue/5 ring-2 ring-white"></div>
+                    <div className="w-6 h-6 rounded-full bg-blue/10 ring-2 ring-surface mr-1"></div>
+                    <div className="w-6 h-6 rounded-full bg-blue/5 ring-2 ring-surface"></div>
                   </div>
                 )}
               </div>
@@ -229,7 +229,7 @@ export default function Dashboard() {
 
         <ModalActions
           secondaryLabel="Cancel"
-          primaryLabel="Edit"
+          primaryLabel="Save"
           onSecondary={() => { setIsEditingProject(false); setEditProjectId(null); setEditProjectError(""); }}
           onPrimary={handleEditProject}
           primaryDisabled={!editProjectName}

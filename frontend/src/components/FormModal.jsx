@@ -35,10 +35,11 @@ export default function FormModal({
       onClose={onClose}
       showClose={showClose}
       panelClassName={panelClassName}
+      ariaLabelledby={title ? 'form-modal-title' : undefined}
     >
       <div className={decorationClassName}></div>
       {title ? (
-        <h3 className={`${titleClassName} relative z-10`.trim()}>{title}</h3>
+        <h3 id="form-modal-title" className={`${titleClassName} relative z-10`.trim()}>{title}</h3>
       ) : null}
       <div className={`relative z-10 ${bodyClassName}`.trim()}>{children}</div>
     </AppModal>

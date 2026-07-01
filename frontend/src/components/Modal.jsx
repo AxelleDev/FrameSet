@@ -28,7 +28,8 @@ export default function Modal({
   overlayClassName = 'bg-black/40 backdrop-blur-sm',
   panelClassName = 'bg-surface w-full max-w-lg rounded-3xl p-8',
   showClose = true,
-  closeOnBackdrop = true
+  closeOnBackdrop = true,
+  ariaLabelledby
 }) {
   const panelRef = useRef(null);
   // Remembers the element focused before the modal opened, to restore it on close.
@@ -102,7 +103,7 @@ export default function Modal({
         className={panelClassName}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={title ? 'modal-title' : undefined}
+        aria-labelledby={ariaLabelledby || (title ? 'modal-title' : undefined)}
         tabIndex="-1"
         ref={panelRef}
         onKeyDown={handleKeyDown}
@@ -139,4 +140,5 @@ Modal.propTypes = {
   panelClassName: PropTypes.string,
   showClose: PropTypes.bool,
   closeOnBackdrop: PropTypes.bool,
+  ariaLabelledby: PropTypes.string,
 };

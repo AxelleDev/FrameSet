@@ -17,10 +17,32 @@ export default function Card({ clickable = false, className = '', children, styl
   // brightness filter) so cards never read as "greyed out" on hover.
   const clickableClasses = clickable ? 'cursor-pointer transform hover:-translate-y-1 duration-slow' : '';
 
+  // When the whole card acts as a button (an onClick handler is passed), make it
+  // keyboard-operable: expose it as role="button", make it focusable, show the
+  // shared focus ring, and activate on Enter/Space. Callers can still override
+  // any of these via props.
+  const isButton = typeof rest.onClick === 'function' && rest.role === undefined;
+  const buttonProps = isButton
+    ? {
+        role: 'button',
+        tabIndex: 0,
+        onKeyDown: (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            rest.onClick(event);
+          }
+          rest.onKeyDown?.(event);
+        },
+      }
+    : {};
+
   const props = {
-    className: `relative rounded-3xl bg-surface transition-all overflow-hidden ${clickableClasses} ${className}`.trim(),
+    className: `relative rounded-3xl bg-surface transition-all overflow-hidden ${clickableClasses} ${
+      isButton ? 'focus-ring' : ''
+    } ${className}`.trim(),
     style,
     ...rest,
+    ...buttonProps,
   };
 
   return React.createElement('div', props, children);

@@ -5,22 +5,22 @@
  * (built with jsPDF) or as raw JSON, and shows a live preview of the JSON
  * output. The PDF lists brush and typography norms followed by the color palette.
  */
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
 import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
 import Button from '../components/Button';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
+import useActiveProject from '../hooks/useActiveProject';
 
 export default function ProjectExport() {
   const { id } = useParams();
-  const { setActiveProjectId, activeProject, projectsLoading, activeProjectId } = useProjects();
+  const { activeProject, projectsLoading, activeProjectId } = useProjects();
 
-  // Sync the active project with the route id.
-  useEffect(() => {
-    if (id) setActiveProjectId(id);
-  }, [id, setActiveProjectId]);
+  // Sync the active project with the route id (shared hook, same as the other
+  // project pages).
+  useActiveProject(id);
 
   // Pretty-printed JSON of the project, used for both the preview and download.
   const projectJson = useMemo(() => {
@@ -82,7 +82,7 @@ export default function ProjectExport() {
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100);
-    doc.text(`Version generated on ${new Date().toLocaleDateString()}`, 20, y);
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 20, y);
     y += 20;
     
     doc.setDrawColor(200);
@@ -164,9 +164,9 @@ export default function ProjectExport() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Card className="p-8 flex flex-col items-start text-left">
                 <div className="h-12 w-12 bg-blue/15 text-blue rounded-full flex items-center justify-center mb-6">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                 </div>
-              <h3 className="text-lg font-medium text-primary mb-2">PDF style guide</h3>
+              <h2 className="text-lg font-medium text-primary mb-2">PDF style guide</h2>
               <p className="text-sm text-primary mb-6">A structured PDF document bringing together all of the project's active standards and palettes. Ideal for printing or sharing.</p>
                 <Button onClick={downloadPdf} variant="primary">
                   Download PDF
@@ -175,9 +175,9 @@ export default function ProjectExport() {
 
             <Card className="p-8 flex flex-col items-start text-left">
                 <div className="h-12 w-12 bg-blue/15 text-blue rounded-full flex items-center justify-center mb-6">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
                 </div>
-              <h3 className="text-lg font-medium text-primary mb-2">JSON data</h3>
+              <h2 className="text-lg font-medium text-primary mb-2">JSON data</h2>
               <p className="text-sm text-primary mb-6">Raw data structure covering the entire project: standards, palettes, identifiers and settings. Ready to plug into your own tools.</p>
                 <Button onClick={downloadJson} variant="primary">
                   Download JSON
@@ -186,9 +186,9 @@ export default function ProjectExport() {
           </div>
 
           <div className="mt-12">
-            <h4 className="text-sm font-bold text-primary uppercase tracking-wider mb-4">JSON output preview</h4>
-            <div className="bg-primary/5 rounded-2xl p-6 overflow-x-auto ">
-              <pre className="text-xs text-primary font-mono leading-relaxed">{projectJson}</pre>
+            <h2 className="text-sm font-bold text-primary uppercase tracking-wider mb-4">JSON output preview</h2>
+            <div className="bg-primary/5 rounded-2xl p-6 overflow-x-auto">
+              <pre className="text-xs text-primary font-mono leading-relaxed whitespace-pre-wrap break-all">{projectJson}</pre>
             </div>
           </div>
         </>

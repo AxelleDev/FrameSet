@@ -61,7 +61,7 @@ export default function ProjectNorms() {
   const isBrushFormValid = !!brushForm.usage && isBrushValueValid && isOpacityValid;
 
   // loadedFonts: families whose web font has finished loading (drives the
-  // preview switch from "Chargement…" to the rendered AaBbCc sample).
+  // preview switch from "Loading…" to the rendered AaBbCc sample).
   // loadingFontsRef: families currently being loaded, kept in a ref so it does
   // not retrigger this effect and to dedupe concurrent loads.
   const [loadedFonts, setLoadedFonts] = useState([]);
@@ -73,7 +73,9 @@ export default function ProjectNorms() {
     React.useEffect(() => {
       if (activeProject?.typographyNorms) {
         activeProject.typographyNorms.forEach(async norm => {
-          if (norm.fontFamily && !loadedFonts.includes(norm.fontFamily) && !loadingFontsRef.current[norm.fontFamily]) {
+          // Dedupe via the ref only: it is set on first sight and never cleared,
+          // so a family is loaded at most once without depending on loadedFonts.
+          if (norm.fontFamily && !loadingFontsRef.current[norm.fontFamily]) {
             loadingFontsRef.current[norm.fontFamily] = true;
             try {
               // Look up the font's metadata in the Google Fonts catalog.
@@ -112,10 +114,11 @@ export default function ProjectNorms() {
           }
         });
       }
-      // googleFonts is intentionally excluded: it is only a static metadata
-      // catalog used to resolve weights, so re-running on its arrival is needless.
+      // loadedFonts is intentionally excluded so the effect does not re-run (and
+      // re-iterate every norm) each time a single font finishes loading; the ref
+      // guard handles dedup. googleFonts is likewise excluded (static metadata).
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeProject?.typographyNorms, loadedFonts]);
+    }, [activeProject?.typographyNorms]);
   // Google Fonts catalog used to populate the font picker and resolve weights.
   const GOOGLE_FONTS_API_KEY = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
   const { fonts: googleFonts, loading: loadingFonts, error: errorFonts } = useGoogleFonts(GOOGLE_FONTS_API_KEY);
@@ -260,7 +263,7 @@ export default function ProjectNorms() {
                     intent="delete"
                   >
                     {loadingDelete === norm.id ? (
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false">
                         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       </svg>
                     ) : (
@@ -316,7 +319,7 @@ export default function ProjectNorms() {
                     intent="delete"
                   >
                     {loadingDelete === norm.id ? (
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false">
                         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       </svg>
                     ) : (
@@ -373,7 +376,7 @@ export default function ProjectNorms() {
                   <FormField label="Brush name">
                     <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="Plume G" />
                   </FormField>
-                  <FormField label="Size (px)">
+                  <FormField label="Size">
                     <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="8" />
                     {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-danger mt-1">Size must be a positive number (≤ 1000).</p>}
                   </FormField>
@@ -421,7 +424,7 @@ export default function ProjectNorms() {
             </div>
             <ModalActions
               secondaryLabel="Cancel"
-              primaryLabel="Edit"
+              primaryLabel="Save"
               onSecondary={() => setEditingNorm(null)}
               onPrimary={handleEditNorm}
               primaryDisabled={editingType === 'brush' ? !isBrushFormValid : !typoForm.fontFamily}
