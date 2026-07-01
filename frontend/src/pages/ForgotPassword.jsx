@@ -87,9 +87,11 @@ export default function ForgotPassword() {
       hero={
         <>
           <div className="flex items-center mb-2">
-            <Logo className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
+            <Link to="/" aria-label="Go to homepage" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring" style={{ width: '20%', maxWidth: '80px' }}>
+              <Logo className="object-contain w-full h-auto" />
+            </Link>
           </div>
-          <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-primary leading-tight">
             Forgot your <br />
             <span className="font-bold text-primary">password?</span>
           </h1>
@@ -100,7 +102,7 @@ export default function ForgotPassword() {
       }
     >
       <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
-        <Seo title="Forgot password" path="/forgot-password" description="Reset your FrameSet account password." />
+        <Seo title="Forgot password" path="/forgot-password" description="Reset your FrameSet account password." noindex />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Reset password</h2>
           <p className="text-primary text-sm mt-2">
@@ -119,7 +121,11 @@ export default function ForgotPassword() {
 
         {step === 'request' ? (
           <form className="space-y-5" onSubmit={handleRequest} noValidate>
-            <FormField label="Email">
+            <FormField
+              label="Email"
+              required
+              error={form.email !== '' && !emailValid ? 'Invalid email format.' : undefined}
+            >
               <TextInput
                 type="email"
                 name="email"
@@ -128,9 +134,6 @@ export default function ForgotPassword() {
                 placeholder="email@example.com"
                 autoComplete="email"
               />
-              {form.email !== '' && !emailValid && (
-                <p className="text-xs text-danger mt-1">Invalid email format.</p>
-              )}
             </FormField>
 
             <Button type="submit" fullWidth className="mt-2" disabled={!canRequest} loading={submitting}>
@@ -139,7 +142,7 @@ export default function ForgotPassword() {
           </form>
         ) : (
           <form className="space-y-4" onSubmit={handleReset} noValidate>
-            <FormField label="Reset code">
+            <FormField label="Reset code" required>
               <TextInput
                 type="text"
                 name="code"
@@ -152,18 +155,24 @@ export default function ForgotPassword() {
               />
             </FormField>
 
-            <FormField label="New password">
-              <PasswordInput
-                name="newPassword"
-                value={form.newPassword}
-                onChange={handleChange}
-                placeholder="Your new password"
-                autoComplete="new-password"
-              />
+            <div>
+              <FormField label="New password" required>
+                <PasswordInput
+                  name="newPassword"
+                  value={form.newPassword}
+                  onChange={handleChange}
+                  placeholder="Your new password"
+                  autoComplete="new-password"
+                />
+              </FormField>
               <PasswordChecklist password={form.newPassword} />
-            </FormField>
+            </div>
 
-            <FormField label="Confirm password">
+            <FormField
+              label="Confirm password"
+              required
+              error={form.confirmPassword !== '' && !passwordsMatch ? "Passwords don't match." : undefined}
+            >
               <PasswordInput
                 name="confirmPassword"
                 value={form.confirmPassword}
@@ -171,9 +180,6 @@ export default function ForgotPassword() {
                 placeholder="Confirm your password"
                 autoComplete="new-password"
               />
-              {form.confirmPassword !== '' && !passwordsMatch && (
-                <p className="text-xs text-danger mt-1">Passwords don't match.</p>
-              )}
             </FormField>
 
             <Button type="submit" fullWidth className="mt-2" disabled={!canReset} loading={submitting}>

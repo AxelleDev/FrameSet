@@ -56,7 +56,7 @@ export default function MainLayout() {
     <div className="relative flex h-screen overflow-hidden bg-canvas text-primary transition-colors duration-slow">
       <Seo title="Workspace" noindex />
       <a
-        href="#contenu"
+        href="#content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-toast focus:px-4 focus:py-2 focus:rounded-xl focus:bg-surface focus:text-primary focus:ring-2 focus:ring-blue"
       >
         Skip to content
@@ -169,7 +169,7 @@ export default function MainLayout() {
           </div>
         </header>
 
-        <div id="contenu" tabIndex={-1} className="p-4 md:p-8 max-w-7xl mx-auto pb-24 outline-none">
+        <div id="content" tabIndex={-1} className="p-4 md:p-8 max-w-7xl mx-auto pb-24 outline-none">
           <Outlet />
         </div>
       </main>

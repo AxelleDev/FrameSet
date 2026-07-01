@@ -4,7 +4,7 @@
  * Displays the project's color swatches and lets the user add, edit, delete,
  * copy (hex to clipboard) and reorder colors. Reordering works both by
  * drag-and-drop (with a FLIP animation so the other swatches slide smoothly)
- * and by keyboard (arrow keys on a focused swatch).
+ * and by keyboard, via per-swatch visually-hidden "move left/right" buttons.
  *
  * Every change persists the whole ordered palette through updateProjectPalette,
  * which returns the canonical palette from the server (each color carrying a
@@ -238,7 +238,7 @@ export default function ProjectPalette() {
       setEditIdx(null);
       showToast('Color updated.');
     } else {
-      showToast('Something went wrong saving your changes.', 'error');
+      showToast('Something went wrong saving your changes.', 'danger');
     }
   };
 

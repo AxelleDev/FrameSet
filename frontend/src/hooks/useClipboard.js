@@ -8,12 +8,20 @@
  *
  * @param {{ timeout?: number }} [opts] Milliseconds before clearing copiedValue.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import logger from '../utils/logger';
 
 export default function useClipboard({ timeout = 1200 } = {}) {
   const [copiedValue, setCopiedValue] = useState(null);
   const timeoutRef = useRef(null);
+
+  // Clear the pending "copied" timer if the component unmounts, so we never call
+  // setState on an unmounted component.
+  useEffect(() => () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+  }, []);
 
   /**
    * Copies text to the clipboard, falling back to a hidden <textarea> +

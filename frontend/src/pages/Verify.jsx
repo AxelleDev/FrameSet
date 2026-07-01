@@ -7,7 +7,7 @@
  * The user enters the emailed code and can also request a new code.
  */
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
 import Logo from '../components/Logo';
@@ -44,7 +44,7 @@ export default function Verify() {
       // Brief success message before redirecting to the relevant destination.
       setTimeout(() => navigate(type === 'pending-email' ? '/app/profile' : '/login'), 2000);
     } else {
-      setError(result.message || 'Incorrect code');
+      setError(result.message || 'That code is incorrect.');
     }
   };
 
@@ -69,9 +69,11 @@ export default function Verify() {
       hero={
         <>
           <div className="flex items-center mb-2">
-            <Logo className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
+            <Link to="/" aria-label="Go to homepage" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring" style={{ width: '20%', maxWidth: '80px' }}>
+              <Logo className="object-contain w-full h-auto" />
+            </Link>
           </div>
-          <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-primary leading-tight">
             Confirm <br />
             <span className="font-bold text-primary">your email.</span>
           </h1>

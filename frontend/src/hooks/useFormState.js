@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 /**
  * Small reusable hook for managing controlled-form state.
@@ -13,8 +13,11 @@ import { useState, useCallback } from 'react';
  */
 export const useFormState = (initial = {}) => {
   const [values, setValues] = useState(initial);
+  // Capture the very first `initial` so `reset` stays stable even when callers
+  // pass an inline object literal (a new identity on every render).
+  const initialRef = useRef(initial);
   const setField = useCallback((key, val) => setValues(v => ({ ...v, [key]: val })), []);
-  const reset = useCallback(() => setValues(initial), [initial]);
+  const reset = useCallback(() => setValues(initialRef.current), []);
   return { values, setValues, setField, reset };
 };
 

@@ -35,10 +35,13 @@ app.use(helmet({
 		directives: {
 			defaultSrc: ["'self'"],
 			scriptSrc: ["'self'"],
-			styleSrc: ["'self'"],
+			// 'unsafe-inline' is required for React's dynamic inline styles (e.g. color
+			// swatches). Google Fonts is allowed so the typography preview can load
+			// arbitrary user-picked font families (impossible to self-host up front).
+			styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
 			imgSrc: ["'self'", 'data:'],
-			fontSrc: ["'self'"],
-			connectSrc: ["'self'", FRONTEND_ORIGIN],
+			fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+			connectSrc: ["'self'", FRONTEND_ORIGIN, 'https://www.googleapis.com'],
 			objectSrc: ["'none'"],
 			frameAncestors: ["'none'"],
 			baseUri: ["'self'"],

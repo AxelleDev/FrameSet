@@ -98,6 +98,10 @@ const updateProjectName = async (req, res) => {
   if (typeof name !== 'string' || !name.trim()) {
     return res.status(400).json({ error: 'Project name is required.' });
   }
+  const trimmedName = name.trim();
+  if (trimmedName.length < 2 || trimmedName.length > 50) {
+    return res.status(400).json({ error: 'Invalid project name.' });
+  }
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
     res.json(await projectsService.renameProject(id, name));
@@ -177,18 +181,21 @@ const updatePalette = async (req, res) => {
   const { id } = req.params;
   const colors = req.body;
 
-  let validatedColors;
   try {
-    validatedColors = projectsService.validatePalettePayload(colors);
-  } catch (error) {
-    if (error.code === 'validation') {
-      return res.status(400).json({ error: error.message });
-    }
-    throw error;
-  }
-
-  try {
+    // Ownership is checked before validating the payload so an attacker cannot
+    // probe another user's project through validation error messages.
     if (!(await ensureProjectOwnership(req, res, id))) return;
+
+    let validatedColors;
+    try {
+      validatedColors = projectsService.validatePalettePayload(colors);
+    } catch (error) {
+      if (error.code === 'validation') {
+        return res.status(400).json({ error: error.message });
+      }
+      throw error;
+    }
+
     const result = await projectsService.replaceProjectPalette(id, validatedColors);
     res.json(result);
   } catch (error) {

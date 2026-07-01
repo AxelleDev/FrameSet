@@ -25,6 +25,8 @@ export default function PasswordChecklist({ password }) {
             <span aria-hidden="true" className="font-bold w-3 inline-block text-center">
               {satisfied ? '✓' : '○'}
             </span>
+            {/* Convey the met/unmet state to assistive tech, not by color alone. */}
+            <span className="sr-only">{satisfied ? 'Requirement met:' : 'Requirement not met:'}</span>
             {rule.label}
           </li>
         );
