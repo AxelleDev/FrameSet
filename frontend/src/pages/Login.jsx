@@ -94,8 +94,8 @@ export default function Login() {
         </div>
 
         {error && (
-          <Alert variant="danger" className="mb-4">
-            {error}
+          <div className="mb-4">
+            <Alert variant="danger">{error}</Alert>
             {/* Offer a verification shortcut when login failed due to an unverified email */}
             {error.includes('verify your email') && (
               <Button
@@ -106,7 +106,7 @@ export default function Login() {
                 Verify my email
               </Button>
             )}
-          </Alert>
+          </div>
         )}
 
         <form className="space-y-5" onSubmit={handleLogin} noValidate>
