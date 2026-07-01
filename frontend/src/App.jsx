@@ -22,13 +22,13 @@
  *       export     -> PDF / JSON export
  *   *              -> NotFound (404)
  */
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
-import GlobalErrorAlert from './components/GlobalErrorAlert';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProjectProvider } from './context/ProjectContext';
-import { ToastProvider } from './context/ToastContext';
+import { ToastProvider, useToast } from './context/ToastContext';
+import { getFriendlyMessage } from './utils/friendlyError';
 import ErrorBoundary from './components/ErrorBoundary';
 import MainLayout from './layouts/MainLayout';
 
@@ -64,18 +64,23 @@ function RedirectIfAuthenticated({ children }) {
 }
 
 /**
- * Renders the global error banner and the full route tree. Kept separate from
- * <App /> so it can consume the auth context (it must live inside AuthProvider).
+ * Renders the full route tree. Kept separate from <App /> so it can consume the
+ * auth context (it must live inside AuthProvider). Global (server/session/network)
+ * errors from the auth context are surfaced as a dismissible toast — the same
+ * bottom-right feedback used everywhere else — instead of a top banner.
  */
 function AppRoutes() {
   const { globalError, setGlobalError } = useAuth();
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (!globalError) return;
+    showToast(getFriendlyMessage(globalError), 'error');
+    setGlobalError(null);
+  }, [globalError, showToast, setGlobalError]);
+
   return (
     <>
-      {/* App-wide error alert fed by the auth context's globalError state */}
-      <GlobalErrorAlert
-        message={globalError}
-        onClose={() => setGlobalError(null)}
-      />
       <BrowserRouter>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
