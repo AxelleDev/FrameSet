@@ -33,17 +33,17 @@ describe('migrations', () => {
     mockReadFileSync.mockReturnValue('SQL');
   });
 
-  it('devrait créer la table des migrations', async () => {
+  it('creates the migrations table', async () => {
     await expect(migrate.ensureMigrationsTable(mockPool)).resolves.not.toThrow();
   });
 
-  it('devrait retourner un tableau vide si le dossier des migrations n’existe pas', async () => {
+  it('returns an empty array when the migrations folder does not exist', async () => {
     mockExistsSync.mockReturnValue(false);
     const result = await migrate.getPendingMigrations(mockPool);
     expect(result).toEqual([]);
   });
 
-  it('devrait filtrer les fichiers .sql dans le dossier des migrations', async () => {
+  it('filters the .sql files in the migrations folder', async () => {
     mockExistsSync.mockReturnValue(true);
     mockReaddirSync.mockReturnValue(['001_init.sql', 'not_a_sql.txt']);
     mockQuery.mockResolvedValue([[]]); // Simulate the database response
@@ -52,7 +52,7 @@ describe('migrations', () => {
     expect(result).not.toContain('not_a_sql.txt');
   });
 
-  it('devrait exécuter les migrations en attente et les enregistrer', async () => {
+  it('runs the pending migrations and records them', async () => {
     mockExistsSync.mockReturnValue(true);
     mockReaddirSync.mockReturnValue(['001_init.sql', '002_add_password_updated_at.sql']);
     mockReadFileSync.mockImplementation((filePath) => {
@@ -74,7 +74,7 @@ describe('migrations', () => {
     expect(mockPool.end).not.toHaveBeenCalled();
   });
 
-  it('devrait marquer une migration comme appliquée si le schéma existe déjà', async () => {
+  it('marks a migration as applied when the schema already exists', async () => {
     mockExistsSync.mockReturnValue(true);
     mockReaddirSync.mockReturnValue(['001_init.sql', '002_add_password_updated_at.sql']);
     mockReadFileSync.mockReturnValue('ALTER TABLE users ADD COLUMN password_updated_at DATETIME');
@@ -98,7 +98,7 @@ describe('migrations', () => {
     );
   });
 
-  it('devrait fermer le pool créé automatiquement', async () => {
+  it('closes the automatically created pool', async () => {
     mockExistsSync.mockReturnValue(false);
 
     await migrate.run();

@@ -24,7 +24,7 @@ const hasSmtpConfig = Boolean(
 // A real SMTP is non-negotiable in production: fail fast on boot.
 if (isProduction && !hasSmtpConfig) {
   throw new Error(
-    'La configuration SMTP (MAIL_HOST, MAIL_PORT, MAIL_SECURE, MAIL_USER, MAIL_PASS) est obligatoire en production.'
+    'SMTP configuration (MAIL_HOST, MAIL_PORT, MAIL_SECURE, MAIL_USER, MAIL_PASS) is required in production.'
   );
 }
 

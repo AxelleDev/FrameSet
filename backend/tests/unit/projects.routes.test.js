@@ -32,13 +32,13 @@ const buildTestApp = () => {
   return { app, controllerMocks };
 };
 
-describe('routes projets', () => {
+describe('projects routes', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.resetModules();
   });
 
-  it('retourne 429 apres 30 creations de projet pour le meme utilisateur', async () => {
+  it('returns 429 after 30 project creations for the same user', async () => {
     const { app, controllerMocks } = buildTestApp();
 
     for (let index = 0; index < 30; index += 1) {
@@ -57,12 +57,12 @@ describe('routes projets', () => {
 
     expect(overflowResponse.status).toBe(429);
     expect(overflowResponse.body).toEqual({
-      error: 'Trop de creations de projets ou de normes, reessayez dans une heure.'
+      error: 'Too many project or standard creations, try again in an hour.'
     });
     expect(controllerMocks.createProject).toHaveBeenCalledTimes(30);
   });
 
-  it('partage le quota entre les creations de projet et de normes pour un meme utilisateur', async () => {
+  it('shares the quota between project and standard creations for the same user', async () => {
     const { app, controllerMocks } = buildTestApp();
 
     for (let index = 0; index < 30; index += 1) {
@@ -77,12 +77,12 @@ describe('routes projets', () => {
     const blockedNormResponse = await request(app)
       .post('/projects/1/brush-norms')
       .set('x-test-user-id', '7')
-      .send({ name: 'Contour', value: '8', unit: 'px', brushName: 'Smooth' });
+      .send({ name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth' });
 
     const otherUserResponse = await request(app)
       .post('/projects/1/brush-norms')
       .set('x-test-user-id', '8')
-      .send({ name: 'Contour', value: '8', unit: 'px', brushName: 'Smooth' });
+      .send({ name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth' });
 
     expect(blockedNormResponse.status).toBe(429);
     expect(otherUserResponse.status).toBe(201);

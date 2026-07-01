@@ -18,17 +18,17 @@ const renderPage = (user = null) => {
 };
 
 describe('NotFound', () => {
-  it('redirige vers la page de connexion quand aucun utilisateur n\'est connecté', () => {
+  it('redirects to the sign-in page when no user is signed in', () => {
     renderPage();
 
-    const link = screen.getByRole('link', { name: /retour à l'accueil/i });
+    const link = screen.getByRole('link', { name: /back to home/i });
     expect(link.getAttribute('href')).toContain('/login');
   });
 
-  it('redirige vers le tableau de bord quand un utilisateur est connecté', () => {
+  it('redirects to the dashboard when a user is signed in', () => {
     renderPage({ id: 1, email: 'axelle@example.com' });
 
-    const link = screen.getByRole('link', { name: /retour à l'accueil/i });
+    const link = screen.getByRole('link', { name: /back to home/i });
     expect(link.getAttribute('href')).toContain('/app/dashboard');
   });
 });

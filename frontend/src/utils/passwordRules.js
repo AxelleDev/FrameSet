@@ -4,10 +4,10 @@
  * characters, with one lowercase letter, one uppercase letter and one digit.
  */
 export const PASSWORD_RULES = [
-  { id: 'length', label: 'Au moins 8 caractères', test: (p) => p.length >= 8 },
-  { id: 'lowercase', label: 'Une lettre minuscule', test: (p) => /[a-z]/.test(p) },
-  { id: 'uppercase', label: 'Une lettre majuscule', test: (p) => /[A-Z]/.test(p) },
-  { id: 'digit', label: 'Un chiffre', test: (p) => /[0-9]/.test(p) },
+  { id: 'length', label: 'At least 8 characters', test: (p) => p.length >= 8 },
+  { id: 'lowercase', label: 'One lowercase letter', test: (p) => /[a-z]/.test(p) },
+  { id: 'uppercase', label: 'One uppercase letter', test: (p) => /[A-Z]/.test(p) },
+  { id: 'digit', label: 'One digit', test: (p) => /[0-9]/.test(p) },
 ];
 
 /** Whether a password satisfies every rule of the policy. */

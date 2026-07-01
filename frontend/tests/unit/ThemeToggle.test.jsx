@@ -9,7 +9,7 @@ describe('ThemeToggle', () => {
     document.documentElement.classList.remove('dark');
   });
 
-  it('bascule la classe dark sur <html> et persiste le choix', async () => {
+  it('toggles the dark class on <html> and persists the choice', async () => {
     const user = userEvent.setup();
     render(<ThemeToggle />);
 

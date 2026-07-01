@@ -18,14 +18,14 @@ const {
 } = require('../../src/middleware/projectCreateLimiter');
 
 describe('middleware projectCreateLimiter', () => {
-  it('exporte la configuration attendue', () => {
+  it('exports the expected configuration', () => {
     expect(PROJECT_CREATE_LIMIT).toBe(30);
     expect(PROJECT_CREATE_WINDOW_MS).toBe(60 * 60 * 1000);
-    expect(PROJECT_CREATE_LIMIT_MESSAGE).toMatch(/Trop de creations/i);
+    expect(PROJECT_CREATE_LIMIT_MESSAGE).toMatch(/Too many project or standard creations/i);
     expect(typeof projectCreateLimiter).toBe('function');
   });
 
-  it('construit le limiter avec les bonnes options', () => {
+  it('builds the limiter with the right options', () => {
     const opts = rateLimit.lastOptions;
     expect(opts.max).toBe(PROJECT_CREATE_LIMIT);
     expect(opts.windowMs).toBe(PROJECT_CREATE_WINDOW_MS);
@@ -33,16 +33,16 @@ describe('middleware projectCreateLimiter', () => {
     expect(opts.legacyHeaders).toBe(false);
   });
 
-  it('génère une clé par utilisateur authentifié', () => {
+  it('generates a key per authenticated user', () => {
     expect(rateLimit.lastOptions.keyGenerator({ user: { id: 7 } })).toBe('project-create:7');
   });
 
-  it("génère une clé par IP pour un visiteur anonyme", () => {
+  it('generates a key per IP for an anonymous visitor', () => {
     expect(rateLimit.lastOptions.keyGenerator({ ip: '203.0.113.5' }))
       .toBe('project-create:anonymous:ip:203.0.113.5');
   });
 
-  it('répond 429 avec le message dédié via le handler', () => {
+  it('responds 429 with the dedicated message via the handler', () => {
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     rateLimit.lastOptions.handler({}, res);
     expect(res.status).toHaveBeenCalledWith(429);

@@ -4,25 +4,25 @@ import userEvent from '@testing-library/user-event';
 import ModalActions from '../../src/components/ModalActions';
 
 describe('ModalActions', () => {
-  it('rend un bouton secondaire "Annuler" par défaut + le primaire', () => {
-    render(<ModalActions primaryLabel="Créer" onPrimary={() => {}} onSecondary={() => {}} />);
-    expect(screen.getByRole('button', { name: 'Annuler' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Créer' })).toBeInTheDocument();
+  it('renders a default "Cancel" secondary button + the primary', () => {
+    render(<ModalActions primaryLabel="Create" onPrimary={() => {}} onSecondary={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument();
   });
 
-  it('déclenche onPrimary / onSecondary', async () => {
+  it('triggers onPrimary / onSecondary', async () => {
     const user = userEvent.setup();
     const onPrimary = vi.fn();
     const onSecondary = vi.fn();
-    render(<ModalActions primaryLabel="Créer" onPrimary={onPrimary} onSecondary={onSecondary} />);
-    await user.click(screen.getByRole('button', { name: 'Créer' }));
-    await user.click(screen.getByRole('button', { name: 'Annuler' }));
+    render(<ModalActions primaryLabel="Create" onPrimary={onPrimary} onSecondary={onSecondary} />);
+    await user.click(screen.getByRole('button', { name: 'Create' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onPrimary).toHaveBeenCalledTimes(1);
     expect(onSecondary).toHaveBeenCalledTimes(1);
   });
 
-  it('désactive le primaire avec primaryDisabled', () => {
-    render(<ModalActions primaryLabel="Créer" onPrimary={() => {}} onSecondary={() => {}} primaryDisabled />);
-    expect(screen.getByRole('button', { name: 'Créer' })).toBeDisabled();
+  it('disables the primary with primaryDisabled', () => {
+    render(<ModalActions primaryLabel="Create" onPrimary={() => {}} onSecondary={() => {}} primaryDisabled />);
+    expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
   });
 });

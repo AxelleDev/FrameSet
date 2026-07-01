@@ -3,31 +3,31 @@ import { render, screen } from '@testing-library/react';
 import FormField from '../../src/components/FormField';
 
 describe('FormField', () => {
-  it('associe le label au champ (accessible par son label)', () => {
+  it('associates the label with the field (accessible by its label)', () => {
     render(
-      <FormField label="Adresse Email">
+      <FormField label="Email Address">
         <input type="email" />
       </FormField>
     );
-    // getByLabelText ne fonctionne que si htmlFor/id sont correctement câblés.
-    expect(screen.getByLabelText('Adresse Email')).toBeInTheDocument();
+    // getByLabelText only works if htmlFor/id are wired up correctly.
+    expect(screen.getByLabelText('Email Address')).toBeInTheDocument();
   });
 
-  it('respecte un id explicite fourni sur le champ', () => {
+  it('honors an explicit id provided on the field', () => {
     render(
-      <FormField label="Nom" id="custom-id">
+      <FormField label="Name" id="custom-id">
         <input />
       </FormField>
     );
-    expect(screen.getByLabelText('Nom')).toHaveAttribute('id', 'custom-id');
+    expect(screen.getByLabelText('Name')).toHaveAttribute('id', 'custom-id');
   });
 
-  it('rend le champ même sans label', () => {
+  it('renders the field even without a label', () => {
     render(
       <FormField>
-        <input placeholder="sans-label" />
+        <input placeholder="no-label" />
       </FormField>
     );
-    expect(screen.getByPlaceholderText('sans-label')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('no-label')).toBeInTheDocument();
   });
 });

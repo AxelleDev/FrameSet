@@ -85,7 +85,7 @@ export const ProjectProvider = ({ children }) => {
       const newProject = await api.post('/projects', { name }, { onGlobalError: setGlobalError });
       setProjects((prevProjects) => [newProject, ...prevProjects]);
     } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors de l\'ajout du projet.');
+      setGlobalError(error?.message || 'Failed to add the project.');
       logger.error('projects.add.error', error);
     }
   }, [user, setGlobalError]);
@@ -99,7 +99,7 @@ export const ProjectProvider = ({ children }) => {
         setActiveProjectId(null);
       }
     } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors de la suppression du projet.');
+      setGlobalError(error?.message || 'Failed to delete the project.');
       logger.error('projects.delete.error', error);
     }
   }, [activeProjectId, setGlobalError]);
@@ -139,12 +139,12 @@ export const ProjectProvider = ({ children }) => {
       setProjects((prevProjects) => (
         prevProjects.map((project) => (
           String(project.id) === String(projectId)
-            ? { ...project, name, lastEdited: "À l'instant" }
+            ? { ...project, name, lastEdited: 'Just now' }
             : project
         ))
       ));
     } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors du changement de nom du projet.');
+      setGlobalError(error?.message || 'Failed to rename the project.');
       logger.error('projects.updateName.error', error);
     }
   }, [setGlobalError]);
@@ -170,7 +170,7 @@ export const ProjectProvider = ({ children }) => {
       ));
       return normWithId;
     } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors de l\'ajout de la norme.');
+      setGlobalError(error?.message || 'Failed to add the standard.');
       logger.error('projects.addBrushNorm.error', error);
       return null;
     }
@@ -197,7 +197,7 @@ export const ProjectProvider = ({ children }) => {
       ));
       return normWithId;
     } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors de l\'ajout de la norme.');
+      setGlobalError(error?.message || 'Failed to add the standard.');
       logger.error('projects.addTypographyNorm.error', error);
       return null;
     }
@@ -220,7 +220,7 @@ export const ProjectProvider = ({ children }) => {
         ))
       ));
     } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors de la suppression de la norme.');
+      setGlobalError(error?.message || 'Failed to delete the standard.');
       logger.error('projects.deleteBrushNorm.error', error);
     }
   }, [setGlobalError]);
@@ -242,7 +242,7 @@ export const ProjectProvider = ({ children }) => {
         ))
       ));
     } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors de la suppression de la norme.');
+      setGlobalError(error?.message || 'Failed to delete the standard.');
       logger.error('projects.deleteTypographyNorm.error', error);
     }
   }, [setGlobalError]);
@@ -264,7 +264,7 @@ export const ProjectProvider = ({ children }) => {
         ))
       ));
     } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors de la modification de la norme.');
+      setGlobalError(error?.message || 'Failed to update the standard.');
       logger.error('projects.updateBrushNorm.error', error);
     }
   }, [setGlobalError]);
@@ -286,7 +286,7 @@ export const ProjectProvider = ({ children }) => {
         ))
       ));
     } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors de la modification de la norme.');
+      setGlobalError(error?.message || 'Failed to update the standard.');
       logger.error('projects.updateTypographyNorm.error', error);
     }
   }, [setGlobalError]);

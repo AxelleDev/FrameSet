@@ -21,14 +21,14 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 
 /**
- * Formats a project's `lastEdited` value for display after the "Modifié " prefix.
- * The API returns either the just-edited sentinel ("À l'instant") or a
- * "DD/MM HH:MM" string; we render "à l'instant" or "le DD/MM à HH:MM".
+ * Formats a project's `lastEdited` value for display after the "Edited " prefix.
+ * The API returns either the just-edited sentinel ("Just now") or a
+ * "DD/MM HH:MM" string; we render "just now" or "on DD/MM at HH:MM".
  */
 function formatModified(value) {
   if (!value) return '';
   const match = /^(\d{2}\/\d{2})\s+(\d{2}:\d{2})$/.exec(value);
-  return match ? `le ${match[1]} à ${match[2]}` : "à l'instant";
+  return match ? `on ${match[1]} at ${match[2]}` : 'just now';
 }
 
 export default function Dashboard() {
@@ -58,7 +58,7 @@ export default function Dashboard() {
       await addProject(newProjectName);
       setIsCreatingProject(false);
       setNewProjectName('');
-      showToast('Projet créé.');
+      showToast('Project created.');
     }
   };
 
@@ -73,7 +73,7 @@ export default function Dashboard() {
   const handleEditProject = async () => {
     setEditProjectError("");
     if (!editProjectId || !editProjectName || !editProjectName.trim()) {
-      setEditProjectError("Donnez un nom à votre projet.");
+      setEditProjectError("Give your project a name.");
       return;
     }
     try {
@@ -81,9 +81,9 @@ export default function Dashboard() {
       setIsEditingProject(false);
       setEditProjectId(null);
       setEditProjectName("");
-      showToast('Projet modifié.');
+      showToast('Project updated.');
     } catch (e) {
-      setEditProjectError(e?.message || "Erreur lors de la modification du projet.");
+      setEditProjectError(e?.message || "Something went wrong updating the project.");
     }
   };
 
@@ -104,13 +104,13 @@ export default function Dashboard() {
       <Card className="overflow-hidden mb-12 animate-fade-in">
         <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-start justify-between">
           <div>
-            <h1 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">Bonjour, {user.name.split(' ')[0]}.</h1>
+            <h1 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">Hi, {user.name.split(' ')[0]}.</h1>
             <p className="text-primary max-w-lg leading-relaxed font-medium">
-              Vous avez actuellement <strong className="text-blue">{projects.length} projet{projects.length === 1 ? '' : 's'}</strong>.
+              You currently have <strong className="text-blue">{projects.length} project{projects.length === 1 ? '' : 's'}</strong>.
             </p>
             <div className="mt-8 flex space-x-4">
                <Button onClick={() => setIsCreatingProject(true)} variant="primary" className="px-6 py-3">
-                 + Créer un projet
+                 + Create project
                </Button>
             </div>
           </div>
@@ -118,11 +118,11 @@ export default function Dashboard() {
           <div className="hidden md:flex space-x-6 mt-6 md:mt-0">
              <div className="p-4 rounded-2xl w-32 text-center stat-bg">
                 <div className="text-2xl font-bold text-primary">{totalNorms}</div>
-                   <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{totalNorms === 1 ? 'Norme' : 'Normes'}</div>
+                   <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{totalNorms === 1 ? 'Standard' : 'Standards'}</div>
              </div>
              <div className="p-4 rounded-2xl w-32 text-center stat-bg">
                <div className="text-2xl font-bold text-primary">{projects.length}</div>
-               <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{projects.length === 1 ? 'Projet' : 'Projets'}</div>
+               <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{projects.length === 1 ? 'Project' : 'Projects'}</div>
              </div>
           </div>
         </div>
@@ -130,12 +130,12 @@ export default function Dashboard() {
 
       {projects.length === 0 ? (
         <div className="text-center mb-6">
-          <h2 className="text-lg font-medium text-primary mb-1">Créez votre premier projet</h2>
-          <p className="text-sm text-primary/60 max-w-md mx-auto">Chaque projet regroupe ses normes graphiques et sa palette de couleurs, au même endroit.</p>
+          <h2 className="text-lg font-medium text-primary mb-1">Create your first project</h2>
+          <p className="text-sm text-primary/60 max-w-md mx-auto">Each project keeps its graphic standards and color palette in one place.</p>
         </div>
       ) : (
         <div className="flex items-end justify-between mb-6">
-          <h2 className="text-xl font-medium text-primary">{projects.length === 1 ? 'Projet actif' : 'Projets actifs'}</h2>
+          <h2 className="text-xl font-medium text-primary">{projects.length === 1 ? 'Active project' : 'Active projects'}</h2>
         </div>
       )}
 
@@ -145,7 +145,7 @@ export default function Dashboard() {
             <div className="absolute top-4 right-4 flex gap-2 z-30">
               <ActionIconButton
                 onClick={(e) => openEditProject(e, project)}
-                title="Modifier le projet"
+                title="Edit project"
                 intent="edit"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -154,7 +154,7 @@ export default function Dashboard() {
               </ActionIconButton>
               <ActionIconButton
                 onClick={(e) => handleDeleteProject(e, project.id)}
-                title="Supprimer le projet"
+                title="Delete project"
                 intent="delete"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -164,7 +164,7 @@ export default function Dashboard() {
             </div>
             <div className="relative z-10 flex flex-col h-full min-h-[160px]">
               <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">{project.name}</h3>
-              <p className="text-sm text-primary mb-auto">Modifié {formatModified(project.lastEdited)}</p>
+              <p className="text-sm text-primary mb-auto">Edited {formatModified(project.lastEdited)}</p>
               <div className="mt-8 pt-4 flex -space-x-2 min-h-[40px] items-center">
                 {project.palette.map((color, i) => (
                   <div key={color.id ?? `${color.hex}-${i}`} className="w-6 h-6 rounded-full ring-2 ring-white"
@@ -184,7 +184,7 @@ export default function Dashboard() {
         ))}
         <AddTile
           onClick={() => setIsCreatingProject(true)}
-          label="Nouveau projet"
+          label="New project"
           labelClassName="text-sm font-medium text-primary"
           className="p-6 min-h-[200px]"
         />
@@ -193,10 +193,10 @@ export default function Dashboard() {
       <FormModal
         isOpen={isCreatingProject}
         onClose={() => setIsCreatingProject(false)}
-        title="Nouveau projet"
+        title="New project"
       >
         <div className="space-y-4">
-          <FormField label="Nom du projet">
+          <FormField label="Project name">
             {/* autoFocus is intentional: focus the field when the modal opens. */}
             {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
             <TextInput type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()} placeholder="Neo-Tokyo Editorial" autoFocus />
@@ -204,8 +204,8 @@ export default function Dashboard() {
         </div>
 
         <ModalActions
-          secondaryLabel="Annuler"
-          primaryLabel="Créer le projet"
+          secondaryLabel="Cancel"
+          primaryLabel="Create project"
           onSecondary={() => setIsCreatingProject(false)}
           onPrimary={handleCreateProject}
           primaryDisabled={!newProjectName}
@@ -215,10 +215,10 @@ export default function Dashboard() {
       <FormModal
         isOpen={isEditingProject}
         onClose={() => { setIsEditingProject(false); setEditProjectId(null); setEditProjectError(""); }}
-        title="Modifier le projet"
+        title="Edit project"
       >
         <div className="space-y-4">
-          <FormField label="Nom du projet">
+          <FormField label="Project name">
             {/* autoFocus is intentional: focus the field when the modal opens. */}
             {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
             <TextInput type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="Neo-Tokyo Editorial" autoFocus />
@@ -229,8 +229,8 @@ export default function Dashboard() {
         </div>
 
         <ModalActions
-          secondaryLabel="Annuler"
-          primaryLabel="Modifier"
+          secondaryLabel="Cancel"
+          primaryLabel="Edit"
           onSecondary={() => { setIsEditingProject(false); setEditProjectId(null); setEditProjectError(""); }}
           onPrimary={handleEditProject}
           primaryDisabled={!editProjectName}
@@ -239,19 +239,19 @@ export default function Dashboard() {
 
       <ConfirmDialog
         isOpen={!!confirmDeleteProject}
-        title="Supprimer le projet ?"
+        title="Delete project?"
         message={
           confirmDeleteProject?.name
-            ? `Toutes les normes et couleurs de « ${confirmDeleteProject.name} » seront définitivement perdues.`
-            : 'Toutes les normes et couleurs de ce projet seront définitivement perdues.'
+            ? `All graphic standards and colors in "${confirmDeleteProject.name}" will be permanently lost.`
+            : 'All its graphic standards and colors will be permanently lost.'
         }
-        confirmLabel="Supprimer"
+        confirmLabel="Delete"
         onCancel={() => setConfirmDeleteProject(null)}
         onConfirm={async () => {
           if (!confirmDeleteProject?.id) return;
           await deleteProject(confirmDeleteProject.id);
           setConfirmDeleteProject(null);
-          showToast('Projet supprimé.');
+          showToast('Project deleted.');
         }}
       />
     </>

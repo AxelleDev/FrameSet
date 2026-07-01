@@ -12,7 +12,7 @@
  * @returns {{ isBusinessError: boolean, message: (string|undefined) }}
  *   `message` is defined only for business errors (for inline display).
  */
-export const handleApiError = (error, setGlobalError, fallbackGlobalMessage = 'Une erreur est survenue.') => {
+export const handleApiError = (error, setGlobalError, fallbackGlobalMessage = 'Something went wrong.') => {
   const isBusinessError = Boolean(error?.status) && error.status < 500;
 
   // Only surface unexpected (non-business) errors in the global banner.

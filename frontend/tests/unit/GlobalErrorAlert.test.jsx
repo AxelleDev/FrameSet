@@ -4,21 +4,21 @@ import userEvent from '@testing-library/user-event';
 import GlobalErrorAlert from '../../src/components/GlobalErrorAlert';
 
 describe('GlobalErrorAlert', () => {
-  it('affiche un message compréhensible pour une erreur réseau technique', () => {
+  it('shows a friendly message for a technical network error', () => {
     render(<GlobalErrorAlert message="Failed to fetch" />);
 
     expect(
-      screen.getByText(/Impossible de contacter le serveur/i)
+      screen.getByText(/couldn't reach the server/i)
     ).toBeInTheDocument();
   });
 
-  it('déclenche la fermeture quand on clique sur le bouton fermer', async () => {
+  it('triggers the close handler when the dismiss button is clicked', async () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
 
-    render(<GlobalErrorAlert message="Erreur test" onClose={onClose} />);
+    render(<GlobalErrorAlert message="Test error" onClose={onClose} />);
 
-    await user.click(screen.getByRole('button', { name: /fermer l'alerte/i }));
+    await user.click(screen.getByRole('button', { name: /dismiss alert/i }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });

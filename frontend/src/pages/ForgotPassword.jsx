@@ -57,7 +57,7 @@ export default function ForgotPassword() {
 
     if (result.success) {
       setError('');
-      setInfo('Si un compte existe pour cet email, un code de réinitialisation vient d\'être envoyé.');
+      setInfo('If an account exists for this email, a reset code has just been sent.');
       setStep('reset');
     } else if (result.message) {
       setError(result.message);
@@ -90,23 +90,23 @@ export default function ForgotPassword() {
             <Logo className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
           </div>
           <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
-            Mot de passe <br />
-            <span className="font-bold text-primary">oublié ?</span>
+            Forgot your <br />
+            <span className="font-bold text-primary">password?</span>
           </h1>
           <p className="text-lg text-primary max-w-md leading-relaxed">
-            Pas de panique. Indiquez votre email, recevez un code, et choisissez un nouveau mot de passe.
+            No worries. Enter your email, get a code, and pick a new password.
           </p>
         </>
       }
     >
       <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
-        <Seo title="Mot de passe oublié" path="/forgot-password" description="Réinitialisez le mot de passe de votre compte FrameSet." />
+        <Seo title="Forgot password" path="/forgot-password" description="Reset your FrameSet account password." />
         <div className="mb-8 text-center">
-          <h2 className="text-2xl font-medium text-primary">Réinitialisation</h2>
+          <h2 className="text-2xl font-medium text-primary">Reset password</h2>
           <p className="text-primary text-sm mt-2">
             {step === 'request'
-              ? 'Étape 1 sur 2 — entrez votre email pour recevoir un code.'
-              : 'Étape 2 sur 2 — entrez le code reçu et votre nouveau mot de passe.'}
+              ? 'Step 1 of 2 — enter your email to receive a code.'
+              : 'Step 2 of 2 — enter the code you received and your new password.'}
           </p>
         </div>
 
@@ -125,21 +125,21 @@ export default function ForgotPassword() {
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="email@exemple.com"
+                placeholder="email@example.com"
                 autoComplete="email"
               />
               {form.email !== '' && !emailValid && (
-                <p className="text-xs text-danger mt-1">Format d'email invalide.</p>
+                <p className="text-xs text-danger mt-1">Invalid email format.</p>
               )}
             </FormField>
 
             <Button type="submit" fullWidth className="mt-2" disabled={!canRequest} loading={submitting}>
-              Envoyer le code
+              Send code
             </Button>
           </form>
         ) : (
           <form className="space-y-4" onSubmit={handleReset} noValidate>
-            <FormField label="Code de réinitialisation">
+            <FormField label="Reset code">
               <TextInput
                 type="text"
                 name="code"
@@ -152,38 +152,38 @@ export default function ForgotPassword() {
               />
             </FormField>
 
-            <FormField label="Nouveau mot de passe">
+            <FormField label="New password">
               <PasswordInput
                 name="newPassword"
                 value={form.newPassword}
                 onChange={handleChange}
-                placeholder="Votre nouveau mot de passe"
+                placeholder="Your new password"
                 autoComplete="new-password"
               />
               <PasswordChecklist password={form.newPassword} />
             </FormField>
 
-            <FormField label="Confirmer le mot de passe">
+            <FormField label="Confirm password">
               <PasswordInput
                 name="confirmPassword"
                 value={form.confirmPassword}
                 onChange={handleChange}
-                placeholder="Confirmez votre mot de passe"
+                placeholder="Confirm your password"
                 autoComplete="new-password"
               />
               {form.confirmPassword !== '' && !passwordsMatch && (
-                <p className="text-xs text-danger mt-1">Les mots de passe ne correspondent pas.</p>
+                <p className="text-xs text-danger mt-1">Passwords don't match.</p>
               )}
             </FormField>
 
             <Button type="submit" fullWidth className="mt-2" disabled={!canReset} loading={submitting}>
-              Réinitialiser le mot de passe
+              Reset password
             </Button>
           </form>
         )}
 
         <div className="mt-8 text-center">
-          <Link to="/login" className="text-sm font-medium text-blue hover:text-primary transition-colors">Retour à la connexion</Link>
+          <Link to="/login" className="text-sm font-medium text-blue hover:text-primary transition-colors">Back to sign in</Link>
         </div>
       </Card>
     </AuthLayout>

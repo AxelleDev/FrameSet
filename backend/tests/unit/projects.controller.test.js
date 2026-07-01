@@ -3,7 +3,7 @@ const db = require('../../src/database');
 
 jest.mock('../../src/database');
 
-describe('contrôleur de projets', () => {
+describe('projects controller', () => {
   const projectsController = require('../../src/controllers/projects.controller');
   const db = require('../../src/database');
   jest.mock('../../src/database');
@@ -12,16 +12,16 @@ describe('contrôleur de projets', () => {
     jest.resetAllMocks();
   });
 
-  describe('lister les projets', () => {
-    it('devrait retourner 401 si utilisateur non authentifié', async () => {
+  describe('list projects', () => {
+    it('returns 401 when the user is not authenticated', async () => {
       const req = { query: {} };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.listProjects(req, res);
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Utilisateur non authentifié.' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'User not authenticated.' });
     });
 
-    it('devrait retourner les projets pour l’utilisateur', async () => {
+    it('returns the projects for the user', async () => {
       db.query.mockResolvedValueOnce([
         [
           { id: 1, name: 'Project1', lastEditedFormatted: '15/03 10:00' }
@@ -32,7 +32,7 @@ describe('contrôleur de projets', () => {
           {
             id: 10,
             project_id: 1,
-            name: 'Contour',
+            name: 'Outline',
             value: '8',
             unit: 'px',
             brush_name: 'Smooth'
@@ -46,7 +46,7 @@ describe('contrôleur de projets', () => {
             project_id: 1,
             font_family: 'Inter',
             font_weight: '700',
-            font_usage: 'Titre',
+            font_usage: 'Heading',
             font_style: 'Italic'
           }
         ]
@@ -101,7 +101,7 @@ describe('contrôleur de projets', () => {
           brushNorms: [
             {
               id: 10,
-              name: 'Contour',
+              name: 'Outline',
               value: '8',
               unit: 'px',
               brushName: 'Smooth'
@@ -112,7 +112,7 @@ describe('contrôleur de projets', () => {
               id: 11,
               fontFamily: 'Inter',
               fontWeight: '700',
-              fontUsage: 'Titre',
+              fontUsage: 'Heading',
               fontStyle: 'Italic'
             }
           ],
@@ -128,7 +128,7 @@ describe('contrôleur de projets', () => {
       ]);
     });
 
-    it('devrait utiliser 4 requetes SQL avec 10 projets (au lieu de 31 en N+1)', async () => {
+    it('uses 4 SQL queries with 10 projects (instead of 31 with N+1)', async () => {
       const projectsRows = Array.from({ length: 10 }, (_, index) => ({
         id: index + 1,
         name: `Project ${index + 1}`,
@@ -139,13 +139,13 @@ describe('contrôleur de projets', () => {
         .mockResolvedValueOnce([projectsRows])
         .mockResolvedValueOnce([
           [
-            { id: 1, project_id: 1, name: 'Contour', value: '4', unit: 'px', brush_name: 'Soft' },
-            { id: 2, project_id: 2, name: 'Ombre', value: '6', unit: 'px', brush_name: 'Hard' }
+            { id: 1, project_id: 1, name: 'Outline', value: '4', unit: 'px', brush_name: 'Soft' },
+            { id: 2, project_id: 2, name: 'Shadow', value: '6', unit: 'px', brush_name: 'Hard' }
           ]
         ])
         .mockResolvedValueOnce([
           [
-            { id: 3, project_id: 1, font_family: 'Inter', font_weight: '700', font_usage: 'Titre', font_style: 'Normal' }
+            { id: 3, project_id: 1, font_family: 'Inter', font_weight: '700', font_usage: 'Heading', font_style: 'Normal' }
           ]
         ])
         .mockResolvedValueOnce([
@@ -180,42 +180,42 @@ describe('contrôleur de projets', () => {
     });
   });
 
-  describe('ajouter des normes', () => {
-    it('devrait retourner 400 si la valeur de norme de trait est invalide', async () => {
+  describe('add standards', () => {
+    it('returns 400 when the stroke standard value is invalid', async () => {
       db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ensureProjectOwnership
 
       const req = {
         params: { id: '1' },
         user: { id: 1 },
-        body: { name: 'Contour', value: 'abc', unit: 'px', brushName: 'Smooth' }
+        body: { name: 'Outline', value: 'abc', unit: 'px', brushName: 'Smooth' }
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
       await projectsController.addBrushNorm(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'La valeur de la norme de trait doit etre un nombre positif.' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'The stroke standard value must be a positive number.' });
       expect(db.query).toHaveBeenCalledTimes(1);
     });
 
-    it('devrait retourner 400 si la famille typographique est invalide', async () => {
+    it('returns 400 when the typography family is invalid', async () => {
       db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ensureProjectOwnership
 
       const req = {
         params: { id: '1' },
         user: { id: 1 },
-        body: { fontFamily: '   ', fontWeight: '700', fontUsage: 'Titre', fontStyle: 'Italic' }
+        body: { fontFamily: '   ', fontWeight: '700', fontUsage: 'Heading', fontStyle: 'Italic' }
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
       await projectsController.addTypographyNorm(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'La famille de police est invalide.' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'The font family is invalid.' });
       expect(db.query).toHaveBeenCalledTimes(1);
     });
 
-    it('devrait ajouter une norme de trait valide', async () => {
+    it('adds a valid stroke standard', async () => {
       db.query
         .mockResolvedValueOnce([[{ id: 1 }]]) // ensureProjectOwnership
         .mockResolvedValueOnce([{ insertId: 9 }])
@@ -224,7 +224,7 @@ describe('contrôleur de projets', () => {
       const req = {
         params: { id: '1' },
         user: { id: 1 },
-        body: { name: '  Contour cheveux  ', value: ' 8 ', unit: ' px ', brushName: ' Smooth ' }
+        body: { name: '  Hair outline  ', value: ' 8 ', unit: ' px ', brushName: ' Smooth ' }
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
@@ -233,14 +233,14 @@ describe('contrôleur de projets', () => {
       expect(db.query).toHaveBeenNthCalledWith(
         2,
         expect.stringContaining('INSERT INTO project_brush_norms'),
-        ['1', 'Contour cheveux', '8', 'px', 'Smooth', null]
+        ['1', 'Hair outline', '8', 'px', 'Smooth', null]
       );
       expect(res.json).toHaveBeenCalledWith({ success: true, id: 9 });
     });
   });
 
-  describe('mise a jour de la palette', () => {
-    it('devrait retourner 400 si le corps n\'est pas un tableau', async () => {
+  describe('palette update', () => {
+    it('returns 400 when the body is not an array', async () => {
       const req = { params: { id: '1' }, user: { id: 1 }, body: { not: 'an array' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
@@ -250,7 +250,7 @@ describe('contrôleur de projets', () => {
       expect(db.query).not.toHaveBeenCalled();
     });
 
-    it('devrait retourner 400 si une couleur a un hex invalide', async () => {
+    it('returns 400 when a color has an invalid hex', async () => {
       const req = {
         params: { id: '1' },
         user: { id: 1 },
@@ -264,7 +264,7 @@ describe('contrôleur de projets', () => {
       expect(db.query).not.toHaveBeenCalled();
     });
 
-    it('devrait remplacer la palette en persistant l\'ordre et en supprimant les couleurs absentes', async () => {
+    it('replaces the palette while persisting the order and removing missing colors', async () => {
       db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ensureProjectOwnership (pool)
 
       const connection = {
@@ -326,7 +326,7 @@ describe('contrôleur de projets', () => {
       });
     });
 
-    it('devrait tout supprimer puis reinserer quand aucune couleur existante n\'est conservee', async () => {
+    it('deletes everything then reinserts when no existing color is kept', async () => {
       db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ensureProjectOwnership (pool)
 
       const connection = {

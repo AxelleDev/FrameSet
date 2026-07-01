@@ -90,7 +90,7 @@ const fetchCsrfToken = async ({ forceRefresh = false } = {}) => {
 
     const data = await res.json().catch(() => null);
     if (!data?.csrfToken || typeof data.csrfToken !== 'string') {
-      throw new Error('Token CSRF invalide.');
+      throw new Error('Invalid CSRF token.');
     }
 
     csrfTokenCache = data.csrfToken;
@@ -239,7 +239,7 @@ const request = async (path, {
     const remainingBeforeAttempt = RETRY_WINDOW_MS - elapsedBeforeAttempt;
 
     if (remainingBeforeAttempt <= 0) {
-      const timeoutErr = new Error('Impossible de contacter le serveur. Vérifiez votre connexion ou réessayez plus tard.');
+      const timeoutErr = new Error("Couldn't reach the server. Check your connection or try again later.");
       timeoutErr.code = 'REQUEST_RETRY_TIMEOUT';
       if (typeof onGlobalError === 'function') {
         onGlobalError(timeoutErr.message);
@@ -341,9 +341,9 @@ const request = async (path, {
       if (remaining <= 0) {
         if (typeof onGlobalError === 'function') {
           if (isNetworkError || isTimeoutAbort) {
-            onGlobalError('Impossible de contacter le serveur. Vérifiez votre connexion ou réessayez plus tard.');
+            onGlobalError("Couldn't reach the server. Check your connection or try again later.");
           } else {
-            onGlobalError(e?.data?.error || e?.message || 'Erreur serveur');
+            onGlobalError(e?.data?.error || e?.message || 'Server error');
           }
         }
         throw e;

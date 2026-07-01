@@ -22,7 +22,7 @@ import { Helmet } from 'react-helmet-async';
 const SITE_NAME = 'FrameSet';
 const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://frameset.app').replace(/\/$/, '');
 const DEFAULT_DESCRIPTION =
-  'FrameSet centralise les normes graphiques et la palette de couleurs de chaque projet, au même endroit.';
+  'FrameSet keeps every project\'s graphic standards and color palette in one place.';
 // Social share image. Uses the brand logo as a safe default that always exists;
 // replace with a dedicated 1200×630 `og-cover.png` for richer link previews.
 const DEFAULT_IMAGE = `${SITE_URL}/FrameSet_Logo.png`;
@@ -36,7 +36,7 @@ export default function Seo({
   type = 'website',
   jsonLd,
 }) {
-  const fullTitle = title ? `${title} — ${SITE_NAME}` : `${SITE_NAME} — Le référentiel graphique de vos projets`;
+  const fullTitle = title ? `${title} — ${SITE_NAME}` : `${SITE_NAME} — The graphic reference for your projects`;
   const canonical = `${SITE_URL}${path}`;
 
   return (
@@ -53,7 +53,7 @@ export default function Seo({
       <meta property="og:description" content={description} />
       <meta property="og:url" content={canonical} />
       <meta property="og:image" content={image} />
-      <meta property="og:locale" content="fr_FR" />
+      <meta property="og:locale" content="en_US" />
 
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />

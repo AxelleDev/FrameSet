@@ -2,27 +2,27 @@ import { PASSWORD_RULES, isPasswordValid, isValidEmail } from '../../src/utils/p
 
 describe('passwordRules', () => {
   describe('isPasswordValid', () => {
-    it('accepte un mot de passe respectant toute la politique', () => {
+    it('accepts a password that meets the full policy', () => {
       expect(isPasswordValid('Pass1234')).toBe(true);
     });
 
-    it('refuse un mot de passe trop court', () => {
+    it('rejects a password that is too short', () => {
       expect(isPasswordValid('Pa1')).toBe(false);
     });
 
-    it('refuse sans majuscule', () => {
+    it('rejects one without an uppercase letter', () => {
       expect(isPasswordValid('password1')).toBe(false);
     });
 
-    it('refuse sans minuscule', () => {
+    it('rejects one without a lowercase letter', () => {
       expect(isPasswordValid('PASSWORD1')).toBe(false);
     });
 
-    it('refuse sans chiffre', () => {
+    it('rejects one without a digit', () => {
       expect(isPasswordValid('PasswordOnly')).toBe(false);
     });
 
-    it('gère les valeurs vides/nulles sans planter', () => {
+    it('handles empty/null values without crashing', () => {
       expect(isPasswordValid('')).toBe(false);
       expect(isPasswordValid(null)).toBe(false);
       expect(isPasswordValid(undefined)).toBe(false);
@@ -33,7 +33,7 @@ describe('passwordRules', () => {
     it.each([
       'axelle@example.com',
       'a.b+tag@sub.domain.fr',
-    ])('accepte un email valide: %s', (email) => {
+    ])('accepts a valid email: %s', (email) => {
       expect(isValidEmail(email)).toBe(true);
     });
 
@@ -44,21 +44,21 @@ describe('passwordRules', () => {
       '@nolocal.com',
       '',
       null,
-    ])('refuse un email invalide: %s', (email) => {
+    ])('rejects an invalid email: %s', (email) => {
       expect(isValidEmail(email)).toBe(false);
     });
 
-    it('ignore les espaces autour', () => {
+    it('ignores surrounding whitespace', () => {
       expect(isValidEmail('  axelle@example.com  ')).toBe(true);
     });
   });
 
   describe('PASSWORD_RULES', () => {
-    it('expose les quatre règles attendues', () => {
+    it('exposes the four expected rules', () => {
       expect(PASSWORD_RULES.map((r) => r.id)).toEqual(['length', 'lowercase', 'uppercase', 'digit']);
     });
 
-    it('chaque règle valide correctement un cas conforme', () => {
+    it('each rule correctly validates a compliant case', () => {
       expect(PASSWORD_RULES.find((r) => r.id === 'length').test('abcdefgh')).toBe(true);
       expect(PASSWORD_RULES.find((r) => r.id === 'lowercase').test('a')).toBe(true);
       expect(PASSWORD_RULES.find((r) => r.id === 'uppercase').test('A')).toBe(true);

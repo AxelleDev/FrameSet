@@ -14,7 +14,7 @@ export default function PasswordChecklist({ password }) {
   if (!password) return null;
 
   return (
-    <ul className="mt-2 space-y-1" aria-label="Exigences du mot de passe">
+    <ul className="mt-2 space-y-1" aria-label="Password requirements">
       {PASSWORD_RULES.map((rule) => {
         const satisfied = rule.test(password);
         return (

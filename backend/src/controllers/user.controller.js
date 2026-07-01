@@ -28,7 +28,7 @@ const getUserCount = async (req, res) => {
     res.json({ count: rows[0].count });
   } catch (error) {
     logUserControllerError(req, 'count', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -42,7 +42,7 @@ const getUserCount = async (req, res) => {
 const getProfile = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
   if (!authenticatedUserId) {
-    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+    return res.status(401).json({ error: 'User not authenticated.' });
   }
 
   try {
@@ -52,7 +52,7 @@ const getProfile = async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+      return res.status(404).json({ error: 'User not found.' });
     }
 
     const userDb = rows[0];
@@ -66,7 +66,7 @@ const getProfile = async (req, res) => {
     });
   } catch (error) {
     logUserControllerError(req, 'profile', error);
-    return res.status(500).json({ error: 'Erreur serveur' });
+    return res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -84,20 +84,20 @@ const updateUser = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
   const { name, email } = req.body;
   if (!authenticatedUserId) {
-    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+    return res.status(401).json({ error: 'User not authenticated.' });
   }
   if (!name || !email) {
-    return res.status(400).json({ error: 'Tous les champs sont obligatoires.' });
+    return res.status(400).json({ error: 'All fields are required.' });
   }
   const trimmedName = validator.trim(name);
   const trimmedEmail = validator.trim(email);
   if (!validator.isEmail(trimmedEmail)) {
-    return res.status(400).json({ error: 'Email invalide.' });
+    return res.status(400).json({ error: 'Invalid email.' });
   }
   try {
     const [rows] = await db.query('SELECT email, pending_email FROM users WHERE id = ?', [authenticatedUserId]);
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+      return res.status(404).json({ error: 'User not found.' });
     }
 
     const currentEmail = rows[0].email;
@@ -109,7 +109,7 @@ const updateUser = async (req, res) => {
         [trimmedEmail, trimmedEmail, authenticatedUserId]
       );
       if (existing.length > 0) {
-        return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
+        return res.status(400).json({ error: 'This email is already in use.' });
       }
 
       const { code: pendingCode, expires } = generateVerificationCode();
@@ -121,11 +121,11 @@ const updateUser = async (req, res) => {
 
       await mailService.sendMail({
         to: trimmedEmail,
-        subject: 'Confirmation de votre nouvel email',
-        text: `Votre code de confirmation est : ${pendingCode}\nCe code expire dans 10 minutes.`,
+        subject: 'Confirm your new email',
+        text: `Your confirmation code is: ${pendingCode}\nThis code expires in 10 minutes.`,
         html: mailService.buildTemplate({
-          title: 'Confirmation de votre nouvel email',
-          message: 'Utilisez le code ci-dessous pour valider votre nouvel email.',
+          title: 'Confirm your new email',
+          message: 'Use the code below to confirm your new email.',
           code: pendingCode
         })
       });
@@ -137,7 +137,7 @@ const updateUser = async (req, res) => {
     res.json({ success: true, name: trimmedName, email: currentEmail, pendingEmail: rows[0].pending_email || null });
   } catch (error) {
     logUserControllerError(req, 'update', error);
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Database error' });
   }
 };
 
@@ -152,19 +152,19 @@ const verifyPendingEmail = async (req, res) => {
   const { email, code } = req.body;
   const authenticatedUserId = getAuthenticatedUserId(req);
   if (!authenticatedUserId) {
-    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+    return res.status(401).json({ error: 'User not authenticated.' });
   }
   try {
     const [rows] = await db.query('SELECT * FROM users WHERE id = ? AND pending_email = ?', [authenticatedUserId, email]);
     if (rows.length === 0) {
-      return res.status(400).json({ error: 'Email en attente non trouvé.' });
+      return res.status(400).json({ error: 'No pending email found.' });
     }
     const userDb = rows[0];
     if (!userDb.pending_email_code || userDb.pending_email_code !== code) {
-      return res.status(400).json({ error: 'Code incorrect.' });
+      return res.status(400).json({ error: 'Incorrect code.' });
     }
     if (!userDb.pending_email_expires || new Date() > new Date(userDb.pending_email_expires)) {
-      return res.status(400).json({ error: 'Code expiré. Veuillez en demander un nouveau.' });
+      return res.status(400).json({ error: 'Code expired. Please request a new one.' });
     }
 
     await db.query(
@@ -184,7 +184,7 @@ const verifyPendingEmail = async (req, res) => {
     res.json({ success: true, user: updatedUser });
   } catch (error) {
     logUserControllerError(req, 'verify_pending_email', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -198,12 +198,12 @@ const resendPendingEmail = async (req, res) => {
   const { email } = req.body;
   const authenticatedUserId = getAuthenticatedUserId(req);
   if (!authenticatedUserId) {
-    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+    return res.status(401).json({ error: 'User not authenticated.' });
   }
   try {
     const [rows] = await db.query('SELECT * FROM users WHERE id = ? AND pending_email = ?', [authenticatedUserId, email]);
     if (rows.length === 0) {
-      return res.status(400).json({ error: 'Email en attente non trouvé.' });
+      return res.status(400).json({ error: 'No pending email found.' });
     }
     const userDb = rows[0];
     const { code: newCode, expires } = generateVerificationCode();
@@ -215,11 +215,11 @@ const resendPendingEmail = async (req, res) => {
 
     await mailService.sendMail({
       to: email,
-      subject: 'Nouveau code de confirmation',
-      text: `Votre nouveau code de confirmation est : ${newCode}\nCe code expire dans 10 minutes.`,
+      subject: 'New confirmation code',
+      text: `Your new confirmation code is: ${newCode}\nThis code expires in 10 minutes.`,
       html: mailService.buildTemplate({
-        title: 'Nouveau code de confirmation',
-        message: 'Voici votre nouveau code pour confirmer votre email.',
+        title: 'New confirmation code',
+        message: 'Here is your new code to confirm your email.',
         code: newCode
       })
     });
@@ -227,7 +227,7 @@ const resendPendingEmail = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     logUserControllerError(req, 'resend_pending_email', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -243,23 +243,23 @@ const changePassword = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
   const { currentPassword, newPassword } = req.body;
   if (!authenticatedUserId || !currentPassword || !newPassword) {
-    return res.status(400).json({ error: 'Champs requis manquants.' });
+    return res.status(400).json({ error: 'Required fields are missing.' });
   }
   const trimmedNewPassword = validator.trim(newPassword);
   if (!validator.isLength(trimmedNewPassword, { min: PASSWORD_MIN_LENGTH })) {
-    return res.status(400).json({ error: 'Mot de passe trop court.' });
+    return res.status(400).json({ error: 'Password too short.' });
   }
   if (!validator.matches(trimmedNewPassword, PASSWORD_COMPLEXITY_REGEX)) {
-    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.' });
+    return res.status(400).json({ error: 'The password must contain at least one uppercase letter, one lowercase letter, and one digit.' });
   }
   try {
     const [rows] = await db.query('SELECT password FROM users WHERE id = ?', [authenticatedUserId]);
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+      return res.status(404).json({ error: 'User not found.' });
     }
     const isMatch = await bcrypt.compare(currentPassword, rows[0].password);
     if (!isMatch) {
-      return res.status(401).json({ error: 'Ancien mot de passe incorrect.' });
+      return res.status(401).json({ error: 'Current password is incorrect.' });
     }
     const hashedPassword = await bcrypt.hash(trimmedNewPassword, BCRYPT_SALT_ROUNDS);
     await db.query('UPDATE users SET password = ?, password_updated_at = NOW() WHERE id = ?', [hashedPassword, authenticatedUserId]);
@@ -269,7 +269,7 @@ const changePassword = async (req, res) => {
     res.json({ success: true, passwordUpdatedAt: new Date() });
   } catch (error) {
     logUserControllerError(req, 'change_password', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -283,17 +283,17 @@ const changePassword = async (req, res) => {
 const deleteAccount = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
   if (!authenticatedUserId) {
-    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+    return res.status(401).json({ error: 'User not authenticated.' });
   }
   try {
     const [result] = await db.query('DELETE FROM users WHERE id = ?', [authenticatedUserId]);
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+      return res.status(404).json({ error: 'User not found.' });
     }
     res.json({ success: true });
   } catch (error) {
     logUserControllerError(req, 'delete_account', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 

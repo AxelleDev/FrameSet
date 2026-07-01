@@ -3,18 +3,18 @@ import { render, screen } from '@testing-library/react';
 import CopyBadge from '../../src/components/CopyBadge';
 
 describe('CopyBadge', () => {
-  it('affiche le label par défaut quand rien n’est copié', () => {
+  it('shows the default label when nothing is copied', () => {
     render(<CopyBadge isCopied={false} />);
-    expect(screen.getByText('Copier')).toBeInTheDocument();
+    expect(screen.getByText('Copy')).toBeInTheDocument();
   });
 
-  it('affiche le label "copié" après copie', () => {
+  it('shows the "copied" label after copying', () => {
     render(<CopyBadge isCopied={true} />);
-    expect(screen.getByText('Copié !')).toBeInTheDocument();
+    expect(screen.getByText('Copied!')).toBeInTheDocument();
   });
 
-  it('accepte des labels personnalisés', () => {
-    render(<CopyBadge isCopied={false} defaultLabel="Copier le hex" />);
-    expect(screen.getByText('Copier le hex')).toBeInTheDocument();
+  it('accepts custom labels', () => {
+    render(<CopyBadge isCopied={false} defaultLabel="Copy hex" />);
+    expect(screen.getByText('Copy hex')).toBeInTheDocument();
   });
 });

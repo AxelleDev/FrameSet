@@ -42,7 +42,7 @@ export default function Login() {
     if (submitting) return;
 
     if (!formData.email || !formData.password) {
-      setError('Entrez votre email et votre mot de passe.');
+      setError('Enter your email and password.');
       return;
     }
 
@@ -70,40 +70,40 @@ export default function Login() {
           </div>
 
           <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
-            Définissez votre <br />
-            <span className="font-bold text-primary">Vérité Visuelle.</span>
+            Define your <br />
+            <span className="font-bold text-primary">visual identity.</span>
           </h1>
 
           <p className="text-lg text-primary max-w-md leading-relaxed">
-            FrameSet centralise les fondations graphiques de vos projets créatifs, pour une direction artistique claire et maîtrisée.
+            FrameSet centralizes the graphic foundations of your creative projects, for a clear and confident art direction.
           </p>
 
           <div className="flex items-center space-x-4 pt-4">
             <span className="text-sm text-blue">
-              {userCount !== null ? `Rejoint par ${userCount} Illustrateur${userCount > 1 ? 's' : ''}` : 'Rejoint par ... Illustrateurs'}
+              {userCount !== null ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}` : 'Joined by ... illustrators'}
             </span>
           </div>
         </>
       }
     >
       <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
-        <Seo title="Connexion" path="/login" description="Connectez-vous à votre espace FrameSet pour gérer les normes et palettes de vos projets." />
+        <Seo title="Sign in" path="/login" description="Sign in to your FrameSet workspace to manage your projects' standards and palettes." />
         <div className="mb-8 text-center">
-          <h2 className="text-2xl font-medium text-primary">Bon retour</h2>
-          <p className="text-primary text-sm mt-2">Reprenez là où vous vous êtes arrêté.</p>
+          <h2 className="text-2xl font-medium text-primary">Welcome back</h2>
+          <p className="text-primary text-sm mt-2">Pick up right where you left off.</p>
         </div>
 
         {error && (
           <Alert variant="danger" className="mb-4">
             {error}
             {/* Offer a verification shortcut when login failed due to an unverified email */}
-            {error.includes('vérifier votre email') && (
+            {error.includes('verify your email') && (
               <Button
                 type="button"
                 onClick={() => navigate(`/verify?email=${encodeURIComponent(formData.email.trim())}`)}
                 className="mt-3 w-full"
               >
-                Vérifier mon email
+                Verify my email
               </Button>
             )}
           </Alert>
@@ -116,29 +116,29 @@ export default function Login() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="email@exemple.com"
+              placeholder="email@example.com"
               autoComplete="email"
             />
           </FormField>
 
-          <FormField label="Mot de passe" required>
+          <FormField label="Password" required>
             <PasswordInput
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Votre mot de passe"
+              placeholder="Your password"
               autoComplete="current-password"
             />
           </FormField>
 
           <Button type="submit" fullWidth className="mt-2" loading={submitting}>
-            Se connecter
+            Sign in
           </Button>
         </form>
 
         <div className="mt-8 text-center flex flex-col gap-2">
-          <Link to="/register" className="text-sm font-medium text-blue hover:text-primary transition-colors">Pas encore de compte ? Créer un compte</Link>
-          <Link to="/forgot-password" className="text-xs text-blue hover:text-primary transition-colors">Mot de passe oublié ?</Link>
+          <Link to="/register" className="text-sm font-medium text-blue hover:text-primary transition-colors">No account yet? Create one</Link>
+          <Link to="/forgot-password" className="text-xs text-blue hover:text-primary transition-colors">Forgot password?</Link>
         </div>
       </Card>
     </AuthLayout>

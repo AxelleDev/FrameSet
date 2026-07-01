@@ -7,7 +7,7 @@ function CrashOnRender() {
 }
 
 describe('ErrorBoundary', () => {
-  it('affiche le fallback quand un composant enfant plante au rendu', () => {
+  it('shows the fallback when a child component crashes during render', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     render(

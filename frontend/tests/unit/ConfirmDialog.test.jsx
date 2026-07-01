@@ -4,34 +4,34 @@ import userEvent from '@testing-library/user-event';
 import ConfirmDialog from '../../src/components/ConfirmDialog';
 
 describe('ConfirmDialog', () => {
-  it('active la confirmation seulement quand le mot attendu est saisi', async () => {
+  it('enables confirmation only when the expected word is typed', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
 
     render(
       <ConfirmDialog
         isOpen={true}
-        title="Supprimer mon compte"
-        subtitle="Saisissez le mot demandé"
-        message="Action irréversible"
-        confirmLabel="Supprimer"
+        title="Delete my account"
+        subtitle="Type the requested word"
+        message="Irreversible action"
+        confirmLabel="Delete"
         onConfirm={onConfirm}
         onCancel={() => {}}
-        confirmationWord="Suppression"
-        confirmationInputLabel="Écrivez le mot de confirmation"
+        confirmationWord="DELETE"
+        confirmationInputLabel="Type the confirmation word"
       />
     );
 
-    const confirmButton = screen.getByRole('button', { name: 'Supprimer' });
-    const input = screen.getByLabelText(/écrivez le mot de confirmation/i);
+    const confirmButton = screen.getByRole('button', { name: 'Delete' });
+    const input = screen.getByLabelText(/type the confirmation word/i);
 
     expect(confirmButton).toBeDisabled();
 
-    await user.type(input, 'suppression');
+    await user.type(input, 'delete');
     expect(confirmButton).toBeDisabled();
 
     await user.clear(input);
-    await user.type(input, 'Suppression');
+    await user.type(input, 'DELETE');
 
     expect(confirmButton).toBeEnabled();
 
@@ -39,18 +39,18 @@ describe('ConfirmDialog', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('laisse confirmer directement quand aucun mot de confirmation n’est requis', () => {
+  it('lets the user confirm directly when no confirmation word is required', () => {
     render(
       <ConfirmDialog
         isOpen={true}
-        title="Supprimer"
-        message="Confirmer ?"
-        confirmLabel="Confirmer"
+        title="Delete"
+        message="Confirm?"
+        confirmLabel="Confirm"
         onConfirm={() => {}}
         onCancel={() => {}}
       />
     );
 
-    expect(screen.getByRole('button', { name: 'Confirmer' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Confirm' })).toBeEnabled();
   });
 });

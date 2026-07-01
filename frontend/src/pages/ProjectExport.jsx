@@ -33,7 +33,7 @@ export default function ProjectExport() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(projectJson);
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `${activeProject.name.replace(/\s+/g, '_').toLowerCase()}_normes.json`);
+    downloadAnchorNode.setAttribute("download", `${activeProject.name.replace(/\s+/g, '_').toLowerCase()}_standards.json`);
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -54,20 +54,20 @@ export default function ProjectExport() {
     // shape so they can be rendered with one loop below.
     const norms = [
       ...(activeProject.brushNorms || []).map(n => ({
-        category: 'Trait',
+        category: 'Brush',
         name: n.name,
         value: `${n.value}${n.unit || ''}`,
         details: [
-          n.brushName ? `Pinceau: ${n.brushName}` : null,
-          n.opacity !== undefined && n.opacity !== null ? `Opacité: ${n.opacity}` : null
+          n.brushName ? `Brush: ${n.brushName}` : null,
+          n.opacity !== undefined && n.opacity !== null ? `Opacity: ${n.opacity}` : null
         ].filter(Boolean).join(' | ')
       })),
       ...(activeProject.typographyNorms || []).map(n => ({
-        category: 'Typographie',
+        category: 'Typography',
         name: n.fontUsage || n.fontFamily,
         value: n.fontFamily,
         details: [
-          n.fontWeight ? `Graisse: ${n.fontWeight}` : null,
+          n.fontWeight ? `Weight: ${n.fontWeight}` : null,
           n.fontStyle ? `Style: ${n.fontStyle}` : null
         ].filter(Boolean).join(' | ')
       }))
@@ -82,7 +82,7 @@ export default function ProjectExport() {
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100);
-    doc.text(`Version générée le ${new Date().toLocaleDateString()}`, 20, y);
+    doc.text(`Version generated on ${new Date().toLocaleDateString()}`, 20, y);
     y += 20;
     
     doc.setDrawColor(200);
@@ -95,7 +95,7 @@ export default function ProjectExport() {
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(50);
-      doc.text('Normes graphiques', 20, y);
+      doc.text('Graphic standards', 20, y);
       y += 12;
 
       doc.setFontSize(11);
@@ -128,7 +128,7 @@ export default function ProjectExport() {
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(50);
-      doc.text('Palette de couleurs', 20, y);
+      doc.text('Color palette', 20, y);
       y += 12;
 
       doc.setFontSize(11);
@@ -149,14 +149,14 @@ export default function ProjectExport() {
     }
 
     // Save with a filesystem-safe filename derived from the project name.
-    doc.save(`${activeProject.name.replace(/\s+/g, '_')}_guide_de_style.pdf`);
+    doc.save(`${activeProject.name.replace(/\s+/g, '_')}_style_guide.pdf`);
   };
 
   return (
     <>
       <PageHeader
-        title="Exporter les normes"
-        subtitle="Exportez l’essentiel de votre direction artistique."
+        title="Export standards"
+        subtitle="Export the essentials of your art direction."
       />
 
       {activeProject ? (
@@ -166,10 +166,10 @@ export default function ProjectExport() {
                 <div className="h-12 w-12 bg-blue/15 text-blue rounded-full flex items-center justify-center mb-6">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                 </div>
-              <h3 className="text-lg font-medium text-primary mb-2">Guide de style PDF</h3>
-              <p className="text-sm text-primary mb-6">Un document PDF structuré regroupant l’ensemble des normes actives et des palettes du projet. Idéal pour l’impression ou le partage.</p>
+              <h3 className="text-lg font-medium text-primary mb-2">PDF style guide</h3>
+              <p className="text-sm text-primary mb-6">A structured PDF document bringing together all of the project's active standards and palettes. Ideal for printing or sharing.</p>
                 <Button onClick={downloadPdf} variant="primary">
-                  Télécharger le PDF
+                  Download PDF
                 </Button>
             </Card>
 
@@ -177,16 +177,16 @@ export default function ProjectExport() {
                 <div className="h-12 w-12 bg-blue/15 text-blue rounded-full flex items-center justify-center mb-6">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
                 </div>
-              <h3 className="text-lg font-medium text-primary mb-2">Données JSON</h3>
-              <p className="text-sm text-primary mb-6">Structure de données brute regroupant l’ensemble du projet : normes, palettes, identifiants et paramètres. Prête à être intégrée dans vos outils.</p>
+              <h3 className="text-lg font-medium text-primary mb-2">JSON data</h3>
+              <p className="text-sm text-primary mb-6">Raw data structure covering the entire project: standards, palettes, identifiers and settings. Ready to plug into your own tools.</p>
                 <Button onClick={downloadJson} variant="primary">
-                  Télécharger le JSON
+                  Download JSON
                 </Button>
             </Card>
           </div>
 
           <div className="mt-12">
-            <h4 className="text-sm font-bold text-primary uppercase tracking-wider mb-4">Aperçu de la sortie JSON</h4>
+            <h4 className="text-sm font-bold text-primary uppercase tracking-wider mb-4">JSON output preview</h4>
             <div className="bg-primary/5 rounded-2xl p-6 overflow-x-auto ">
               <pre className="text-xs text-primary font-mono leading-relaxed">{projectJson}</pre>
             </div>

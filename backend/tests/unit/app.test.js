@@ -21,13 +21,13 @@ const request = require('supertest');
 const app = require('../../src/app');
 const db = require('../../src/database');
 
-describe('middleware de l\'application', () => {
+describe('application middleware', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('health check', () => {
-    it('devrait retourner 200 avec un statut ok si la base est joignable', async () => {
+    it('returns 200 with an ok status when the database is reachable', async () => {
       db.ping.mockResolvedValueOnce();
 
       const res = await request(app)
@@ -42,8 +42,8 @@ describe('middleware de l\'application', () => {
     });
   });
 
-  describe('en-tetes de securite', () => {
-    it('devrait exposer un header Content-Security-Policy explicite', async () => {
+  describe('security headers', () => {
+    it('exposes an explicit Content-Security-Policy header', async () => {
       const res = await request(app)
         .get('/api/auth/csrf-token');
 
@@ -54,8 +54,8 @@ describe('middleware de l\'application', () => {
     });
   });
 
-  describe('limite de taille JSON', () => {
-    it('devrait retourner 413 pour un payload JSON dépassant 10 Ko', async () => {
+  describe('JSON size limit', () => {
+    it('returns 413 for a JSON payload exceeding 10 KB', async () => {
       const largePayload = JSON.stringify({ data: 'x'.repeat(200 * 1024) });
 
       const res = await request(app)
@@ -66,7 +66,7 @@ describe('middleware de l\'application', () => {
       expect(res.status).toBe(413);
     });
 
-    it('devrait accepter un payload JSON inférieur à 10 Ko', async () => {
+    it('accepts a JSON payload smaller than 10 KB', async () => {
       const smallPayload = JSON.stringify({ email: 'test@test.com', password: 'Password1' });
 
       const res = await request(app)

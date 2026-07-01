@@ -17,32 +17,32 @@ import Badge from '../../src/components/Badge';
 import FormField from '../../src/components/FormField';
 import TextInput from '../../src/components/TextInput';
 
-describe('accessibilité (axe-core)', () => {
-  it('Alert : aucune violation pour toutes les variantes', async () => {
+describe('accessibility (axe-core)', () => {
+  it('Alert: no violations for any variant', async () => {
     const { container } = render(
       <>
-        <Alert variant="danger">Une erreur est survenue.</Alert>
-        <Alert variant="success">Action réussie.</Alert>
+        <Alert variant="danger">Something went wrong.</Alert>
+        <Alert variant="success">Action succeeded.</Alert>
         <Alert variant="info">Information.</Alert>
       </>
     );
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('Button / Avatar / Badge : aucune violation', async () => {
+  it('Button / Avatar / Badge: no violations', async () => {
     const { container } = render(
       <>
-        <Button>Valider</Button>
-        <Avatar initials="PN" />
-        <Badge color="blue">Actif</Badge>
+        <Button>Submit</Button>
+        <Avatar initials="JD" />
+        <Badge color="blue">Active</Badge>
       </>
     );
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('FormField : label associé + erreur reliée, aucune violation', async () => {
+  it('FormField: associated label + linked error, no violations', async () => {
     const { container } = render(
-      <FormField label="Email" required error="Format d'email invalide.">
+      <FormField label="Email" required error="Invalid email format.">
         <TextInput type="email" value="" onChange={() => {}} />
       </FormField>
     );

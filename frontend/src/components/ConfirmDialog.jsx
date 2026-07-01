@@ -30,14 +30,14 @@ export default function ConfirmDialog({
   title,
   subtitle = '',
   message,
-  confirmLabel = 'Confirmer',
-  cancelLabel = 'Annuler',
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
   onConfirm,
   onCancel,
   confirmClassName = '',
   decorationClassName = 'absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50',
   confirmationWord = '',
-  confirmationInputLabel = 'Mot de confirmation',
+  confirmationInputLabel = 'Confirmation word',
   confirmationInputPlaceholder = ''
 }) {
   const [confirmationValue, setConfirmationValue] = useState('');
@@ -90,7 +90,7 @@ export default function ConfirmDialog({
             autoComplete="off"
           />
           {showConfirmationError ? (
-            <p className="mt-2 text-xs text-danger">La valeur saisie ne correspond pas.</p>
+            <p className="mt-2 text-xs text-danger">The value you entered doesn't match.</p>
           ) : null}
         </div>
       ) : null}

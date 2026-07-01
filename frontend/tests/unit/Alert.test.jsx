@@ -3,19 +3,19 @@ import { render, screen } from '@testing-library/react';
 import Alert from '../../src/components/Alert';
 
 describe('Alert', () => {
-  it('rend son contenu', () => {
+  it('renders its content', () => {
     render(<Alert>Message</Alert>);
     expect(screen.getByText('Message')).toBeInTheDocument();
   });
 
-  it('utilise le role "alert" pour une erreur', () => {
-    render(<Alert variant="danger">Oups</Alert>);
+  it('uses the "alert" role for an error', () => {
+    render(<Alert variant="danger">Oops</Alert>);
     const el = screen.getByRole('alert');
-    expect(el).toHaveTextContent('Oups');
+    expect(el).toHaveTextContent('Oops');
     expect(el).toHaveClass('bg-danger/10');
   });
 
-  it('utilise le role "status" pour info/success', () => {
+  it('uses the "status" role for info/success', () => {
     const { rerender } = render(<Alert variant="info">Info</Alert>);
     expect(screen.getByRole('status')).toHaveClass('bg-blue/10');
 

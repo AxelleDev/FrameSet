@@ -17,30 +17,30 @@ const tokenService = require('../../src/services/token.service');
 
 const hashToken = (token) => createHash('sha256').update(token).digest('hex');
 
-describe('service de jeton', () => {
+describe('token service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('devrait générer un jeton de rafraîchissement', () => {
+  it('generates a refresh token', () => {
     jwt.sign.mockReturnValue('token');
     const token = tokenService.generateRefreshToken({ id: 1 });
     expect(token).toBe('token');
   });
 
-  it('devrait vérifier le jeton de rafraîchissement', () => {
+  it('verifies the refresh token', () => {
     jwt.verify.mockReturnValue({ id: 1 });
     const payload = tokenService.verifyRefreshToken('token');
     expect(payload).toEqual({ id: 1 });
   });
 
-  it('devrait retourner null pour un jeton invalide', () => {
+  it('returns null for an invalid token', () => {
     jwt.verify.mockImplementation(() => { throw new Error('fail'); });
     const payload = tokenService.verifyRefreshToken('badtoken');
     expect(payload).toBeNull();
   });
 
-  it('devrait révoquer un token', async () => {
+  it('revokes a token', async () => {
     db.query.mockResolvedValueOnce([{}]);
     const ok = await tokenService.revokeToken(1, 'abc');
     expect(ok).toBe(true);
@@ -50,7 +50,7 @@ describe('service de jeton', () => {
     );
   });
 
-  it('devrait détecter un token révoqué', async () => {
+  it('detects a revoked token', async () => {
     db.query.mockResolvedValueOnce([[{ id: 99 }]]);
     const revoked = await tokenService.isTokenRevoked(1, 'abc');
     expect(revoked).toBe(true);
@@ -60,25 +60,25 @@ describe('service de jeton', () => {
     );
   });
 
-  it('devrait retourner false pour un token non révoqué', async () => {
+  it('returns false for a token that is not revoked', async () => {
     db.query.mockResolvedValueOnce([[]]);
     const revoked = await tokenService.isTokenRevoked(1, 'abc');
     expect(revoked).toBe(false);
   });
 
-  it('devrait refuser de révoquer un token vide', async () => {
+  it('refuses to revoke an empty token', async () => {
     const ok = await tokenService.revokeToken(1, '');
     expect(ok).toBe(false);
     expect(db.query).not.toHaveBeenCalled();
   });
 
-  it('devrait traiter un token vide comme révoqué (fail-closed)', async () => {
+  it('treats an empty token as revoked (fail-closed)', async () => {
     const revoked = await tokenService.isTokenRevoked(1, '');
     expect(revoked).toBe(true);
     expect(db.query).not.toHaveBeenCalled();
   });
 
-  it('devrait lever une erreur si la vérification de révocation échoue en base', async () => {
+  it('throws an error when the revocation check fails in the database', async () => {
     db.query.mockRejectedValueOnce(new Error('db down'));
 
     await expect(tokenService.isTokenRevoked(1, 'abc'))

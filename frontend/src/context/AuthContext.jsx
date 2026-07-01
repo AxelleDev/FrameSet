@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }) => {
       setAuthenticatedUser(userData);
       return { success: true, data: userData };
     } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, 'Une erreur est survenue.');
+      const { message } = handleApiError(err, setGlobalError, 'Something went wrong.');
       return { success: false, message };
     }
   }, [setAuthenticatedUser]);
@@ -164,7 +164,7 @@ export const AuthProvider = ({ children }) => {
       const registrationData = await api.post('/auth/register', userData, { onGlobalError: setGlobalError });
       return { success: true, data: registrationData };
     } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, 'Une erreur est survenue.');
+      const { message } = handleApiError(err, setGlobalError, 'Something went wrong.');
       return { success: false, message };
     }
   }, [setGlobalError]);
@@ -304,7 +304,7 @@ export const AuthProvider = ({ children }) => {
       const data = await api.post('/auth/reset-password', { email, code, newPassword }, { onGlobalError: setGlobalError });
       return { success: Boolean(data?.success) };
     } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, 'Réinitialisation impossible.');
+      const { message } = handleApiError(err, setGlobalError, 'Password reset failed.');
       return { success: false, message };
     }
   }, [setGlobalError]);

@@ -34,8 +34,8 @@ export default function MainLayout() {
   // Derive the header title from the active project or the current route.
   const getPageTitle = () => {
     if (activeProject) return activeProject.name;
-    if (location.pathname.includes('profile')) return 'Mon Profil';
-    return 'Tableau de bord';
+    if (location.pathname.includes('profile')) return 'Profile';
+    return 'Dashboard';
   };
 
   // Show a loading state until auth/projects resolve.
@@ -43,7 +43,7 @@ export default function MainLayout() {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-canvas" role="status" aria-live="polite">
         <div className="border-4 border-blue/20 border-t-blue rounded-full w-10 h-10 animate-spin"></div>
-        <p className="mt-4 text-primary/60">Chargement…</p>
+        <p className="mt-4 text-primary/60">Loading…</p>
       </div>
     );
   }
@@ -54,18 +54,18 @@ export default function MainLayout() {
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-canvas text-primary transition-colors duration-slow">
-      <Seo title="Espace de travail" noindex />
+      <Seo title="Workspace" noindex />
       <a
         href="#contenu"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-toast focus:px-4 focus:py-2 focus:rounded-xl focus:bg-surface focus:text-primary focus:ring-2 focus:ring-blue"
       >
-        Aller au contenu
+        Skip to content
       </a>
 
       {isMobileMenuOpen && (
         <button
           type="button"
-          aria-label="Fermer le menu"
+          aria-label="Close menu"
           className="fixed inset-0 z-overlay bg-black/40 backdrop-blur-sm md:hidden animate-fade-in"
           onClick={closeMobileMenu}
         ></button>
@@ -82,27 +82,27 @@ export default function MainLayout() {
             <Logo className="w-[65%] h-auto object-contain" style={{ maxWidth: '260px' }} />
         </div>
 
-        <nav aria-label="Navigation principale" className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
+        <nav aria-label="Main navigation" className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
           <div className="mb-8">
-            <p className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4">Espace de travail</p>
+            <p className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4">Workspace</p>
             <NavLink to="/app/dashboard" className={navLinkClass} onClick={closeMobileMenu}>
               <svg className="mr-3 h-5 w-5 text-blue group-hover:text-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
               </svg>
-              Tableau de bord
+              Dashboard
             </NavLink>
           </div>
 
           {activeProject && (
             <div className="animate-fade-in">
               <p className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4 truncate" title={activeProject.name}>
-                Projet actif
+                Active project
               </p>
               
               <div className="space-y-1">
                 <NavLink to={`/app/project/${activeProject.id}/norms`} className={navLinkClass} onClick={closeMobileMenu}>
                    <svg className="mr-3 h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                   Normes graphiques
+                   Graphic standards
                 </NavLink>
                 <NavLink to={`/app/project/${activeProject.id}/palette`} className={navLinkClass} onClick={closeMobileMenu}>
                    <svg className="mr-3 h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
@@ -120,7 +120,7 @@ export default function MainLayout() {
         {/* Mobile only: on phones the theme switch moves out of the cramped
             header into the burger menu. On desktop it stays in the header. */}
         <div className="md:hidden flex items-center justify-between px-8 py-3 border-y border-blue/10">
-          <span className="text-sm font-medium text-secondary">Thème</span>
+          <span className="text-sm font-medium text-secondary">Theme</span>
           <ThemeToggle />
         </div>
 
@@ -145,15 +145,15 @@ export default function MainLayout() {
 
       <main className="flex-1 overflow-auto focus:outline-none relative custom-scrollbar">
         <header className="h-20 flex items-center gap-3 px-4 md:px-8 sticky top-0 z-sticky bg-canvas/90 backdrop-blur-md md:bg-transparent md:backdrop-blur-0 transition-all duration-slow">
-          <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Ouvrir le menu" className="md:hidden -ml-1 shrink-0 text-primary hover:text-blue transition-colors p-2 rounded-lg hover:bg-blue/10">
+          <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Open menu" className="md:hidden -ml-1 shrink-0 text-primary hover:text-blue transition-colors p-2 rounded-lg hover:bg-blue/10">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
 
           {activeProject ? (
-            // The "Espace de travail" crumb is dropped on phones (the burger menu
+            // The "Workspace" crumb is dropped on phones (the burger menu
             // already links there); only the project chip remains, truncating to fit.
-            <nav aria-label="Fil d'Ariane" className="flex items-center text-sm font-medium min-w-0 animate-fade-in">
-              <Link className="hidden sm:inline whitespace-nowrap text-blue hover:text-primary transition cursor-pointer" to="/app/dashboard">Espace de travail</Link>
+            <nav aria-label="Breadcrumb" className="flex items-center text-sm font-medium min-w-0 animate-fade-in">
+              <Link className="hidden sm:inline whitespace-nowrap text-blue hover:text-primary transition cursor-pointer" to="/app/dashboard">Workspace</Link>
               <svg className="hidden sm:block w-4 h-4 mx-2 shrink-0 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
               <span className="min-w-0 truncate text-primary bg-blue/15 px-2.5 py-1 rounded-lg">{activeProject.name}</span>
             </nav>

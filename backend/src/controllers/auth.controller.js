@@ -134,7 +134,7 @@ const register = async (req, res) => {
         requestId: req.id,
         emailFingerprint: getIdentifierFingerprint(email)
       });
-      return res.status(400).json({ error: 'Erreur lors de l’inscription.' });
+      return res.status(400).json({ error: 'Something went wrong during sign-up.' });
     }
 
     logger.error('auth.register.error', {
@@ -143,7 +143,7 @@ const register = async (req, res) => {
       error
     });
 
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -203,7 +203,7 @@ const login = async (req, res) => {
         reason: 'email_not_verified'
       });
 
-      return res.status(401).json({ error: 'Veuillez vérifier votre email avant de vous connecter.' });
+      return res.status(401).json({ error: 'Please verify your email before signing in.' });
     }
     if (error.code === 'invalid_credentials') {
       logger.warn('auth.login.failed', {
@@ -213,7 +213,7 @@ const login = async (req, res) => {
         reason: 'invalid_credentials'
       });
 
-      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
+      return res.status(401).json({ error: 'Incorrect email or password.' });
     }
 
     logger.error('auth.login.error', {
@@ -222,7 +222,7 @@ const login = async (req, res) => {
       error
     });
 
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -245,7 +245,7 @@ const refresh = async (req, res) => {
       reason: 'missing_refresh_token'
     });
 
-    return res.status(400).json({ error: 'Refresh token manquant' });
+    return res.status(400).json({ error: 'Missing refresh token' });
   }
 
   const user = verifyRefreshToken(refreshToken);
@@ -255,7 +255,7 @@ const refresh = async (req, res) => {
       reason: 'invalid_or_expired_refresh_token'
     });
 
-    return res.status(403).json({ error: 'Refresh token invalide ou expiré' });
+    return res.status(403).json({ error: 'Invalid or expired refresh token' });
   }
 
   const refreshTokenRevoked = await isTokenRevoked(user.id, refreshToken);
@@ -266,7 +266,7 @@ const refresh = async (req, res) => {
       reason: 'revoked_refresh_token'
     });
 
-    return res.status(403).json({ error: 'Refresh token invalide ou expiré' });
+    return res.status(403).json({ error: 'Invalid or expired refresh token' });
   }
 
   // Reject refresh tokens issued before the last password change/reset, so a
@@ -275,7 +275,7 @@ const refresh = async (req, res) => {
   try {
     refreshTokenStale = await authService.isRefreshTokenStale(user.id, user.iat);
   } catch (error) {
-    return res.status(503).json({ error: 'Service temporairement indisponible' });
+    return res.status(503).json({ error: 'Service temporarily unavailable' });
   }
   if (refreshTokenStale) {
     logger.warn('auth.refresh.failed', {
@@ -284,7 +284,7 @@ const refresh = async (req, res) => {
       reason: 'password_changed'
     });
 
-    return res.status(403).json({ error: 'Refresh token invalide ou expiré' });
+    return res.status(403).json({ error: 'Invalid or expired refresh token' });
   }
 
   logger.info('auth.refresh.success', {
@@ -303,7 +303,7 @@ const refresh = async (req, res) => {
       reason: 'refresh_token_revoke_failed'
     });
 
-    return res.status(500).json({ error: 'Erreur serveur' });
+    return res.status(500).json({ error: 'Server error' });
   }
 
   setAuthCookies(res, token, nextRefreshToken);
@@ -330,7 +330,7 @@ const verify = async (req, res) => {
       error
     });
 
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -355,7 +355,7 @@ const resendCode = async (req, res) => {
       error
     });
 
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -410,7 +410,7 @@ const logout = async (req, res) => {
       error
     });
 
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -450,7 +450,7 @@ const forgotPassword = async (req, res) => {
       emailFingerprint: getIdentifierFingerprint(email),
       error
     });
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -474,7 +474,7 @@ const resetPassword = async (req, res) => {
       emailFingerprint: getIdentifierFingerprint(email),
       error
     });
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 

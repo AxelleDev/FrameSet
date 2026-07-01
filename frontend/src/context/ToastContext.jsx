@@ -71,7 +71,7 @@ export function ToastProvider({ children }) {
                 <button
                   type="button"
                   onClick={() => dismiss(toast.id)}
-                  aria-label="Fermer la notification"
+                  aria-label="Close notification"
                   className="text-primary/40 transition-colors hover:text-primary"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
