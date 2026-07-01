@@ -85,7 +85,7 @@ const fetchCsrfToken = async ({ forceRefresh = false } = {}) => {
     });
 
     if (!res.ok) {
-      throw new Error('Impossible de recuperer le token CSRF.');
+      throw new Error('Failed to retrieve the CSRF token.');
     }
 
     const data = await res.json().catch(() => null);
@@ -279,7 +279,7 @@ const request = async (path, {
       if (!res.ok) {
         // Enrich the error with status/data so callers and the recovery logic
         // below can branch on them (CSRF vs auth vs server errors).
-        const errorMsg = data?.error || res.statusText || 'Erreur inconnue';
+        const errorMsg = data?.error || res.statusText || 'Unknown error';
         const err = new Error(errorMsg);
         err.status = res.status;
         err.data = data;

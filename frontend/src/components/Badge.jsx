@@ -2,8 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 /**
- * Small uppercase pill used to label sections/categories (e.g. "Trait",
- * "Typographie"). Outlined on white with a per-color accent.
+ * Small uppercase pill used to label sections/categories (e.g. "Brush",
+ * "Typography"). Outlined on white with a per-color accent.
  *
  * @param {object} props
  * @param {'primary'|'blue'|'danger'} [props.color] - Accent color.

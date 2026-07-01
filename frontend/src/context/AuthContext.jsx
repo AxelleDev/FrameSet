@@ -221,7 +221,7 @@ export const AuthProvider = ({ children }) => {
       setGlobalError(null);
       return { success: true };
     } catch (error) {
-      const { message } = handleApiError(error, setGlobalError, 'Erreur lors de la suppression du compte.');
+      const { message } = handleApiError(error, setGlobalError, 'Failed to delete the account.');
       return { success: false, message };
     }
   }, []);
@@ -274,7 +274,7 @@ export const AuthProvider = ({ children }) => {
       const data = await api.post('/auth/resend-code', { email }, { onGlobalError: setGlobalError });
       return { success: Boolean(data?.success) };
     } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, "Erreur lors de l'envoi du code.");
+      const { message } = handleApiError(err, setGlobalError, "Failed to send the code.");
       return { success: false, message };
     }
   }, [setGlobalError]);
@@ -289,7 +289,7 @@ export const AuthProvider = ({ children }) => {
       const data = await api.post('/auth/forgot-password', { email }, { onGlobalError: setGlobalError });
       return { success: Boolean(data?.success) };
     } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, "Erreur lors de l'envoi du code.");
+      const { message } = handleApiError(err, setGlobalError, "Failed to send the code.");
       return { success: false, message };
     }
   }, [setGlobalError]);
@@ -334,7 +334,7 @@ export const AuthProvider = ({ children }) => {
       const data = await api.post('/users/email/resend', { email }, { onGlobalError: setGlobalError });
       return { success: Boolean(data?.success) };
     } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, "Erreur lors de l'envoi du code.");
+      const { message } = handleApiError(err, setGlobalError, "Failed to send the code.");
       return { success: false, message };
     }
   }, [setGlobalError]);
@@ -393,7 +393,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth doit etre utilise dans un AuthProvider');
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };

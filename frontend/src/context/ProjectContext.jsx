@@ -126,7 +126,7 @@ export const ProjectProvider = ({ children }) => {
       ));
       return savedPalette;
     } catch (error) {
-      setGlobalError(error?.message || 'Erreur lors de la modification de la palette.');
+      setGlobalError(error?.message || 'Failed to update the palette.');
       logger.error('projects.updatePalette.error', error);
       return null;
     }
@@ -341,7 +341,7 @@ export const ProjectProvider = ({ children }) => {
 export const useProjects = () => {
   const context = useContext(ProjectContext);
   if (!context) {
-    throw new Error('useProjects doit etre utilise dans un ProjectProvider');
+    throw new Error('useProjects must be used within a ProjectProvider');
   }
   return context;
 };

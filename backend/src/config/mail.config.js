@@ -36,12 +36,12 @@ let MAIL_SECURE = false;
 if (hasSmtpConfig) {
   MAIL_PORT = Number.parseInt(MAIL_PORT_RAW, 10);
   if (!Number.isInteger(MAIL_PORT) || MAIL_PORT <= 0) {
-    throw new Error('MAIL_PORT doit etre un entier positif dans les variables d\'environnement');
+    throw new Error('MAIL_PORT must be a positive integer in the environment variables');
   }
 
   const normalizedMailSecure = String(MAIL_SECURE_RAW).trim().toLowerCase();
   if (normalizedMailSecure !== 'true' && normalizedMailSecure !== 'false') {
-    throw new Error('MAIL_SECURE doit etre defini a true ou false dans les variables d\'environnement');
+    throw new Error('MAIL_SECURE must be set to true or false in the environment variables');
   }
   MAIL_SECURE = normalizedMailSecure === 'true';
 }
