@@ -1,7 +1,7 @@
 import React from 'react';
 
 // User-facing fallback text shown when a render error is caught.
-const FALLBACK_MESSAGE = 'Erreur inattendue, rechargez la page.';
+const FALLBACK_MESSAGE = 'Something went wrong. Please reload the page.';
 
 /**
  * React error boundary. Catches render-time errors in its subtree and shows a

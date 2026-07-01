@@ -42,16 +42,16 @@ describe('ProjectNorms', () => {
     });
   });
 
-  it('affiche le titre et le filtre', () => {
+  it('shows the title and the filter', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /normes graphiques/i })).toBeInTheDocument();
-    expect(screen.getByText('Tout')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /graphic standards/i })).toBeInTheDocument();
+    expect(screen.getByText('All')).toBeInTheDocument();
   });
 
-  it('ouvre la modale d’ajout de norme', async () => {
+  it('opens the add-standard modal', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
-    expect(await screen.findByPlaceholderText(/contour cheveux/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    expect(await screen.findByPlaceholderText(/hair outline/i)).toBeInTheDocument();
   });
 });

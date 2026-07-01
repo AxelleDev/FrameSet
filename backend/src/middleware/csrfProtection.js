@@ -87,7 +87,7 @@ const csrfProtection = (req, res, next) => {
   const headerToken = Array.isArray(headerValue) ? headerValue[0] : headerValue;
 
   if (!safeTokenEqual(cookieToken, headerToken)) {
-    return res.status(403).json({ error: 'Requete CSRF invalide' });
+    return res.status(403).json({ error: 'Invalid CSRF request.' });
   }
 
   return next();

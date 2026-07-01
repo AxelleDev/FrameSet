@@ -8,7 +8,7 @@ import Button from './Button';
  *
  * @param {object} props
  * @param {React.ReactNode} props.primaryLabel - Primary button label.
- * @param {React.ReactNode} [props.secondaryLabel] - Secondary button label (defaults to "Annuler").
+ * @param {React.ReactNode} [props.secondaryLabel] - Secondary button label (defaults to "Cancel").
  * @param {Function} props.onPrimary - Primary button click handler.
  * @param {Function} props.onSecondary - Secondary button click handler.
  * @param {boolean} [props.primaryDisabled] - Disable the primary button.
@@ -22,7 +22,7 @@ import Button from './Button';
  */
 export default function ModalActions({
   primaryLabel,
-  secondaryLabel = 'Annuler',
+  secondaryLabel = 'Cancel',
   onPrimary,
   onSecondary,
   primaryDisabled = false,

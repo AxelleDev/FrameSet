@@ -40,26 +40,26 @@ describe('Verify', () => {
     mockResend.mockReset();
   });
 
-  it('vérifie le code et affiche le succès', async () => {
+  it('verifies the code and shows success', async () => {
     const user = userEvent.setup();
     mockVerify.mockResolvedValue({ success: true });
     renderPage();
 
     await user.type(screen.getByPlaceholderText('123456'), '123456');
-    await user.click(screen.getByRole('button', { name: /^vérifier$/i }));
+    await user.click(screen.getByRole('button', { name: /^verify$/i }));
 
     expect(mockVerify).toHaveBeenCalledWith('axelle@example.com', '123456');
-    expect(await screen.findByText(/vérifié/i)).toBeInTheDocument();
+    expect(await screen.findByText(/verified/i)).toBeInTheDocument();
   });
 
-  it('affiche une erreur quand le code est incorrect', async () => {
+  it('shows an error when the code is incorrect', async () => {
     const user = userEvent.setup();
-    mockVerify.mockResolvedValue({ success: false, message: 'Code incorrect' });
+    mockVerify.mockResolvedValue({ success: false, message: 'Incorrect code' });
     renderPage();
 
     await user.type(screen.getByPlaceholderText('123456'), '000000');
-    await user.click(screen.getByRole('button', { name: /^vérifier$/i }));
+    await user.click(screen.getByRole('button', { name: /^verify$/i }));
 
-    expect(await screen.findByText('Code incorrect')).toBeInTheDocument();
+    expect(await screen.findByText('Incorrect code')).toBeInTheDocument();
   });
 });

@@ -5,30 +5,30 @@ import { MemoryRouter } from 'react-router-dom';
 import Button from '../../src/components/Button';
 
 describe('Button', () => {
-  it('rend son contenu dans un <button> par défaut', () => {
-    render(<Button>Continuer</Button>);
-    expect(screen.getByRole('button', { name: 'Continuer' })).toBeInTheDocument();
+  it('renders its content in a <button> by default', () => {
+    render(<Button>Continue</Button>);
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   });
 
-  it('appelle onClick au clic', async () => {
+  it('calls onClick on click', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
-    render(<Button onClick={onClick}>Valider</Button>);
-    await user.click(screen.getByRole('button', { name: 'Valider' }));
+    render(<Button onClick={onClick}>Submit</Button>);
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it("n'appelle pas onClick quand il est désactivé", async () => {
+  it('does not call onClick when disabled', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
-    render(<Button onClick={onClick} disabled>Valider</Button>);
-    await user.click(screen.getByRole('button', { name: 'Valider' }));
+    render(<Button onClick={onClick} disabled>Submit</Button>);
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it("affiche l'état de chargement (aria-busy + désactivé)", () => {
-    render(<Button loading>Envoyer</Button>);
-    const btn = screen.getByRole('button', { name: 'Envoyer' });
+  it('shows the loading state (aria-busy + disabled)', () => {
+    render(<Button loading>Send</Button>);
+    const btn = screen.getByRole('button', { name: 'Send' });
     expect(btn).toBeDisabled();
     expect(btn).toHaveAttribute('aria-busy', 'true');
   });
@@ -38,18 +38,18 @@ describe('Button', () => {
     ['danger', 'bg-danger'],
     ['ghost', 'bg-transparent'],
     ['outline', 'bg-blue/10'],
-  ])('applique la variante %s', (variant, expectedClass) => {
+  ])('applies the %s variant', (variant, expectedClass) => {
     render(<Button variant={variant}>X</Button>);
     expect(screen.getByRole('button', { name: 'X' })).toHaveClass(expectedClass);
   });
 
-  it('rend un lien quand `to` est fourni', () => {
+  it('renders a link when `to` is provided', () => {
     render(
       <MemoryRouter>
-        <Button to="/app/dashboard">Retour</Button>
+        <Button to="/app/dashboard">Back</Button>
       </MemoryRouter>
     );
-    const link = screen.getByRole('link', { name: 'Retour' });
+    const link = screen.getByRole('link', { name: 'Back' });
     expect(link).toHaveAttribute('href', '/app/dashboard');
   });
 });

@@ -144,8 +144,8 @@ app.use((req, res, _next) => {
 	});
 
 	res.status(404).json({
-		error: 'Non trouvé',
-		message: "La ressource demandée n'existe pas."
+		error: 'Not found.',
+		message: "The requested resource does not exist."
 	});
 });
 
@@ -164,7 +164,7 @@ app.use((err, req, res, _next) => {
 			type: err.type
 		});
 		return res.status(status).json({
-			error: err.message || 'Erreur du client'
+			error: err.message || 'Client error'
 		});
 	}
 
@@ -176,8 +176,8 @@ app.use((err, req, res, _next) => {
 	});
 
 	res.status(500).json({
-		error: 'Erreur interne du serveur',
-		message: "Une erreur inattendue est survenue."
+		error: 'Internal server error.',
+		message: "An unexpected error occurred."
 	});
 });
 

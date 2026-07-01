@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import TextInput from '../../src/components/TextInput';
 
 describe('TextInput', () => {
-  it('rend un input et applique le fond teinté (sans bordure)', () => {
+  it('renders an input and applies the tinted background (no border)', () => {
     render(<TextInput placeholder="Email" />);
     const input = screen.getByPlaceholderText('Email');
     expect(input.tagName).toBe('INPUT');
@@ -12,20 +12,20 @@ describe('TextInput', () => {
     expect(input.className).not.toMatch(/\bborder\b/);
   });
 
-  it('transmet value/onChange', async () => {
+  it('forwards value/onChange', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    render(<TextInput value="" onChange={onChange} placeholder="Nom" />);
-    await user.type(screen.getByPlaceholderText('Nom'), 'a');
+    render(<TextInput value="" onChange={onChange} placeholder="Name" />);
+    await user.type(screen.getByPlaceholderText('Name'), 'a');
     expect(onChange).toHaveBeenCalled();
   });
 
-  it('ajoute la police monospace avec `mono`', () => {
+  it('adds the monospace font with `mono`', () => {
     render(<TextInput mono placeholder="#hex" />);
     expect(screen.getByPlaceholderText('#hex')).toHaveClass('font-mono');
   });
 
-  it('rend un <select> avec ses options via as="select"', () => {
+  it('renders a <select> with its options via as="select"', () => {
     render(
       <TextInput as="select" aria-label="type">
         <option value="a">A</option>
@@ -37,7 +37,7 @@ describe('TextInput', () => {
     expect(screen.getByRole('option', { name: 'A' })).toBeInTheDocument();
   });
 
-  it('peut être désactivé', () => {
+  it('can be disabled', () => {
     render(<TextInput disabled placeholder="x" />);
     expect(screen.getByPlaceholderText('x')).toBeDisabled();
   });

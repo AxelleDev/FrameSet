@@ -4,30 +4,30 @@ import userEvent from '@testing-library/user-event';
 import Modal from '../../src/components/Modal';
 
 describe('Modal', () => {
-  it('ne rend rien quand isOpen est false', () => {
-    render(<Modal isOpen={false} onClose={() => {}}>Contenu</Modal>);
-    expect(screen.queryByText('Contenu')).not.toBeInTheDocument();
+  it('renders nothing when isOpen is false', () => {
+    render(<Modal isOpen={false} onClose={() => {}}>Content</Modal>);
+    expect(screen.queryByText('Content')).not.toBeInTheDocument();
   });
 
-  it('rend le contenu, le titre et le rôle dialog quand ouvert', () => {
-    render(<Modal isOpen onClose={() => {}} title="Mon titre">Contenu</Modal>);
+  it('renders the content, the title and the dialog role when open', () => {
+    render(<Modal isOpen onClose={() => {}} title="My title">Content</Modal>);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Mon titre')).toBeInTheDocument();
-    expect(screen.getByText('Contenu')).toBeInTheDocument();
+    expect(screen.getByText('My title')).toBeInTheDocument();
+    expect(screen.getByText('Content')).toBeInTheDocument();
   });
 
-  it('ferme avec la touche Échap', () => {
+  it('closes with the Escape key', () => {
     const onClose = vi.fn();
     render(<Modal isOpen onClose={onClose}>X</Modal>);
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('ferme via le bouton Fermer', async () => {
+  it('closes via the Close button', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     render(<Modal isOpen onClose={onClose} showClose>X</Modal>);
-    await user.click(screen.getByRole('button', { name: /fermer/i }));
+    await user.click(screen.getByRole('button', { name: /close/i }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

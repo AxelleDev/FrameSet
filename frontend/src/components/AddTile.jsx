@@ -7,13 +7,13 @@ import PropTypes from 'prop-types';
  *
  * @param {object} props
  * @param {Function} props.onClick - Click handler invoked to start creation.
- * @param {string} [props.label] - Visible label (defaults to "Ajouter").
+ * @param {string} [props.label] - Visible label (defaults to "Add").
  * @param {string} [props.className] - Extra classes for the outer button (sizing, layout).
  * @param {string} [props.labelClassName] - Classes applied to the label text.
  */
 export default function AddTile({
   onClick,
-  label = 'Ajouter',
+  label = 'Add',
   className = '',
   labelClassName = 'text-sm font-medium text-primary'
 }) {

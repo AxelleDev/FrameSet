@@ -18,35 +18,35 @@ const router = express.Router();
 const loginLimiter = rateLimit({
 	windowMs: 60 * 1000,
 	max: 5,
-	message: 'Trop de tentatives, veuillez réessayer dans une minute.'
+	message: 'Too many attempts, please try again in a minute.'
 });
 
 // Register: per-IP limit to slow spam signups, independent from login.
 const registerLimiter = rateLimit({
 	windowMs: 60 * 1000,
 	max: 5,
-	message: 'Trop de tentatives, veuillez réessayer dans une minute.'
+	message: 'Too many attempts, please try again in a minute.'
 });
 
 // Code verification: limits brute-force guessing of the 6-digit code.
 const verifyCodeLimiter = rateLimit({
 	windowMs: 10 * 60 * 1000,
 	max: 10,
-	message: 'Trop de tentatives de vérification, réessayez dans 10 minutes.'
+	message: 'Too many verification attempts, try again in 10 minutes.'
 });
 
 // Code resend: strict cap to prevent using the service as an email-spam relay.
 const resendCodeLimiter = rateLimit({
 	windowMs: 10 * 60 * 1000,
 	max: 3,
-	message: 'Trop de demandes de renvoi, réessayez dans 10 minutes.'
+	message: 'Too many resend requests, try again in 10 minutes.'
 });
 
 // Token refresh: bounds how often clients can rotate tokens.
 const refreshLimiter = rateLimit({
 	windowMs: 60 * 1000,
 	max: 10,
-	message: 'Trop de demandes de rafraîchissement, veuillez réessayer dans une minute.'
+	message: 'Too many refresh requests, please try again in a minute.'
 });
 
 router.post('/register', registerLimiter, authController.register);

@@ -49,13 +49,13 @@ const renderProvider = () => {
   );
 };
 
-const buildHttpError = (status, message = 'Erreur HTTP') => {
+const buildHttpError = (status, message = 'HTTP error') => {
   const error = new Error(message);
   error.status = status;
   return error;
 };
 
-describe('Hydratation de session AuthContext', () => {
+describe('AuthContext session hydration', () => {
   beforeEach(() => {
     mockApiGet.mockReset();
     mockApiPost.mockReset();
@@ -64,7 +64,7 @@ describe('Hydratation de session AuthContext', () => {
     mockApiDelete.mockReset();
   });
 
-  it("hydrate l'utilisateur si /profile retourne 200", async () => {
+  it('hydrates the user when /profile returns 200', async () => {
     mockApiGet.mockResolvedValueOnce({ id: 1, email: 'axelle@example.fr' });
 
     renderProvider();
@@ -79,8 +79,8 @@ describe('Hydratation de session AuthContext', () => {
     expect(mockApiPost).not.toHaveBeenCalled();
   });
 
-  it("reste déconnecté si /profile retourne 401", async () => {
-    mockApiGet.mockRejectedValueOnce(buildHttpError(401, 'Non autorisé'));
+  it('stays signed out when /profile returns 401', async () => {
+    mockApiGet.mockRejectedValueOnce(buildHttpError(401, 'Unauthorized'));
 
     renderProvider();
 
@@ -93,9 +93,9 @@ describe('Hydratation de session AuthContext', () => {
     expect(mockApiPost).not.toHaveBeenCalled();
   });
 
-  it("tente un refresh si /profile retourne 403 et hydrate l'utilisateur si succès", async () => {
+  it('attempts a refresh when /profile returns 403 and hydrates the user on success', async () => {
     mockApiGet
-      .mockRejectedValueOnce(buildHttpError(403, 'Interdit'))
+      .mockRejectedValueOnce(buildHttpError(403, 'Forbidden'))
       .mockResolvedValueOnce({ id: 1, email: 'axelle@example.fr' });
     mockApiPost.mockResolvedValueOnce({ success: true });
 
@@ -113,8 +113,8 @@ describe('Hydratation de session AuthContext', () => {
     expect(mockApiPost).toHaveBeenCalledWith('/auth/refresh', {}, undefined);
   });
 
-  it("reste déconnecté si /profile retourne 403 et que le refresh échoue", async () => {
-    mockApiGet.mockRejectedValueOnce(buildHttpError(403, 'Interdit'));
+  it('stays signed out when /profile returns 403 and the refresh fails', async () => {
+    mockApiGet.mockRejectedValueOnce(buildHttpError(403, 'Forbidden'));
     mockApiPost.mockResolvedValueOnce({ success: false });
 
     renderProvider();

@@ -33,37 +33,37 @@ describe('Login', () => {
     mockLogin.mockReset();
   });
 
-  it('refuse de soumettre des champs vides', async () => {
+  it('refuses to submit empty fields', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByRole('button', { name: /se connecter/i }));
-    expect(await screen.findByText(/entrez votre email/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    expect(await screen.findByText(/enter your email/i)).toBeInTheDocument();
     expect(mockLogin).not.toHaveBeenCalled();
   });
 
-  it('connecte et redirige vers le tableau de bord', async () => {
+  it('signs in and redirects to the dashboard', async () => {
     const user = userEvent.setup();
     mockLogin.mockResolvedValue({ success: true });
     renderPage();
 
-    await user.type(screen.getByPlaceholderText(/email@exemple/i), 'axelle@example.com');
-    await user.type(screen.getByPlaceholderText('Votre mot de passe'), 'Pass1234');
-    await user.click(screen.getByRole('button', { name: /se connecter/i }));
+    await user.type(screen.getByPlaceholderText(/email@example/i), 'axelle@example.com');
+    await user.type(screen.getByPlaceholderText('Your password'), 'Pass1234');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     expect(mockLogin).toHaveBeenCalledWith('axelle@example.com', 'Pass1234');
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/app/dashboard'));
   });
 
-  it("affiche le message d'erreur renvoyé par l'API", async () => {
+  it('shows the error message returned by the API', async () => {
     const user = userEvent.setup();
-    mockLogin.mockResolvedValue({ success: false, message: 'Identifiants invalides' });
+    mockLogin.mockResolvedValue({ success: false, message: 'Invalid credentials' });
     renderPage();
 
-    await user.type(screen.getByPlaceholderText(/email@exemple/i), 'axelle@example.com');
-    await user.type(screen.getByPlaceholderText('Votre mot de passe'), 'wrong');
-    await user.click(screen.getByRole('button', { name: /se connecter/i }));
+    await user.type(screen.getByPlaceholderText(/email@example/i), 'axelle@example.com');
+    await user.type(screen.getByPlaceholderText('Your password'), 'wrong');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-    expect(await screen.findByText('Identifiants invalides')).toBeInTheDocument();
+    expect(await screen.findByText('Invalid credentials')).toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

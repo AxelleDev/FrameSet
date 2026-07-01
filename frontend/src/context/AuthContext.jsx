@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }) => {
       setAuthenticatedUser(userData);
       return { success: true, data: userData };
     } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, 'Une erreur est survenue.');
+      const { message } = handleApiError(err, setGlobalError, 'Something went wrong.');
       return { success: false, message };
     }
   }, [setAuthenticatedUser]);
@@ -164,7 +164,7 @@ export const AuthProvider = ({ children }) => {
       const registrationData = await api.post('/auth/register', userData, { onGlobalError: setGlobalError });
       return { success: true, data: registrationData };
     } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, 'Une erreur est survenue.');
+      const { message } = handleApiError(err, setGlobalError, 'Something went wrong.');
       return { success: false, message };
     }
   }, [setGlobalError]);
@@ -221,7 +221,7 @@ export const AuthProvider = ({ children }) => {
       setGlobalError(null);
       return { success: true };
     } catch (error) {
-      const { message } = handleApiError(error, setGlobalError, 'Erreur lors de la suppression du compte.');
+      const { message } = handleApiError(error, setGlobalError, 'Failed to delete the account.');
       return { success: false, message };
     }
   }, []);
@@ -274,7 +274,7 @@ export const AuthProvider = ({ children }) => {
       const data = await api.post('/auth/resend-code', { email }, { onGlobalError: setGlobalError });
       return { success: Boolean(data?.success) };
     } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, "Erreur lors de l'envoi du code.");
+      const { message } = handleApiError(err, setGlobalError, "Failed to send the code.");
       return { success: false, message };
     }
   }, [setGlobalError]);
@@ -289,7 +289,7 @@ export const AuthProvider = ({ children }) => {
       const data = await api.post('/auth/forgot-password', { email }, { onGlobalError: setGlobalError });
       return { success: Boolean(data?.success) };
     } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, "Erreur lors de l'envoi du code.");
+      const { message } = handleApiError(err, setGlobalError, "Failed to send the code.");
       return { success: false, message };
     }
   }, [setGlobalError]);
@@ -304,7 +304,7 @@ export const AuthProvider = ({ children }) => {
       const data = await api.post('/auth/reset-password', { email, code, newPassword }, { onGlobalError: setGlobalError });
       return { success: Boolean(data?.success) };
     } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, 'Réinitialisation impossible.');
+      const { message } = handleApiError(err, setGlobalError, 'Password reset failed.');
       return { success: false, message };
     }
   }, [setGlobalError]);
@@ -334,7 +334,7 @@ export const AuthProvider = ({ children }) => {
       const data = await api.post('/users/email/resend', { email }, { onGlobalError: setGlobalError });
       return { success: Boolean(data?.success) };
     } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, "Erreur lors de l'envoi du code.");
+      const { message } = handleApiError(err, setGlobalError, "Failed to send the code.");
       return { success: false, message };
     }
   }, [setGlobalError]);
@@ -393,7 +393,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth doit etre utilise dans un AuthProvider');
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };

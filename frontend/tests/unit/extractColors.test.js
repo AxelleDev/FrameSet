@@ -32,7 +32,7 @@ describe('extractColorsFromImage', () => {
     vi.restoreAllMocks();
   });
 
-  it('extrait une couleur dominante unie', async () => {
+  it('extracts a solid dominant color', async () => {
     const pixels = [];
     for (let i = 0; i < 4; i++) pixels.push(255, 0, 0, 255);
     setup(pixels);
@@ -40,15 +40,15 @@ describe('extractColorsFromImage', () => {
     expect(colors).toContain('#FF0000');
   });
 
-  it('ignore les pixels transparents', async () => {
-    // 2 rouges opaques + 2 verts totalement transparents.
+  it('ignores transparent pixels', async () => {
+    // 2 opaque reds + 2 fully transparent greens.
     const pixels = [255, 0, 0, 255, 255, 0, 0, 255, 0, 255, 0, 0, 0, 255, 0, 0];
     setup(pixels);
     const colors = await extractColorsFromImage(new Blob(['x']));
     expect(colors).toEqual(['#FF0000']);
   });
 
-  it('limite le nombre de couleurs retournées', async () => {
+  it('limits the number of colors returned', async () => {
     const pixels = [255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 255];
     setup(pixels);
     const colors = await extractColorsFromImage(new Blob(['x']), 2);

@@ -32,19 +32,19 @@ describe('ProjectExport', () => {
     });
   });
 
-  it('affiche les deux options d’export et l’aperçu JSON', () => {
+  it('shows both export options and the JSON preview', () => {
     renderPage();
-    expect(screen.getByText(/guide de style pdf/i)).toBeInTheDocument();
-    expect(screen.getByText(/données json/i)).toBeInTheDocument();
-    expect(screen.getByText(/aperçu de la sortie json/i)).toBeInTheDocument();
+    expect(screen.getByText(/pdf style guide/i)).toBeInTheDocument();
+    expect(screen.getByText(/json data/i)).toBeInTheDocument();
+    expect(screen.getByText(/json output preview/i)).toBeInTheDocument();
     expect(screen.getByText(/Mon Projet/)).toBeInTheDocument();
   });
 
-  it('déclenche le téléchargement JSON', async () => {
+  it('triggers the JSON download', async () => {
     const user = userEvent.setup();
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     renderPage();
-    await user.click(screen.getByRole('button', { name: /télécharger le json/i }));
+    await user.click(screen.getByRole('button', { name: /download json/i }));
     expect(clickSpy).toHaveBeenCalled();
     clickSpy.mockRestore();
   });

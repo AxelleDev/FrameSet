@@ -2,7 +2,7 @@ const { ensureCsrfCookie, csrfProtection } = require('../../src/middleware/csrfP
 const { CSRF_TOKEN_COOKIE_NAME } = require('../../src/utils/cookies.utils');
 
 describe('middleware csrfProtection', () => {
-  it('devrait definir un cookie CSRF si absent', () => {
+  it('sets a CSRF cookie when it is missing', () => {
     const req = { headers: {}, method: 'GET' };
     const res = { cookie: jest.fn(), status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();
@@ -17,7 +17,7 @@ describe('middleware csrfProtection', () => {
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it('ne devrait pas redefinir le cookie CSRF si deja present', () => {
+  it('does not reset the CSRF cookie when it is already present', () => {
     const req = { headers: { cookie: `${CSRF_TOKEN_COOKIE_NAME}=existing-token` }, method: 'GET' };
     const res = { cookie: jest.fn(), status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();
@@ -28,7 +28,7 @@ describe('middleware csrfProtection', () => {
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it('devrait autoriser les methodes safe', () => {
+  it('allows safe methods', () => {
     const req = { headers: {}, method: 'GET' };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();
@@ -39,7 +39,7 @@ describe('middleware csrfProtection', () => {
     expect(res.status).not.toHaveBeenCalled();
   });
 
-  it('devrait refuser une requete mutante sans token CSRF valide', () => {
+  it('rejects a mutating request without a valid CSRF token', () => {
     const req = {
       method: 'POST',
       headers: {
@@ -52,11 +52,11 @@ describe('middleware csrfProtection', () => {
     csrfProtection(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Requete CSRF invalide' });
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid CSRF request.' });
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('devrait autoriser une requete mutante avec token CSRF valide', () => {
+  it('allows a mutating request with a valid CSRF token', () => {
     const req = {
       method: 'PATCH',
       headers: {

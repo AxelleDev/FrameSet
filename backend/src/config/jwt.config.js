@@ -9,12 +9,12 @@
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET doit être défini dans les variables d\'environnement');
+  throw new Error('JWT_SECRET must be defined in the environment variables');
 }
 
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 if (!JWT_REFRESH_SECRET) {
-  throw new Error('JWT_REFRESH_SECRET doit être défini dans les variables d\'environnement');
+  throw new Error('JWT_REFRESH_SECRET must be defined in the environment variables');
 }
 
 module.exports = {

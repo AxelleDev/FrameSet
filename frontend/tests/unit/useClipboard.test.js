@@ -9,7 +9,7 @@ describe('useClipboard', () => {
     });
   });
 
-  it('copie le texte et expose copiedValue, puis le vide après le délai', async () => {
+  it('copies the text and exposes copiedValue, then clears it after the timeout', async () => {
     vi.useFakeTimers();
     const { result } = renderHook(() => useClipboard({ timeout: 1000 }));
 

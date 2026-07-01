@@ -152,7 +152,7 @@ export default function ProjectNorms() {
       });
     }
     setEditingNorm(null);
-    showToast('Norme modifiée.');
+    showToast('Standard updated.');
   };
 
   // loadingDelete holds the id of the norm whose deletion spinner is showing.
@@ -205,7 +205,7 @@ export default function ProjectNorms() {
     }
     setIsAddingNorm(false);
     resetForm();
-    showToast('Norme ajoutée.');
+    showToast('Standard added.');
   };
 
   // Display filter: 'all', 'brush', or 'typography'.
@@ -214,8 +214,8 @@ export default function ProjectNorms() {
   return (
     <>
       <PageHeader
-        title="Normes graphiques"
-        subtitle="Les règles graphiques de ce projet, au même endroit."
+        title="Graphic standards"
+        subtitle="This project's graphic rules, all in one place."
         subtitleClassName="max-w-xl"
         actions={
           <div className="w-48">
@@ -223,11 +223,11 @@ export default function ProjectNorms() {
               value={filterType}
               onChange={val => setFilterType(val)}
               options={[
-                { value: 'all', label: 'Tout' },
-                { value: 'brush', label: 'Trait' },
-                { value: 'typography', label: 'Typographie' }
+                { value: 'all', label: 'All' },
+                { value: 'brush', label: 'Brush' },
+                { value: 'typography', label: 'Typography' }
               ]}
-              placeholder="Filtrer…"
+              placeholder="Filter…"
               isSearchable={false}
             />
           </div>
@@ -247,7 +247,7 @@ export default function ProjectNorms() {
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
                     onClick={() => openEditNorm(norm, 'brush')}
-                    title="Modifier la norme"
+                    title="Edit standard"
                     intent="edit"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -256,7 +256,7 @@ export default function ProjectNorms() {
                   </ActionIconButton>
                   <ActionIconButton
                     onClick={(e) => handleDeleteNorm(e, norm.id, 'brush')}
-                    title="Supprimer la norme"
+                    title="Delete standard"
                     intent="delete"
                   >
                     {loadingDelete === norm.id ? (
@@ -271,13 +271,13 @@ export default function ProjectNorms() {
                   </ActionIconButton>
                 </div>
                 <div className="mb-4">
-                  <Badge color="primary" className="mb-2">Trait</Badge>
+                  <Badge color="primary" className="mb-2">Brush</Badge>
                   <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.name}</h3>
                   <div className="flex items-baseline mb-2">
                     <span className="text-2xl font-light text-primary mr-1">{norm.value}</span>
                     <span className="text-base text-blue font-medium">{norm.unit}</span>
                   </div>
-                  <div className="text-xs text-secondary mb-2">Opacité : {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}</div>
+                  <div className="text-xs text-secondary mb-2">Opacity: {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}</div>
                 </div>
                 <div className="flex-1 flex flex-col justify-end">
                   <div className="h-16 bg-blue/5 rounded-xl flex items-center justify-center relative overflow-hidden">
@@ -291,7 +291,7 @@ export default function ProjectNorms() {
                           opacity: typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ? parseFloat(norm.opacity) : 1)
                         }}
                       ></div>
-                      <span className="text-[10px] text-blue font-bold uppercase tracking-wider">{norm.brushName || 'Pinceau'}</span>
+                      <span className="text-[10px] text-blue font-bold uppercase tracking-wider">{norm.brushName || 'Brush'}</span>
                     </div>
                   </div>
                 </div>
@@ -303,7 +303,7 @@ export default function ProjectNorms() {
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
                     onClick={() => openEditNorm(norm, 'typography')}
-                    title="Modifier la norme"
+                    title="Edit standard"
                     intent="edit"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -312,7 +312,7 @@ export default function ProjectNorms() {
                   </ActionIconButton>
                   <ActionIconButton
                     onClick={(e) => handleDeleteNorm(e, norm.id, 'typography')}
-                    title="Supprimer la norme"
+                    title="Delete standard"
                     intent="delete"
                   >
                     {loadingDelete === norm.id ? (
@@ -327,7 +327,7 @@ export default function ProjectNorms() {
                   </ActionIconButton>
                 </div>
                 <div className="mb-4">
-                  <Badge color="blue" className="mb-2">Typographie</Badge>
+                  <Badge color="blue" className="mb-2">Typography</Badge>
                   <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.fontUsage || norm.fontFamily}</h3>
                   <div className="flex items-baseline mb-2">
                     <span className="text-2xl font-light text-primary mr-1">{norm.fontFamily}</span>
@@ -351,7 +351,7 @@ export default function ProjectNorms() {
                         AaBbCc
                       </span>
                     ) : (
-                      <span className="text-xs text-secondary">Chargement… <span style={{fontFamily: `'${norm.fontFamily}', Arial, sans-serif`}}>{norm.fontFamily}</span></span>
+                      <span className="text-xs text-secondary">Loading… <span style={{fontFamily: `'${norm.fontFamily}', Arial, sans-serif`}}>{norm.fontFamily}</span></span>
                     )}
                   </div>
                 </div>
@@ -362,31 +362,31 @@ export default function ProjectNorms() {
           <FormModal
             isOpen={!!editingNorm}
             onClose={() => setEditingNorm(null)}
-            title="Modifier la norme"
+            title="Edit standard"
           >
             <div className="space-y-4">
               {editingType === 'brush' ? (
                 <>
-                  <FormField label="Usage du pinceau">
-                    <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="Contour cheveux" />
+                  <FormField label="Brush usage">
+                    <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="Hair outline" />
                   </FormField>
-                  <FormField label="Nom du pinceau">
+                  <FormField label="Brush name">
                     <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="Plume G" />
                   </FormField>
-                  <FormField label="Taille (px)">
+                  <FormField label="Size (px)">
                     <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="8" />
-                    {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-danger mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
+                    {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-danger mt-1">Size must be a positive number (≤ 1000).</p>}
                   </FormField>
-                  <FormField label="Unité">
+                  <FormField label="Unit">
                     <TextInput type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" />
                   </FormField>
-                  <FormField label="Opacité (0 à 1)">
+                  <FormField label="Opacity (0 to 1)">
                     <TextInput type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="1.0" />
                   </FormField>
                 </>
               ) : (
                 <>
-                  <FormField label="Famille de police">
+                  <FormField label="Font">
                     <div className="relative">
                       <CustomSelect
                         value={typoForm.fontFamily}
@@ -398,30 +398,30 @@ export default function ProjectNorms() {
                           }
                         }}
                         options={googleFonts ? googleFonts.map(font => ({ value: font.family, label: font.family })) : []}
-                        placeholder="Sélectionnez la typographie"
+                        placeholder="Select a font"
                         isLoading={loadingFonts}
                         isDisabled={loadingFonts}
-                        noOptionsMessage={() => loadingFonts ? 'Chargement…' : 'Aucune police'}
+                        noOptionsMessage={() => loadingFonts ? 'Loading…' : 'No fonts'}
                       />
                     </div>
-                    {loadingFonts && <div className="text-xs text-secondary mt-1">Chargement des polices…</div>}
-                    {errorFonts && <div className="text-xs text-danger mt-1">Erreur de chargement des polices</div>}
+                    {loadingFonts && <div className="text-xs text-secondary mt-1">Loading fonts…</div>}
+                    {errorFonts && <div className="text-xs text-danger mt-1">Error loading fonts</div>}
                   </FormField>
-                  <FormField label="Poids">
+                  <FormField label="Weight">
                     <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="700" />
                   </FormField>
                   <FormField label="Usage">
-                    <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="Titre" />
+                    <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="Title" />
                   </FormField>
                   <FormField label="Style">
-                    <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="Italique" />
+                    <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="Italic" />
                   </FormField>
                 </>
               )}
             </div>
             <ModalActions
-              secondaryLabel="Annuler"
-              primaryLabel="Modifier"
+              secondaryLabel="Cancel"
+              primaryLabel="Edit"
               onSecondary={() => setEditingNorm(null)}
               onPrimary={handleEditNorm}
               primaryDisabled={editingType === 'brush' ? !isBrushFormValid : !typoForm.fontFamily}
@@ -435,7 +435,7 @@ export default function ProjectNorms() {
       <FormModal
         isOpen={isAddingNorm}
         onClose={() => setIsAddingNorm(false)}
-        title="Nouvelle norme"
+        title="New standard"
       >
         <div className="space-y-4">
           <FormField label="Type">
@@ -443,34 +443,34 @@ export default function ProjectNorms() {
               value={addType}
               onChange={val => setAddType(val)}
               options={[
-                { value: 'brush', label: 'Trait' },
-                { value: 'typography', label: 'Typographie' }
+                { value: 'brush', label: 'Brush' },
+                { value: 'typography', label: 'Typography' }
               ]}
               isSearchable={false}
             />
           </FormField>
           {addType === 'brush' ? (
             <>
-              <FormField label="Usage du pinceau">
-                <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="Contour cheveux" />
+              <FormField label="Brush usage">
+                <TextInput type="text" value={brushForm.usage} onChange={e => setBrushField('usage', e.target.value)} placeholder="Hair outline" />
               </FormField>
-              <FormField label="Nom du pinceau">
+              <FormField label="Brush name">
                 <TextInput type="text" value={brushForm.name} onChange={e => setBrushField('name', e.target.value)} placeholder="Plume G" />
               </FormField>
-              <FormField label="Taille (px)">
+              <FormField label="Size (px)">
                 <TextInput type="number" min="0" step="0.1" value={brushForm.value} onChange={e => setBrushField('value', e.target.value)} placeholder="8" />
-                {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-danger mt-1">La taille doit être un nombre positif (≤ 1000).</p>}
+                {brushForm.value !== '' && !isBrushValueValid && <p className="text-xs text-danger mt-1">Size must be a positive number (≤ 1000).</p>}
               </FormField>
-              <FormField label="Unité">
+              <FormField label="Unit">
                 <TextInput type="text" value={brushForm.unit} onChange={e => setBrushField('unit', e.target.value)} placeholder="px" />
               </FormField>
-              <FormField label="Opacité (0 à 1)">
+              <FormField label="Opacity (0 to 1)">
                 <TextInput type="number" step="0.01" min={0} max={1} value={brushForm.opacity} onChange={e => setBrushField('opacity', e.target.value)} placeholder="1.0" />
               </FormField>
             </>
           ) : (
             <>
-              <FormField label="Famille de police">
+              <FormField label="Font">
                 <CustomSelect
                   value={typoForm.fontFamily}
                   onChange={val => {
@@ -481,29 +481,29 @@ export default function ProjectNorms() {
                     }
                   }}
                   options={googleFonts ? googleFonts.map(font => ({ value: font.family, label: font.family })) : []}
-                  placeholder="Sélectionnez la typographie"
+                  placeholder="Select a font"
                   isLoading={loadingFonts}
                   isDisabled={loadingFonts}
-                  noOptionsMessage={() => loadingFonts ? 'Chargement…' : 'Aucune police'}
+                  noOptionsMessage={() => loadingFonts ? 'Loading…' : 'No fonts'}
                 />
-                {loadingFonts && <div className="text-xs text-secondary mt-1">Chargement des polices…</div>}
-                {errorFonts && <div className="text-xs text-danger mt-1">Erreur de chargement des polices</div>}
+                {loadingFonts && <div className="text-xs text-secondary mt-1">Loading fonts…</div>}
+                {errorFonts && <div className="text-xs text-danger mt-1">Error loading fonts</div>}
               </FormField>
-              <FormField label="Poids">
+              <FormField label="Weight">
                 <TextInput type="text" value={typoForm.fontWeight} onChange={e => setTypoField('fontWeight', e.target.value)} placeholder="700" />
               </FormField>
               <FormField label="Usage">
-                <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="Titre" />
+                <TextInput type="text" value={typoForm.fontUsage} onChange={e => setTypoField('fontUsage', e.target.value)} placeholder="Title" />
               </FormField>
               <FormField label="Style">
-                <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="Italique" />
+                <TextInput type="text" value={typoForm.fontStyle} onChange={e => setTypoField('fontStyle', e.target.value)} placeholder="Italic" />
               </FormField>
             </>
           )}
         </div>
         <ModalActions
-          secondaryLabel="Annuler"
-          primaryLabel="Ajouter"
+          secondaryLabel="Cancel"
+          primaryLabel="Add"
           onSecondary={() => setIsAddingNorm(false)}
           onPrimary={handleAddNorm}
           primaryDisabled={addType === 'brush' ? !isBrushFormValid : !typoForm.fontFamily}
@@ -512,9 +512,9 @@ export default function ProjectNorms() {
 
       <ConfirmDialog
         isOpen={!!confirmDeleteNorm}
-        title="Supprimer la norme ?"
-        message="Cette norme sera définitivement supprimée."
-        confirmLabel="Supprimer"
+        title="Delete standard?"
+        message="This standard will be permanently deleted."
+        confirmLabel="Delete"
        
         onCancel={() => setConfirmDeleteNorm(null)}
         onConfirm={async () => {
@@ -528,7 +528,7 @@ export default function ProjectNorms() {
           }
           setLoadingDelete(null);
           setConfirmDeleteNorm(null);
-          showToast('Norme supprimée.');
+          showToast('Standard deleted.');
         }}
       />
     </>

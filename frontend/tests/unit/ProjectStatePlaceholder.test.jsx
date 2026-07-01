@@ -6,14 +6,14 @@ import ProjectStatePlaceholder from '../../src/components/ProjectStatePlaceholde
 const renderIn = (ui) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
 describe('ProjectStatePlaceholder', () => {
-  it('affiche un état de chargement', () => {
+  it('shows a loading state', () => {
     renderIn(<ProjectStatePlaceholder loading />);
-    expect(screen.getByText(/chargement du projet/i)).toBeInTheDocument();
+    expect(screen.getByText(/loading project/i)).toBeInTheDocument();
   });
 
-  it('affiche "projet introuvable" + un lien vers le tableau de bord', () => {
+  it('shows "project not found" + a link to the dashboard', () => {
     renderIn(<ProjectStatePlaceholder loading={false} />);
-    expect(screen.getByText(/projet introuvable/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /tableau de bord/i })).toHaveAttribute('href', '/app/dashboard');
+    expect(screen.getByText(/project not found/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/app/dashboard');
   });
 });

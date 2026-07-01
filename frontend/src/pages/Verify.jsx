@@ -44,7 +44,7 @@ export default function Verify() {
       // Brief success message before redirecting to the relevant destination.
       setTimeout(() => navigate(type === 'pending-email' ? '/app/profile' : '/login'), 2000);
     } else {
-      setError(result.message || 'Code incorrect');
+      setError(result.message || 'Incorrect code');
     }
   };
 
@@ -57,9 +57,9 @@ export default function Verify() {
       : await resendVerificationCode(email);
 
     if (result.success) {
-      setResendMsg('Code renvoyé ! Vérifiez votre email.');
+      setResendMsg('Code resent! Check your email.');
     } else {
-      setError(result.message || "Erreur lors de l'envoi du code.");
+      setError(result.message || 'Something went wrong sending the code.');
     }
   };
 
@@ -72,31 +72,31 @@ export default function Verify() {
             <Logo className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
           </div>
           <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
-            Confirmez <br />
-            <span className="font-bold text-primary">votre email.</span>
+            Confirm <br />
+            <span className="font-bold text-primary">your email.</span>
           </h1>
           <p className="text-lg text-primary max-w-md leading-relaxed">
-            Une dernière étape : saisissez le code que nous venons de vous envoyer pour activer votre accès.
+            One last step: enter the code we just sent you to activate your access.
           </p>
         </>
       }
     >
       <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
-        <Seo title="Vérification de l’email" path="/verify" noindex />
+        <Seo title="Email verification" path="/verify" noindex />
         <div className="mb-8 text-center">
-          <h2 className="text-2xl font-medium text-primary">Vérification</h2>
+          <h2 className="text-2xl font-medium text-primary">Email verification</h2>
           <p className="text-primary text-sm mt-2">
-            Entrez le code envoyé à <strong>{email}</strong>.
+            Enter the code sent to <strong>{email}</strong>.
           </p>
         </div>
 
         {error && <Alert variant="danger" className="mb-4">{error}</Alert>}
         {resendMsg && <Alert variant="info" className="mb-4">{resendMsg}</Alert>}
-        {success && <Alert variant="success" className="mb-4">Vérifié ! Redirection en cours…</Alert>}
+        {success && <Alert variant="success" className="mb-4">Verified! Redirecting…</Alert>}
 
         {!success && (
           <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleVerify(); }} noValidate>
-            <FormField label="Code de vérification">
+            <FormField label="Verification code">
               <TextInput
                 type="text"
                 value={code}
@@ -109,9 +109,9 @@ export default function Verify() {
             </FormField>
 
             <div className="flex flex-col gap-3">
-              <Button type="submit" fullWidth>Vérifier</Button>
+              <Button type="submit" fullWidth>Verify</Button>
               <Button type="button" onClick={handleResend} variant="ghost" className="w-full">
-                Renvoyer le code
+                Resend code
               </Button>
             </div>
           </form>

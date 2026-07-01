@@ -3,18 +3,18 @@ import { render, screen } from '@testing-library/react';
 import PasswordChecklist from '../../src/components/PasswordChecklist';
 
 describe('PasswordChecklist', () => {
-  it('coche les 4 règles pour un mot de passe conforme', () => {
+  it('checks all 4 rules for a compliant password', () => {
     render(<PasswordChecklist password="Pass1234" />);
     expect(screen.getAllByText('✓')).toHaveLength(4);
   });
 
-  it("n'en coche aucune pour un mot de passe vide", () => {
+  it('checks none for an empty password', () => {
     render(<PasswordChecklist password="" />);
     expect(screen.queryAllByText('✓')).toHaveLength(0);
   });
 
-  it('coche partiellement selon les règles remplies', () => {
-    // "abcdefgh" : longueur OK + minuscule OK, mais pas de majuscule ni chiffre.
+  it('partially checks based on the rules met', () => {
+    // "abcdefgh": length OK + lowercase OK, but no uppercase or digit.
     render(<PasswordChecklist password="abcdefgh" />);
     expect(screen.getAllByText('✓')).toHaveLength(2);
   });

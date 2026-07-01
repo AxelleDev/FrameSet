@@ -50,17 +50,17 @@ const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassw
   const password = normalizeInput(rawPassword);
 
   if (!name || !email || !password) {
-    throw new AuthServiceError('validation', 'Tous les champs sont obligatoires.');
+    throw new AuthServiceError('validation', 'All fields are required.');
   }
 
   if (!validator.isEmail(email)) {
-    throw new AuthServiceError('validation', 'Email invalide.');
+    throw new AuthServiceError('validation', 'Invalid email.');
   }
   if (!validator.isLength(password, { min: PASSWORD_MIN_LENGTH })) {
-    throw new AuthServiceError('validation', 'Mot de passe trop court.');
+    throw new AuthServiceError('validation', 'Password too short.');
   }
   if (!validator.matches(password, PASSWORD_COMPLEXITY_REGEX)) {
-    throw new AuthServiceError('validation', 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.');
+    throw new AuthServiceError('validation', 'The password must contain at least one uppercase letter, one lowercase letter, and one digit.');
   }
 
   const initials = getInitials(name);
@@ -78,11 +78,11 @@ const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassw
 
     await mailService.sendMail({
       to: email,
-      subject: 'Confirmation de votre inscription',
-      text: `Votre code de confirmation est : ${verificationCode}\nCe code expire dans 10 minutes.`,
+      subject: 'Confirm your registration',
+      text: `Your confirmation code is: ${verificationCode}\nThis code expires in 10 minutes.`,
       html: mailService.buildTemplate({
-        title: 'Confirmation de votre inscription',
-        message: 'Utilisez le code ci-dessous pour confirmer votre adresse email.',
+        title: 'Confirm your registration',
+        message: 'Use the code below to confirm your email address.',
         code: verificationCode
       })
     });
@@ -120,14 +120,14 @@ const authenticateUser = async ({ email: rawEmail, password: rawPassword }) => {
   let password = rawPassword;
 
   if (!email || !password) {
-    throw new AuthServiceError('missing_credentials', 'Tous les champs sont obligatoires.');
+    throw new AuthServiceError('missing_credentials', 'All fields are required.');
   }
 
   email = validator.trim(email);
   password = validator.trim(password);
 
   if (!validator.isEmail(email)) {
-    throw new AuthServiceError('invalid_email_format', 'Email invalide.');
+    throw new AuthServiceError('invalid_email_format', 'Invalid email.');
   }
 
   const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -175,25 +175,25 @@ const isRefreshTokenStale = (userId, issuedAt) => isTokenStaleByPasswordChange(u
  */
 const verifyEmailCode = async ({ email, code }) => {
   if (!email || !code) {
-    throw new AuthServiceError('validation', 'Email et code sont obligatoires.');
+    throw new AuthServiceError('validation', 'Email and code are required.');
   }
   if (!validator.isEmail(validator.trim(String(email)))) {
-    throw new AuthServiceError('validation', 'Email invalide.');
+    throw new AuthServiceError('validation', 'Invalid email.');
   }
 
   const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [validator.trim(String(email))]);
   if (rows.length === 0) {
-    throw new AuthServiceError('validation', 'Utilisateur non trouvé.');
+    throw new AuthServiceError('validation', 'User not found.');
   }
   const userDb = rows[0];
   if (userDb.is_verified) {
-    throw new AuthServiceError('validation', 'Utilisateur déjà vérifié.');
+    throw new AuthServiceError('validation', 'User already verified.');
   }
   if (!userDb.verification_code || userDb.verification_code !== code) {
-    throw new AuthServiceError('validation', 'Code incorrect.');
+    throw new AuthServiceError('validation', 'Incorrect code.');
   }
   if (!userDb.verification_code_expires || new Date() > new Date(userDb.verification_code_expires)) {
-    throw new AuthServiceError('validation', 'Code expiré. Veuillez en demander un nouveau.');
+    throw new AuthServiceError('validation', 'Code expired. Please request a new one.');
   }
   await db.query('UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL WHERE email = ?', [email]);
   return { success: true };
@@ -209,30 +209,30 @@ const verifyEmailCode = async ({ email, code }) => {
  */
 const resendVerificationCode = async ({ email }) => {
   if (!email) {
-    throw new AuthServiceError('validation', 'Email obligatoire.');
+    throw new AuthServiceError('validation', 'Email is required.');
   }
   if (!validator.isEmail(validator.trim(String(email)))) {
-    throw new AuthServiceError('validation', 'Email invalide.');
+    throw new AuthServiceError('validation', 'Invalid email.');
   }
 
   const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [validator.trim(String(email))]);
   if (rows.length === 0) {
-    throw new AuthServiceError('validation', 'Utilisateur non trouvé.');
+    throw new AuthServiceError('validation', 'User not found.');
   }
   const userDb = rows[0];
   if (userDb.is_verified) {
-    throw new AuthServiceError('validation', 'Utilisateur déjà vérifié.');
+    throw new AuthServiceError('validation', 'User already verified.');
   }
   const { code: newCode, expires } = generateVerificationCode();
   await db.query('UPDATE users SET verification_code = ?, verification_code_expires = ? WHERE email = ?', [newCode, expires, email]);
 
   await mailService.sendMail({
     to: email,
-    subject: 'Nouveau code de vérification',
-    text: `Votre nouveau code de vérification est : ${newCode}\nCe code expire dans 10 minutes.`,
+    subject: 'New verification code',
+    text: `Your new verification code is: ${newCode}\nThis code expires in 10 minutes.`,
     html: mailService.buildTemplate({
-      title: 'Nouveau code de vérification',
-      message: 'Voici votre nouveau code de vérification.',
+      title: 'New verification code',
+      message: 'Here is your new verification code.',
       code: newCode
     })
   });
@@ -254,10 +254,10 @@ const resendVerificationCode = async ({ email }) => {
 const startPasswordReset = async ({ email: rawEmail }, { onMailError } = {}) => {
   const email = normalizeInput(rawEmail);
   if (!email) {
-    throw new AuthServiceError('validation', 'Email obligatoire.');
+    throw new AuthServiceError('validation', 'Email is required.');
   }
   if (!validator.isEmail(email)) {
-    throw new AuthServiceError('validation', 'Email invalide.');
+    throw new AuthServiceError('validation', 'Invalid email.');
   }
 
   const [rows] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
@@ -272,11 +272,11 @@ const startPasswordReset = async ({ email: rawEmail }, { onMailError } = {}) => 
     try {
       await mailService.sendMail({
         to: email,
-        subject: 'Réinitialisation de votre mot de passe',
-        text: `Votre code de réinitialisation est : ${code}\nCe code expire dans 10 minutes.`,
+        subject: 'Reset your password',
+        text: `Your reset code is: ${code}\nThis code expires in 10 minutes.`,
         html: mailService.buildTemplate({
-          title: 'Réinitialisation de votre mot de passe',
-          message: 'Utilisez le code ci-dessous pour choisir un nouveau mot de passe.',
+          title: 'Reset your password',
+          message: 'Use the code below to choose a new password.',
           code
         })
       });
@@ -304,29 +304,29 @@ const completePasswordReset = async ({ email: rawEmail, code: rawCode, newPasswo
   const password = normalizeInput(newPassword);
 
   if (!email || !code || !password) {
-    throw new AuthServiceError('validation', 'Email, code et nouveau mot de passe sont obligatoires.');
+    throw new AuthServiceError('validation', 'Email, code, and new password are required.');
   }
   if (!validator.isEmail(email)) {
-    throw new AuthServiceError('validation', 'Email invalide.');
+    throw new AuthServiceError('validation', 'Invalid email.');
   }
   if (!validator.isLength(password, { min: PASSWORD_MIN_LENGTH })) {
-    throw new AuthServiceError('validation', 'Mot de passe trop court.');
+    throw new AuthServiceError('validation', 'Password too short.');
   }
   if (!validator.matches(password, PASSWORD_COMPLEXITY_REGEX)) {
-    throw new AuthServiceError('validation', 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.');
+    throw new AuthServiceError('validation', 'The password must contain at least one uppercase letter, one lowercase letter, and one digit.');
   }
 
   const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
   if (rows.length === 0) {
-    throw new AuthServiceError('validation', 'Code incorrect.');
+    throw new AuthServiceError('validation', 'Incorrect code.');
   }
 
   const userDb = rows[0];
   if (!userDb.reset_code || userDb.reset_code !== code) {
-    throw new AuthServiceError('validation', 'Code incorrect.');
+    throw new AuthServiceError('validation', 'Incorrect code.');
   }
   if (!userDb.reset_code_expires || new Date() > new Date(userDb.reset_code_expires)) {
-    throw new AuthServiceError('validation', 'Code expiré. Veuillez en demander un nouveau.');
+    throw new AuthServiceError('validation', 'Code expired. Please request a new one.');
   }
 
   const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);

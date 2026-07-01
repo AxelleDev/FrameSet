@@ -1,38 +1,38 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-// Map raw/technical error messages to friendly, user-facing French text.
+// Map raw/technical error messages to friendly, user-facing English text.
 function getFriendlyMessage(message) {
   if (!message) return null;
   if (typeof message === 'string') {
     if (message.match(/not found|404/i)) {
-      return "Le service demandé est indisponible ou n'existe pas. Veuillez vérifier l'URL ou réessayer plus tard.";
+      return "The requested service is unavailable or doesn't exist. Please check the URL or try again later.";
     }
     if (message.match(/internal server error|500/i)) {
-      return "Une erreur interne est survenue sur le serveur. Merci de réessayer plus tard ou de contacter le support si le problème persiste.";
+      return "An internal server error occurred. Please try again later, or contact support if the problem persists.";
     }
     if (message.match(/network|failed to fetch|fetch/i)) {
-      return "Impossible de contacter le serveur. Vérifiez votre connexion ou réessayez plus tard.";
+      return "Couldn't reach the server. Check your connection or try again later.";
     }
     if (message.match(/unauthorized|401/i)) {
-      return "Vous n'êtes pas autorisé à effectuer cette action. Veuillez vous reconnecter.";
+      return "You're not authorized to perform this action. Please sign in again.";
     }
     if (message.match(/forbidden|403/i)) {
-      return "Accès refusé. Vous n'avez pas les droits nécessaires.";
+      return "Access denied. You don't have the required permissions.";
     }
     if (message.match(/timeout|timed out/i)) {
-      return "Le serveur met trop de temps à répondre. Veuillez réessayer plus tard.";
+      return "The server is taking too long to respond. Please try again later.";
     }
     if (message.trim() === 'Not Found') {
-      return "Le service demandé est indisponible ou n'existe pas. Veuillez vérifier l'URL ou réessayer plus tard.";
+      return "The requested service is unavailable or doesn't exist. Please check the URL or try again later.";
     }
     // Fallback for technical messages that are too short to be meaningful.
     if (message.trim().length < 5) {
-      return "Une erreur est survenue. Merci de réessayer.";
+      return "Something went wrong. Please try again.";
     }
     return message;
   }
-  return 'Une erreur est survenue.';
+  return 'Something went wrong.';
 }
 
 /**
@@ -59,7 +59,7 @@ export default function GlobalErrorAlert({ message, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="Fermer l'alerte"
+          aria-label="Dismiss alert"
           className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-lg p-1 text-white/90 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">

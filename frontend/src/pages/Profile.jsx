@@ -62,7 +62,7 @@ export default function Profile() {
         if (result?.success === false) {
           if (result.message) showToast(result.message, 'danger');
         } else {
-          showToast('Profil mis à jour.');
+          showToast('Profile updated.');
         }
       });
     } else {
@@ -108,11 +108,11 @@ export default function Profile() {
 
     // Client-side validation stays inline (a small hint inside the modal).
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      setPasswordError('Renseignez tous les champs.');
+      setPasswordError('Fill in all fields.');
       return;
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordError('Les mots de passe ne correspondent pas.');
+      setPasswordError("Passwords don't match.");
       return;
     }
 
@@ -132,7 +132,7 @@ export default function Profile() {
 
       setIsPasswordModalOpen(false);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      showToast('Votre mot de passe a été modifié.');
+      showToast('Your password has been changed.');
     } finally {
       setIsPasswordSaving(false);
     }
@@ -141,33 +141,33 @@ export default function Profile() {
   if (!user) return null;
 
   /**
-   * Formats a date into a French relative-time string (e.g. "il y a 3 jours").
-   * Returns "Jamais modifié" for missing/invalid dates. Used for the password's
+   * Formats a date into an English relative-time string (e.g. "3 days ago").
+   * Returns "Never changed" for missing/invalid dates. Used for the password's
    * last-changed label.
    * @param {string|number|Date} dateValue
    * @returns {string}
    */
   const formatRelativeTime = (dateValue) => {
-    if (!dateValue) return 'Jamais modifié';
+    if (!dateValue) return 'Never changed';
     const date = new Date(dateValue);
-    if (Number.isNaN(date.getTime())) return 'Jamais modifié';
+    if (Number.isNaN(date.getTime())) return 'Never changed';
 
     const diffMs = Date.now() - date.getTime();
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    if (diffMinutes < 1) return "À l'instant";
-    if (diffMinutes < 60) return `il y a ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+    if (diffMinutes < 1) return 'Just now';
+    if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
 
     const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return `il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
 
     const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 30) return `il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 
     const diffMonths = Math.floor(diffDays / 30);
-    if (diffMonths < 12) return `il y a ${diffMonths} mois`;
+    if (diffMonths < 12) return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
 
     const diffYears = Math.floor(diffMonths / 12);
-    return `il y a ${diffYears} an${diffYears > 1 ? 's' : ''}`;
+    return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
   };
 
   return (
@@ -182,11 +182,11 @@ export default function Profile() {
 
           <div className="flex flex-wrap justify-center md:justify-start gap-3">
             <Button onClick={toggleEdit} variant="primary" className="min-w-[150px]">
-              {isEditing ? 'Enregistrer' : 'Éditer le profil'}
+              {isEditing ? 'Save' : 'Edit profile'}
             </Button>
 
             <Button onClick={handleLogout} variant="ghost" className="min-w-[150px]">
-              Se déconnecter
+              Sign out
             </Button>
           </div>
         </div>
@@ -196,12 +196,12 @@ export default function Profile() {
         <Card className="p-8">
           <h3 className="text-lg font-medium text-primary mb-6 flex items-center">
             <svg className="w-5 h-5 mr-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-            Informations Personnelles
+            Personal information
           </h3>
           
           <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Nom complet">
+                <FormField label="Full name">
                   <TextInput
                     type="text"
                     value={editForm.name}
@@ -209,7 +209,7 @@ export default function Profile() {
                     disabled={!isEditing}
                   />
                 </FormField>
-                <FormField label="Adresse Email">
+                <FormField label="Email address">
                   <TextInput
                     type="email"
                     value={editForm.email}
@@ -218,10 +218,10 @@ export default function Profile() {
                   />
                   {user.pendingEmail && user.pendingEmail !== user.email && (
                     <p className="text-xs text-primary/60 mt-2">
-                      Email en attente de vérification : {user.pendingEmail}
+                      Email pending verification: {user.pendingEmail}
                       {' '}·{' '}
                       <Link to={`/verify?email=${encodeURIComponent(user.pendingEmail)}&type=pending-email`} className="underline hover:text-primary">
-                        Vérifier
+                        Verify
                       </Link>
                     </p>
                   )}
@@ -233,33 +233,33 @@ export default function Profile() {
         <Card className="p-8">
           <h3 className="text-lg font-medium text-primary mb-6 flex items-center">
             <svg className="w-5 h-5 mr-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-            Sécurité & Connexion
+            Security & sign-in
           </h3>
           <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-primary">Mot de passe</p>
-                <p className="text-xs text-primary/60">Dernière modification : {formatRelativeTime(user.passwordUpdatedAt)}</p>
+                <p className="text-sm font-medium text-primary">Password</p>
+                <p className="text-xs text-primary/60">Last changed: {formatRelativeTime(user.passwordUpdatedAt)}</p>
               </div>
-              <Button onClick={openPasswordModal} variant="ghost" className="text-sm font-medium">Modifier le mot de passe</Button>
+              <Button onClick={openPasswordModal} variant="ghost" className="text-sm font-medium">Change password</Button>
           </div>
         </Card>
 
           <Card className="p-8">
-            <h3 className="text-lg font-medium text-primary mb-2">Zone de danger</h3>
-            <p className="text-sm text-primary mb-6">La suppression de votre compte est irréversible. Toutes vos données seront perdues.</p>
-           
+            <h3 className="text-lg font-medium text-primary mb-2">Danger zone</h3>
+            <p className="text-sm text-primary mb-6">Deleting your account is irreversible. All your data will be lost.</p>
+
             <Button onClick={() => setIsDeleteAccountOpen(true)} variant="danger" className="text-sm">
-              Supprimer mon compte
+              Delete my account
             </Button>
         </Card>
       </div>
 
       <ConfirmDialog
         isOpen={isLogoutConfirmOpen}
-        title="Se déconnecter ?"
-        message="Vous devrez vous reconnecter pour accéder à vos projets."
-        confirmLabel="Se déconnecter"
-        cancelLabel="Annuler"
+        title="Sign out?"
+        message="You'll need to sign in again to access your projects."
+        confirmLabel="Sign out"
+        cancelLabel="Cancel"
         onConfirm={confirmLogout}
         onCancel={cancelLogout}
         confirmClassName="bg-blue text-white"
@@ -268,27 +268,27 @@ export default function Profile() {
       <AppModal
         isOpen={isPasswordModalOpen}
         onClose={closePasswordModal}
-        title="Modifier le mot de passe"
-        subtitle="Saisissez votre ancien mot de passe pour valider."
+        title="Change password"
+        subtitle="Enter your current password to confirm."
         showClose={false}
         panelClassName="max-w-lg"
       >
         <form onSubmit={handlePasswordChange} className="space-y-4">
-          <FormField label="Ancien mot de passe">
+          <FormField label="Current password">
             <PasswordInput
               value={passwordForm.currentPassword}
               onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
               autoComplete="current-password"
             />
           </FormField>
-          <FormField label="Nouveau mot de passe">
+          <FormField label="New password">
             <PasswordInput
               value={passwordForm.newPassword}
               onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
               autoComplete="new-password"
             />
           </FormField>
-          <FormField label="Confirmation du nouveau mot de passe">
+          <FormField label="Confirm new password">
             <PasswordInput
               value={passwordForm.confirmPassword}
               onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
@@ -300,10 +300,10 @@ export default function Profile() {
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <Button type="button" onClick={closePasswordModal} variant="ghost" className="text-sm">
-              Annuler
+              Cancel
             </Button>
             <Button type="submit" disabled={isPasswordSaving} loading={isPasswordSaving} variant="primary" className="text-sm">
-              {isPasswordSaving ? 'Enregistrement...' : 'Enregistrer'}
+              {isPasswordSaving ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </form>
@@ -311,14 +311,14 @@ export default function Profile() {
 
       <ConfirmDialog
         isOpen={isDeleteAccountOpen}
-        title="Supprimer votre compte ?"
-        message="Toutes vos données seront définitivement perdues. Cette action est irréversible. Pour confirmer, saisissez « Suppression » ci-dessous."
-        confirmLabel="Supprimer"
-        cancelLabel="Annuler"
-       
-        confirmationWord="Suppression"
-        confirmationInputLabel="Écrivez le mot de confirmation"
-        confirmationInputPlaceholder="Suppression"
+        title="Delete your account?"
+        message={'All your data will be permanently lost. This action is irreversible. To confirm, type "DELETE" below.'}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+
+        confirmationWord="DELETE"
+        confirmationInputLabel="Type the confirmation word"
+        confirmationInputPlaceholder="DELETE"
         onCancel={() => setIsDeleteAccountOpen(false)}
         onConfirm={async () => {
           setIsDeleteAccountOpen(false);

@@ -34,17 +34,17 @@ describe('ProjectPalette', () => {
     });
   });
 
-  it('affiche le titre, la couleur existante et le bouton d’import', () => {
+  it('shows the title, the existing color and the import button', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /palette de couleurs/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /color palette/i })).toBeInTheDocument();
     expect(screen.getByText('#FF0000')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /palette depuis une image/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /palette from an image/i })).toBeInTheDocument();
   });
 
-  it('ouvre la modale d’ajout de couleur', async () => {
+  it('opens the add-color modal', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
-    expect(await screen.findByText(/nouvelle couleur/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    expect(await screen.findByText(/new color/i)).toBeInTheDocument();
   });
 });

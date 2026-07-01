@@ -30,9 +30,9 @@ describe('Profile', () => {
     mockNavigate.mockReset();
     Object.assign(authState, {
       user: {
-        name: 'Prénom Nom',
+        name: 'Jane Doe',
         email: 'axelle@example.com',
-        avatarInitials: 'PN',
+        avatarInitials: 'JD',
         passwordUpdatedAt: null,
       },
       updateUserProfile: vi.fn().mockResolvedValue({ success: true }),
@@ -42,30 +42,30 @@ describe('Profile', () => {
     });
   });
 
-  it('affiche le nom, l’email et les initiales', () => {
+  it('shows the name, email and initials', () => {
     renderPage();
-    expect(screen.getByText('Prénom Nom')).toBeInTheDocument();
+    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
     expect(screen.getByText('axelle@example.com')).toBeInTheDocument();
-    expect(screen.getByText('PN')).toBeInTheDocument();
+    expect(screen.getByText('JD')).toBeInTheDocument();
   });
 
-  it('bascule en mode édition (champs éditables + bouton Enregistrer)', async () => {
+  it('switches to edit mode (editable fields + Save button)', async () => {
     const user = userEvent.setup();
     renderPage();
 
-    // Au repos : le champ nom est désactivé (non éditable).
-    expect(screen.getByDisplayValue('Prénom Nom')).toBeDisabled();
+    // At rest: the name field is disabled (not editable).
+    expect(screen.getByDisplayValue('Jane Doe')).toBeDisabled();
 
-    await user.click(screen.getByRole('button', { name: /éditer le profil/i }));
+    await user.click(screen.getByRole('button', { name: /edit profile/i }));
 
-    expect(screen.getByRole('button', { name: /enregistrer/i })).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Prénom Nom')).toBeEnabled();
+    expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Jane Doe')).toBeEnabled();
   });
 
-  it('ouvre la confirmation de déconnexion', async () => {
+  it('opens the sign-out confirmation', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByRole('button', { name: /se déconnecter/i }));
-    expect(await screen.findByText(/vous devrez vous reconnecter/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /sign out/i }));
+    expect(await screen.findByText(/you'll need to sign in again/i)).toBeInTheDocument();
   });
 });

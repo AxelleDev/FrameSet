@@ -198,10 +198,10 @@ export default function ProjectPalette() {
 
   const renderEditStatus = () => {
     if (editStatus === 'error') {
-      return <div className="text-xs text-danger mt-2">Erreur lors de la modification.</div>;
+      return <div className="text-xs text-danger mt-2">Something went wrong saving your changes.</div>;
     }
     if (editStatus === 'success') {
-      return <div className="text-xs text-success mt-2">Modification enregistrée.</div>;
+      return <div className="text-xs text-success mt-2">Changes saved.</div>;
     }
     return null;
   };
@@ -262,7 +262,7 @@ export default function ProjectPalette() {
     const saved = await persistPalette(nextPalette);
     if (saved) {
       setIsAddingColor(false);
-      showToast('Couleur ajoutée.');
+      showToast('Color added.');
     }
   };
 
@@ -283,13 +283,13 @@ export default function ProjectPalette() {
     try {
       const hexes = await extractColorsFromImage(file, 8);
       if (hexes.length === 0) {
-        setImageError("Aucune couleur n'a pu être extraite de cette image.");
+        setImageError('No colors could be extracted from this image.');
         return;
       }
       setImageColors(hexes.map((hex) => ({ hex, selected: true })));
       setIsImageModalOpen(true);
     } catch {
-      setImageError("Impossible d'analyser cette image.");
+      setImageError('This image could not be analyzed.');
     } finally {
       setExtracting(false);
     }
@@ -307,12 +307,12 @@ export default function ProjectPalette() {
 
     const room = Math.max(0, MAX_PALETTE_SIZE - palette.length);
     if (room === 0) {
-      setImageError(`La palette est pleine (maximum ${MAX_PALETTE_SIZE} couleurs).`);
+      setImageError(`The palette is full (maximum ${MAX_PALETTE_SIZE} colors).`);
       return;
     }
 
     const toAdd = chosen.slice(0, room).map((c, i) => ({
-      name: `Couleur ${palette.length + i + 1}`,
+      name: `Color ${palette.length + i + 1}`,
       hex: c.hex,
     }));
 
@@ -320,7 +320,7 @@ export default function ProjectPalette() {
     if (saved) {
       setIsImageModalOpen(false);
       setImageColors([]);
-      showToast(`${toAdd.length} couleur${toAdd.length > 1 ? 's' : ''} ajoutée${toAdd.length > 1 ? 's' : ''}.`);
+      showToast(`${toAdd.length} color${toAdd.length > 1 ? 's' : ''} added.`);
     }
   };
 
@@ -353,8 +353,8 @@ export default function ProjectPalette() {
   return (
     <>
       <PageHeader
-        title="Palette de couleurs"
-        subtitle="Les couleurs de référence de ce projet."
+        title="Color palette"
+        subtitle="This project's reference colors."
         actions={activeProject ? (
           <>
             <input
@@ -370,7 +370,7 @@ export default function ProjectPalette() {
               onClick={openImagePicker}
               disabled={extracting}
             >
-              {extracting ? 'Analyse…' : 'Palette depuis une image'}
+              {extracting ? 'Analyzing…' : 'Palette from an image'}
             </Button>
           </>
         ) : null}
@@ -395,7 +395,7 @@ export default function ProjectPalette() {
               key={color.id}
               ref={el => { itemRefs.current[color.id] = el; }}
               tabIndex={-1}
-              aria-label={`Couleur ${color.name}, ${color.hex}`}
+              aria-label={`Color ${color.name}, ${color.hex}`}
               className={`group relative flex flex-col aspect-[4/5] rounded-3xl outline-none ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
               draggable
               onDragStart={e => {
@@ -479,7 +479,7 @@ export default function ProjectPalette() {
 
                    <ActionIconButton
                       onClick={(e) => handleDeleteColor(e, color.id)}
-                      title="Supprimer la couleur"
+                      title="Delete color"
                       intent="delete"
                       variant="light"
                       className="absolute top-3 right-3 z-30"
@@ -491,7 +491,7 @@ export default function ProjectPalette() {
 
                     <ActionIconButton
                       onClick={() => openEditModal(idx)}
-                      title="Modifier la couleur"
+                      title="Edit color"
                       intent="edit"
                       variant="light"
                       className="absolute top-3 left-3 z-30"
@@ -508,7 +508,7 @@ export default function ProjectPalette() {
                    <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
                      <ActionIconButton
                        onClick={(e) => { e.stopPropagation(); moveColor(idx, idx - 1); }}
-                       title="Déplacer la couleur vers la gauche"
+                       title="Move color left"
                        variant="light"
                        srOnly
                        disabled={idx === 0}
@@ -519,7 +519,7 @@ export default function ProjectPalette() {
                      </ActionIconButton>
                      <ActionIconButton
                        onClick={(e) => { e.stopPropagation(); moveColor(idx, idx + 1); }}
-                       title="Déplacer la couleur vers la droite"
+                       title="Move color right"
                        variant="light"
                        srOnly
                        disabled={idx === previewPalette.length - 1}
@@ -535,7 +535,7 @@ export default function ProjectPalette() {
                    <button
                      type="button"
                      onClick={e => handleCopyHex(e, color.hex)}
-                     aria-label={`Copier ${color.hex}`}
+                     aria-label={`Copy ${color.hex}`}
                      className="absolute inset-0 flex items-center justify-center rounded-3xl opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
                    >
                       <CopyBadge isCopied={copiedValue === color.hex} />
@@ -556,19 +556,19 @@ export default function ProjectPalette() {
       <FormModal
         isOpen={editIdx !== null}
         onClose={() => setEditIdx(null)}
-        title="Modifier la couleur"
+        title="Edit color"
       >
         <div className="space-y-4">
-          <FormField label="Nom de la couleur">
-            <TextInput type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="Reflet Cheveux" />
+          <FormField label="Color name">
+            <TextInput type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="Hair highlight" />
           </FormField>
-          <FormField label="Code Hexadécimal">
+          <FormField label="Hex code">
             <div className="flex gap-3">
                <input
                  type="color"
                  value={isValidEditHex() ? editColorHex : '#ffffff'}
                  onChange={(e) => setEditColorHex(e.target.value.toUpperCase())}
-                 aria-label="Choisir la couleur"
+                 aria-label="Pick a color"
                  className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0"
                />
                <TextInput
@@ -586,8 +586,8 @@ export default function ProjectPalette() {
           {renderEditStatus()}
         </div>
         <ModalActions
-          secondaryLabel="Annuler"
-          primaryLabel="Enregistrer"
+          secondaryLabel="Cancel"
+          primaryLabel="Save"
           onSecondary={() => setEditIdx(null)}
           onPrimary={confirmEditColor}
           primaryDisabled={!editColorName || !isValidEditHex()}
@@ -597,20 +597,20 @@ export default function ProjectPalette() {
       <FormModal
         isOpen={isAddingColor}
         onClose={() => setIsAddingColor(false)}
-        title="Nouvelle couleur"
+        title="New color"
       >
         <div className="space-y-4">
-          <FormField label="Nom de la couleur">
-            <TextInput type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="Reflet Cheveux" />
+          <FormField label="Color name">
+            <TextInput type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="Hair highlight" />
           </FormField>
 
-          <FormField label="Code Hexadécimal">
+          <FormField label="Hex code">
             <div className="flex gap-3">
                <input
                  type="color"
                  value={isValidHex() ? newColorHex : '#ffffff'}
                  onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
-                 aria-label="Choisir la couleur"
+                 aria-label="Pick a color"
                  className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0"
                />
                <TextInput
@@ -628,8 +628,8 @@ export default function ProjectPalette() {
         </div>
 
         <ModalActions
-          secondaryLabel="Annuler"
-          primaryLabel="Ajouter"
+          secondaryLabel="Cancel"
+          primaryLabel="Add"
           onSecondary={() => setIsAddingColor(false)}
           onPrimary={confirmAddColor}
           primaryDisabled={!newColorName || !isValidHex()}
@@ -639,11 +639,11 @@ export default function ProjectPalette() {
       <FormModal
         isOpen={isImageModalOpen}
         onClose={() => { setIsImageModalOpen(false); setImageColors([]); }}
-        title="Palette depuis une image"
+        title="Palette from an image"
       >
         <div className="space-y-4">
           <p className="text-sm text-primary">
-            Couleurs extraites de l'image — cliquez pour (dé)sélectionner celles à ajouter.
+            Colors extracted from the image — click to select or deselect the ones to add.
           </p>
           <div className="grid grid-cols-4 gap-3">
             {imageColors.map(({ hex, selected }) => (
@@ -662,8 +662,8 @@ export default function ProjectPalette() {
           {imageError && <p className="text-xs text-danger">{imageError}</p>}
         </div>
         <ModalActions
-          secondaryLabel="Annuler"
-          primaryLabel={`Ajouter (${imageColors.filter((c) => c.selected).length})`}
+          secondaryLabel="Cancel"
+          primaryLabel={`Add (${imageColors.filter((c) => c.selected).length})`}
           onSecondary={() => { setIsImageModalOpen(false); setImageColors([]); }}
           onPrimary={confirmAddImageColors}
           primaryDisabled={imageColors.filter((c) => c.selected).length === 0}
@@ -672,9 +672,9 @@ export default function ProjectPalette() {
 
       <ConfirmDialog
         isOpen={confirmDeleteColor !== null}
-        title="Supprimer la couleur ?"
-        message="Elle sera retirée de la palette."
-        confirmLabel="Supprimer"
+        title="Delete color?"
+        message="It will be removed from the palette."
+        confirmLabel="Delete"
        
         onCancel={() => setConfirmDeleteColor(null)}
         onConfirm={async () => {
@@ -684,7 +684,7 @@ export default function ProjectPalette() {
           const saved = await persistPalette(nextPalette);
           if (saved) {
             setConfirmDeleteColor(null);
-            showToast('Couleur supprimée.');
+            showToast('Color deleted.');
           }
         }}
       />

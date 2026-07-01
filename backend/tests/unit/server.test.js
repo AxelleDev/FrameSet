@@ -25,7 +25,7 @@ jest.mock('../../src/utils/logger', () => ({
   }
 }));
 
-describe('serveur', () => {
+describe('server', () => {
   let processOnSpy;
   let processExitSpy;
 
@@ -42,7 +42,7 @@ describe('serveur', () => {
     processExitSpy.mockRestore();
   });
 
-  it('devrait démarrer le serveur et activer le scheduler de nettoyage', () => {
+  it('starts the server and enables the cleanup scheduler', () => {
     const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation(() => ({
       unref: jest.fn()
     }));
@@ -67,13 +67,13 @@ describe('serveur', () => {
     setIntervalSpy.mockRestore();
   });
 
-  it('devrait enregistrer un handler SIGTERM pour le graceful shutdown', () => {
+  it('registers a SIGTERM handler for the graceful shutdown', () => {
     require('../../src/server');
 
     expect(processOnSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
   });
 
-  it('devrait lancer cleanupExpiredRevokedTokens via le callback du scheduler', async () => {
+  it('runs cleanupExpiredRevokedTokens via the scheduler callback', async () => {
     let scheduledCleanup;
     const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation((callback) => {
       scheduledCleanup = callback;
@@ -89,7 +89,7 @@ describe('serveur', () => {
     setIntervalSpy.mockRestore();
   });
 
-  it('devrait fermer le serveur HTTP et le pool DB lors du graceful shutdown', async () => {
+  it('closes the HTTP server and the DB pool during the graceful shutdown', async () => {
     const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation(() => ({
       unref: jest.fn()
     }));

@@ -78,7 +78,7 @@ const sanitizeOptionalTextField = (value, { maxLength }) => {
 
 /** Builds the standard user-facing error message for an invalid hex color. */
 const buildInvalidHexColorError = (value) => (
-  `Couleur invalide : la valeur hex "${value}" n'est pas un format valide (#RGB ou #RRGGBB).`
+  `Invalid color: the hex value "${value}" is not a valid format (#RGB or #RRGGBB).`
 );
 
 /**
@@ -110,37 +110,37 @@ const validateHexColorField = (value) => {
  */
 const validateBrushNormPayload = ({ name, value, unit, brushName, opacity }) => {
   if (typeof name !== 'string') {
-    return { error: 'Le nom de la norme de trait est invalide.' };
+    return { error: 'The brush usage is invalid.' };
   }
 
   const trimmedName = validator.trim(name);
   if (!validator.isLength(trimmedName, { min: 1, max: 255 })) {
-    return { error: 'Le nom de la norme de trait est invalide.' };
+    return { error: 'The brush usage is invalid.' };
   }
 
   const valueAsString = typeof value === 'number' ? String(value) : value;
   if (typeof valueAsString !== 'string') {
-    return { error: 'La valeur de la norme de trait doit etre un nombre positif.' };
+    return { error: 'The brush size must be a positive number.' };
   }
 
   const trimmedValue = validator.trim(valueAsString);
   if (!validator.isFloat(trimmedValue, { gt: 0, max: 1000 })) {
-    return { error: 'La valeur de la norme de trait doit etre un nombre positif.' };
+    return { error: 'The brush size must be a positive number.' };
   }
 
   const unitInput = unit === undefined || unit === null ? 'px' : unit;
   if (typeof unitInput !== 'string') {
-    return { error: "L'unite de la norme de trait est invalide." };
+    return { error: 'The brush unit is invalid.' };
   }
 
   const trimmedUnit = validator.trim(unitInput);
   if (!validator.isLength(trimmedUnit, { min: 1, max: 20 }) || !validator.matches(trimmedUnit, /^[a-zA-Z%]+$/)) {
-    return { error: "L'unite de la norme de trait est invalide." };
+    return { error: 'The brush unit is invalid.' };
   }
 
   const normalizedBrushName = sanitizeOptionalTextField(brushName, { maxLength: 255 });
   if (normalizedBrushName.error) {
-    return { error: 'Le nom du pinceau est invalide.' };
+    return { error: 'The brush name is invalid.' };
   }
 
   let validatedOpacity = null;
@@ -150,10 +150,10 @@ const validateBrushNormPayload = ({ name, value, unit, brushName, opacity }) => 
       if (validator.isFloat(opStr, { min: 0, max: 1 })) {
         validatedOpacity = parseFloat(opStr);
       } else {
-        return { error: "L'opacité doit être un nombre entre 0 et 1." };
+        return { error: 'Opacity must be a number between 0 and 1.' };
       }
     } else {
-      return { error: "L'opacité doit être un nombre entre 0 et 1." };
+      return { error: 'Opacity must be a number between 0 and 1.' };
     }
   }
   return {
@@ -175,27 +175,27 @@ const validateBrushNormPayload = ({ name, value, unit, brushName, opacity }) => 
  */
 const validateTypographyNormPayload = ({ fontFamily, fontWeight, fontUsage, fontStyle }) => {
   if (typeof fontFamily !== 'string') {
-    return { error: 'La famille de police est invalide.' };
+    return { error: 'The font family is invalid.' };
   }
 
   const trimmedFontFamily = validator.trim(fontFamily);
   if (!validator.isLength(trimmedFontFamily, { min: 1, max: 255 })) {
-    return { error: 'La famille de police est invalide.' };
+    return { error: 'The font family is invalid.' };
   }
 
   const normalizedFontWeight = sanitizeOptionalTextField(fontWeight, { maxLength: 100 });
   if (normalizedFontWeight.error) {
-    return { error: 'Le poids de police est invalide.' };
+    return { error: 'The font weight is invalid.' };
   }
 
   const normalizedFontUsage = sanitizeOptionalTextField(fontUsage, { maxLength: 255 });
   if (normalizedFontUsage.error) {
-    return { error: "L'usage typographique est invalide." };
+    return { error: 'The typography usage is invalid.' };
   }
 
   const normalizedFontStyle = sanitizeOptionalTextField(fontStyle, { maxLength: 100 });
   if (normalizedFontStyle.error) {
-    return { error: 'Le style de police est invalide.' };
+    return { error: 'The font style is invalid.' };
   }
 
   return {
@@ -393,7 +393,7 @@ const listProjectsForUser = async (userId, requestId) => {
     return {
       id: project.id,
       name: project.name,
-      lastEdited: project.lastEditedFormatted || 'À l\'instant',
+      lastEdited: project.lastEditedFormatted || 'Just now',
       brushNorms,
       typographyNorms,
       normsCount: brushNorms.length + typographyNorms.length,
@@ -437,7 +437,7 @@ const createProjectForUser = async (userId, rawName) => {
   return {
     id: newId,
     name,
-    lastEdited: 'À l\'instant',
+    lastEdited: 'Just now',
     normsCount: 0,
     norms: [],
     palette: []
@@ -532,10 +532,10 @@ const addTypographyNormToProject = async (projectId, payload) => {
  */
 const validatePalettePayload = (colors) => {
   if (!Array.isArray(colors)) {
-    throw new ProjectServiceError('validation', 'La palette doit être un tableau de couleurs.');
+    throw new ProjectServiceError('validation', 'The palette must be an array of colors.');
   }
   if (colors.length > MAX_PALETTE_SIZE) {
-    throw new ProjectServiceError('validation', `La palette ne peut pas dépasser ${MAX_PALETTE_SIZE} couleurs.`);
+    throw new ProjectServiceError('validation', `The palette cannot exceed ${MAX_PALETTE_SIZE} colors.`);
   }
 
   // Validate and normalize every color up front, before opening a transaction.
@@ -547,13 +547,13 @@ const validatePalettePayload = (colors) => {
     }
     const nameCheck = sanitizeOptionalTextField(color?.name, { maxLength: 255 });
     if (nameCheck.error) {
-      throw new ProjectServiceError('validation', 'Le nom de la couleur est invalide.');
+      throw new ProjectServiceError('validation', 'The color name is invalid.');
     }
     let colorId = null;
     if (color?.id !== undefined && color?.id !== null) {
       const parsedId = Number(color.id);
       if (!Number.isInteger(parsedId) || parsedId <= 0) {
-        throw new ProjectServiceError('validation', 'Identifiant de couleur invalide.');
+        throw new ProjectServiceError('validation', 'Invalid color identifier.');
       }
       colorId = parsedId;
     }

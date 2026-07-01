@@ -27,12 +27,12 @@ const logProjectsControllerError = createControllerLogger('projects');
 const ensureProjectOwnership = async (req, res, projectId) => {
   const userId = getAuthenticatedUserId(req);
   if (!userId) {
-    res.status(401).json({ error: 'Utilisateur non authentifié.' });
+    res.status(401).json({ error: 'User not authenticated.' });
     return false;
   }
 
   if (!(await projectsService.userOwnsProject(userId, projectId))) {
-    res.status(403).json({ error: 'Accès interdit à ce projet.' });
+    res.status(403).json({ error: 'Access to this project is forbidden.' });
     return false;
   }
 
@@ -48,14 +48,14 @@ const ensureProjectOwnership = async (req, res, projectId) => {
 const listProjects = async (req, res) => {
   const userId = getAuthenticatedUserId(req);
   if (!userId) {
-    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+    return res.status(401).json({ error: 'User not authenticated.' });
   }
   try {
     const fullProjects = await projectsService.listProjectsForUser(userId, req.id);
     res.json(fullProjects);
   } catch (error) {
     logProjectsControllerError(req, 'list', error);
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -69,20 +69,20 @@ const createProject = async (req, res) => {
   const userId = getAuthenticatedUserId(req);
   const { name } = req.body;
   if (!userId) {
-    return res.status(401).json({ error: 'Utilisateur non authentifié.' });
+    return res.status(401).json({ error: 'User not authenticated.' });
   }
   if (!name) {
-    return res.status(400).json({ error: 'Champs obligatoires manquants.' });
+    return res.status(400).json({ error: 'Required fields are missing.' });
   }
   try {
     const newProject = await projectsService.createProjectForUser(userId, name);
     res.json(newProject);
   } catch (error) {
     if (error.code === 'invalid_name') {
-      return res.status(400).json({ error: 'Nom de projet invalide.' });
+      return res.status(400).json({ error: 'Invalid project name.' });
     }
     logProjectsControllerError(req, 'create', error);
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -96,14 +96,14 @@ const updateProjectName = async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
   if (typeof name !== 'string' || !name.trim()) {
-    return res.status(400).json({ error: 'Nom du projet requis.' });
+    return res.status(400).json({ error: 'Project name is required.' });
   }
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
     res.json(await projectsService.renameProject(id, name));
   } catch (error) {
     logProjectsControllerError(req, 'update_name', error, { projectId: id });
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -120,7 +120,7 @@ const deleteProject = async (req, res) => {
     res.json(await projectsService.deleteProjectById(id));
   } catch (error) {
     logProjectsControllerError(req, 'delete', error, { projectId: id });
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -141,7 +141,7 @@ const addBrushNorm = async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
     logProjectsControllerError(req, 'add_brush_norm', error, { projectId: id });
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -162,7 +162,7 @@ const addTypographyNorm = async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
     logProjectsControllerError(req, 'add_typography_norm', error, { projectId: id });
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -193,7 +193,7 @@ const updatePalette = async (req, res) => {
     res.json(result);
   } catch (error) {
     logProjectsControllerError(req, 'update_palette', error, { projectId: id });
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -208,7 +208,7 @@ const deleteBrushNorm = async (req, res) => {
   try {
     if (!(await ensureProjectOwnership(req, res, projectId))) return;
     if (!(await projectsService.deleteBrushNormFromProject(projectId, normId))) {
-      return res.status(404).json({ error: 'Norme non trouvée' });
+      return res.status(404).json({ error: 'Standard not found.' });
     }
     res.json({ success: true });
   } catch (error) {
@@ -216,7 +216,7 @@ const deleteBrushNorm = async (req, res) => {
       projectId,
       normId
     });
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -231,7 +231,7 @@ const deleteTypographyNorm = async (req, res) => {
   try {
     if (!(await ensureProjectOwnership(req, res, projectId))) return;
     if (!(await projectsService.deleteTypographyNormFromProject(projectId, normId))) {
-      return res.status(404).json({ error: 'Norme non trouvée' });
+      return res.status(404).json({ error: 'Standard not found.' });
     }
     res.json({ success: true });
   } catch (error) {
@@ -239,7 +239,7 @@ const deleteTypographyNorm = async (req, res) => {
       projectId,
       normId
     });
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -260,13 +260,13 @@ const updateBrushNorm = async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
     if (error.code === 'not_found') {
-      return res.status(404).json({ error: 'Norme non trouvée' });
+      return res.status(404).json({ error: 'Standard not found.' });
     }
     logProjectsControllerError(req, 'update_brush_norm', error, {
       projectId,
       normId
     });
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -287,13 +287,13 @@ const updateTypographyNorm = async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
     if (error.code === 'not_found') {
-      return res.status(404).json({ error: 'Norme non trouvée' });
+      return res.status(404).json({ error: 'Standard not found.' });
     }
     logProjectsControllerError(req, 'update_typography_norm', error, {
       projectId,
       normId
     });
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 

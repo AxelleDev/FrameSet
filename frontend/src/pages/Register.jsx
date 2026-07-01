@@ -80,31 +80,31 @@ export default function Register() {
             <Logo className="object-contain mr-2" style={{ width: '20%', maxWidth: '80px', height: 'auto' }} />
           </div>
           <h1 className="text-6xl font-light tracking-tight text-primary leading-tight">
-            Rejoignez le <br />
-            <span className="font-bold text-primary">Référentiel.</span>
+            Build your <br />
+            <span className="font-bold text-primary">reference.</span>
           </h1>
 
           <p className="text-lg text-primary max-w-md leading-relaxed">
-            Commencez à structurer les fondations graphiques de vos projets et donnez à votre univers créatif une direction claire et cohérente.
+            Start structuring the graphic foundations of your projects and give your creative world a clear, consistent direction.
           </p>
 
           <div className="space-y-4 pt-2">
             <div className="border-l-2 border-blue/40 pl-5 space-y-1.5">
-              <p className="text-sm font-medium text-primary">"Un outil essentiel pour reprendre un projet sans perdre mes réglages graphiques."</p>
-              <p className="text-xs text-blue uppercase tracking-widest">Alyse C., Illustratrice</p>
+              <p className="text-sm font-medium text-primary">"An essential tool for picking a project back up without losing my graphic settings."</p>
+              <p className="text-xs text-blue uppercase tracking-widest">Alyse C., Illustrator</p>
             </div>
             <p className="text-sm text-blue">
-              {userCount !== null ? `Rejoint par ${userCount} Illustrateur${userCount > 1 ? 's' : ''}` : 'Rejoint par ... Illustrateurs'}
+              {userCount !== null ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}` : 'Joined by ... illustrators'}
             </p>
           </div>
         </>
       }
     >
       <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
-        <Seo title="Créer un compte" path="/register" description="Créez votre compte FrameSet et commencez à structurer les fondations graphiques de vos projets." />
+        <Seo title="Create account" path="/register" description="Create your FrameSet account and start structuring the graphic foundations of your projects." />
         <div className="mb-8 text-center">
-          <h2 className="text-2xl font-medium text-primary">Créez votre compte</h2>
-          <p className="text-primary text-sm mt-2">Votre référence graphique commence ici.</p>
+          <h2 className="text-2xl font-medium text-primary">Create your account</h2>
+          <p className="text-primary text-sm mt-2">Your graphic reference starts here.</p>
         </div>
 
         {error && (
@@ -114,13 +114,13 @@ export default function Register() {
         )}
 
         <form className="space-y-4" onSubmit={handleRegister} noValidate>
-          <FormField label="Nom Complet" required>
+          <FormField label="Full name" required>
             <TextInput
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Prénom Nom"
+              placeholder="Jane Doe"
               autoComplete="name"
             />
           </FormField>
@@ -128,25 +128,25 @@ export default function Register() {
           <FormField
             label="Email"
             required
-            error={formData.email !== '' && !emailValid ? "Format d'email invalide." : undefined}
+            error={formData.email !== '' && !emailValid ? 'Invalid email format.' : undefined}
           >
             <TextInput
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="email@exemple.com"
+              placeholder="email@example.com"
               autoComplete="email"
             />
           </FormField>
 
           <div>
-            <FormField label="Mot de passe" required>
+            <FormField label="Password" required>
               <PasswordInput
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Votre mot de passe"
+                placeholder="Your password"
                 autoComplete="new-password"
               />
             </FormField>
@@ -154,27 +154,27 @@ export default function Register() {
           </div>
 
           <FormField
-            label="Confirmer le mot de passe"
+            label="Confirm password"
             required
-            error={formData.confirmPassword !== '' && !passwordsMatch ? 'Les mots de passe ne correspondent pas.' : undefined}
+            error={formData.confirmPassword !== '' && !passwordsMatch ? "Passwords don't match." : undefined}
           >
             <PasswordInput
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              placeholder="Confirmez votre mot de passe"
+              placeholder="Confirm your password"
               autoComplete="new-password"
             />
           </FormField>
 
           <Button type="submit" fullWidth className="mt-2" disabled={!canSubmit} loading={submitting}>
-            Créer un compte
+            Create account
           </Button>
         </form>
 
         <div className="mt-8 text-center">
-          <span className="text-sm text-primary">Vous avez déjà un compte ? </span>
-          <Link to="/login" className="text-sm font-medium text-blue hover:text-primary transition-colors">Se connecter</Link>
+          <span className="text-sm text-primary">Already have an account? </span>
+          <Link to="/login" className="text-sm font-medium text-blue hover:text-primary transition-colors">Sign in</Link>
         </div>
       </Card>
     </AuthLayout>

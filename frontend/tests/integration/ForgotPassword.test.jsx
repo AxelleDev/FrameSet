@@ -33,23 +33,23 @@ describe('ForgotPassword', () => {
     mockReset.mockReset();
   });
 
-  it('enchaîne la demande de code puis la réinitialisation', async () => {
+  it('chains the code request then the reset', async () => {
     const user = userEvent.setup();
     mockRequest.mockResolvedValue({ success: true });
     mockReset.mockResolvedValue({ success: true });
     renderPage();
 
-    // Étape 1 : demande du code.
-    await user.type(screen.getByPlaceholderText(/email@exemple/i), 'axelle@example.com');
-    await user.click(screen.getByRole('button', { name: /envoyer le code/i }));
+    // Step 1: request the code.
+    await user.type(screen.getByPlaceholderText(/email@example/i), 'axelle@example.com');
+    await user.click(screen.getByRole('button', { name: /send code/i }));
     expect(mockRequest).toHaveBeenCalledWith('axelle@example.com');
 
-    // Étape 2 : le formulaire de réinitialisation apparaît.
+    // Step 2: the reset form appears.
     const code = await screen.findByPlaceholderText('123456');
     await user.type(code, '654321');
-    await user.type(screen.getByPlaceholderText(/votre nouveau mot de passe/i), 'Pass1234');
-    await user.type(screen.getByPlaceholderText(/confirmez votre mot de passe/i), 'Pass1234');
-    await user.click(screen.getByRole('button', { name: /réinitialiser le mot de passe/i }));
+    await user.type(screen.getByPlaceholderText(/your new password/i), 'Pass1234');
+    await user.type(screen.getByPlaceholderText(/confirm your password/i), 'Pass1234');
+    await user.click(screen.getByRole('button', { name: /reset password/i }));
 
     expect(mockReset).toHaveBeenCalledWith('axelle@example.com', '654321', 'Pass1234');
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/login'));

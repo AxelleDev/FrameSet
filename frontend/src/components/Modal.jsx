@@ -114,7 +114,7 @@ export default function Modal({
               {subtitle && <p className="text-sm text-primary/60">{subtitle}</p>}
             </div>
             {showClose && (
-              <button onClick={onClose} className="p-2 -m-2 rounded-lg text-blue hover:text-primary transition focus-ring" aria-label="Fermer">
+              <button onClick={onClose} className="p-2 -m-2 rounded-lg text-blue hover:text-primary transition focus-ring" aria-label="Close">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
                   <path d="M6 18L18 6M6 6l12 12" />
                 </svg>

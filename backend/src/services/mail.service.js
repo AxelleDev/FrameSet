@@ -53,7 +53,7 @@ const getTransporter = async () => {
   if (!transporterPromise) {
     transporterPromise = nodemailer.createTestAccount().then((account) => {
       logger.info('mail.dev_account.created', {
-        message: 'Aucun SMTP configuré : compte Ethereal de test créé pour le développement.',
+        message: 'No SMTP configured: an Ethereal test account was created for development.',
         user: account.user
       });
       mailFrom = account.user;
@@ -93,10 +93,10 @@ const buildTemplate = ({ title, message, code, footer }) => {
         <div style="display:inline-block;background:#eef0ff;border:1px solid #8994DF;color:#3C3D48;padding:10px 16px;border-radius:12px;font-size:20px;font-weight:700;letter-spacing:2px;">
           ${code}
         </div>` : ''}
-        <p style="margin:16px 0 0;font-size:12px;color:#AFAFAF;">${footer || 'Ce code expire dans 10 minutes.'}</p>
+        <p style="margin:16px 0 0;font-size:12px;color:#AFAFAF;">${footer || 'This code expires in 10 minutes.'}</p>
       </div>
       <div style="padding:18px 28px;border-top:1px solid #AFAFAF;font-size:12px;color:#AFAFAF;">
-        Si vous n’êtes pas à l’origine de cette demande, vous pouvez ignorer cet email.
+        If you didn't request this, you can ignore this email.
       </div>
     </div>
   </div>

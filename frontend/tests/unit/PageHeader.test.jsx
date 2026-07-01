@@ -3,18 +3,18 @@ import { render, screen } from '@testing-library/react';
 import PageHeader from '../../src/components/PageHeader';
 
 describe('PageHeader', () => {
-  it('affiche le titre', () => {
-    render(<PageHeader title="Palette de Couleurs" />);
-    expect(screen.getByRole('heading', { name: 'Palette de Couleurs' })).toBeInTheDocument();
+  it('shows the title', () => {
+    render(<PageHeader title="Color Palette" />);
+    expect(screen.getByRole('heading', { name: 'Color Palette' })).toBeInTheDocument();
   });
 
-  it('affiche le sous-titre quand fourni', () => {
-    render(<PageHeader title="T" subtitle="Une description" />);
-    expect(screen.getByText('Une description')).toBeInTheDocument();
+  it('shows the subtitle when provided', () => {
+    render(<PageHeader title="T" subtitle="A description" />);
+    expect(screen.getByText('A description')).toBeInTheDocument();
   });
 
-  it('rend le slot actions à droite', () => {
-    render(<PageHeader title="T" actions={<button>Importer</button>} />);
-    expect(screen.getByRole('button', { name: 'Importer' })).toBeInTheDocument();
+  it('renders the actions slot on the right', () => {
+    render(<PageHeader title="T" actions={<button>Import</button>} />);
+    expect(screen.getByRole('button', { name: 'Import' })).toBeInTheDocument();
   });
 });

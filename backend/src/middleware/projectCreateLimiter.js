@@ -12,7 +12,7 @@ const { getAuthenticatedUserId } = require('../utils/auth.utils');
 
 const PROJECT_CREATE_LIMIT = 30;
 const PROJECT_CREATE_WINDOW_MS = 60 * 60 * 1000;
-const PROJECT_CREATE_LIMIT_MESSAGE = 'Trop de creations de projets ou de normes, reessayez dans une heure.';
+const PROJECT_CREATE_LIMIT_MESSAGE = 'Too many project or standard creations, try again in an hour.';
 
 const projectCreateLimiter = rateLimit({
   windowMs: PROJECT_CREATE_WINDOW_MS,

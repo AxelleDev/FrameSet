@@ -15,7 +15,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 vi.mock('../../src/context/AuthContext', () => ({
-  useAuth: () => ({ user: { name: 'Prénom Nom', avatarInitials: 'PN' } }),
+  useAuth: () => ({ user: { name: 'Jane Doe', avatarInitials: 'JD' } }),
 }));
 
 vi.mock('../../src/context/ProjectContext', () => ({
@@ -41,19 +41,19 @@ describe('Dashboard', () => {
     });
   });
 
-  it('affiche le prénom de la personne connectée', () => {
+  it('shows the first name of the signed-in person', () => {
     renderPage();
-    expect(screen.getByText(/Bonjour, Prénom\./i)).toBeInTheDocument();
+    expect(screen.getByText(/Hi, Jane\./i)).toBeInTheDocument();
   });
 
-  it('crée un projet via la modale', async () => {
+  it('creates a project via the modal', async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /créer un projet/i }));
+    await user.click(screen.getByRole('button', { name: '+ Create project' }));
     const input = await screen.findByPlaceholderText(/neo-tokyo/i);
     await user.type(input, 'Mon Projet');
-    await user.click(screen.getByRole('button', { name: /créer le projet/i }));
+    await user.click(screen.getByRole('button', { name: 'Create project' }));
 
     await waitFor(() => expect(projectState.addProject).toHaveBeenCalledWith('Mon Projet'));
   });
