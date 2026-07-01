@@ -22,11 +22,12 @@ export default {
         primary: 'rgb(var(--color-primary) / <alpha-value>)',
         secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
         blue: 'rgb(var(--color-blue) / <alpha-value>)',
+        pink: 'rgb(var(--color-pink) / <alpha-value>)',
         danger: 'rgb(var(--color-danger) / <alpha-value>)',
         success: 'rgb(var(--color-success) / <alpha-value>)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        sans: ['Figtree', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
       },
       // Named stacking scale for global floating layers. Component-local z values
       // (e.g. content inside a relative card) stay as plain z-10/z-20 since they
