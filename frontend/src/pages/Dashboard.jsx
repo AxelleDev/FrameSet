@@ -19,6 +19,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import Alert from '../components/Alert';
 
 /**
  * Formats a project's `lastEdited` value for display after the "Edited " prefix.
@@ -223,9 +224,7 @@ export default function Dashboard() {
             {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
             <TextInput type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="Neo-Tokyo Editorial" autoFocus />
           </FormField>
-          {editProjectError && (
-            <div className="text-danger text-sm font-medium mt-2">{editProjectError}</div>
-          )}
+          {editProjectError && <Alert variant="danger" className="mt-2">{editProjectError}</Alert>}
         </div>
 
         <ModalActions

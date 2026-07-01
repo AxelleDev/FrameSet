@@ -38,7 +38,6 @@ export default function ProjectPalette() {
   const { activeProject, updateProjectPalette, projectsLoading, activeProjectId } = useProjects();
   const { showToast } = useToast();
 
-  const [editStatus, setEditStatus] = useState(null);
   const [editIdx, setEditIdx] = useState(null);
   const [editColorName, setEditColorName] = useState('');
   const [editColorHex, setEditColorHex] = useState('');
@@ -196,22 +195,11 @@ export default function ProjectPalette() {
 
   useActiveProject(id);
 
-  const renderEditStatus = () => {
-    if (editStatus === 'error') {
-      return <div className="text-xs text-danger mt-2">Something went wrong saving your changes.</div>;
-    }
-    if (editStatus === 'success') {
-      return <div className="text-xs text-success mt-2">Changes saved.</div>;
-    }
-    return null;
-  };
-
   // Open the edit modal pre-filled from the color at the given index.
   const openEditModal = (idx) => {
     setEditIdx(idx);
     setEditColorName(palette[idx]?.name || '');
     setEditColorHex(palette[idx]?.hex || '#');
-    setEditStatus(null);
   };
 
   // Whether the given hex string is a valid 3- or 6-digit hex color.
@@ -246,7 +234,12 @@ export default function ProjectPalette() {
     ));
 
     const saved = await persistPalette(nextPalette);
-    setEditStatus(saved ? 'success' : 'error');
+    if (saved) {
+      setEditIdx(null);
+      showToast('Color updated.');
+    } else {
+      showToast('Something went wrong saving your changes.', 'error');
+    }
   };
 
   // Append a new color (no id yet; the server assigns one) and sync local state.
@@ -583,7 +576,6 @@ export default function ProjectPalette() {
                />
             </div>
           </FormField>
-          {renderEditStatus()}
         </div>
         <ModalActions
           secondaryLabel="Cancel"
