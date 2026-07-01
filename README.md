@@ -96,22 +96,8 @@ Workflow: `.github/workflows/ci.yml`
 
 ---
 
-## ✧･ﾟ: ✧･ﾟ Contributing
-
-Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the local
-setup and the pull-request workflow.
-
----
-
 ## ✧･ﾟ: ✧･ﾟ Contact
 
-Questions, feedback or bug reports? Open an issue, or reach out at
-**axelle.tempier@gmail.com**.
+Made by Axelle — **axelle.tempier@gmail.com**.
 
----
-
-## ✧･ﾟ: ✧･ﾟ License
-
-Released under the [MIT License](LICENSE).
-
-© Axelle 2026.
+© 2026 Axelle. All rights reserved.
