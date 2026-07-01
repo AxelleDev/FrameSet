@@ -279,7 +279,7 @@ const request = async (path, {
       if (!res.ok) {
         // Enrich the error with status/data so callers and the recovery logic
         // below can branch on them (CSRF vs auth vs server errors).
-        const errorMsg = data?.error || res.statusText || 'Unknown error';
+        const errorMsg = data?.error || res.statusText || 'Unknown error.';
         const err = new Error(errorMsg);
         err.status = res.status;
         err.data = data;
@@ -343,7 +343,7 @@ const request = async (path, {
           if (isNetworkError || isTimeoutAbort) {
             onGlobalError("Couldn't reach the server. Check your connection or try again later.");
           } else {
-            onGlobalError(e?.data?.error || e?.message || 'Server error');
+            onGlobalError(e?.data?.error || e?.message || 'Server error.');
           }
         }
         throw e;

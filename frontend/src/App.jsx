@@ -17,7 +17,7 @@
  *     dashboard    -> project list
  *     profile      -> user profile
  *     project/:id  -> per-project section, wrapped in an ErrorBoundary
- *       norms      -> graphic norms (brush + typography)
+ *       norms      -> graphic standards (brush + typography)
  *       palette    -> color palette
  *       export     -> PDF / JSON export
  *   *              -> NotFound (404)

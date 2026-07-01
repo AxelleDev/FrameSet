@@ -55,7 +55,7 @@ const listProjects = async (req, res) => {
     res.json(fullProjects);
   } catch (error) {
     logProjectsControllerError(req, 'list', error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -82,7 +82,7 @@ const createProject = async (req, res) => {
       return res.status(400).json({ error: 'Invalid project name.' });
     }
     logProjectsControllerError(req, 'create', error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -103,7 +103,7 @@ const updateProjectName = async (req, res) => {
     res.json(await projectsService.renameProject(id, name));
   } catch (error) {
     logProjectsControllerError(req, 'update_name', error, { projectId: id });
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -120,7 +120,7 @@ const deleteProject = async (req, res) => {
     res.json(await projectsService.deleteProjectById(id));
   } catch (error) {
     logProjectsControllerError(req, 'delete', error, { projectId: id });
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -141,7 +141,7 @@ const addBrushNorm = async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
     logProjectsControllerError(req, 'add_brush_norm', error, { projectId: id });
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -162,7 +162,7 @@ const addTypographyNorm = async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
     logProjectsControllerError(req, 'add_typography_norm', error, { projectId: id });
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -193,7 +193,7 @@ const updatePalette = async (req, res) => {
     res.json(result);
   } catch (error) {
     logProjectsControllerError(req, 'update_palette', error, { projectId: id });
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -208,7 +208,7 @@ const deleteBrushNorm = async (req, res) => {
   try {
     if (!(await ensureProjectOwnership(req, res, projectId))) return;
     if (!(await projectsService.deleteBrushNormFromProject(projectId, normId))) {
-      return res.status(404).json({ error: 'Standard not found' });
+      return res.status(404).json({ error: 'Standard not found.' });
     }
     res.json({ success: true });
   } catch (error) {
@@ -216,7 +216,7 @@ const deleteBrushNorm = async (req, res) => {
       projectId,
       normId
     });
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -231,7 +231,7 @@ const deleteTypographyNorm = async (req, res) => {
   try {
     if (!(await ensureProjectOwnership(req, res, projectId))) return;
     if (!(await projectsService.deleteTypographyNormFromProject(projectId, normId))) {
-      return res.status(404).json({ error: 'Standard not found' });
+      return res.status(404).json({ error: 'Standard not found.' });
     }
     res.json({ success: true });
   } catch (error) {
@@ -239,7 +239,7 @@ const deleteTypographyNorm = async (req, res) => {
       projectId,
       normId
     });
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -260,13 +260,13 @@ const updateBrushNorm = async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
     if (error.code === 'not_found') {
-      return res.status(404).json({ error: 'Standard not found' });
+      return res.status(404).json({ error: 'Standard not found.' });
     }
     logProjectsControllerError(req, 'update_brush_norm', error, {
       projectId,
       normId
     });
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -287,13 +287,13 @@ const updateTypographyNorm = async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
     if (error.code === 'not_found') {
-      return res.status(404).json({ error: 'Standard not found' });
+      return res.status(404).json({ error: 'Standard not found.' });
     }
     logProjectsControllerError(req, 'update_typography_norm', error, {
       projectId,
       normId
     });
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 

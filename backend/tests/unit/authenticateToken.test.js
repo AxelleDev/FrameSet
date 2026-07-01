@@ -29,7 +29,7 @@ describe('middleware authenticateToken', () => {
     const next = jest.fn();
     authenticateToken(req, res, next);
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Missing token' });
+    expect(res.json).toHaveBeenCalledWith({ error: 'Missing token.' });
   });
 
   it('returns 403 when the token is invalid', async () => {
@@ -43,7 +43,7 @@ describe('middleware authenticateToken', () => {
     await authenticateToken(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired token' });
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired token.' });
   });
 
   it('returns 403 when the token is revoked', async () => {
@@ -55,7 +55,7 @@ describe('middleware authenticateToken', () => {
     await authenticateToken(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired token' });
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired token.' });
     expect(next).not.toHaveBeenCalled();
   });
 
@@ -68,7 +68,7 @@ describe('middleware authenticateToken', () => {
     await authenticateToken(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired token' });
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired token.' });
     expect(next).not.toHaveBeenCalled();
   });
 
@@ -93,7 +93,7 @@ describe('middleware authenticateToken', () => {
     await authenticateToken(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(503);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Service temporarily unavailable' });
+    expect(res.json).toHaveBeenCalledWith({ error: 'Service temporarily unavailable.' });
     expect(next).not.toHaveBeenCalled();
   });
 

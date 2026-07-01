@@ -144,7 +144,7 @@ app.use((req, res, _next) => {
 	});
 
 	res.status(404).json({
-		error: 'Not found',
+		error: 'Not found.',
 		message: "The requested resource does not exist."
 	});
 });
@@ -176,7 +176,7 @@ app.use((err, req, res, _next) => {
 	});
 
 	res.status(500).json({
-		error: 'Internal server error',
+		error: 'Internal server error.',
 		message: "An unexpected error occurred."
 	});
 });

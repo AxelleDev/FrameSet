@@ -32,36 +32,36 @@ async function authenticateToken(req, res, next) {
   // Prefer an explicit Authorization header, falling back to the cookie.
   const token = bearerToken || cookieToken;
 
-  if (!token) return res.status(401).json({ error: 'Missing token' });
+  if (!token) return res.status(401).json({ error: 'Missing token.' });
 
   let user;
   try {
     user = jwt.verify(token, JWT_SECRET);
   } catch (error) {
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    return res.status(403).json({ error: 'Invalid or expired token.' });
   }
 
   if (!user || user.id === null || user.id === undefined) {
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    return res.status(403).json({ error: 'Invalid or expired token.' });
   }
 
   try {
     // Reject tokens that have been explicitly revoked (logout / rotation).
     const revoked = await isTokenRevoked(user.id, token);
     if (revoked) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
+      return res.status(403).json({ error: 'Invalid or expired token.' });
     }
 
     // Reject tokens issued before the user's last password change/reset, so a
     // password change invalidates every previously-issued session.
     const stale = await isTokenStaleByPasswordChange(user.id, user.iat);
     if (stale) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
+      return res.status(403).json({ error: 'Invalid or expired token.' });
     }
   } catch (error) {
     // Fail closed: if the revocation store is unavailable, deny rather than
     // risk honoring a possibly-revoked token.
-    return res.status(503).json({ error: 'Service temporarily unavailable' });
+    return res.status(503).json({ error: 'Service temporarily unavailable.' });
   }
 
   req.user = user;

@@ -52,7 +52,7 @@ describe('middleware csrfProtection', () => {
     csrfProtection(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid CSRF request' });
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid CSRF request.' });
     expect(next).not.toHaveBeenCalled();
   });
 

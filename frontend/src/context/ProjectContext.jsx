@@ -151,7 +151,7 @@ export const ProjectProvider = ({ children }) => {
 
   /**
    * Adds a brush norm. Uses the server-assigned id and keeps normsCount in sync.
-   * @returns {Promise<object|null>} The created norm (with id), or null on failure.
+   * @returns {Promise<object|null>} The created standard (with id), or null on failure.
    */
   const addBrushNorm = useCallback(async (projectId, norm) => {
     try {
@@ -178,7 +178,7 @@ export const ProjectProvider = ({ children }) => {
 
   /**
    * Adds a typography norm. Uses the server-assigned id and bumps normsCount.
-   * @returns {Promise<object|null>} The created norm (with id), or null on failure.
+   * @returns {Promise<object|null>} The created standard (with id), or null on failure.
    */
   const addTypographyNorm = useCallback(async (projectId, norm) => {
     try {

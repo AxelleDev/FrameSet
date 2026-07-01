@@ -106,7 +106,7 @@ describe('authentication controller', () => {
       await refreshHandler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired refresh token' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired refresh token.' });
     });
 
     it('returns 500 when the refresh token rotation fails', async () => {
@@ -122,7 +122,7 @@ describe('authentication controller', () => {
       await refreshHandler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Server error' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Server error.' });
       expect(res.cookie).not.toHaveBeenCalled();
     });
   });

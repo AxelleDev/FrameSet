@@ -28,7 +28,7 @@ const getUserCount = async (req, res) => {
     res.json({ count: rows[0].count });
   } catch (error) {
     logUserControllerError(req, 'count', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error.' });
   }
 };
 
@@ -66,7 +66,7 @@ const getProfile = async (req, res) => {
     });
   } catch (error) {
     logUserControllerError(req, 'profile', error);
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error.' });
   }
 };
 
@@ -137,7 +137,7 @@ const updateUser = async (req, res) => {
     res.json({ success: true, name: trimmedName, email: currentEmail, pendingEmail: rows[0].pending_email || null });
   } catch (error) {
     logUserControllerError(req, 'update', error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error.' });
   }
 };
 
@@ -184,7 +184,7 @@ const verifyPendingEmail = async (req, res) => {
     res.json({ success: true, user: updatedUser });
   } catch (error) {
     logUserControllerError(req, 'verify_pending_email', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error.' });
   }
 };
 
@@ -227,7 +227,7 @@ const resendPendingEmail = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     logUserControllerError(req, 'resend_pending_email', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error.' });
   }
 };
 
@@ -269,7 +269,7 @@ const changePassword = async (req, res) => {
     res.json({ success: true, passwordUpdatedAt: new Date() });
   } catch (error) {
     logUserControllerError(req, 'change_password', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error.' });
   }
 };
 
@@ -293,7 +293,7 @@ const deleteAccount = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     logUserControllerError(req, 'delete_account', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error.' });
   }
 };
 

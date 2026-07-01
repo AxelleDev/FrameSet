@@ -398,7 +398,7 @@ export default function ProjectNorms() {
                           }
                         }}
                         options={googleFonts ? googleFonts.map(font => ({ value: font.family, label: font.family })) : []}
-                        placeholder="Select the typography"
+                        placeholder="Select a font"
                         isLoading={loadingFonts}
                         isDisabled={loadingFonts}
                         noOptionsMessage={() => loadingFonts ? 'Loading…' : 'No fonts'}
@@ -481,7 +481,7 @@ export default function ProjectNorms() {
                     }
                   }}
                   options={googleFonts ? googleFonts.map(font => ({ value: font.family, label: font.family })) : []}
-                  placeholder="Select the typography"
+                  placeholder="Select a font"
                   isLoading={loadingFonts}
                   isDisabled={loadingFonts}
                   noOptionsMessage={() => loadingFonts ? 'Loading…' : 'No fonts'}

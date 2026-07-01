@@ -110,32 +110,32 @@ const validateHexColorField = (value) => {
  */
 const validateBrushNormPayload = ({ name, value, unit, brushName, opacity }) => {
   if (typeof name !== 'string') {
-    return { error: 'The stroke standard name is invalid.' };
+    return { error: 'The brush usage is invalid.' };
   }
 
   const trimmedName = validator.trim(name);
   if (!validator.isLength(trimmedName, { min: 1, max: 255 })) {
-    return { error: 'The stroke standard name is invalid.' };
+    return { error: 'The brush usage is invalid.' };
   }
 
   const valueAsString = typeof value === 'number' ? String(value) : value;
   if (typeof valueAsString !== 'string') {
-    return { error: 'The stroke standard value must be a positive number.' };
+    return { error: 'The brush size must be a positive number.' };
   }
 
   const trimmedValue = validator.trim(valueAsString);
   if (!validator.isFloat(trimmedValue, { gt: 0, max: 1000 })) {
-    return { error: 'The stroke standard value must be a positive number.' };
+    return { error: 'The brush size must be a positive number.' };
   }
 
   const unitInput = unit === undefined || unit === null ? 'px' : unit;
   if (typeof unitInput !== 'string') {
-    return { error: 'The stroke standard unit is invalid.' };
+    return { error: 'The brush unit is invalid.' };
   }
 
   const trimmedUnit = validator.trim(unitInput);
   if (!validator.isLength(trimmedUnit, { min: 1, max: 20 }) || !validator.matches(trimmedUnit, /^[a-zA-Z%]+$/)) {
-    return { error: 'The stroke standard unit is invalid.' };
+    return { error: 'The brush unit is invalid.' };
   }
 
   const normalizedBrushName = sanitizeOptionalTextField(brushName, { maxLength: 255 });

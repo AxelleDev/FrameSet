@@ -181,7 +181,7 @@ describe('projects controller', () => {
   });
 
   describe('add standards', () => {
-    it('returns 400 when the stroke standard value is invalid', async () => {
+    it('returns 400 when the brush size is invalid', async () => {
       db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ensureProjectOwnership
 
       const req = {
@@ -194,7 +194,7 @@ describe('projects controller', () => {
       await projectsController.addBrushNorm(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'The stroke standard value must be a positive number.' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'The brush size must be a positive number.' });
       expect(db.query).toHaveBeenCalledTimes(1);
     });
 
@@ -215,7 +215,7 @@ describe('projects controller', () => {
       expect(db.query).toHaveBeenCalledTimes(1);
     });
 
-    it('adds a valid stroke standard', async () => {
+    it('adds a valid brush standard', async () => {
       db.query
         .mockResolvedValueOnce([[{ id: 1 }]]) // ensureProjectOwnership
         .mockResolvedValueOnce([{ insertId: 9 }])
