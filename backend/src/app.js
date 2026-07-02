@@ -1,15 +1,6 @@
 /**
- * Express application setup.
- *
- * Wires together the global middleware stack and mounts the API routers. The
- * ordering is security-significant: Helmet (incl. a strict Content-Security
- * Policy + HSTS) and CORS run first, the JSON body is size-limited to blunt
- * payload abuse, every request is assigned a correlation id and access-logged,
- * non-JSON content types are rejected, and the CSRF cookie/verification
- * middleware guards all /api routes before the feature routers. A 404 handler
- * and a centralized error handler terminate the chain. Swagger UI (/api-docs)
- * is served before the strict CSP so its bundled assets load.
- * Exports the configured app (the HTTP server is started in server.js).
+ * Express app setup: middleware stack + API routers. Ordering is
+ * security-significant (see per-middleware notes). HTTP server starts in server.js.
  */
 
 const express = require('express');
@@ -89,9 +80,8 @@ app.use(cors({
 // Cap JSON body size to limit the impact of oversized/malicious payloads.
 app.use(express.json({ limit: '10kb' }));
 
-// Request correlation + access logging. Assigns (or honors) an x-request-id,
-// echoes it back on the response, and logs each completed request with timing
-// at a severity derived from the status (error >= 500, warn >= 400, else info).
+// Request correlation + access logging: assign/honor an x-request-id, echo it
+// back, and log each completed request with timing at a status-derived severity.
 app.use((req, res, next) => {
 	const requestStartedAt = process.hrtime.bigint();
 	const incomingRequestId = req.headers['x-request-id'];
@@ -202,7 +192,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectsRoutes);
 
-// 404 handler: reached when no route matched.
+// 404 handler.
 app.use((req, res, _next) => {
 	logger.warn('http.route.not_found', {
 		requestId: req.id,

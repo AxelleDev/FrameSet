@@ -2,25 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 
-/**
- * Themed button with optional async loading state. If `onClick` returns a
- * promise, the button shows a spinner and disables itself until it settles
- * (respecting an optional minimum display time). When `to` or `href` is given,
- * it renders a router Link / anchor with the exact same styling instead.
- *
- * @param {object} props
- * @param {React.ReactNode} props.children - Button label/content.
- * @param {Function} [props.onClick] - Click handler; may return a promise to drive the loading state.
- * @param {string} [props.type] - Native button type (defaults to "button").
- * @param {'primary'|'danger'|'ghost'|'outline'} [props.variant] - Visual variant.
- * @param {boolean} [props.fullWidth] - Stretch to full width with larger padding.
- * @param {string} [props.to] - Render as a react-router Link to this route.
- * @param {string} [props.href] - Render as an anchor to this URL.
- * @param {string} [props.className] - Extra classes.
- * @param {boolean} [props.disabled] - Disable the button.
- * @param {boolean} [props.loading] - Externally controlled loading state.
- * @param {number} [props.minLoadingMs] - Minimum spinner display time in ms for async clicks.
- */
+// Themed button with optional async loading state: an `onClick` returning a promise shows a
+// spinner until it settles (honoring `minLoadingMs`). With `to`/`href` it renders a Link/anchor instead.
 export default function Button({
   children,
   onClick,

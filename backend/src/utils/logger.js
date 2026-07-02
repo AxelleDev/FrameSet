@@ -1,12 +1,5 @@
-/**
- * Structured JSON logger.
- *
- * Provides a small, dependency-free logging facility that emits one JSON object
- * per line (suitable for ingestion by log aggregators). It supports level
- * filtering via the LOG_LEVEL env var, safe serialization of Error objects and
- * other non-JSON-friendly values, and child loggers that carry contextual
- * metadata (e.g. a component name) into every log entry.
- */
+// Dependency-free structured logger: one JSON object per line, LOG_LEVEL filtering,
+// safe serialization of Errors/non-JSON values, and context-carrying child loggers.
 
 // Numeric severities used to compare and filter levels. Higher means more severe.
 const LEVEL_PRIORITY = Object.freeze({
@@ -18,12 +11,7 @@ const LEVEL_PRIORITY = Object.freeze({
 
 const DEFAULT_LOG_LEVEL = 'info';
 
-/**
- * Coerces an arbitrary configured value into a known log level, defaulting to
- * "info" when the value is unset or unrecognized.
- * @param {*} value Raw level (typically from the environment).
- * @returns {string} A valid level key.
- */
+// Coerces a raw value to a known log level, defaulting to "info" when unset/unrecognized.
 const normalizeLogLevel = (value) => {
   const level = String(value || '').toLowerCase();
   return LEVEL_PRIORITY[level] ? level : DEFAULT_LOG_LEVEL;
@@ -31,21 +19,11 @@ const normalizeLogLevel = (value) => {
 
 const activeLogLevel = normalizeLogLevel(process.env.LOG_LEVEL);
 
-/**
- * Determines whether a message at the given level should be emitted under the
- * currently active log level.
- * @param {string} level Level of the candidate message.
- * @returns {boolean}
- */
+// True if a message at this level should be emitted under the active log level.
 const shouldLog = (level) => LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[activeLogLevel];
 
-/**
- * Converts an Error into a plain, serializable object. The stack trace is only
- * included outside production to avoid leaking internal paths/details into
- * production logs.
- * @param {*} error Value that may or may not be an Error.
- * @returns {*} A serializable representation, or the original value untouched.
- */
+// Converts an Error to a serializable object (non-Errors pass through untouched).
+// Stack is included only outside production, to avoid leaking internal paths in prod logs.
 const serializeError = (error) => {
   if (!(error instanceof Error)) {
     return error;
@@ -67,13 +45,8 @@ const serializeError = (error) => {
   return serialized;
 };
 
-/**
- * Normalizes a metadata object so it can be safely JSON-stringified: drops
- * undefined values and functions, serializes Errors, and converts BigInt to a
- * string (JSON.stringify throws on BigInt).
- * @param {Object} meta Arbitrary contextual metadata.
- * @returns {Object} A sanitized, JSON-safe copy.
- */
+// Makes metadata JSON-safe: drops undefined/functions, serializes Errors, and stringifies
+// BigInt (JSON.stringify throws on BigInt).
 const sanitizeMeta = (meta) => {
   if (!meta || typeof meta !== 'object' || Array.isArray(meta)) {
     return {};
@@ -102,14 +75,8 @@ const sanitizeMeta = (meta) => {
   return sanitized;
 };
 
-/**
- * Core sink. Builds the structured payload and writes a single JSON line to the
- * appropriate console stream (stderr for errors/warnings, stdout otherwise),
- * respecting the active log level.
- * @param {string} level Severity level.
- * @param {string} message Stable, machine-friendly event name.
- * @param {Object} [meta] Contextual metadata.
- */
+// Core sink: writes one JSON line to stderr for errors/warnings, stdout otherwise,
+// respecting the active log level. `message` is a stable, machine-friendly event name.
 const write = (level, message, meta = {}) => {
   if (!shouldLog(level)) {
     return;
@@ -137,13 +104,7 @@ const write = (level, message, meta = {}) => {
   console.log(output);
 };
 
-/**
- * Builds a logger bound to a fixed context. Every log call merges the bound
- * context with per-call metadata, and child() derives a new logger that extends
- * the context (e.g. tagging all migration logs with a component name).
- * @param {Object} [context] Metadata merged into every entry from this logger.
- * @returns {{debug:Function, info:Function, warn:Function, error:Function, child:Function}}
- */
+// Logger bound to a fixed context, merged into every entry; child() extends the context.
 const createLogger = (context = {}) => ({
   debug: (message, meta = {}) => write('debug', message, { ...context, ...meta }),
   info: (message, meta = {}) => write('info', message, { ...context, ...meta }),

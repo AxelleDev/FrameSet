@@ -1,10 +1,6 @@
 /**
- * Server entry point.
- *
- * Loads environment variables, starts the HTTP server, and runs a background
- * scheduler that periodically prunes expired revoked-token records. Also wires
- * graceful shutdown on SIGTERM so the server stops accepting connections and
- * closes the database pool cleanly before exiting.
+ * Server entry point: starts the HTTP server, schedules revoked-token cleanup,
+ * and wires graceful shutdown (drain connections + close DB pool) on SIGTERM/SIGINT.
  */
 
 require('dotenv').config();
@@ -21,12 +17,8 @@ let cleanupInterval;
 // Guards against running the shutdown sequence more than once.
 let isShuttingDown = false;
 
-/**
- * Starts the periodic scheduler that purges expired revoked tokens, keeping the
- * revoked_tokens table bounded. The interval is unref()'d so it never keeps the
- * process alive on its own (allowing a clean exit during shutdown).
- * @returns {NodeJS.Timeout} The interval handle.
- */
+// Schedules periodic purge of expired revoked tokens to keep the table bounded.
+// The interval is unref()'d so it never keeps the process alive on its own.
 const startCleanupScheduler = () => {
   logger.info('token.cleanup.scheduler.started', {
     intervalMs: REVOKED_TOKENS_CLEANUP_INTERVAL_MS,
@@ -54,7 +46,6 @@ const startCleanupScheduler = () => {
     }
   }, REVOKED_TOKENS_CLEANUP_INTERVAL_MS);
 
-  // Do not let the cleanup timer keep the event loop alive by itself.
   if (typeof cleanupInterval.unref === 'function') {
     cleanupInterval.unref();
   }
@@ -71,11 +62,7 @@ const server = app.listen(PORT, () => {
   startCleanupScheduler();
 });
 
-/**
- * Promisified server.close(): resolves once the HTTP server stops accepting new
- * connections and existing ones have drained.
- * @returns {Promise<void>}
- */
+// Promisified server.close(): resolves once connections have drained.
 const closeServer = () => new Promise((resolve, reject) => {
   server.close((error) => {
     if (error) {
@@ -87,13 +74,8 @@ const closeServer = () => new Promise((resolve, reject) => {
   });
 });
 
-/**
- * Performs a graceful shutdown: stops the cleanup scheduler, drains the HTTP
- * server and closes the database pool before exiting. Idempotent via the
- * isShuttingDown guard so repeated signals do not run it twice. Exits 0 on
- * success, 1 if teardown fails.
- * @param {string} signal The signal that triggered shutdown (for logging).
- */
+// Graceful shutdown: stop scheduler, drain server, close DB pool, then exit
+// (0 on success, 1 on failure). Idempotent via the isShuttingDown guard.
 const shutdownGracefully = async (signal) => {
   if (isShuttingDown) {
     return;

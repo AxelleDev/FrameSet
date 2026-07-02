@@ -16,7 +16,6 @@ import Seo from '../components/Seo';
 export default function MainLayout() {
   const { user, authLoading } = useAuth();
   const { activeProject, projectsLoading } = useProjects();
-  // Combined loading flag while either auth or projects are still resolving.
   const loading = authLoading || projectsLoading;
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -43,20 +42,17 @@ export default function MainLayout() {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [isMobileMenuOpen]);
 
-  // Compute NavLink classes based on the active route state.
   const navLinkClass = ({ isActive }) =>
     `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-base focus-ring ${
       isActive ? 'bg-blue/15 text-blue' : 'text-primary hover:text-blue hover:bg-blue/10'
     }`;
 
-  // Derive the header title from the active project or the current route.
   const getPageTitle = () => {
     if (activeProject) return activeProject.name;
     if (location.pathname.includes('profile')) return 'Profile';
     return 'Dashboard';
   };
 
-  // Show a loading state until auth/projects resolve.
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-dvh bg-canvas" role="status" aria-live="polite">
@@ -65,7 +61,6 @@ export default function MainLayout() {
       </div>
     );
   }
-  // Redirect unauthenticated users to the login page.
   if (!user) {
     return <Navigate to="/login" replace />;
   }

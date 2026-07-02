@@ -1,10 +1,5 @@
-/**
- * Login page (route: /login).
- *
- * Collects email + password, delegates authentication to the auth context, and
- * navigates to the dashboard on success. When the failure indicates an
- * unverified email, it offers a shortcut to the verification page.
- */
+// Login page (route: /login): delegates auth to the context and navigates to the
+// dashboard on success; offers a verification shortcut on unverified-email failures.
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

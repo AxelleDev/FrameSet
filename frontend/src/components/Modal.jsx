@@ -1,23 +1,10 @@
-// Generic reusable modal.
 import React, { useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 
 /**
- * Low-level modal primitive: renders an overlay + focusable panel, supports
- * backdrop-click close, an optional header (title/subtitle/close button) and a
- * focus trap that keeps Tab navigation within the panel.
- *
- * @param {object} props
- * @param {boolean} props.isOpen - Whether the modal is rendered (returns null when false).
- * @param {Function} props.onClose - Close handler invoked by backdrop click and close button.
- * @param {string} [props.title] - Optional header title (also wires aria-labelledby).
- * @param {string} [props.subtitle] - Optional header subtitle.
- * @param {React.ReactNode} props.children - Modal body content.
- * @param {string} [props.overlayClassName] - Overlay styling classes.
- * @param {string} [props.panelClassName] - Panel styling classes.
- * @param {boolean} [props.showClose] - Whether to render the header close button.
- * @param {boolean} [props.closeOnBackdrop] - Whether clicking the backdrop closes the modal.
+ * Low-level modal primitive: overlay + focusable panel with backdrop-click
+ * close, an optional header (title/subtitle/close) and a Tab focus trap.
  */
 export default function Modal({
   isOpen,
@@ -80,7 +67,6 @@ export default function Modal({
     }
   };
 
-  // Do not render anything while closed.
   if (!isOpen) return null;
 
   // Close only when the click originated on the overlay itself, not its children.

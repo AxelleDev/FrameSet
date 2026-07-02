@@ -1,11 +1,6 @@
 /**
- * Projects controller.
- *
- * Thin HTTP layer for projects and their nested style references: color
- * palettes, brush norms and typography norms. Each handler parses the request,
- * enforces authentication/ownership, delegates the business logic and SQL to
- * projects.service, and maps the result (or a typed service error) to the
- * appropriate status code and JSON body.
+ * Projects controller: thin HTTP layer for projects and their nested style refs
+ * (palettes, brush/typography norms). Business logic and SQL live in projects.service.
  */
 
 const { getAuthenticatedUserId, createControllerLogger } = require('../utils/auth.utils');
@@ -13,17 +8,8 @@ const projectsService = require('../services/projects.service');
 
 const logProjectsControllerError = createControllerLogger('projects');
 
-/**
- * Authorization guard: confirms the authenticated user owns the given project
- * and writes the appropriate error response (401/403) when access should be
- * denied. Returns false when the caller must stop processing. Centralizing this
- * prevents IDOR (insecure direct object reference) where one user could read or
- * mutate another user's project by guessing its id.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- * @param {number|string} projectId Target project id.
- * @returns {Promise<boolean>} True if the user owns the project.
- */
+// Authorization guard: confirm the user owns the project, else write 401/403 and return
+// false. Prevents IDOR where a user could access another's project by guessing its id.
 const ensureProjectOwnership = async (req, res, projectId) => {
   const userId = getAuthenticatedUserId(req);
   if (!userId) {
@@ -39,20 +25,14 @@ const ensureProjectOwnership = async (req, res, projectId) => {
   return true;
 };
 
-/**
- * Lists all projects owned by the authenticated user, each enriched with its
- * brush norms, typography norms and palette.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// List the user's projects, each enriched with its brush/typography norms and palette.
 const listProjects = async (req, res) => {
   const userId = getAuthenticatedUserId(req);
   if (!userId) {
     return res.status(401).json({ error: 'User not authenticated.' });
   }
   try {
-    // Optional pagination query params; invalid/missing values fall back to the
-    // service defaults (page 1, default page size).
+    // Invalid/missing pagination params fall back to the service defaults.
     const query = req.query || {};
     const parsedPage = Number.parseInt(query.page, 10);
     const parsedPageSize = Number.parseInt(query.pageSize, 10);
@@ -67,12 +47,7 @@ const listProjects = async (req, res) => {
   }
 };
 
-/**
- * Creates a new empty project for the authenticated user after validating the
- * project name length.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Create a new empty project for the authenticated user.
 const createProject = async (req, res) => {
   const userId = getAuthenticatedUserId(req);
   const { name } = req.body;
@@ -94,12 +69,7 @@ const createProject = async (req, res) => {
   }
 };
 
-/**
- * Renames a project owned by the authenticated user and refreshes its
- * last_edited timestamp.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Rename a project owned by the user and refresh its last_edited timestamp.
 const updateProjectName = async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
@@ -119,12 +89,7 @@ const updateProjectName = async (req, res) => {
   }
 };
 
-/**
- * Deletes a project owned by the authenticated user (cascading to its child
- * norms and palette via the schema's foreign keys).
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Delete a project (cascades to its child norms and palette via schema foreign keys).
 const deleteProject = async (req, res) => {
   const { id } = req.params;
   try {
@@ -136,11 +101,7 @@ const deleteProject = async (req, res) => {
   }
 };
 
-/**
- * Adds a brush norm to a project after ownership and payload validation.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Add a brush norm to a project after ownership and payload validation.
 const addBrushNorm = async (req, res) => {
   const { id } = req.params;
   const { name, value, unit, brushName, opacity } = req.body;
@@ -157,11 +118,7 @@ const addBrushNorm = async (req, res) => {
   }
 };
 
-/**
- * Adds a typography norm to a project after ownership and payload validation.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Add a typography norm to a project after ownership and payload validation.
 const addTypographyNorm = async (req, res) => {
   const { id } = req.params;
   const { fontFamily, fontWeight, fontUsage, fontStyle } = req.body;
@@ -178,20 +135,14 @@ const addTypographyNorm = async (req, res) => {
   }
 };
 
-/**
- * Replaces a project's color palette with the provided ordered array of colors,
- * atomically. The payload is validated before any ownership check or database
- * work; the service then performs the transactional replace.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Atomically replace a project's color palette with the provided ordered array.
 const updatePalette = async (req, res) => {
   const { id } = req.params;
   const colors = req.body;
 
   try {
-    // Ownership is checked before validating the payload so an attacker cannot
-    // probe another user's project through validation error messages.
+    // Check ownership before validating so an attacker can't probe another user's
+    // project through validation error messages.
     if (!(await ensureProjectOwnership(req, res, id))) return;
 
     let validatedColors;
@@ -212,12 +163,7 @@ const updatePalette = async (req, res) => {
   }
 };
 
-/**
- * Deletes a brush norm from a project. The DELETE is scoped by both norm id and
- * project id (in addition to the ownership check).
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Delete a brush norm, scoped by norm id and project id on top of the ownership check.
 const deleteBrushNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   try {
@@ -235,12 +181,7 @@ const deleteBrushNorm = async (req, res) => {
   }
 };
 
-/**
- * Deletes a typography norm from a project, scoped by norm id and project id in
- * addition to the ownership check.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Delete a typography norm, scoped by norm id and project id on top of the ownership check.
 const deleteTypographyNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   try {
@@ -258,12 +199,7 @@ const deleteTypographyNorm = async (req, res) => {
   }
 };
 
-/**
- * Updates an existing brush norm after ownership and payload validation. The
- * UPDATE is scoped by norm id and project id, and last_edited is refreshed.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Update a brush norm (scoped by norm id and project id) and refresh last_edited.
 const updateBrushNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   const { name, value, unit, brushName, opacity } = req.body;
@@ -285,12 +221,7 @@ const updateBrushNorm = async (req, res) => {
   }
 };
 
-/**
- * Updates an existing typography norm after ownership and payload validation.
- * The UPDATE is scoped by norm id and project id, and last_edited is refreshed.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Update a typography norm (scoped by norm id and project id) and refresh last_edited.
 const updateTypographyNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   const { fontFamily, fontWeight, fontUsage, fontStyle } = req.body;

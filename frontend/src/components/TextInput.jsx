@@ -1,18 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-/**
- * Canonical text control for the whole app: input, select or textarea sharing
- * the same fill, border, radius and focus ring. Using it everywhere guarantees
- * every field looks identical.
- *
- * @param {object} props
- * @param {'input'|'select'|'textarea'} [props.as] - Underlying element to render.
- * @param {boolean} [props.mono] - Render the value in a monospace, uppercased font (e.g. hex codes).
- * @param {string} [props.className] - Extra classes (e.g. `flex-1`).
- * @param {boolean} [props.disabled] - Disable the control.
- */
-// text-base (16px) is deliberate: on iOS Safari a font-size < 16px makes the
+// Canonical text control (input/select/textarea) sharing one fill, radius and
+// focus ring so every field looks identical. `mono` renders monospace+uppercase
+// (e.g. hex codes).
+// text-base (16px) is deliberate: on iOS Safari a font-size < 16px triggers
 // browser auto-zoom when the field gains focus, which is jarring on mobile.
 const BASE =
   'w-full px-4 py-3 text-base bg-blue/10 rounded-xl text-primary ' +

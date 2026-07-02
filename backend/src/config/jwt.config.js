@@ -1,10 +1,6 @@
 /**
- * JWT configuration module.
- *
- * Centralizes the secrets and lifetimes used to sign and verify access and
- * refresh tokens. The secrets are read from the environment and validated at
- * import time: the application must fail fast on boot rather than start with a
- * missing or empty signing key, which would silently weaken authentication.
+ * JWT secrets and token lifetimes. Secrets are validated at import time so the
+ * app fails fast on boot rather than start with a missing signing key.
  */
 
 const JWT_SECRET = process.env.JWT_SECRET;

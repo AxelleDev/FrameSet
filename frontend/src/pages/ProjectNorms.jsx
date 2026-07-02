@@ -1,13 +1,5 @@
-/**
- * Project norms page (route: /app/project/:id/norms).
- *
- * Lets the user define the project's graphic norms in two categories:
- *   - Brush norms (usage, brush name, size/unit, opacity).
- *   - Typography norms (Google Font family, weight, usage, style).
- * Norms can be added, edited, deleted and filtered by type. Typography norms
- * are previewed in their actual font, which requires dynamically loading the
- * Google Font (see the effect below).
- */
+// Project norms page (/app/project/:id/norms): add/edit/delete/filter brush and
+// typography norms. Typography previews load the real Google Font dynamically.
 import React, { useState, useRef } from 'react';
 import CustomSelect from '../components/CustomSelect';
 import FontFaceObserver from 'fontfaceobserver';
@@ -51,45 +43,41 @@ export default function ProjectNorms() {
   const { values: brushForm, setValues: setBrushForm, setField: setBrushField, reset: resetBrushForm } = useFormState({ usage: '', name: '', value: '', unit: 'px', opacity: '' });
   const { values: typoForm, setValues: setTypoForm, setField: setTypoField, reset: resetTypoForm } = useFormState({ fontFamily: '', fontWeight: '', fontUsage: '', fontStyle: '' });
 
-  // Brush form validation: the size must be a positive number (<= 1000) and the
-  // opacity, when provided, must be between 0 and 1. Gates the submit buttons so
-  // invalid values never reach the API.
+  // Brush validation (gates submit): size a positive number <= 1000, and
+  // opacity, when given, between 0 and 1.
   const brushValueNum = parseFloat(brushForm.value);
   const isBrushValueValid = brushForm.value !== '' && Number.isFinite(brushValueNum) && brushValueNum > 0 && brushValueNum <= 1000;
   const opacityNum = parseFloat(brushForm.opacity);
   const isOpacityValid = brushForm.opacity === '' || (Number.isFinite(opacityNum) && opacityNum >= 0 && opacityNum <= 1);
   const isBrushFormValid = !!brushForm.usage && isBrushValueValid && isOpacityValid;
 
-  // loadedFonts: families whose web font has finished loading (drives the
-  // preview switch from "Loading…" to the rendered AaBbCc sample).
-  // loadingFontsRef: families currently being loaded, kept in a ref so it does
-  // not retrigger this effect and to dedupe concurrent loads.
+  // loadedFonts: families whose web font finished loading (switches the preview
+  // from "Loading…" to the rendered sample).
+  // loadingFontsRef: families currently loading, kept in a ref so it does not
+  // retrigger the effect and to dedupe concurrent loads.
   const [loadedFonts, setLoadedFonts] = useState([]);
   const loadingFontsRef = useRef({});
 
-    // For each typography norm, dynamically load its Google Font so the preview
-    // can render in the real typeface, then mark it as loaded. Each family is
-    // loaded at most once.
+    // Load each typography norm's Google Font (once) so its preview renders in
+    // the real typeface, then mark it loaded.
     React.useEffect(() => {
       if (activeProject?.typographyNorms) {
         activeProject.typographyNorms.forEach(async norm => {
-          // Dedupe via the ref only: it is set on first sight and never cleared,
-          // so a family is loaded at most once without depending on loadedFonts.
+          // Dedupe via the ref only: set on first sight, never cleared, so a
+          // family loads at most once without depending on loadedFonts.
           if (norm.fontFamily && !loadingFontsRef.current[norm.fontFamily]) {
             loadingFontsRef.current[norm.fontFamily] = true;
             try {
-              // Look up the font's metadata in the Google Fonts catalog.
               const fontMeta = (googleFonts || []).find(f => f.family === norm.fontFamily);
               let fontWeight = norm.fontWeight || '400';
               let availableWeights = [];
               if (fontMeta && fontMeta.variants) {
-                // Extract the numeric weights from variant labels (e.g. 'regular',
-                // '700italic', '400'), deduplicated.
+                // Numeric weights from variant labels (e.g. 'regular', '700italic'), deduped.
                 availableWeights = fontMeta.variants
                   .map(v => v.replace(/[^0-9]/g, '') || '400')
-                  .filter((v, i, arr) => arr.indexOf(v) === i); // unique
+                  .filter((v, i, arr) => arr.indexOf(v) === i);
               }
-              // Fall back to an available weight (or 400) if the requested one is missing.
+              // Fall back to an available weight (or 400) when the requested one is missing.
               if (availableWeights.length === 0) {
                 fontWeight = '400';
               } else if (!availableWeights.includes(fontWeight)) {
@@ -100,30 +88,29 @@ export default function ProjectNorms() {
               if (maybePromise && typeof maybePromise.then === 'function') {
                 await maybePromise;
               }
-              // Wait until the font is actually usable. Omit the weight option when
-              // no weights were resolved so FontFaceObserver does not over-constrain.
+              // Wait until the font is usable. Omit the weight option when none
+              // resolved so FontFaceObserver does not over-constrain.
               const fontObserverOpts = availableWeights.length > 0 ? { weight: fontWeight } : {};
               const font = new FontFaceObserver(norm.fontFamily, fontObserverOpts);
               await font.load(null, 5000); // give up after 5s
               setLoadedFonts(prev => [...prev, norm.fontFamily]);
             } catch (e) {
-              // On timeout/failure still mark as loaded so the UI stops waiting
-              // (the preview falls back to the system font).
+              // On timeout/failure, still mark loaded so the UI stops waiting
+              // (preview falls back to the system font).
               setLoadedFonts(prev => [...prev, norm.fontFamily]);
             }
           }
         });
       }
-      // loadedFonts is intentionally excluded so the effect does not re-run (and
-      // re-iterate every norm) each time a single font finishes loading; the ref
-      // guard handles dedup. googleFonts is likewise excluded (static metadata).
+      // loadedFonts and googleFonts are excluded on purpose: re-running per
+      // font-load would re-iterate every norm, and the ref guard handles dedup.
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeProject?.typographyNorms]);
   // Google Fonts catalog used to populate the font picker and resolve weights.
   const GOOGLE_FONTS_API_KEY = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
   const { fonts: googleFonts, loading: loadingFonts, error: errorFonts } = useGoogleFonts(GOOGLE_FONTS_API_KEY);
 
-  // Open the edit modal pre-filled from the selected norm (per its type).
+  // Open the edit modal pre-filled from the selected norm (by type).
   const openEditNorm = (norm, type) => {
     setEditingNorm(norm);
     setEditingType(type);
@@ -179,8 +166,8 @@ export default function ProjectNorms() {
     resetTypoForm();
   };
 
-  // Create a norm of the currently selected type from the add modal. For
-  // typography, eagerly load the chosen font so its preview appears immediately.
+  // Create a norm of the selected type. For typography, eagerly load the chosen
+  // font so its preview appears immediately.
   const handleAddNorm = async () => {
     if (!id) return;
     if (addType === 'brush') {

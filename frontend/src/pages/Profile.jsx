@@ -1,10 +1,5 @@
-/**
- * Profile page (route: /app/profile).
- *
- * Lets the user view and edit their personal info (name/email), change their
- * password, log out, and delete their account. Editing the email triggers a
- * pending-email verification flow surfaced via a link to the verify page.
- */
+// Profile page (/app/profile): edit name/email, change password, log out,
+// delete account. Changing the email triggers a pending-email verification flow.
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -43,7 +38,6 @@ export default function Profile() {
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
-  // Controls the logout confirmation dialog.
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   // Keep the edit form fields in sync with the current user.
@@ -56,28 +50,26 @@ export default function Profile() {
     }
   }, [user]);
 
-  // Trimmed field values and whether anything actually changed vs. the saved
-  // user — used to disable "Save" and to avoid a pointless "updated" toast.
+  // Trimmed values + whether anything changed vs. the saved user; gates "Save"
+  // and avoids a pointless "updated" toast.
   const trimmedName = editForm.name.trim();
   const trimmedEmail = editForm.email.trim();
   const hasChanges = trimmedName !== (user?.name ?? '') || trimmedEmail !== (user?.email ?? '');
 
-  // Enter edit mode, seeding the form from the current user.
   const startEdit = () => {
     setEditForm({ name: user.name, email: user.email });
     setEditError('');
     setIsEditing(true);
   };
 
-  // Leave edit mode without saving, discarding any changes.
   const cancelEdit = () => {
     setEditForm({ name: user.name, email: user.email });
     setEditError('');
     setIsEditing(false);
   };
 
-  // Validate then persist the profile. Nothing changed → just close (no toast).
-  // On a changed email, the backend stages it as a pending email to confirm.
+  // Validate then persist. No changes -> just close. A changed email is staged
+  // by the backend as a pending email to confirm.
   const saveProfile = async () => {
     setEditError('');
 
@@ -98,7 +90,7 @@ export default function Profile() {
     setIsSaving(true);
     try {
       const result = await updateUserProfile({ name: trimmedName, email: trimmedEmail });
-      // Keep the user in edit mode on a business error so they can fix it inline.
+      // Stay in edit mode on a business error so it can be fixed inline.
       if (result?.success === false) {
         setEditError(result.message || 'Something went wrong updating your profile.');
         return;
@@ -140,13 +132,12 @@ export default function Profile() {
     setIsPasswordModalOpen(false);
   };
 
-  // Validate the password form locally (all fields + matching confirmation),
-  // then submit; success/error feedback is shown inside the modal.
+  // Validate locally (all fields + matching confirmation), then submit.
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     setPasswordError('');
 
-    // Client-side validation stays inline (a small hint inside the modal).
+    // Client-side validation stays inline (a hint inside the modal).
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
       setPasswordError('Fill in all fields.');
       return;
@@ -163,8 +154,7 @@ export default function Profile() {
         newPassword: passwordForm.newPassword
       });
 
-      // The action result (success or business error) is surfaced as a toast,
-      // like every other in-app action.
+      // Surface success/business error as a toast, like every in-app action.
       if (!result.success) {
         if (result.message) showToast(result.message, 'danger');
         return;
@@ -180,13 +170,8 @@ export default function Profile() {
 
   if (!user) return null;
 
-  /**
-   * Formats a date into an English relative-time string (e.g. "3 days ago").
-   * Returns "Never changed" for missing/invalid dates. Used for the password's
-   * last-changed label.
-   * @param {string|number|Date} dateValue
-   * @returns {string}
-   */
+  // Relative-time string (e.g. "3 days ago") for the password last-changed
+  // label; "Never changed" for missing/invalid dates.
   const formatRelativeTime = (dateValue) => {
     if (!dateValue) return 'Never changed';
     const date = new Date(dateValue);

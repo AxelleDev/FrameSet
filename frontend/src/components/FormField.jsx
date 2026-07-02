@@ -1,24 +1,11 @@
-// Form field with an associated label.
 import React, { useId } from 'react';
 import PropTypes from 'prop-types';
 
 /**
- * Labelled form field wrapper. Generates a stable id when none is provided and
- * wires the label's htmlFor to the input via cloneElement for accessibility.
- * When `error` is set, it renders the message and links it to the control via
- * aria-describedby + aria-invalid; `required` adds aria-required.
- *
- * Pass the control as the SINGLE child. Render hints/checklists outside the
- * FormField (a second child would break the label association).
- *
- * @param {object} props
- * @param {string} [props.label] - Optional field label text.
- * @param {React.ReactElement} props.children - The control element to label (input/select/...).
- * @param {string} [props.id] - Explicit id; auto-generated when omitted.
- * @param {string} [props.error] - Validation message; shown and linked when truthy.
- * @param {boolean} [props.required] - Marks the control as required (aria-required).
- * @param {string} [props.className] - Classes for the wrapping container.
- * @param {string} [props.labelClassName] - Classes for the label element.
+ * Labelled form field wrapper: clones the SINGLE child control to wire label,
+ * error linking (aria-describedby/aria-invalid) and aria-required onto it.
+ * Pass the control as the only child; render hints/checklists outside so a
+ * second child can't break the label association.
  */
 export default function FormField({
   label,

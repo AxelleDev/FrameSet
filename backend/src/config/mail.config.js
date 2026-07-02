@@ -1,11 +1,6 @@
 /**
- * Mail (SMTP) configuration module.
- *
- * In PRODUCTION a complete SMTP configuration is mandatory and validated at
- * import time (fail fast). In DEVELOPMENT/TEST it is optional: when it is absent,
- * the mail service transparently falls back to an auto-created Ethereal test
- * account (see mail.service.js), so the app runs with zero email setup — handy
- * for first-time contributors who just clone and `npm run dev`.
+ * SMTP config. Mandatory and validated at import time in production (fail fast);
+ * optional in dev/test, where mail.service.js falls back to an Ethereal account.
  */
 
 const isProduction = (process.env.NODE_ENV || 'development') === 'production';

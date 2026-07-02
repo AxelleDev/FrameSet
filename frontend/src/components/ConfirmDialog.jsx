@@ -5,26 +5,8 @@ import FormModal from './FormModal';
 import ModalActions from './ModalActions';
 import TextInput from './TextInput';
 
-/**
- * Confirmation modal with optional "type to confirm" safeguard for destructive
- * actions. When `confirmationWord` is set, the primary action stays disabled
- * until the user types the matching word.
- *
- * @param {object} props
- * @param {boolean} props.isOpen - Whether the dialog is shown.
- * @param {string} props.title - Dialog title.
- * @param {string} [props.subtitle] - Optional subtitle line.
- * @param {React.ReactNode} props.message - Main message/body.
- * @param {string} [props.confirmLabel] - Primary button label.
- * @param {string} [props.cancelLabel] - Secondary button label.
- * @param {Function} props.onConfirm - Called when the user confirms.
- * @param {Function} props.onCancel - Called when the user cancels/closes.
- * @param {string} [props.confirmClassName] - Extra classes for the confirm button.
- * @param {string} [props.decorationClassName] - Classes for the decorative corner blob.
- * @param {string} [props.confirmationWord] - If set, requires the user to type this word to confirm.
- * @param {string} [props.confirmationInputLabel] - Label for the confirmation input.
- * @param {string} [props.confirmationInputPlaceholder] - Placeholder for the confirmation input.
- */
+// Confirmation modal with an optional "type to confirm" safeguard: when `confirmationWord`
+// is set, the primary action stays disabled until the user types the matching word.
 export default function ConfirmDialog({
   isOpen,
   title,

@@ -2,9 +2,8 @@ import React, { createContext, useContext, useState, useCallback, useRef } from 
 import { createPortal } from 'react-dom';
 
 /**
- * Lightweight toast system for transient feedback (success / danger / info).
- * Flat design (no shadow), opaque surface with a faint ring for separation, a
- * colored leading icon per variant, auto-dismiss, and an accessible live region.
+ * Lightweight toast system for transient feedback (success / danger / info):
+ * colored icon per variant, auto-dismiss, and an accessible live region.
  */
 const ToastContext = createContext(null);
 

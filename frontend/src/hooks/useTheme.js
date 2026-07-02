@@ -2,11 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 
 const STORAGE_KEY = 'frameset-theme';
 
-/**
- * Resolves the initial theme: a previously saved choice wins, otherwise we
- * follow the OS preference. Kept in sync with the no-flash script in index.html.
- * @returns {'light'|'dark'}
- */
+// Resolves the initial theme: a saved choice wins, else the OS preference.
+// Kept in sync with the no-flash script in index.html.
 function getInitialTheme() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -20,13 +17,8 @@ function getInitialTheme() {
   return 'light';
 }
 
-/**
- * Light/dark theme hook. Applies the `dark` class on <html> and persists the
- * choice. Theme state survives navigation via localStorage, so a single toggle
- * mounted at a time (sidebar or auth screen) stays consistent.
- *
- * @returns {{ theme: 'light'|'dark', toggleTheme: () => void }}
- */
+// Light/dark theme: toggles the `dark` class on <html> and persists to
+// localStorage, so separate toggles (sidebar, auth screen) stay consistent.
 export default function useTheme() {
   const [theme, setTheme] = useState(getInitialTheme);
 

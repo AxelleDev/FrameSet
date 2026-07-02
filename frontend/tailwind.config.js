@@ -1,14 +1,6 @@
 /**
- * Design tokens for FrameSet.
- *
- * Colors are driven by CSS variables (RGB channels) defined in `src/index.css`,
- * so the whole palette switches automatically in dark mode (`.dark` class on
- * <html>) without per-component `dark:` classes. The `rgb(var(--x) / <alpha>)`
- * form keeps Tailwind opacity modifiers (e.g. `bg-blue/10`) working.
- *
- * One brand color (`blue`); the rest are system colors: `danger`, `success`,
- * and the neutrals `primary` / `secondary` / `canvas` (page) / `surface` (cards).
- *
+ * Design tokens for FrameSet. Colors come from CSS variables (RGB channels) in
+ * src/index.css, so the palette switches in dark mode without per-component `dark:` classes.
  * @type {import('tailwindcss').Config}
  */
 export default {

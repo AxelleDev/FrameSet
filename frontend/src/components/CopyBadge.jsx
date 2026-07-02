@@ -2,14 +2,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-/**
- * Small pill that reflects clipboard copy state, swapping its label once copied.
- *
- * @param {object} props
- * @param {boolean} props.isCopied - Whether the value was just copied.
- * @param {string} [props.copiedLabel] - Label shown after copying.
- * @param {string} [props.defaultLabel] - Default label before copying.
- */
+// Small pill that reflects clipboard copy state, swapping its label once copied.
 export default function CopyBadge({
   isCopied,
   copiedLabel = 'Copied!',

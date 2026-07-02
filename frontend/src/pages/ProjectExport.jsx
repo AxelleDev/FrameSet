@@ -1,10 +1,5 @@
-/**
- * Project export page (route: /app/project/:id/export).
- *
- * Lets the user download the active project's style guide as a structured PDF
- * (built with jsPDF) or as raw JSON, and shows a live preview of the JSON
- * output. The PDF lists brush and typography norms followed by the color palette.
- */
+// Project export page (/app/project/:id/export): download the style guide as a
+// jsPDF-built PDF or raw JSON, with a live JSON preview.
 import React, { useMemo } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
@@ -18,11 +13,10 @@ export default function ProjectExport() {
   const { id } = useParams();
   const { activeProject, projectsLoading, activeProjectId } = useProjects();
 
-  // Sync the active project with the route id (shared hook, same as the other
-  // project pages).
+  // Sync the active project with the route id (shared hook).
   useActiveProject(id);
 
-  // Pretty-printed JSON of the project, used for both the preview and download.
+  // Pretty-printed JSON, used for both the preview and the download.
   const projectJson = useMemo(() => {
     return activeProject ? JSON.stringify(activeProject, null, 2) : '';
   }, [activeProject]);
@@ -39,19 +33,19 @@ export default function ProjectExport() {
     downloadAnchorNode.remove();
   };
 
-  // Build and download the style-guide PDF. The layout is drawn imperatively
-  // with jsPDF: `y` is the running vertical cursor (in mm), advanced after each
-  // line, and we add a new page whenever it approaches the page bottom.
+  // Build and download the style-guide PDF. Drawn imperatively with jsPDF: `y`
+  // is the running vertical cursor (mm), advanced per line, with a page break
+  // whenever it nears the page bottom.
   const downloadPdf = async () => {
     if (!activeProject) return;
 
-    // Load jsPDF on demand so its ~hundreds of KB are not in the initial bundle.
+    // Load jsPDF on demand to keep its ~hundreds of KB out of the initial bundle.
     const { jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     let y = 20;
 
     // Normalize both norm types into a common { category, name, value, details }
-    // shape so they can be rendered with one loop below.
+    // shape so one loop can render them.
     const norms = [
       ...(activeProject.brushNorms || []).map(n => ({
         category: 'Brush',
@@ -73,7 +67,7 @@ export default function ProjectExport() {
       }))
     ];
 
-    // Document header: project name + generation date, then a divider rule.
+    // Header: project name + generation date, then a divider rule.
     doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
     doc.text(activeProject.name, 20, y);

@@ -1,15 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-/**
- * Brand logo. Shows the standard logo in light mode and the reversed
- * (light-on-dark) variant in dark mode. Sizing/positioning are passed through
- * via `className` / `style`.
- *
- * @param {object} props
- * @param {string} [props.className] - Layout/sizing classes.
- * @param {object} [props.style] - Inline style overrides.
- */
+// Brand logo: standard variant in light mode, reversed (light-on-dark) in dark mode.
 export default function Logo({ className = '', style }) {
   return (
     <>

@@ -1,12 +1,6 @@
-/**
- * Forgot-password page (route: /forgot-password).
- *
- * Two steps on a single page:
- *   1. "request" — the user enters their email; the backend emails a reset code
- *      (responding the same way whether or not the account exists).
- *   2. "reset"   — the user enters the code and a new password (with live policy
- *      feedback and confirmation), then is redirected to the login page.
- */
+// Forgot-password page (route: /forgot-password): single-page two-step flow —
+// "request" emails a reset code (same response whether or not the account exists),
+// then "reset" takes the code + new password.
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

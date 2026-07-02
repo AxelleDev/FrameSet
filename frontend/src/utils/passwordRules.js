@@ -1,7 +1,6 @@
 /**
- * Shared password policy used for live client-side feedback. Mirrors the
- * backend rule (PASSWORD_COMPLEXITY_REGEX in security.config.js): at least 8
- * characters, with one lowercase letter, one uppercase letter and one digit.
+ * Shared password policy for live client-side feedback. Mirrors the backend
+ * rule (PASSWORD_COMPLEXITY_REGEX in security.config.js): 8+ chars, lower, upper, digit.
  */
 export const PASSWORD_RULES = [
   { id: 'length', label: 'At least 8 characters', test: (p) => p.length >= 8 },

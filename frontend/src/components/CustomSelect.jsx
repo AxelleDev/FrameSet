@@ -2,18 +2,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Select, { components as selectComponents } from 'react-select';
 
-// Cap on how many option rows are painted into the menu at once. react-select
-// renders every matching option into the DOM, which is fine for short lists but
-// janky for the ~1,900-family Google Fonts list. We render only the first slice
-// and invite the user to type to narrow — the remaining options stay reachable
-// through the search box (react-select filters the children we receive here).
+// Cap on option rows painted at once: react-select renders every match into the DOM, which is
+// janky for the ~1,900-family Google Fonts list. Capped rows stay reachable via the search box.
 const MAX_RENDERED_OPTIONS = 100;
 
-/**
- * MenuList that renders at most MAX_RENDERED_OPTIONS rows, keeping the DOM light
- * for very large option sets. For small lists it behaves exactly like the
- * default MenuList (the extra hint only appears once the cap is exceeded).
- */
+// MenuList capped at MAX_RENDERED_OPTIONS rows; the hint only appears once the cap is exceeded.
 function CappedMenuList(props) {
   const children = React.Children.toArray(props.children);
   if (children.length <= MAX_RENDERED_OPTIONS) {
@@ -32,21 +25,8 @@ function CappedMenuList(props) {
 
 CappedMenuList.propTypes = { children: PropTypes.node };
 
-/**
- * Themed wrapper around react-select, styled to match the app's TextInput
- * (soft blue fill, periwinkle border, blue focus ring, rounded menu with
- * pill-like options). Accepts plain string options or `{ value, label }`
- * objects and exposes a controlled string `value`/`onChange` API. Very large
- * option lists (e.g. the font picker) are render-capped for performance.
- *
- * @param {object} props
- * @param {Array<string|{value:string,label:string}>} props.options - Available options.
- * @param {string} props.value - Currently selected value (controlled).
- * @param {Function} props.onChange - Called with the selected value (or '' when cleared).
- * @param {string} [props.placeholder] - Placeholder text.
- * @param {boolean} [props.isClearable] - Whether a clear (×) control is shown (default false).
- * @param {object} [props.components] - Extra react-select component overrides (merged in).
- */
+// Themed wrapper around react-select matching the app's TextInput. Accepts plain string or
+// `{ value, label }` options and exposes a controlled string `value`/`onChange` API ('' when cleared).
 export default function CustomSelect({ options, value, onChange, placeholder, isClearable = false, components, ...props }) {
   // Normalize string options into the { value, label } shape react-select expects.
   const selectOptions = options.map(opt =>
@@ -63,10 +43,8 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
       placeholder={placeholder}
       isClearable={isClearable}
       menuPlacement="auto"
-      // Render the menu in a body-level portal (with fixed positioning) so it
-      // escapes the scrolling/overflow + stacking contexts of the page shell
-      // (the `overflow-auto relative` <main> and its `sticky` header). Without
-      // this the menu is trapped beneath the cards grid below it.
+      // Body-level fixed portal so the menu escapes the page shell's overflow/stacking
+      // contexts; without it the menu is trapped beneath the cards grid below.
       menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
       menuPosition="fixed"
       components={{ MenuList: CappedMenuList, ...components }}

@@ -1,10 +1,7 @@
 /**
- * Maps a raw/technical error message to friendly, user-facing English text.
- * Used to surface global (server/session/network) errors as a toast rather than
- * exposing internal wording. Returns null when there is no message.
- *
- * @param {string} message - Raw error message.
- * @returns {string|null} A friendly message, or null when there is nothing to show.
+ * Maps a raw/technical error message to friendly, user-facing English for the
+ * global-error toast, so internal wording never reaches the user. Returns null
+ * when there is nothing to show.
  */
 export function getFriendlyMessage(message) {
   if (!message) return null;

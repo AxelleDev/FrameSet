@@ -1,11 +1,6 @@
 /**
- * OpenAPI 3.0 specification for the FrameSet API.
- *
- * Hand-maintained from API.md and served (with Swagger UI) at /api-docs, and as
- * raw JSON at /api-docs.json. Kept as a plain object so it needs no build step.
- *
- * Paths are written from the server root: the feature routers live under /api,
- * while the health probe is mounted at the root (/health).
+ * OpenAPI 3.0 spec for the FrameSet API; plain object (no build step), served at /api-docs.
+ * Paths are written from the server root: feature routers under /api, health probe at /health.
  */
 
 // Reusable security requirement for authenticated endpoints (cookie OR bearer).

@@ -2,12 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import useTheme from '../hooks/useTheme';
 
-/**
- * Button that switches between light and dark themes (sun/moon icon).
- *
- * @param {object} props
- * @param {string} [props.className] - Extra classes for positioning.
- */
+// Button that switches between light and dark themes (sun/moon icon).
 export default function ThemeToggle({ className = '' }) {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';

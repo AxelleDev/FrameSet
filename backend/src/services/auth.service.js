@@ -1,13 +1,6 @@
 /**
- * Authentication service.
- *
- * Owns the business logic and SQL for the auth lifecycle: registration with
- * email verification, credential checking on login, refresh-token rotation
- * decisions, email verification and code resend, and the password-reset flow.
- * Functions take plain arguments and return data, or throw an AuthServiceError
- * carrying a `code` (and, where relevant, the user-facing `message`) that the
- * controller maps to a specific HTTP status and JSON body. HTTP concerns
- * (cookies, token issuance, logging) stay in the controller.
+ * Auth service: business logic and SQL for the auth lifecycle.
+ * Functions return data or throw AuthServiceError(code[, message]); HTTP concerns stay in the controller.
  */
 
 const bcrypt = require('bcryptjs');
@@ -21,11 +14,8 @@ const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = r
 /** Coerces a value to a trimmed string, treating null/undefined as empty. */
 const normalizeInput = (value) => validator.trim(String(value ?? ''));
 
-/**
- * Error type thrown by service functions to signal a business/validation
- * failure. The controller maps `code` to the appropriate HTTP status; the
- * `message` (when present) is surfaced to the client unchanged.
- */
+// Thrown to signal a business/validation failure. The controller maps `code` to
+// an HTTP status; `message`, when present, is surfaced to the client unchanged.
 class AuthServiceError extends Error {
   constructor(code, message, userId = null) {
     super(message || code);
@@ -35,15 +25,9 @@ class AuthServiceError extends Error {
   }
 }
 
-/**
- * Registers a new user. Validates input, enforces the password policy, hashes
- * the password with bcrypt, stores the account as unverified with a one-time
- * verification code, and emails that code. Throws AuthServiceError('validation',
- * msg) on invalid input and AuthServiceError('duplicate_email') when the email
- * already exists (the controller maps both to a 400 generic message).
- * @param {{name:*, email:*, password:*}} payload Raw registration fields.
- * @returns {Promise<Object>} The created user's client representation.
- */
+// Registers a user: validates, enforces the password policy, stores the account
+// unverified with a one-time code, and emails it. Throws 'validation' on bad
+// input and 'duplicate_email' when the email already exists.
 const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassword }) => {
   const name = normalizeInput(rawName);
   const email = normalizeInput(rawEmail);
@@ -106,15 +90,9 @@ const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassw
   }
 };
 
-/**
- * Authenticates a user with email and password. Validates input, rejects
- * unverified accounts, and compares the password against the bcrypt hash. On
- * success returns the user's client representation. Throws AuthServiceError with
- * a `code` the controller maps: 'validation' (400), 'invalid_credentials' (401),
- * 'not_verified' (401).
- * @param {{email:*, password:*}} payload Raw login fields.
- * @returns {Promise<Object>} The authenticated user's client representation.
- */
+// Authenticates by email/password: rejects unverified accounts, compares against
+// the bcrypt hash. Throws 'missing_credentials', 'invalid_email_format',
+// 'invalid_credentials', or 'not_verified'.
 const authenticateUser = async ({ email: rawEmail, password: rawPassword }) => {
   let email = rawEmail;
   let password = rawPassword;
@@ -155,24 +133,12 @@ const authenticateUser = async ({ email: rawEmail, password: rawPassword }) => {
   };
 };
 
-/**
- * Determines whether a refresh token is stale relative to the user's last
- * password change. Wraps token.service.isTokenStaleByPasswordChange so the
- * controller need not import it directly.
- * @param {number} userId Token subject.
- * @param {number} issuedAt Token "iat" (issued-at) claim, in seconds.
- * @returns {Promise<boolean>} True if the token predates the last password change.
- */
+// Wraps token.service.isTokenStaleByPasswordChange so the controller needn't
+// import it directly. issuedAt is the token's "iat" claim, in seconds.
 const isRefreshTokenStale = (userId, issuedAt) => isTokenStaleByPasswordChange(userId, issuedAt);
 
-/**
- * Confirms a newly registered email using the one-time verification code.
- * Validates input, the code and its expiry, then marks the account verified and
- * clears the code so it cannot be reused. Throws AuthServiceError('validation',
- * msg) for every invalid-input/invalid-code case (all 400).
- * @param {{email:*, code:*}} payload Raw verification fields.
- * @returns {Promise<{success:boolean}>}
- */
+// Confirms a registration email via the one-time code, then clears the code so
+// it can't be reused. Every invalid case throws 'validation'.
 const verifyEmailCode = async ({ email, code }) => {
   if (!email || !code) {
     throw new AuthServiceError('validation', 'Email and code are required.');
@@ -199,14 +165,8 @@ const verifyEmailCode = async ({ email, code }) => {
   return { success: true };
 };
 
-/**
- * Regenerates and re-sends the email verification code for an unverified
- * account, replacing any previous code and its expiry. Throws
- * AuthServiceError('validation', msg) for every invalid-input/account case
- * (all 400).
- * @param {{email:*}} payload Raw resend fields.
- * @returns {Promise<{success:boolean}>}
- */
+// Regenerates and re-sends the verification code for an unverified account,
+// replacing any previous code. Every invalid case throws 'validation'.
 const resendVerificationCode = async ({ email }) => {
   if (!email) {
     throw new AuthServiceError('validation', 'Email is required.');
@@ -240,17 +200,10 @@ const resendVerificationCode = async ({ email }) => {
   return { success: true };
 };
 
-/**
- * Starts the "forgot password" flow: if the email matches an account, stores a
- * one-time reset code (with expiry) and emails it. Validates input (throwing
- * AuthServiceError('validation', msg) on failure) but otherwise behaves
- * identically whether or not the email exists, to avoid revealing which emails
- * are registered. A mail-send failure is reported back via onMailError so the
- * controller can log it without changing the response.
- * @param {{email:*}} payload Raw request fields.
- * @param {{onMailError?: (error:Error)=>void}} [hooks]
- * @returns {Promise<void>}
- */
+// Starts "forgot password": if the email matches an account, stores a one-time
+// reset code and emails it. Behaves identically whether or not the email exists,
+// to avoid revealing which emails are registered. onMailError lets the
+// controller log a send failure without changing the response.
 const startPasswordReset = async ({ email: rawEmail }, { onMailError } = {}) => {
   const email = normalizeInput(rawEmail);
   if (!email) {
@@ -281,23 +234,15 @@ const startPasswordReset = async ({ email: rawEmail }, { onMailError } = {}) => 
         })
       });
     } catch (mailError) {
-      // Never leak whether the email exists: surface the send failure to the
-      // controller for logging but keep the generic success response. The
-      // stored code stays valid.
+      // Report the send failure but keep the generic response; the stored code stays valid.
       if (onMailError) onMailError(mailError);
     }
   }
 };
 
-/**
- * Completes the "forgot password" flow: validates input, the reset code and its
- * expiry, enforces the password policy, hashes and stores the new password, and
- * clears the reset code so it cannot be reused. A missing account returns the
- * same generic "Code incorrect" error to avoid user enumeration. Every failure
- * is an AuthServiceError('validation', msg) (all 400).
- * @param {{email:*, code:*, newPassword:*}} payload Raw request fields.
- * @returns {Promise<{success:boolean}>}
- */
+// Completes "forgot password": validates the reset code and password policy,
+// stores the new password, and clears the code. A missing account returns the
+// same generic "Incorrect code" error to avoid user enumeration. Throws 'validation'.
 const completePasswordReset = async ({ email: rawEmail, code: rawCode, newPassword }) => {
   const email = normalizeInput(rawEmail);
   const code = normalizeInput(rawCode);

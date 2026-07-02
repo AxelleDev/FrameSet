@@ -1,10 +1,6 @@
 /**
- * MySQL database access module.
- *
- * Creates a connection pool from environment configuration and exposes its
- * promise-based interface as the app-wide database handle. Two convenience
- * methods are attached: ping() for health checks and closePool() for graceful
- * shutdown. Pooling reuses connections and bounds concurrency under load.
+ * MySQL access: app-wide promise-based connection pool with ping() (health
+ * checks) and closePool() (graceful shutdown) attached.
  */
 
 const mysql = require('mysql2');

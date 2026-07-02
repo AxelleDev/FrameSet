@@ -1,9 +1,6 @@
 /**
- * Rate limiter for project and norm creation endpoints.
- *
- * Caps how many projects/norms a single user (or anonymous IP) can create per
- * hour. This curbs abuse and accidental loops that would otherwise flood the
- * database with writes, while leaving normal usage unaffected.
+ * Rate limiters: caps project/norm creation per user (or anon IP) per hour to
+ * curb write floods, plus a per-IP cap on the public /health probe.
  */
 
 const rateLimit = require('express-rate-limit');

@@ -1,10 +1,7 @@
 /**
- * Project routes.
- *
- * CRUD endpoints for projects and their nested resources (brush norms,
- * typography norms, color palette). Every route requires authentication, and
- * creation routes additionally pass through the project-create rate limiter.
- * Per-resource ownership is enforced inside the controllers.
+ * Project routes: CRUD for projects and their nested resources (brush/typography
+ * norms, palette). All require auth; creation routes also pass the create limiter.
+ * Per-resource ownership is enforced in the controllers.
  */
 
 const express = require('express');

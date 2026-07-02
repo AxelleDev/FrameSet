@@ -1,11 +1,5 @@
-/**
- * Email verification page (route: /verify?email=...&type=...).
- *
- * Used for two flows, distinguished by the `type` query param:
- *   - default ("signup"): confirm a new account's email, then go to /login.
- *   - "pending-email": confirm a pending email change, then go to the profile.
- * The user enters the emailed code and can also request a new code.
- */
+// Email verification page (route: /verify?email=...&type=...): the `type` param
+// picks the flow — signup (-> /login) or "pending-email" change (-> /app/profile).
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

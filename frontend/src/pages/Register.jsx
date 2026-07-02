@@ -1,10 +1,5 @@
-/**
- * Registration page (route: /register).
- *
- * Collects name + email + password (with confirmation), validates everything on
- * the client (email format, live password policy, matching confirmation), then
- * creates the account via the auth context and redirects to email verification.
- */
+// Registration page (/register): collect name/email/password, validate on the
+// client, create the account, then redirect to email verification.
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

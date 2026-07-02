@@ -1,10 +1,6 @@
 /**
- * User account controller.
- *
- * Handles the authenticated user's account operations: profile read/update,
- * password change, deletion, and the pending-email change flow (where a new
- * address is only committed after the user confirms a one-time code sent to
- * it). All mutating operations are scoped to the authenticated user id.
+ * User account controller: profile read/update, password change, deletion, and the
+ * pending-email change flow. All mutating ops are scoped to the authenticated user id.
  */
 
 const bcrypt = require('bcryptjs');
@@ -17,11 +13,7 @@ const { issueAuthCookies } = require('../utils/session.utils');
 
 const logUserControllerError = createControllerLogger('users');
 
-/**
- * Returns the total number of registered users (public stat).
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Return the total number of registered users (public stat).
 const getUserCount = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT COUNT(*) as count FROM users');
@@ -32,13 +24,8 @@ const getUserCount = async (req, res) => {
   }
 };
 
-/**
- * Returns the authenticated user's profile. Selects only non-sensitive columns
- * (never the password hash) and resolves the id from the verified token rather
- * than any client-supplied value.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Return the user's profile: only non-sensitive columns (never the password hash),
+// id resolved from the verified token rather than any client-supplied value.
 const getProfile = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
   if (!authenticatedUserId) {
@@ -70,16 +57,9 @@ const getProfile = async (req, res) => {
   }
 };
 
-/**
- * Updates the authenticated user's profile. A name-only change is applied
- * immediately. An email change is NOT applied directly: the new address is
- * stored as a pending email with a one-time code emailed to it, and only
- * becomes the account email after confirmation (see verifyPendingEmail). This
- * proves ownership of the new address and prevents account takeover via an
- * unverified email swap. Also rejects an email already in use by another user.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Update the user's profile. Name changes apply immediately; an email change is staged
+// as a pending email confirmed via a one-time code (see verifyPendingEmail), which proves
+// ownership and prevents account takeover via an unverified email swap.
 const updateUser = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
   const { name, email } = req.body;
@@ -141,13 +121,8 @@ const updateUser = async (req, res) => {
   }
 };
 
-/**
- * Confirms a pending email change. Validates the one-time code and its expiry,
- * then atomically promotes pending_email to the account email and clears the
- * pending fields. Returns the updated user representation.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Confirm a pending email change: validate the one-time code/expiry, then atomically
+// promote pending_email to the account email and clear the pending fields.
 const verifyPendingEmail = async (req, res) => {
   const { email, code } = req.body;
   const authenticatedUserId = getAuthenticatedUserId(req);
@@ -188,12 +163,7 @@ const verifyPendingEmail = async (req, res) => {
   }
 };
 
-/**
- * Regenerates and re-sends the confirmation code for a pending email change,
- * replacing the previous code and expiry.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Regenerate and re-send the confirmation code for a pending email change.
 const resendPendingEmail = async (req, res) => {
   const { email } = req.body;
   const authenticatedUserId = getAuthenticatedUserId(req);
@@ -231,14 +201,9 @@ const resendPendingEmail = async (req, res) => {
   }
 };
 
-/**
- * Changes the authenticated user's password. Requires the current password and
- * re-verifies it with bcrypt before applying the change (defense against an
- * attacker using a hijacked session). The new password must satisfy the policy
- * and is stored as a fresh bcrypt hash; password_updated_at is bumped.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Change the user's password. Re-verifies the current password with bcrypt before
+// applying (defense against a hijacked session); stores a fresh hash and bumps
+// password_updated_at.
 const changePassword = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
   const { currentPassword, newPassword } = req.body;
@@ -263,8 +228,8 @@ const changePassword = async (req, res) => {
     }
     const hashedPassword = await bcrypt.hash(trimmedNewPassword, BCRYPT_SALT_ROUNDS);
     await db.query('UPDATE users SET password = ?, password_updated_at = NOW() WHERE id = ?', [hashedPassword, authenticatedUserId]);
-    // Re-issue a fresh token pair so the current session keeps working, while
-    // every other session (tokens issued before this change) is invalidated.
+    // Re-issue a fresh token pair so this session keeps working while every other
+    // session (tokens issued before this change) is invalidated.
     issueAuthCookies(res, { id: authenticatedUserId, email: req.user?.email });
     res.json({ success: true, passwordUpdatedAt: new Date() });
   } catch (error) {
@@ -273,13 +238,8 @@ const changePassword = async (req, res) => {
   }
 };
 
-/**
- * Permanently deletes the authenticated user's account. Scoped to the verified
- * user id so a user can only delete their own account; related project data is
- * removed by the schema's cascading foreign keys.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Permanently delete the user's own account (scoped to the verified id); related
+// project data is removed by cascading foreign keys.
 const deleteAccount = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
   if (!authenticatedUserId) {

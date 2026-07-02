@@ -1,11 +1,6 @@
 /**
- * Hook that fetches the catalog of available fonts from the Google Fonts
- * Developer API, used to populate the typography-norm font picker.
- *
- * Exposes { fonts, loading, error }. Refetches whenever the API key changes;
- * does nothing until a key is provided.
- *
- * @param {string} apiKey Google Fonts API key (from VITE_GOOGLE_FONTS_API_KEY).
+ * Fetches the Google Fonts catalog for the typography-norm font picker. Exposes
+ * { fonts, loading, error }; does nothing until an apiKey is provided.
  */
 import { useEffect, useState } from 'react';
 

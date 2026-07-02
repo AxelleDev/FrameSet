@@ -1,17 +1,7 @@
-// Page header with title, optional subtitle and an optional right-aligned action slot.
 import React from 'react';
 import PropTypes from 'prop-types';
 
-/**
- * Standard page heading block: a title + optional subtitle on the left, and an
- * optional `actions` slot aligned to the right (bottom-aligned with the subtitle).
- *
- * @param {object} props
- * @param {React.ReactNode} props.title - Page title.
- * @param {React.ReactNode} [props.subtitle] - Optional subtitle/description.
- * @param {string} [props.subtitleClassName] - Extra classes for the subtitle text.
- * @param {React.ReactNode} [props.actions] - Optional right-aligned content (button, select…).
- */
+// Title + optional subtitle on the left, optional right-aligned `actions` slot.
 export default function PageHeader({ title, subtitle, subtitleClassName = '', actions }) {
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-10 gap-4 animate-fade-in">

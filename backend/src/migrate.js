@@ -1,12 +1,7 @@
 /**
- * Database migration runner.
- *
- * Applies pending .sql files from the migrations directory in filename order,
- * tracking what has run in a schema_migrations table so each file executes at
- * most once. Certain "already reflected" errors (e.g. column/key already
- * exists) are tolerated to keep migrations idempotent against a partially
- * migrated schema. Runnable directly via `node migrate.js` or importable for
- * use in tests/bootstrapping.
+ * Migration runner: applies pending .sql files in filename order, tracked in
+ * schema_migrations so each runs at most once. "Already reflected" errors are
+ * tolerated for idempotency. Run via `node migrate.js` or import for tests.
  */
 
 const fs = require('fs');
@@ -25,11 +20,8 @@ const SKIPPABLE_MIGRATION_ERROR_CODES = new Set([
 ]);
 const migrationLogger = logger.child({ component: 'migrations' });
 
-/**
- * Creates a dedicated migration pool. multipleStatements is enabled so a single
- * .sql file containing several statements can be executed in one query call.
- * @returns {import('mysql2/promise').Pool}
- */
+// Dedicated migration pool. multipleStatements is enabled so a single .sql file
+// with several statements runs in one query call.
 const getPool = () => mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
@@ -41,14 +33,8 @@ const getPool = () => mysql.createPool({
   multipleStatements: true
 });
 
-/**
- * Runs a task with a pool, creating an ephemeral pool when none is supplied and
- * closing only the pool it created. This lets callers either share an existing
- * pool or run standalone without leaking connections.
- * @param {import('mysql2/promise').Pool|undefined} pool Optional existing pool.
- * @param {(pool: import('mysql2/promise').Pool) => Promise<*>} task Work to run.
- * @returns {Promise<*>} The task's result.
- */
+// Runs a task with a pool, creating an ephemeral one when none is supplied and
+// closing only the pool it created (so callers can share a pool without leaks).
 const runWithPool = async (pool, task) => {
   const resolvedPool = pool || getPool();
   const shouldClosePool = !pool;
@@ -62,11 +48,7 @@ const runWithPool = async (pool, task) => {
   }
 };
 
-/**
- * Creates the schema_migrations bookkeeping table if it does not already exist.
- * @param {import('mysql2/promise').Pool} [pool] Optional existing pool.
- * @returns {Promise<void>}
- */
+// Creates the schema_migrations bookkeeping table if absent.
 const ensureMigrationsTable = async (pool) => {
   await runWithPool(pool, async (resolvedPool) => {
     await resolvedPool.query(`
@@ -80,12 +62,7 @@ const ensureMigrationsTable = async (pool) => {
   });
 };
 
-/**
- * Computes the ordered list of migration files that have not yet been applied,
- * by diffing the on-disk .sql files against the recorded filenames.
- * @param {import('mysql2/promise').Pool} [pool] Optional existing pool.
- * @returns {Promise<string[]>} Pending migration filenames, sorted.
- */
+// Sorted list of unapplied migrations: on-disk .sql files minus recorded filenames.
 const getPendingMigrations = async (pool) => {
   return runWithPool(pool, async (resolvedPool) => {
     const [rows] = await resolvedPool.query('SELECT filename FROM schema_migrations');
@@ -104,14 +81,9 @@ const getPendingMigrations = async (pool) => {
   });
 };
 
-/**
- * Applies all pending migrations in order. Each file is executed and then
- * recorded in schema_migrations (INSERT IGNORE) so it is not re-run. Empty files
- * are recorded and skipped; "already reflected" errors are tolerated. On an
- * unexpected error the process exit code is set to 1 so CI can detect failure.
- * @param {import('mysql2/promise').Pool} [pool] Optional existing pool.
- * @returns {Promise<void>}
- */
+// Applies pending migrations in order, recording each (INSERT IGNORE) so it is
+// not re-run. Empty files are skipped; "already reflected" errors tolerated.
+// Sets process exit code 1 on unexpected error so CI can detect failure.
 const run = async (pool) => {
   const resolvedPool = pool || getPool();
   const shouldClosePool = !pool;

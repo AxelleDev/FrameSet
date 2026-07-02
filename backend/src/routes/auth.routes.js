@@ -1,10 +1,6 @@
 /**
- * Authentication routes.
- *
- * Mounts the auth endpoints (register, login, email verification, code resend,
- * token refresh, logout, CSRF token issuance). Each sensitive endpoint is
- * fronted by a dedicated rate limiter sized to its abuse profile, to throttle
- * credential stuffing, code brute-forcing and email-spam attempts.
+ * Auth routes. Each sensitive endpoint is fronted by a dedicated rate limiter
+ * sized to its abuse profile (credential stuffing, code brute-forcing, email spam).
  */
 
 const express = require('express');
@@ -13,8 +9,8 @@ const authController = require('../controllers/auth.controller');
 
 const router = express.Router();
 
-// Login: tight per-IP limit to slow credential stuffing. Kept separate from the
-// register limiter so a burst of one cannot consume the other's quota.
+// Login: tight per-IP limit to slow credential stuffing. Separate from register
+// so a burst of one can't consume the other's quota.
 const loginLimiter = rateLimit({
 	windowMs: 60 * 1000,
 	max: 5,

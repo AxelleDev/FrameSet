@@ -1,9 +1,5 @@
-/**
- * Hook that fetches the total registered-user count, shown as social proof on
- * the login and register pages.
- *
- * @returns {number|null} The user count, or null while loading / on failure.
- */
+// Fetches the total registered-user count (social proof on login/register).
+// Returns the count, or null while loading / on failure.
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 

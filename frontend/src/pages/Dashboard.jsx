@@ -1,10 +1,5 @@
-/**
- * Dashboard page (route: /app/dashboard).
- *
- * The landing screen after login: shows a greeting, project/norm totals, and a
- * grid of project cards. From here the user can create, rename, delete and open
- * projects. Opening a project navigates into its norms section.
- */
+// Dashboard page (route: /app/dashboard): post-login landing with project totals
+// and a grid of cards to create, rename, delete and open projects.
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectContext';
@@ -21,11 +16,8 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
 
-/**
- * Formats a project's `lastEdited` value for display after the "Edited " prefix.
- * The API returns either the just-edited sentinel ("Just now") or a
- * "DD/MM HH:MM" string; we render "just now" or "on DD/MM at HH:MM".
- */
+// Formats `lastEdited` for the "Edited " prefix: API sends "DD/MM HH:MM" or a
+// sentinel; renders "on DD/MM at HH:MM" or "just now".
 function formatModified(value) {
   if (!value) return '';
   const match = /^(\d{2}\/\d{2})\s+(\d{2}:\d{2})$/.exec(value);

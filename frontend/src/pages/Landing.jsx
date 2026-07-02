@@ -1,11 +1,5 @@
-/**
- * Public landing page (route: /).
- *
- * The only fully public, indexable page: it presents the product with in-page UI
- * mockups (built from the design system), scroll-reveal animations and clear CTAs.
- * Reachable without auth so it can be crawled and shared. Sets its own SEO head
- * + Schema.org JSON-LD.
- */
+// Public landing page (route: /): the only fully public, indexable page.
+// Sets its own SEO head + Schema.org JSON-LD so it can be crawled and shared.
 import React, { useEffect, useRef, useState } from 'react';
 import Seo from '../components/Seo';
 import Logo from '../components/Logo';
@@ -208,7 +202,6 @@ export default function Landing() {
       <PublicTopBar />
 
       <main className="relative flex-1">
-        {/* ---------- HERO ---------- */}
         <section className="relative min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col items-center justify-center text-center px-6 pt-8 pb-20 animate-fade-in">
           <div className="max-w-3xl">
             <span className="inline-block text-[11px] sm:text-xs font-bold uppercase tracking-widest text-blue bg-blue/15 px-3 py-1 rounded-full">For illustrators &amp; studios</span>
@@ -234,7 +227,6 @@ export default function Landing() {
           </a>
         </section>
 
-        {/* ---------- FEATURES ---------- */}
         <section id="features" className="scroll-mt-6 max-w-6xl mx-auto px-6 py-4 md:py-8" aria-labelledby="features-title">
           <Reveal className="text-center max-w-2xl mx-auto mb-12 md:mb-16">
             <h2 id="features-title" className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tight">
@@ -263,7 +255,6 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* ---------- CTA BAND ---------- */}
         <section className="max-w-6xl mx-auto px-6 py-16 md:py-24">
           <Reveal className="bg-surface ring-1 ring-primary/5 rounded-[1.75rem] md:rounded-[2rem] px-6 py-12 md:px-10 md:py-16 text-center">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tight">

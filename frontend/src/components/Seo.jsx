@@ -3,28 +3,17 @@ import PropTypes from 'prop-types';
 import { Helmet } from 'react-helmet-async';
 
 /**
- * Per-page SEO/head manager. Sets a unique <title> + meta description, the
- * canonical URL, Open Graph + Twitter Card tags, an optional noindex directive
- * (for private app screens), and optional JSON-LD structured data.
- *
- * The absolute site origin is read from VITE_SITE_URL at build time; set it in
- * the deploy environment so canonical/OG URLs are correct.
- *
- * @param {object} props
- * @param {string} [props.title] - Page title (suffixed with the site name).
- * @param {string} [props.description] - Meta description (unique per page).
- * @param {string} [props.path] - Route path for the canonical/OG URL (e.g. "/login").
- * @param {string} [props.image] - Absolute URL of the social share image (1200×630).
- * @param {boolean} [props.noindex] - When true, asks crawlers not to index the page.
- * @param {'website'|'article'} [props.type] - Open Graph type.
- * @param {object} [props.jsonLd] - Schema.org JSON-LD object injected as a script.
+ * Per-page SEO/head manager: title, meta description, canonical URL, Open Graph
+ * + Twitter Card tags, optional noindex and JSON-LD.
+ * Site origin comes from VITE_SITE_URL at build time; set it in the deploy env
+ * so canonical/OG URLs are correct.
  */
 const SITE_NAME = 'FrameSet';
 const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://frameset.app').replace(/\/$/, '');
 const DEFAULT_DESCRIPTION =
   'FrameSet keeps every project\'s graphic standards and color palette in one place.';
-// Social share image. Uses the brand logo as a safe default that always exists;
-// replace with a dedicated 1200×630 `og-cover.png` for richer link previews.
+// Brand logo as a safe default that always exists; swap for a dedicated
+// 1200×630 `og-cover.png` for richer link previews.
 const DEFAULT_IMAGE = `${SITE_URL}/FrameSet_Logo.png`;
 
 export default function Seo({

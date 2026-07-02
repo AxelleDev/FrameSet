@@ -1,14 +1,9 @@
 /**
- * Password security configuration module.
- *
- * Exposes the bcrypt work factor and the password policy (minimum length and
- * complexity) enforced during registration and password changes. Keeping these
- * values in one place ensures the same rules are applied consistently across
- * every controller that handles credentials.
+ * Password security policy: bcrypt work factor plus min length and complexity,
+ * centralized so every credential-handling controller applies the same rules.
  */
 
-// Default bcrypt cost factor. 12 rounds is a sensible balance between hashing
-// cost (resistance to brute force) and login latency on commodity hardware.
+// 12 rounds balances brute-force resistance against login latency.
 const DEFAULT_BCRYPT_SALT_ROUNDS = 12;
 const PASSWORD_MIN_LENGTH = 8;
 // Requires at least one lowercase letter, one uppercase letter and one digit,

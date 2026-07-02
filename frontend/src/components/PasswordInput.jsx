@@ -23,17 +23,8 @@ function EyeOffIcon() {
   );
 }
 
-/**
- * Password text input with a toggle button to reveal/hide the value. All
- * unrecognized props are forwarded to the underlying input (value, onChange,
- * name, placeholder, ...).
- *
- * @param {object} props
- * @param {string} [props.className] - Classes for the relative wrapper.
- * @param {string} [props.inputClassName] - Classes for the input element.
- * @param {string} [props.buttonClassName] - Classes for the toggle button.
- * @param {boolean} [props.disabled] - Disables both the input and the toggle.
- */
+// Password input with a reveal/hide toggle. Unrecognized props are forwarded
+// to the underlying input (value, onChange, name, placeholder, ...).
 export default function PasswordInput({
   className = '',
   inputClassName = '',
@@ -41,7 +32,6 @@ export default function PasswordInput({
   disabled = false,
   ...inputProps
 }) {
-  // Tracks whether the password is shown in plain text.
   const [isVisible, setIsVisible] = useState(false);
 
   // Only reveal the eye toggle once the field has content (Google/Microsoft

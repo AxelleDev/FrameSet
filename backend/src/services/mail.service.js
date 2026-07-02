@@ -1,9 +1,6 @@
 /**
- * Mail service.
- *
- * Wraps a single nodemailer SMTP transport and provides a reusable branded HTML
- * template. Used to deliver email verification and confirmation codes during
- * registration, email-change and code-resend flows.
+ * Mail service: wraps a nodemailer SMTP transport and a reusable branded HTML template.
+ * Delivers verification/confirmation codes for registration, email-change and resend flows.
  */
 
 const path = require('path');
@@ -46,12 +43,8 @@ const formatFromAddress = (address) => (address ? `${MAIL_FROM_NAME} <${address}
 
 let transporterPromise = null;
 
-/**
- * Returns the SMTP transport. When no SMTP is configured (dev convenience), an
- * Ethereal test account is created on the first call so the app can send without
- * any email setup; each send then logs a preview URL to read the message.
- * @returns {Promise<object>} A nodemailer transport.
- */
+// Returns the SMTP transport. With no SMTP configured (dev), an Ethereal test
+// account is created on the first call so the app can send without email setup.
 const getTransporter = async () => {
   if (transporter) {
     return transporter;
@@ -75,16 +68,8 @@ const getTransporter = async () => {
   return transporterPromise;
 };
 
-/**
- * Builds the branded HTML body for a transactional email. The code block is
- * rendered only when a code is supplied.
- * @param {Object} params
- * @param {string} params.title Heading shown in the email header.
- * @param {string} params.message Body message.
- * @param {string} [params.code] Optional verification code to highlight.
- * @param {string} [params.footer] Optional footer note (defaults to expiry text).
- * @returns {string} HTML markup.
- */
+// Builds the branded HTML email body. The code block renders only when `code` is
+// supplied; `footer` defaults to the expiry note.
 const buildTemplate = ({ title, message, code, footer }) => {
   const fontStack = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
   return `
@@ -134,15 +119,7 @@ const buildTemplate = ({ title, message, code, footer }) => {
   `;
 };
 
-/**
- * Sends an email through the configured SMTP transport.
- * @param {Object} params
- * @param {string} params.to Recipient address.
- * @param {string} params.subject Subject line.
- * @param {string} params.text Plain-text fallback body.
- * @param {string} params.html HTML body.
- * @returns {Promise<void>}
- */
+// Sends an email through the configured SMTP transport.
 const sendMail = async ({ to, subject, text, html }) => {
   const transport = await getTransporter();
   const info = await transport.sendMail({
@@ -155,9 +132,8 @@ const sendMail = async ({ to, subject, text, html }) => {
     attachments: [{ filename: 'frameset-logo.png', path: LOGO_PATH, cid: LOGO_CID }]
   });
 
-  // In non-production, surface the Ethereal preview URL so the email (and the
-  // code it contains) can be read straight from the server console — no need to
-  // open a real inbox during local development.
+  // In non-production, log the Ethereal preview URL so the email can be read
+  // from the server console without a real inbox.
   if (process.env.NODE_ENV !== 'production' && typeof nodemailer.getTestMessageUrl === 'function') {
     const previewUrl = nodemailer.getTestMessageUrl(info);
     if (previewUrl) {

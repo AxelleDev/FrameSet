@@ -3,16 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Button from './Button';
 
-/**
- * Renders the project pages' non-ready states:
- *   - a loading spinner while the project list is still being fetched (or the
- *     active project id has not synced to the route yet),
- *   - a "project not found" message (with a link back to the dashboard) once
- *     loading is done but no project matches the route id.
- *
- * @param {object} props
- * @param {boolean} props.loading - Whether the project is still loading.
- */
+// Loading spinner while fetching, else a "project not found" message.
 export default function ProjectStatePlaceholder({ loading }) {
   if (loading) {
     return (

@@ -1,10 +1,7 @@
 /**
- * User account routes.
- *
- * Endpoints for reading the user count, fetching/updating the authenticated
- * user's profile, changing the password, confirming a pending email change and
- * deleting the account. Mutating endpoints are individually rate limited to
- * resist abuse (password guessing, email spam, repeated deletion attempts).
+ * User account routes: user count, profile read/update, password change, pending
+ * email confirmation, account deletion. Mutating endpoints are individually rate
+ * limited (password guessing, email spam, repeated deletion attempts).
  */
 
 const express = require('express');

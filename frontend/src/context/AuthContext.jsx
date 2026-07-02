@@ -1,19 +1,6 @@
 /**
- * Authentication context provider.
- *
- * Owns the current user session and exposes auth-related actions to the app.
- * The session itself lives in HttpOnly cookies managed by the backend; this
- * provider mirrors the resulting user object and orchestrates login, logout,
- * registration, email verification, profile/password updates and account
- * deletion. It also drives a global error banner via globalError/setGlobalError.
- *
- * Exposed via useAuth():
- *   State:   user, authLoading, globalError
- *   Setters: setGlobalError
- *   Actions: login, register, logout, refreshAccessToken, applyUserUpdate,
- *            updateUserProfile, changePassword, deleteAccount, verifyEmail,
- *            resendVerificationCode, requestPasswordReset, resetPassword,
- *            verifyPendingEmail, resendPendingEmailCode
+ * Auth context: mirrors the user session (which lives in backend HttpOnly
+ * cookies) and exposes the auth actions via useAuth(). Also drives globalError.
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import api, { setSessionExpiredHandler } from '../services/api';
@@ -29,11 +16,8 @@ export const AuthProvider = ({ children }) => {
   const [authLoading, setAuthLoading] = useState(true);
   const [globalError, setGlobalError] = useState(null);
 
-  /**
-   * Requests a new access token using the refresh-token cookie.
-   * @param {{ silent?: boolean }} [opts] When silent, suppress the global error banner.
-   * @returns {Promise<boolean>} Whether a new token was issued.
-   */
+  // Requests a new access token via the refresh cookie. silent suppresses the
+  // global error banner (used during hydration). Returns whether a token issued.
   const refreshAccessToken = useCallback(async ({ silent = false } = {}) => {
     try {
       // Silent refresh (during hydration) must not flash a global error.
@@ -139,10 +123,7 @@ export const AuthProvider = ({ children }) => {
     });
   }, []);
 
-  /**
-   * Authenticates with email/password and stores the returned user.
-   * @returns {Promise<{success: boolean, data?: object, message?: string}>}
-   */
+  // Authenticates with email/password and stores the returned user.
   const login = useCallback(async (email, password) => {
     try {
       const userData = await api.post('/auth/login', { email, password }, { onGlobalError: setGlobalError });
@@ -154,11 +135,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [setAuthenticatedUser]);
 
-  /**
-   * Registers a new account. Does not log the user in; the caller redirects to
-   * email verification.
-   * @returns {Promise<{success: boolean, data?: object, message?: string}>}
-   */
+  // Registers a new account without logging in; caller redirects to verification.
   const register = useCallback(async (userData) => {
     try {
       const registrationData = await api.post('/auth/register', userData, { onGlobalError: setGlobalError });
@@ -169,10 +146,8 @@ export const AuthProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
-  /**
-   * Logs out and clears local auth state. The local user is cleared even if the
-   * server-side revocation request fails, so the UI always ends up logged out.
-   */
+  // Logs out. Clears the local user even if server-side revocation fails, so the
+  // UI always ends up logged out.
   const logout = useCallback(async () => {
     try {
       await api.post('/auth/logout', {}, { onGlobalError: setGlobalError });
@@ -184,10 +159,8 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  /**
-   * Updates the user's name/email. A changed email becomes a `pendingEmail`
-   * that must be confirmed via the verification flow before it takes effect.
-   */
+  // Updates name/email. A changed email becomes a pendingEmail that must be
+  // confirmed via the verification flow before it takes effect.
   const updateUserProfile = useCallback(async (updates) => {
     if (!user) return;
 
@@ -210,10 +183,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  /**
-   * Permanently deletes the account and logs the user out locally on success.
-   * @returns {Promise<{success: boolean, message?: string}>}
-   */
+  // Permanently deletes the account and logs the user out locally on success.
   const deleteAccount = useCallback(async () => {
     try {
       await api.delete('/users/me', null, { onGlobalError: setGlobalError });
@@ -226,12 +196,9 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  /**
-   * Changes the password after verifying the current one. On success, records
-   * the server-reported (or local) passwordUpdatedAt timestamp on the user.
-   * @returns {Promise<{success: boolean, message?: string}>}
-   *   `message` is set only for business errors (4xx), shown inline in the form.
-   */
+  // Changes the password after verifying the current one; records the
+  // passwordUpdatedAt timestamp on success. `message` is set only for 4xx
+  // (business) errors, shown inline in the form.
   const changePassword = useCallback(async ({ currentPassword, newPassword }) => {
     if (!user) {
       return { success: false, message: 'Utilisateur non connecte.' };
@@ -254,10 +221,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  /**
-   * Confirms a new account's email with the code emailed at signup.
-   * @returns {Promise<{success: boolean, message?: string}>}
-   */
+  // Confirms a new account's email with the code emailed at signup.
   const verifyEmail = useCallback(async (email, code) => {
     try {
       const data = await api.post('/auth/verify', { email, code }, { onGlobalError: setGlobalError });
@@ -279,11 +243,8 @@ export const AuthProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
-  /**
-   * Starts the forgot-password flow: asks the backend to email a reset code.
-   * The backend always responds the same way (whether or not the email exists).
-   * @returns {Promise<{success: boolean, message?: string}>}
-   */
+  // Starts the forgot-password flow (backend emails a reset code). The backend
+  // responds identically whether or not the email exists (avoids user enumeration).
   const requestPasswordReset = useCallback(async (email) => {
     try {
       const data = await api.post('/auth/forgot-password', { email }, { onGlobalError: setGlobalError });
@@ -294,11 +255,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
-  /**
-   * Completes the forgot-password flow: submits the reset code and a new
-   * password to set the new credentials.
-   * @returns {Promise<{success: boolean, message?: string}>}
-   */
+  // Completes the forgot-password flow: submits the reset code and new password.
   const resetPassword = useCallback(async (email, code, newPassword) => {
     try {
       const data = await api.post('/auth/reset-password', { email, code, newPassword }, { onGlobalError: setGlobalError });
@@ -309,11 +266,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
-  /**
-   * Confirms a pending email change (initiated from the profile page) with its
-   * code, and merges the updated user returned by the server.
-   * @returns {Promise<{success: boolean, message?: string}>}
-   */
+  // Confirms a pending email change with its code and merges the updated user.
   const verifyPendingEmail = useCallback(async (email, code) => {
     try {
       const data = await api.post('/users/email/verify', { email, code }, { onGlobalError: setGlobalError });
@@ -386,10 +339,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-/**
- * Accessor hook for the auth context. Throws if used outside an AuthProvider.
- * @returns The auth context value (state + actions).
- */
+// Accessor hook for the auth context. Throws if used outside an AuthProvider.
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

@@ -3,13 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { PASSWORD_RULES } from '../utils/passwordRules';
 
-/**
- * Renders the password requirements, each marked satisfied/unsatisfied based on
- * the current value. Hidden until the user starts typing a password.
- *
- * @param {object} props
- * @param {string} props.password - The current password value.
- */
+// Hidden until the user starts typing a password.
 export default function PasswordChecklist({ password }) {
   if (!password) return null;
 

@@ -1,14 +1,7 @@
 /**
- * Dynamically injects a Google Fonts stylesheet <link> for a given family and
- * weight so the font can be used to preview typography norms.
- *
- * The font name is URL-encoded and the weight coerced to digits, and we
- * de-duplicate by checking for an existing <link> with the same href, so calling
- * this repeatedly for the same font is a no-op. `display=swap` avoids invisible
- * text while the font loads.
- *
- * @param {string} family Google Font family name (e.g. "Roboto").
- * @param {string|number} [weight] Numeric font weight to request (default "400").
+ * Injects a Google Fonts stylesheet <link> for a family/weight to preview
+ * typography norms. De-duplicated by href, so repeat calls are a no-op;
+ * display=swap avoids invisible text while the font loads.
  */
 export function loadGoogleFont(family, weight = "400") {
   if (!family) return;
