@@ -14,17 +14,6 @@ export default defineConfig({
     setupFiles: './tests/setup.js',
     css: true,
     include: ['tests/**/*.{test,spec}.{js,jsx}'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      reportsDirectory: './coverage',
-      exclude: [
-        'node_modules/',
-        'tests/',
-        '**/*.config.*',
-        '**/dist/**',
-      ],
-    },
   },
   server: {
     proxy: {
