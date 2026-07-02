@@ -102,7 +102,7 @@ export default function Register() {
         </>
       }
     >
-      <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
+      <Card className="w-full max-w-md p-6 sm:p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
         <Seo title="Create account" path="/register" description="Create your FrameSet account and start structuring the graphic foundations of your projects." />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Create your account</h2>

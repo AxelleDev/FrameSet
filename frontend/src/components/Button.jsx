@@ -52,7 +52,7 @@ export default function Button({
   const base =
     'font-medium rounded-xl transition-all inline-flex items-center justify-center gap-2 focus-ring';
 
-  const size = fullWidth ? 'w-full py-4 text-sm' : 'px-6 py-2.5 text-sm';
+  const size = fullWidth ? 'w-full py-4 text-sm' : 'px-6 py-3 text-sm';
 
   const variants = {
     primary: 'bg-blue text-white hover:bg-blue/90',

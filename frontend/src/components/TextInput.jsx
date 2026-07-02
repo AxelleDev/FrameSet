@@ -12,8 +12,10 @@ import PropTypes from 'prop-types';
  * @param {string} [props.className] - Extra classes (e.g. `flex-1`).
  * @param {boolean} [props.disabled] - Disable the control.
  */
+// text-base (16px) is deliberate: on iOS Safari a font-size < 16px makes the
+// browser auto-zoom when the field gains focus, which is jarring on mobile.
 const BASE =
-  'w-full px-4 py-3 bg-blue/10 rounded-xl text-primary ' +
+  'w-full px-4 py-3 text-base bg-blue/10 rounded-xl text-primary ' +
   'placeholder:text-primary/40 transition-all ' +
   'focus:outline-none focus:ring-2 focus:ring-blue focus:bg-surface ' +
   'disabled:opacity-60 disabled:cursor-not-allowed';

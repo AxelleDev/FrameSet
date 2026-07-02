@@ -83,6 +83,7 @@ export default function ForgotPassword() {
 
   return (
     <AuthLayout
+      swapOnMobile
      
       hero={
         <>
@@ -101,7 +102,7 @@ export default function ForgotPassword() {
         </>
       }
     >
-      <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
+      <Card className="w-full max-w-md p-6 sm:p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
         <Seo title="Forgot password" path="/forgot-password" description="Reset your FrameSet account password." noindex />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Reset password</h2>

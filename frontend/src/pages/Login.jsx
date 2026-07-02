@@ -62,6 +62,7 @@ export default function Login() {
 
   return (
     <AuthLayout
+      swapOnMobile
      
       hero={
         <>
@@ -88,7 +89,7 @@ export default function Login() {
         </>
       }
     >
-      <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
+      <Card className="w-full max-w-md p-6 sm:p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
         <Seo title="Sign in" path="/login" description="Sign in to your FrameSet workspace to manage your projects' standards and palettes." />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Welcome back</h2>

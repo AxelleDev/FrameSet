@@ -188,7 +188,7 @@ export default function ProjectExport() {
           <div className="mt-12">
             <h2 className="text-sm font-bold text-primary uppercase tracking-wider mb-4">JSON output preview</h2>
             <div className="bg-primary/5 rounded-2xl p-6 overflow-x-auto">
-              <pre className="text-xs text-primary font-mono leading-relaxed whitespace-pre-wrap break-all">{projectJson}</pre>
+              <pre className="text-xs text-primary font-mono leading-relaxed whitespace-pre-wrap break-words">{projectJson}</pre>
             </div>
           </div>
         </>

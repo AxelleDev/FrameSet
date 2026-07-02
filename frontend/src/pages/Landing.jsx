@@ -11,7 +11,7 @@ import Seo from '../components/Seo';
 import Logo from '../components/Logo';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
-import ThemeToggle from '../components/ThemeToggle';
+import PublicTopBar from '../components/PublicTopBar';
 
 const JSON_LD = {
   '@context': 'https://schema.org',
@@ -158,7 +158,7 @@ function ExportMock() {
       <div className="bg-surface rounded-3xl ring-1 ring-primary/5 p-5">
         <h4 className="text-[10px] font-bold text-primary uppercase tracking-wider mb-3">JSON output preview</h4>
         <div className="bg-primary/5 rounded-2xl p-4">
-          <pre className="text-[11px] text-primary/70 font-mono leading-relaxed whitespace-pre-wrap">{`{
+          <pre className="text-[11px] text-primary/70 font-mono leading-relaxed whitespace-pre-wrap break-words">{`{
   "name": "Alyse Twitch Emotes",
   "palette": ["#DBE7E5", "#558AA3"],
   "brushNorms": [{ "name": "Hair outline" }]
@@ -198,20 +198,18 @@ export default function Landing() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-canvas text-primary">
+    <div className="relative min-h-dvh flex flex-col bg-canvas text-primary">
       <Seo
         path="/"
         description="FrameSet keeps every project's graphic standards and color palette in one place. Create your graphic reference in just a few minutes."
         jsonLd={JSON_LD}
       />
 
-      <div className="absolute top-4 right-4 z-20">
-        <ThemeToggle />
-      </div>
+      <PublicTopBar />
 
       <main className="relative flex-1">
         {/* ---------- HERO ---------- */}
-        <section className="relative min-h-[100dvh] flex flex-col items-center justify-center text-center px-6 py-20 animate-fade-in">
+        <section className="relative min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col items-center justify-center text-center px-6 pt-8 pb-20 animate-fade-in">
           <div className="max-w-3xl">
             <span className="inline-block text-[11px] sm:text-xs font-bold uppercase tracking-widest text-blue bg-blue/15 px-3 py-1 rounded-full">For illustrators &amp; studios</span>
             <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-light tracking-tight leading-[1.12] md:leading-[1.05]">

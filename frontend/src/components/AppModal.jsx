@@ -5,7 +5,9 @@ import Modal from './Modal';
 
 // Default overlay/panel styling shared across application modals.
 const DEFAULT_OVERLAY_CLASS = 'p-4 bg-black/40 backdrop-blur-sm animate-fade-in';
-const DEFAULT_PANEL_CLASS = 'bg-surface rounded-3xl p-8 w-full relative overflow-hidden';
+// overflow-hidden clips the decorative corner blob horizontally, while
+// overflow-y-auto + max-h let tall content scroll instead of being cropped.
+const DEFAULT_PANEL_CLASS = 'bg-surface rounded-3xl p-6 sm:p-8 w-full relative overflow-hidden overflow-y-auto max-h-[90dvh]';
 
 // Append caller-provided classes onto the defaults when present.
 const mergeClasses = (base, extra) => {

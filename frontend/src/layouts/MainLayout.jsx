@@ -1,5 +1,5 @@
 // Main application layout.
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectContext';
@@ -20,14 +20,32 @@ export default function MainLayout() {
   const loading = authLoading || projectsLoading;
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const asideRef = useRef(null);
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
 
+  // Always close the drawer when the route changes (defensive; nav items also close it).
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // While the mobile drawer is open, close it on Escape and move focus into it so
+  // keyboard/screen-reader users aren't left on the (now-obscured) trigger.
+  useEffect(() => {
+    if (!isMobileMenuOpen) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setIsMobileMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    asideRef.current?.querySelector('a, button')?.focus();
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isMobileMenuOpen]);
+
   // Compute NavLink classes based on the active route state.
   const navLinkClass = ({ isActive }) =>
-    `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-base ${
+    `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-base focus-ring ${
       isActive ? 'bg-blue/15 text-blue' : 'text-primary hover:text-blue hover:bg-blue/10'
     }`;
 
@@ -41,7 +59,7 @@ export default function MainLayout() {
   // Show a loading state until auth/projects resolve.
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-canvas" role="status" aria-live="polite">
+      <div className="flex flex-col items-center justify-center h-dvh bg-canvas" role="status" aria-live="polite">
         <div className="border-4 border-blue/20 border-t-blue rounded-full w-10 h-10 animate-spin"></div>
         <p className="mt-4 text-primary/60">Loading…</p>
       </div>
@@ -53,7 +71,7 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-canvas text-primary transition-colors duration-slow">
+    <div className="relative flex h-dvh overflow-hidden bg-canvas text-primary transition-colors duration-slow">
       <Seo title="Workspace" noindex />
       <a
         href="#content"
@@ -71,10 +89,12 @@ export default function MainLayout() {
         ></button>
       )}
 
-      <aside className={`
-        fixed inset-y-0 left-0 z-drawer flex flex-col w-72 m-4 rounded-3xl bg-surface overflow-hidden transition-transform duration-slow ease-in-out
+      <aside
+        ref={asideRef}
+        className={`
+        fixed inset-y-0 left-0 z-drawer flex flex-col w-[min(18rem,calc(100vw-3rem))] md:w-72 m-4 rounded-3xl bg-surface overflow-hidden transition-transform duration-slow ease-in-out
         md:relative md:translate-x-0
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'}
+        ${isMobileMenuOpen ? 'visible translate-x-0' : 'invisible md:visible -translate-x-[calc(100%+2rem)]'}
       `}>
         {/* No close (×) button: the menu closes on backdrop tap or nav-item tap,
             staying consistent with the site's modals (none use a × either). */}
@@ -82,7 +102,7 @@ export default function MainLayout() {
             <Logo className="w-[65%] h-auto object-contain" style={{ maxWidth: '260px' }} />
         </div>
 
-        <nav aria-label="Main navigation" className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
+        <nav aria-label="Main navigation" className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
           <div className="mb-8">
             <p className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4">Workspace</p>
             <NavLink to="/app/dashboard" className={navLinkClass} onClick={closeMobileMenu}>
@@ -143,7 +163,7 @@ export default function MainLayout() {
         </NavLink>
       </aside>
 
-      <main className="flex-1 overflow-auto focus:outline-none relative custom-scrollbar">
+      <main className="flex-1 overflow-auto focus:outline-none relative">
         <header className="h-20 flex items-center gap-3 px-4 md:px-8 sticky top-0 z-sticky bg-canvas/90 backdrop-blur-md md:bg-transparent md:backdrop-blur-0 transition-all duration-slow">
           <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Open menu" className="md:hidden -ml-1 shrink-0 text-primary hover:text-blue transition-colors p-2 rounded-lg hover:bg-blue/10">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
