@@ -51,8 +51,16 @@ const listProjects = async (req, res) => {
     return res.status(401).json({ error: 'User not authenticated.' });
   }
   try {
-    const fullProjects = await projectsService.listProjectsForUser(userId, req.id);
-    res.json(fullProjects);
+    // Optional pagination query params; invalid/missing values fall back to the
+    // service defaults (page 1, default page size).
+    const query = req.query || {};
+    const parsedPage = Number.parseInt(query.page, 10);
+    const parsedPageSize = Number.parseInt(query.pageSize, 10);
+    const result = await projectsService.listProjectsForUser(userId, req.id, {
+      page: Number.isNaN(parsedPage) ? undefined : parsedPage,
+      pageSize: Number.isNaN(parsedPageSize) ? undefined : parsedPageSize
+    });
+    res.json(result);
   } catch (error) {
     logProjectsControllerError(req, 'list', error);
     res.status(500).json({ error: 'Database error.' });

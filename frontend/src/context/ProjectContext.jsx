@@ -8,35 +8,52 @@
  * through the auth context's global error banner.
  *
  * Exposed via useProjects():
- *   State:   projects, activeProjectId, activeProject, projectsLoading
+ *   State:   projects, projectsPagination, activeProjectId, activeProject,
+ *            projectsLoading
  *   Setters: setActiveProjectId
- *   Actions: fetchProjects, addProject, deleteProject, updateProjectName,
- *            updateProjectPalette, addBrushNorm, addTypographyNorm,
- *            deleteBrushNorm, deleteTypographyNorm, updateBrushNorm,
- *            updateTypographyNorm
+ *   Actions: fetchProjects, loadMoreProjects, addProject, deleteProject,
+ *            updateProjectName, updateProjectPalette, addBrushNorm,
+ *            addTypographyNorm, deleteBrushNorm, deleteTypographyNorm,
+ *            updateBrushNorm, updateTypographyNorm
  */
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import api from '../services/api';
 import { useAuth } from './AuthContext';
 import logger from '../utils/logger';
 
 export const ProjectContext = createContext(null);
 
+// Pagination defaults; the page size mirrors the backend default so the very
+// first request and its follow-ups stay consistent.
+const DEFAULT_PAGINATION = { page: 1, pageSize: 12, total: 0, totalPages: 1 };
+
 export const ProjectProvider = ({ children }) => {
   const { user, authLoading, setGlobalError } = useAuth();
 
   const [projects, setProjects] = useState([]);
+  const [projectsPagination, setProjectsPagination] = useState(DEFAULT_PAGINATION);
+  // Mirror of the latest pagination so loadMoreProjects can read it without
+  // depending on (and re-creating itself on) every pagination change.
+  const paginationRef = useRef(DEFAULT_PAGINATION);
+  const updatePagination = useCallback((next) => {
+    paginationRef.current = next;
+    setProjectsPagination(next);
+  }, []);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [projectsLoading, setProjectsLoading] = useState(false);
 
   /**
-   * Fetches the current user's projects into state.
-   * @param {{ silent?: boolean }} [opts] When silent, suppress the global error banner.
-   * @returns {Promise<Array>} The fetched projects (empty array if none/failed).
+   * Fetches a page of the current user's projects into state. Page 1 replaces
+   * the list; later pages are appended (accumulating "load more"), de-duplicated
+   * by id so an insertion between fetches can't produce duplicate React keys.
+   * @param {{ silent?: boolean, page?: number }} [opts] silent suppresses the
+   *   global error banner; page selects which page to fetch (default 1).
+   * @returns {Promise<Array>} The fetched page of projects (empty on none/failure).
    */
-  const fetchProjects = useCallback(async ({ silent = false } = {}) => {
+  const fetchProjects = useCallback(async ({ silent = false, page = 1 } = {}) => {
     if (!user?.id) {
       setProjects([]);
+      updatePagination(DEFAULT_PAGINATION);
       setProjectsLoading(false);
       return [];
     }
@@ -45,17 +62,29 @@ export const ProjectProvider = ({ children }) => {
 
     try {
       const options = silent ? undefined : { onGlobalError: setGlobalError };
-      const data = await api.get('/projects', options);
-      const nextProjects = data || [];
-      setProjects(nextProjects);
-      return nextProjects;
+      const data = await api.get(`/projects?page=${page}`, options);
+      const fetched = data?.projects || [];
+      updatePagination(data?.pagination || { ...DEFAULT_PAGINATION, total: fetched.length });
+      setProjects((prev) => {
+        if (page <= 1) return fetched;
+        const seen = new Set(prev.map((p) => String(p.id)));
+        return [...prev, ...fetched.filter((p) => !seen.has(String(p.id)))];
+      });
+      return fetched;
     } catch (error) {
       logger.error('projects.fetch.error', error);
       return [];
     } finally {
       setProjectsLoading(false);
     }
-  }, [user?.id, setGlobalError]);
+  }, [user?.id, setGlobalError, updatePagination]);
+
+  /** Loads the next page of projects (appended), if any remain. */
+  const loadMoreProjects = useCallback(() => {
+    const { page, totalPages } = paginationRef.current;
+    if (page >= totalPages) return;
+    fetchProjects({ page: page + 1 });
+  }, [fetchProjects]);
 
   // Load projects once auth has settled. Logging out (no user) clears state.
   useEffect(() => {
@@ -84,17 +113,19 @@ export const ProjectProvider = ({ children }) => {
     try {
       const newProject = await api.post('/projects', { name }, { onGlobalError: setGlobalError });
       setProjects((prevProjects) => [newProject, ...prevProjects]);
+      updatePagination({ ...paginationRef.current, total: paginationRef.current.total + 1 });
     } catch (error) {
       setGlobalError(error?.message || 'Failed to add the project.');
       logger.error('projects.add.error', error);
     }
-  }, [user, setGlobalError]);
+  }, [user, setGlobalError, updatePagination]);
 
   /** Deletes a project and removes it locally, clearing the active id if it matched. */
   const deleteProject = useCallback(async (id) => {
     try {
       await api.delete(`/projects/${id}`, null, { onGlobalError: setGlobalError });
       setProjects((prevProjects) => prevProjects.filter((project) => String(project.id) !== String(id)));
+      updatePagination({ ...paginationRef.current, total: Math.max(0, paginationRef.current.total - 1) });
       if (String(activeProjectId) === String(id)) {
         setActiveProjectId(null);
       }
@@ -102,7 +133,7 @@ export const ProjectProvider = ({ children }) => {
       setGlobalError(error?.message || 'Failed to delete the project.');
       logger.error('projects.delete.error', error);
     }
-  }, [activeProjectId, setGlobalError]);
+  }, [activeProjectId, setGlobalError, updatePagination]);
 
   /**
    * Replaces a project's whole palette with the given ordered array of colors
@@ -294,11 +325,13 @@ export const ProjectProvider = ({ children }) => {
   // Memoized context value so consumers only re-render when state/actions change.
   const value = useMemo(() => ({
     projects,
+    projectsPagination,
     activeProjectId,
     activeProject,
     projectsLoading,
     setActiveProjectId,
     fetchProjects,
+    loadMoreProjects,
     addProject,
     deleteProject,
     updateProjectName,
@@ -311,10 +344,12 @@ export const ProjectProvider = ({ children }) => {
     updateTypographyNorm
   }), [
     projects,
+    projectsPagination,
     activeProjectId,
     activeProject,
     projectsLoading,
     fetchProjects,
+    loadMoreProjects,
     addProject,
     deleteProject,
     updateProjectName,

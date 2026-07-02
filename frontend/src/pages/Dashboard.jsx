@@ -34,7 +34,7 @@ function formatModified(value) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { projects, setActiveProjectId, addProject, deleteProject, updateProjectName } = useProjects();
+  const { projects, projectsPagination, projectsLoading, loadMoreProjects, setActiveProjectId, addProject, deleteProject, updateProjectName } = useProjects();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [isCreatingProject, setIsCreatingProject] = useState(false);
@@ -50,8 +50,13 @@ export default function Dashboard() {
     setActiveProjectId(null);
   }, [setActiveProjectId]);
 
-  // Aggregate norm count across all projects for the summary stat.
+  // Aggregate norm count across the loaded projects for the summary stat.
   const totalNorms = projects.reduce((acc, p) => acc + p.normsCount, 0);
+  // Authoritative project total from the server (all pages), guarded so it never
+  // shows fewer than what is currently on screen.
+  const paginationTotal = projectsPagination?.total ?? projects.length;
+  const totalProjects = Math.max(paginationTotal, projects.length);
+  const hasMoreProjects = projects.length < paginationTotal;
 
   // Create a project from the modal, ignoring blank names, then reset the form.
   const handleCreateProject = async () => {
@@ -107,7 +112,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">Hi, {user.name.split(' ')[0]}.</h1>
             <p className="text-primary max-w-lg leading-relaxed font-medium">
-              You currently have <strong className="text-blue">{projects.length} project{projects.length === 1 ? '' : 's'}</strong>.
+              You currently have <strong className="text-blue">{totalProjects} project{totalProjects === 1 ? '' : 's'}</strong>.
             </p>
             <div className="mt-8 flex space-x-4">
                <Button onClick={() => setIsCreatingProject(true)} variant="primary" className="px-6 py-3">
@@ -122,21 +127,21 @@ export default function Dashboard() {
                    <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{totalNorms === 1 ? 'Standard' : 'Standards'}</div>
              </div>
              <div className="p-4 rounded-2xl w-32 text-center stat-bg">
-               <div className="text-2xl font-bold text-primary">{projects.length}</div>
-               <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{projects.length === 1 ? 'Project' : 'Projects'}</div>
+               <div className="text-2xl font-bold text-primary">{totalProjects}</div>
+               <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{totalProjects === 1 ? 'Project' : 'Projects'}</div>
              </div>
           </div>
         </div>
       </Card>
 
-      {projects.length === 0 ? (
+      {totalProjects === 0 ? (
         <div className="text-center mb-6">
           <h2 className="text-lg font-medium text-primary mb-1">Create your first project</h2>
           <p className="text-sm text-primary/60 max-w-md mx-auto">Each project keeps its graphic standards and color palette in one place.</p>
         </div>
       ) : (
         <div className="flex items-end justify-between mb-6">
-          <h2 className="text-xl font-medium text-primary">{projects.length === 1 ? 'Active project' : 'Active projects'}</h2>
+          <h2 className="text-xl font-medium text-primary">{totalProjects === 1 ? 'Active project' : 'Active projects'}</h2>
         </div>
       )}
 
@@ -190,6 +195,14 @@ export default function Dashboard() {
           className="p-6 min-h-[200px]"
         />
       </div>
+
+      {hasMoreProjects && (
+        <div className="mt-8 flex justify-center">
+          <Button variant="ghost" onClick={loadMoreProjects} loading={projectsLoading}>
+            Load more projects
+          </Button>
+        </div>
+      )}
 
       <FormModal
         isOpen={isCreatingProject}

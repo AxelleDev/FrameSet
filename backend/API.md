@@ -77,7 +77,7 @@ or mutate their own projects).
 
 | Method | Path | Body | Success |
 |---|---|---|---|
-| `GET` | `/projects` | – | array of `{ id, name, lastEdited, brushNorms[], typographyNorms[], normsCount, palette[] }` |
+| `GET` | `/projects?page=&pageSize=` | – | `{ projects: [{ id, name, lastEdited, brushNorms[], typographyNorms[], normsCount, palette[] }], pagination: { page, pageSize, total, totalPages } }` (paginated, newest first; `pageSize` defaults to 12, capped at 50) |
 | `POST` | `/projects` | `{ name }` (2–50 chars) | the created project |
 | `PATCH` | `/projects/:id` | `{ name }` | `{ success, name }` |
 | `DELETE` | `/projects/:id` | – | `{ success }` |
