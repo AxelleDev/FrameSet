@@ -17,7 +17,7 @@ export default function AuthLayout({ hero, children, swapOnMobile = false }) {
   const formOrderClass = swapOnMobile ? 'order-1 md:order-2' : 'order-2';
 
   return (
-    <div className="relative min-h-dvh w-full overflow-hidden flex flex-col bg-canvas text-primary">
+    <div className="relative min-h-dvh w-full flex flex-col bg-canvas text-primary">
       <PublicTopBar />
       <main className="relative z-10 flex-1 w-full flex items-center justify-center px-4 sm:px-8 pb-8">
         <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
