@@ -18,6 +18,7 @@ import FormField from '../components/FormField';
 import TextInput from '../components/TextInput';
 import Alert from '../components/Alert';
 import PasswordInput from '../components/PasswordInput';
+import { isValidEmail } from '../utils/passwordRules';
 
 export default function Profile() {
   const { user, updateUserProfile, logout, changePassword, deleteAccount } = useAuth();
@@ -25,6 +26,8 @@ export default function Profile() {
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editError, setEditError] = useState('');
   const [editForm, setEditForm] = useState({
     name: '',
     email: ''
@@ -53,24 +56,61 @@ export default function Profile() {
     }
   }, [user]);
 
-  // Single button toggles between view and edit: when leaving edit mode it
-  // persists the form; when entering it, it seeds the form from the user.
-  const toggleEdit = () => {
-    if (isEditing) {
-      return updateUserProfile(editForm).then((result) => {
-        setIsEditing(false);
-        if (result?.success === false) {
-          if (result.message) showToast(result.message, 'danger');
-        } else {
-          showToast('Profile updated.');
-        }
-      });
-    } else {
-      setEditForm({
-        name: user.name,
-        email: user.email
-      });
-      setIsEditing(true);
+  // Trimmed field values and whether anything actually changed vs. the saved
+  // user — used to disable "Save" and to avoid a pointless "updated" toast.
+  const trimmedName = editForm.name.trim();
+  const trimmedEmail = editForm.email.trim();
+  const hasChanges = trimmedName !== (user?.name ?? '') || trimmedEmail !== (user?.email ?? '');
+
+  // Enter edit mode, seeding the form from the current user.
+  const startEdit = () => {
+    setEditForm({ name: user.name, email: user.email });
+    setEditError('');
+    setIsEditing(true);
+  };
+
+  // Leave edit mode without saving, discarding any changes.
+  const cancelEdit = () => {
+    setEditForm({ name: user.name, email: user.email });
+    setEditError('');
+    setIsEditing(false);
+  };
+
+  // Validate then persist the profile. Nothing changed → just close (no toast).
+  // On a changed email, the backend stages it as a pending email to confirm.
+  const saveProfile = async () => {
+    setEditError('');
+
+    if (!trimmedName) {
+      setEditError('Your name cannot be empty.');
+      return;
+    }
+    if (!isValidEmail(trimmedEmail)) {
+      setEditError('Please enter a valid email address.');
+      return;
+    }
+    if (!hasChanges) {
+      setIsEditing(false);
+      return;
+    }
+
+    const emailChanged = trimmedEmail !== (user.email ?? '');
+    setIsSaving(true);
+    try {
+      const result = await updateUserProfile({ name: trimmedName, email: trimmedEmail });
+      // Keep the user in edit mode on a business error so they can fix it inline.
+      if (result?.success === false) {
+        setEditError(result.message || 'Something went wrong updating your profile.');
+        return;
+      }
+      setIsEditing(false);
+      showToast(
+        emailChanged
+          ? 'Profile saved. Check your inbox to confirm your new email.'
+          : 'Profile updated.'
+      );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -173,32 +213,36 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">
       
-      <Card className="p-8 mb-8 flex flex-col md:flex-row items-center gap-8">
-        <Avatar initials={user.avatarInitials} className="w-28 h-28 text-4xl " />
+      <Card className="p-8 mb-8 flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+        <Avatar initials={user.avatarInitials} className="w-28 h-28 text-4xl" />
 
-        <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1">
+        <div className="flex flex-col items-center sm:items-start text-center sm:text-left flex-1 min-w-0">
           <h1 className="text-3xl font-light tracking-tight text-primary">{user.name}</h1>
-          <p className="text-sm text-primary/60 mt-1 mb-5">{user.email}</p>
-
-          <div className="flex flex-wrap justify-center md:justify-start gap-3">
-            <Button onClick={toggleEdit} variant="primary" className="min-w-[150px]">
-              {isEditing ? 'Save' : 'Edit profile'}
-            </Button>
-
-            <Button onClick={handleLogout} variant="ghost" className="min-w-[150px]">
-              Sign out
-            </Button>
-          </div>
+          <p className="text-sm text-primary/60 mt-1 break-all">{user.email}</p>
         </div>
+
+        <Button onClick={handleLogout} variant="ghost" className="text-sm font-medium whitespace-nowrap">
+          <svg className="inline-block w-4 h-4 mr-2 align-middle" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true" focusable="false">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Sign out
+        </Button>
       </Card>
 
       <div className="space-y-8">
         <Card className="p-8">
-          <h2 className="text-lg font-medium text-primary mb-6 flex items-center">
-            <svg className="w-5 h-5 mr-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-            Personal information
-          </h2>
-          
+          <div className="flex items-center justify-between gap-4 mb-6 min-h-10">
+            <h2 className="text-lg font-medium text-primary flex items-center">
+              <svg className="w-5 h-5 mr-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              Personal information
+            </h2>
+            {!isEditing && (
+              <Button onClick={startEdit} variant="ghost" className="text-sm font-medium whitespace-nowrap">
+                Edit profile
+              </Button>
+            )}
+          </div>
+
           <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label="Full name">
@@ -207,6 +251,7 @@ export default function Profile() {
                     value={editForm.name}
                     onChange={e => setEditForm({ ...editForm, name: e.target.value })}
                     disabled={!isEditing}
+                    autoComplete="name"
                   />
                 </FormField>
                 <FormField label="Email address">
@@ -215,6 +260,7 @@ export default function Profile() {
                     value={editForm.email}
                     onChange={e => setEditForm({ ...editForm, email: e.target.value })}
                     disabled={!isEditing}
+                    autoComplete="email"
                   />
                   {user.pendingEmail && user.pendingEmail !== user.email && (
                     <p className="text-xs text-primary/60 mt-2">
@@ -227,6 +273,23 @@ export default function Profile() {
                   )}
                 </FormField>
               </div>
+
+              {isEditing && (
+                <div className="space-y-4 animate-fade-in">
+                  {editError && <Alert variant="danger">{editError}</Alert>}
+                  <p className="text-xs text-primary/60">
+                    Changing your email sends a confirmation code to the new address; it takes effect once verified.
+                  </p>
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <Button type="button" onClick={cancelEdit} variant="ghost" className="text-sm" disabled={isSaving}>
+                      Cancel
+                    </Button>
+                    <Button type="button" onClick={saveProfile} variant="primary" className="text-sm" disabled={isSaving || !hasChanges} loading={isSaving}>
+                      Save changes
+                    </Button>
+                  </div>
+                </div>
+              )}
           </div>
         </Card>
 

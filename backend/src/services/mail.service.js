@@ -6,6 +6,7 @@
  * registration, email-change and code-resend flows.
  */
 
+const path = require('path');
 const nodemailer = require('nodemailer');
 const {
   hasSmtpConfig,
@@ -16,6 +17,11 @@ const {
   MAIL_PASS
 } = require('../config/mail.config');
 const { logger } = require('../utils/logger');
+
+// The brand logo is embedded inline via a CID attachment (see sendMail), which
+// renders reliably across email clients without needing a public image host.
+const LOGO_CID = 'frameset-logo';
+const LOGO_PATH = path.join(__dirname, '..', 'assets', 'frameset-logo.png');
 
 // When SMTP is configured, build the transport eagerly from the env settings.
 // Otherwise (development with no email setup) it is created lazily from an
@@ -80,26 +86,51 @@ const getTransporter = async () => {
  * @returns {string} HTML markup.
  */
 const buildTemplate = ({ title, message, code, footer }) => {
+  const fontStack = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
   return `
-  <div style="font-family: 'Segoe UI', Arial, sans-serif; background:#f6f7fb; padding:24px;">
-    <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:16px;border:1px solid #AFAFAF;overflow:hidden;">
-      <div style="padding:24px 28px;background:linear-gradient(135deg,#8994DF,#FF9292);color:#ffffff;">
-        <h1 style="margin:0;font-size:20px;font-weight:600;">${title}</h1>
-        <p style="margin:6px 0 0;font-size:13px;opacity:.85;">FrameSet</p>
-      </div>
-      <div style="padding:28px; color:#3C3D48;">
-        <p style="margin:0 0 16px;font-size:14px;line-height:1.6;">${message}</p>
-        ${code ? `
-        <div style="display:inline-block;background:#eef0ff;border:1px solid #8994DF;color:#3C3D48;padding:10px 16px;border-radius:12px;font-size:20px;font-weight:700;letter-spacing:2px;">
-          ${code}
-        </div>` : ''}
-        <p style="margin:16px 0 0;font-size:12px;color:#AFAFAF;">${footer || 'This code expires in 10 minutes.'}</p>
-      </div>
-      <div style="padding:18px 28px;border-top:1px solid #AFAFAF;font-size:12px;color:#AFAFAF;">
-        If you didn't request this, you can ignore this email.
-      </div>
-    </div>
-  </div>
+  <!-- FrameSet transactional email -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F3FF;margin:0;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #E7E9F6;border-radius:20px;overflow:hidden;">
+          <!-- Header / logo -->
+          <tr>
+            <td style="padding:28px 32px 4px;font-family:${fontStack};">
+              <img src="cid:${LOGO_CID}" alt="FrameSet" width="100" height="51" style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:20px 32px 8px;font-family:${fontStack};">
+              <h1 style="margin:0 0 12px;font-size:22px;font-weight:600;line-height:1.3;color:#3C3D48;">${title}</h1>
+              <p style="margin:0;font-size:15px;line-height:1.65;color:#6B6B6B;">${message}</p>
+            </td>
+          </tr>
+          ${code ? `
+          <tr>
+            <td style="padding:20px 32px 4px;font-family:${fontStack};">
+              <div style="background:#F2F3FF;border:1px solid #D9DEFA;border-radius:14px;padding:20px;text-align:center;font-size:30px;font-weight:700;letter-spacing:8px;color:#3C3D48;">
+                ${code}
+              </div>
+            </td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding:16px 32px 28px;font-family:${fontStack};">
+              <p style="margin:0;font-size:13px;line-height:1.6;color:#9AA0AC;">${footer || 'This code expires in 10 minutes.'}</p>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:18px 32px;border-top:1px solid #EFF0F8;font-family:${fontStack};">
+              <p style="margin:0;font-size:12px;line-height:1.6;color:#9AA0AC;">
+                You received this email from FrameSet. If you didn't request it, you can safely ignore it.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
   `;
 };
 
@@ -119,7 +150,9 @@ const sendMail = async ({ to, subject, text, html }) => {
     to,
     subject,
     text,
-    html
+    html,
+    // Embed the brand logo inline (referenced as cid:frameset-logo in the HTML).
+    attachments: [{ filename: 'frameset-logo.png', path: LOGO_PATH, cid: LOGO_CID }]
   });
 
   // In non-production, surface the Ethereal preview URL so the email (and the

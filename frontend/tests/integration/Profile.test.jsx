@@ -62,6 +62,42 @@ describe('Profile', () => {
     expect(screen.getByDisplayValue('Jane Doe')).toBeEnabled();
   });
 
+  it('keeps "Save changes" disabled until a field actually changes, then saves', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /edit profile/i }));
+
+    const save = screen.getByRole('button', { name: /save changes/i });
+    expect(save).toBeDisabled(); // nothing changed yet — no false "updated"
+
+    const nameField = screen.getByDisplayValue('Jane Doe');
+    await user.clear(nameField);
+    await user.type(nameField, 'Jane Smith');
+    expect(save).toBeEnabled();
+
+    await user.click(save);
+    expect(authState.updateUserProfile).toHaveBeenCalledWith({
+      name: 'Jane Smith',
+      email: 'axelle@example.com',
+    });
+  });
+
+  it('cancels edits, restores the original value and saves nothing', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /edit profile/i }));
+    const nameField = screen.getByDisplayValue('Jane Doe');
+    await user.clear(nameField);
+    await user.type(nameField, 'Changed Name');
+
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+    expect(screen.getByDisplayValue('Jane Doe')).toBeDisabled();
+    expect(authState.updateUserProfile).not.toHaveBeenCalled();
+  });
+
   it('opens the sign-out confirmation', async () => {
     const user = userEvent.setup();
     renderPage();
