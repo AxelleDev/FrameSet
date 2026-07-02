@@ -213,15 +213,15 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">
       
-      <Card className="p-8 mb-8 flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
-        <Avatar initials={user.avatarInitials} className="w-28 h-28 text-4xl" />
+      <Card className="p-6 sm:p-8 mb-8 flex flex-col sm:flex-row items-center gap-5 sm:gap-8">
+        <Avatar initials={user.avatarInitials} className="w-24 h-24 text-3xl sm:w-28 sm:h-28 sm:text-4xl shrink-0" />
 
-        <div className="flex flex-col items-center sm:items-start text-center sm:text-left flex-1 min-w-0">
-          <h1 className="text-3xl font-light tracking-tight text-primary">{user.name}</h1>
-          <p className="text-sm text-primary/60 mt-1 break-all">{user.email}</p>
+        <div className="flex flex-col items-center sm:items-start text-center sm:text-left flex-1 min-w-0 w-full">
+          <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-primary break-words max-w-full">{user.name}</h1>
+          <p className="text-sm text-primary/60 mt-1 break-all max-w-full">{user.email}</p>
         </div>
 
-        <Button onClick={handleLogout} variant="ghost" className="text-sm font-medium whitespace-nowrap">
+        <Button onClick={handleLogout} variant="ghost" className="text-sm font-medium whitespace-nowrap shrink-0">
           <svg className="inline-block w-4 h-4 mr-2 align-middle" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true" focusable="false">
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
@@ -230,15 +230,15 @@ export default function Profile() {
       </Card>
 
       <div className="space-y-8">
-        <Card className="p-8">
-          <div className="flex items-center justify-between gap-4 mb-6 min-h-10">
-            <h2 className="text-lg font-medium text-primary flex items-center">
-              <svg className="w-5 h-5 mr-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-              Personal information
+        <Card className="p-6 sm:p-8">
+          <div className="flex items-center justify-between gap-3 mb-6 min-h-10">
+            <h2 className="text-lg font-medium text-primary flex items-center min-w-0">
+              <svg className="w-5 h-5 mr-2 text-blue shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              <span className="truncate">Personal information</span>
             </h2>
             {!isEditing && (
-              <Button onClick={startEdit} variant="ghost" className="text-sm font-medium whitespace-nowrap">
-                Edit profile
+              <Button onClick={startEdit} variant="ghost" className="text-sm font-medium whitespace-nowrap shrink-0">
+                Edit
               </Button>
             )}
           </div>
@@ -293,25 +293,25 @@ export default function Profile() {
           </div>
         </Card>
 
-        <Card className="p-8">
+        <Card className="p-6 sm:p-8">
           <h2 className="text-lg font-medium text-primary mb-6 flex items-center">
-            <svg className="w-5 h-5 mr-2 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-            Security & sign-in
+            <svg className="w-5 h-5 mr-2 text-blue shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            Security &amp; sign-in
           </h2>
-          <div className="flex items-center justify-between">
-              <div>
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-primary">Password</p>
                 <p className="text-xs text-primary/60">Last changed: {formatRelativeTime(user.passwordUpdatedAt)}</p>
               </div>
-              <Button onClick={openPasswordModal} variant="ghost" className="text-sm font-medium">Change password</Button>
+              <Button onClick={openPasswordModal} variant="ghost" className="text-sm font-medium whitespace-nowrap shrink-0">Change password</Button>
           </div>
         </Card>
 
-          <Card className="p-8">
+          <Card className="p-6 sm:p-8">
             <h2 className="text-lg font-medium text-primary mb-2">Danger zone</h2>
             <p className="text-sm text-primary mb-6">Deleting your account is irreversible. All your data will be lost.</p>
 
-            <Button onClick={() => setIsDeleteAccountOpen(true)} variant="danger" className="text-sm">
+            <Button onClick={() => setIsDeleteAccountOpen(true)} variant="danger" className="text-sm w-full sm:w-auto">
               Delete my account
             </Button>
         </Card>

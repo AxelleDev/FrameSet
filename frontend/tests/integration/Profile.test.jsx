@@ -56,7 +56,7 @@ describe('Profile', () => {
     // At rest: the name field is disabled (not editable).
     expect(screen.getByDisplayValue('Jane Doe')).toBeDisabled();
 
-    await user.click(screen.getByRole('button', { name: /edit profile/i }));
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
 
     expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
     expect(screen.getByDisplayValue('Jane Doe')).toBeEnabled();
@@ -66,7 +66,7 @@ describe('Profile', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /edit profile/i }));
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
 
     const save = screen.getByRole('button', { name: /save changes/i });
     expect(save).toBeDisabled(); // nothing changed yet — no false "updated"
@@ -87,7 +87,7 @@ describe('Profile', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /edit profile/i }));
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
     const nameField = screen.getByDisplayValue('Jane Doe');
     await user.clear(nameField);
     await user.type(nameField, 'Changed Name');
