@@ -35,11 +35,11 @@ export default function ModalActions({
   className = ''
 }) {
   return (
-    <div className={`flex gap-3 mt-8 justify-end ${className}`.trim()}>
-      <Button type={secondaryType} onClick={onSecondary} variant={secondaryVariant} className={secondaryClassName}>
+    <div className={`flex flex-col-reverse gap-3 mt-8 sm:flex-row sm:justify-end ${className}`.trim()}>
+      <Button type={secondaryType} onClick={onSecondary} variant={secondaryVariant} className={`w-full sm:w-auto ${secondaryClassName}`.trim()}>
         {secondaryLabel}
       </Button>
-      <Button type={primaryType} onClick={onPrimary} disabled={primaryDisabled} variant={primaryVariant} className={primaryClassName}>
+      <Button type={primaryType} onClick={onPrimary} disabled={primaryDisabled} variant={primaryVariant} className={`w-full sm:w-auto ${primaryClassName}`.trim()}>
         {primaryLabel}
       </Button>
     </div>

@@ -221,7 +221,7 @@ export default function ProjectNorms() {
         subtitle="This project's graphic rules, all in one place."
         subtitleClassName="max-w-xl"
         actions={
-          <div className="w-48">
+          <div className="w-44 sm:w-48">
             <CustomSelect
               value={filterType}
               onChange={val => setFilterType(val)}
@@ -332,9 +332,9 @@ export default function ProjectNorms() {
                 <div className="mb-4">
                   <Badge color="blue" className="mb-2">Typography</Badge>
                   <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.fontUsage || norm.fontFamily}</h3>
-                  <div className="flex items-baseline mb-2">
-                    <span className="text-2xl font-light text-primary mr-1">{norm.fontFamily}</span>
-                    <span className="text-base text-blue font-medium">{norm.fontWeight}</span>
+                  <div className="flex items-baseline mb-2 min-w-0">
+                    <span className="text-2xl font-light text-primary mr-1 truncate min-w-0" title={norm.fontFamily}>{norm.fontFamily}</span>
+                    <span className="text-base text-blue font-medium shrink-0">{norm.fontWeight}</span>
                   </div>
                   {norm.fontStyle && (
                     <div className="mb-2">

@@ -108,7 +108,7 @@ export default function Dashboard() {
   return (
     <>
       <Card className="overflow-hidden mb-12 animate-fade-in">
-        <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-start justify-between">
+        <div className="relative z-10 p-6 sm:p-10 md:p-14 flex flex-col md:flex-row items-start justify-between gap-6 md:gap-8">
           <div>
             <h1 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">Hi, {user.name.split(' ')[0]}.</h1>
             <p className="text-primary max-w-lg leading-relaxed font-medium">
@@ -121,12 +121,12 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="hidden md:flex space-x-6 mt-6 md:mt-0">
-             <div className="p-4 rounded-2xl w-32 text-center stat-bg">
+          <div className="flex flex-wrap gap-4 shrink-0 md:mt-0">
+             <div className="p-4 rounded-2xl flex-1 sm:flex-none sm:w-32 text-center stat-bg">
                 <div className="text-2xl font-bold text-primary">{totalNorms}</div>
                    <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{totalNorms === 1 ? 'Standard' : 'Standards'}</div>
              </div>
-             <div className="p-4 rounded-2xl w-32 text-center stat-bg">
+             <div className="p-4 rounded-2xl flex-1 sm:flex-none sm:w-32 text-center stat-bg">
                <div className="text-2xl font-bold text-primary">{totalProjects}</div>
                <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{totalProjects === 1 ? 'Project' : 'Projects'}</div>
              </div>

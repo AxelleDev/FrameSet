@@ -26,7 +26,7 @@ export default function Modal({
   subtitle,
   children,
   overlayClassName = 'bg-black/40 backdrop-blur-sm',
-  panelClassName = 'bg-surface w-full max-w-lg rounded-3xl p-8',
+  panelClassName = 'bg-surface w-full max-w-lg rounded-3xl p-5 sm:p-8 max-h-[90dvh] overflow-y-auto',
   showClose = true,
   closeOnBackdrop = true,
   ariaLabelledby
@@ -94,7 +94,7 @@ export default function Modal({
     // close via Escape or the header close button, so no key handler is needed here.
     // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
     <div
-      className={`fixed inset-0 z-modal flex items-center justify-center px-4 ${overlayClassName}`}
+      className={`fixed inset-0 z-modal flex items-center justify-center px-4 py-4 overflow-y-auto ${overlayClassName}`}
       onClick={handleBackdropClick}
     >
       {/* The dialog panel owns the focus trap + Escape handling (keyboard support). */}
@@ -115,7 +115,7 @@ export default function Modal({
               {subtitle && <p className="text-sm text-primary/60">{subtitle}</p>}
             </div>
             {showClose && (
-              <button onClick={onClose} className="p-2 -m-2 rounded-lg text-blue hover:text-primary transition focus-ring" aria-label="Close">
+              <button onClick={onClose} className="-m-2 flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-blue hover:text-primary transition focus-ring" aria-label="Close">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
                   <path d="M6 18L18 6M6 6l12 12" />
                 </svg>

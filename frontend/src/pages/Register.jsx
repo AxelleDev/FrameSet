@@ -77,7 +77,7 @@ export default function Register() {
       hero={
         <>
           <div className="flex items-center mb-2">
-            <Link to="/" aria-label="Go to homepage" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring" style={{ width: '20%', maxWidth: '80px' }}>
+            <Link to="/" aria-label="Go to homepage" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring w-24 sm:w-20">
               <Logo className="object-contain w-full h-auto" />
             </Link>
           </div>
@@ -102,7 +102,7 @@ export default function Register() {
         </>
       }
     >
-      <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
+      <Card className="w-full max-w-md p-6 sm:p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
         <Seo title="Create account" path="/register" description="Create your FrameSet account and start structuring the graphic foundations of your projects." />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Create your account</h2>

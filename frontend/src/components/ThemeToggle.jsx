@@ -18,7 +18,7 @@ export default function ThemeToggle({ className = '' }) {
       onClick={toggleTheme}
       aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
       title={isDark ? 'Light theme' : 'Dark theme'}
-      className={`inline-flex items-center justify-center w-10 h-10 rounded-xl text-primary hover:bg-blue/10 transition-colors focus-ring ${className}`.trim()}
+      className={`inline-flex items-center justify-center w-11 h-11 rounded-xl text-primary hover:bg-blue/10 transition-colors focus-ring ${className}`.trim()}
     >
       {isDark ? (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">

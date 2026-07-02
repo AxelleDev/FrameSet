@@ -15,7 +15,7 @@ import PropTypes from 'prop-types';
 export default function Card({ clickable = false, className = '', children, style = {}, ...rest }) {
   // Lift on hover as the affordance; the surface color stays unchanged (no
   // brightness filter) so cards never read as "greyed out" on hover.
-  const clickableClasses = clickable ? 'cursor-pointer transform hover:-translate-y-1 duration-slow' : '';
+  const clickableClasses = clickable ? 'cursor-pointer transform hover:-translate-y-1 active:translate-y-0 active:scale-[0.99] duration-slow' : '';
 
   // When the whole card acts as a button (an onClick handler is passed), make it
   // keyboard-operable: expose it as role="button", make it focusable, show the

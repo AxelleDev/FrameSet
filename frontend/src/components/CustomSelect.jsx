@@ -77,13 +77,14 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
           border: 'none',
           borderRadius: '0.75rem',
           minHeight: '3rem',
+          fontSize: '1rem', // ≥16px so iOS Safari doesn't zoom the viewport on focus
           boxShadow: state.isFocused ? '0 0 0 2px rgb(var(--color-blue) / 0.5)' : 'none',
           transition: 'all 0.15s ease',
         }),
         valueContainer: provided => ({ ...provided, padding: '0.15rem 0.75rem' }),
         placeholder: provided => ({ ...provided, color: 'rgb(var(--color-secondary))' }),
         singleValue: provided => ({ ...provided, color: 'rgb(var(--color-primary))', fontWeight: 500 }),
-        input: provided => ({ ...provided, color: 'rgb(var(--color-primary))' }),
+        input: provided => ({ ...provided, color: 'rgb(var(--color-primary))', fontSize: '1rem' }),
         indicatorSeparator: () => ({ display: 'none' }),
         dropdownIndicator: (provided, state) => ({
           ...provided,
@@ -116,7 +117,8 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
         option: (provided, state) => ({
           ...provided,
           borderRadius: '0.6rem',
-          padding: '0.6rem 0.75rem',
+          padding: '0.75rem', // ~44px row height for comfortable touch targets
+          fontSize: '1rem',
           backgroundColor: state.isSelected
             ? 'rgb(var(--color-blue))'
             : state.isFocused

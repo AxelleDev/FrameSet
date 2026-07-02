@@ -65,11 +65,12 @@ export default function Verify() {
 
   return (
     <AuthLayout
+      swapOnMobile
      
       hero={
         <>
           <div className="flex items-center mb-2">
-            <Link to="/" aria-label="Go to homepage" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring" style={{ width: '20%', maxWidth: '80px' }}>
+            <Link to="/" aria-label="Go to homepage" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring w-24 sm:w-20">
               <Logo className="object-contain w-full h-auto" />
             </Link>
           </div>
@@ -83,12 +84,12 @@ export default function Verify() {
         </>
       }
     >
-      <Card className="w-full max-w-md p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
+      <Card className="w-full max-w-md p-6 sm:p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
         <Seo title="Email verification" path="/verify" noindex />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Email verification</h2>
           <p className="text-primary text-sm mt-2">
-            Enter the code sent to <strong>{email}</strong>.
+            Enter the code sent to <strong className="break-all">{email}</strong>.
           </p>
         </div>
 
