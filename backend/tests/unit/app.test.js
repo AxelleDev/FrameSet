@@ -85,6 +85,25 @@ describe('application middleware', () => {
     });
   });
 
+  describe('Content-Type enforcement', () => {
+    it('rejects a non-JSON body with 415', async () => {
+      const res = await request(app)
+        .post('/api/auth/login')
+        .set('Content-Type', 'text/plain')
+        .send('email=test@test.com&password=Password1');
+
+      expect(res.status).toBe(415);
+      expect(res.body.error).toBe('Unsupported Media Type.');
+    });
+
+    it('allows a DELETE with no body (no Content-Type required)', async () => {
+      const res = await request(app).delete('/api/projects/1');
+
+      // Not a 415 — it proceeds into the router (then 401/403 without a session).
+      expect(res.status).not.toBe(415);
+    });
+  });
+
   describe('JSON size limit', () => {
     it('returns 413 for a JSON payload exceeding 10 KB', async () => {
       const largePayload = JSON.stringify({ data: 'x'.repeat(200 * 1024) });

@@ -3,10 +3,12 @@
  *
  * Wires together the global middleware stack and mounts the API routers. The
  * ordering is security-significant: Helmet (incl. a strict Content-Security
- * Policy) and CORS run first, the JSON body is size-limited to blunt payload
- * abuse, every request is assigned a correlation id and access-logged, and the
- * CSRF cookie/verification middleware guards all /api routes before the feature
- * routers. A 404 handler and a centralized error handler terminate the chain.
+ * Policy + HSTS) and CORS run first, the JSON body is size-limited to blunt
+ * payload abuse, every request is assigned a correlation id and access-logged,
+ * non-JSON content types are rejected, and the CSRF cookie/verification
+ * middleware guards all /api routes before the feature routers. A 404 handler
+ * and a centralized error handler terminate the chain. Swagger UI (/api-docs)
+ * is served before the strict CSP so its bundled assets load.
  * Exports the configured app (the HTTP server is started in server.js).
  */
 
@@ -22,6 +24,7 @@ const projectsRoutes = require('./routes/projects.routes');
 const db = require('./database');
 const openapiSpec = require('./docs/openapi');
 const { ensureCsrfCookie, csrfProtection } = require('./middleware/csrfProtection');
+const { healthCheckLimiter } = require('./middleware/projectCreateLimiter');
 const { logger } = require('./utils/logger');
 
 const app = express();
@@ -68,6 +71,13 @@ app.use(helmet({
 			formAction: ["'self'"],
 			upgradeInsecureRequests: isDevelopment ? null : []
 		}
+	},
+	// Force HTTPS for a year (with preload) in production; disabled in development
+	// so localhost isn't pinned to https during local work.
+	strictTransportSecurity: isDevelopment ? false : {
+		maxAge: 31536000,
+		includeSubDomains: true,
+		preload: true
 	}
 }));
 // Restrict cross-origin requests to the known frontend origin and allow
@@ -123,9 +133,43 @@ app.use((req, res, next) => {
 	next();
 });
 
+// Reject requests with an unexpected Content-Type to reduce the attack surface
+// from body-parser misinterpretation (e.g. JSON smuggled as text/plain or
+// application/x-www-form-urlencoded). GET/HEAD/OPTIONS are exempt; DELETE and
+// PATCH without a body are also allowed since they legitimately carry no payload
+// and browsers do not set a Content-Type in that case.
+app.use((req, res, next) => {
+	if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+		return next();
+	}
+
+	if ((req.method === 'DELETE' || req.method === 'PATCH') && !req.headers['content-length']) {
+		return next();
+	}
+
+	const contentType = req.headers['content-type'] || '';
+
+	if (!contentType.includes('application/json')) {
+		logger.warn('content_type.rejected', {
+			requestId: req.id,
+			method: req.method,
+			path: req.path,
+			contentType: contentType || 'missing'
+		});
+
+		return res.status(415).json({
+			error: 'Unsupported Media Type.',
+			message: 'Content-Type must be application/json.'
+		});
+	}
+
+	next();
+});
+
 // Liveness/readiness probe: reports process uptime and verifies DB reachability,
-// returning 503 when the database cannot be pinged.
-app.get('/health', async (req, res) => {
+// returning 503 when the database cannot be pinged. Rate limited since it is
+// public and each call pings the database.
+app.get('/health', healthCheckLimiter, async (req, res) => {
 	const uptime = Number(process.uptime().toFixed(2));
 
 	try {
