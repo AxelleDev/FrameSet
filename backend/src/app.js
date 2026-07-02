@@ -13,18 +13,38 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const swaggerUi = require('swagger-ui-express');
 const { randomUUID } = require('crypto');
 
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const projectsRoutes = require('./routes/projects.routes');
 const db = require('./database');
+const openapiSpec = require('./docs/openapi');
 const { ensureCsrfCookie, csrfProtection } = require('./middleware/csrfProtection');
 const { logger } = require('./utils/logger');
 
 const app = express();
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 const isDevelopment = process.env.NODE_ENV !== 'production';
+// API docs are served unless explicitly disabled (ENABLE_API_DOCS=false), so a
+// deployment can hide its API surface with a single env var and no code change.
+const apiDocsEnabled = process.env.ENABLE_API_DOCS !== 'false';
+
+// Interactive API documentation (Swagger UI) + the raw OpenAPI spec. Mounted
+// before the global strict CSP with its own relaxed policy so the bundled UI's
+// inline script/styles run; every other route keeps the hardened CSP below. The
+// path is /api-docs (not under /api), so it never reaches the CSRF middleware.
+if (apiDocsEnabled) {
+	app.get('/api-docs.json', (req, res) => res.json(openapiSpec));
+	app.use(
+		'/api-docs',
+		helmet({ contentSecurityPolicy: false }),
+		swaggerUi.serve,
+		swaggerUi.setup(openapiSpec, { customSiteTitle: 'FrameSet API — Docs' })
+	);
+	logger.info('api_docs.enabled', { path: '/api-docs' });
+}
 
 // Helmet sets hardening response headers. The CSP locks content to same-origin
 // by default, forbids plugins/object embedding and framing (clickjacking), and

@@ -5,6 +5,10 @@ Base URL: `/api` (the frontend reads it from `VITE_API_URL`, default `/api`).
 All responses are JSON. Unless stated otherwise, endpoints expect and return
 `application/json`.
 
+**Interactive docs:** an OpenAPI 3.0 spec is served at `GET /api-docs.json` and
+browsable via Swagger UI at [`/api-docs`](/api-docs). This document is the
+human-readable summary; the spec is the machine-readable source of truth.
+
 ## Conventions
 
 ### Authentication

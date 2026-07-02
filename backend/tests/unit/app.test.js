@@ -54,6 +54,37 @@ describe('application middleware', () => {
     });
   });
 
+  describe('API documentation', () => {
+    it('serves the raw OpenAPI spec as JSON', async () => {
+      const res = await request(app).get('/api-docs.json');
+
+      expect(res.status).toBe(200);
+      expect(res.body.openapi).toBe('3.0.3');
+      expect(res.body.info.title).toBe('FrameSet API');
+      expect(res.body.paths['/api/projects']).toBeDefined();
+    });
+
+    it('serves the Swagger UI page', async () => {
+      const res = await request(app).get('/api-docs/');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toContain('text/html');
+    });
+
+    it('does not mount the docs when ENABLE_API_DOCS=false', async () => {
+      const previous = process.env.ENABLE_API_DOCS;
+      process.env.ENABLE_API_DOCS = 'false';
+      jest.resetModules();
+      const appWithoutDocs = require('../../src/app');
+
+      const res = await request(appWithoutDocs).get('/api-docs.json');
+      expect(res.status).toBe(404);
+
+      process.env.ENABLE_API_DOCS = previous;
+      jest.resetModules();
+    });
+  });
+
   describe('JSON size limit', () => {
     it('returns 413 for a JSON payload exceeding 10 KB', async () => {
       const largePayload = JSON.stringify({ data: 'x'.repeat(200 * 1024) });
