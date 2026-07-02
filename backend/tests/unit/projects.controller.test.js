@@ -22,6 +22,7 @@ describe('projects controller', () => {
     });
 
     it('returns the projects for the user', async () => {
+      db.query.mockResolvedValueOnce([[{ total: 1 }]]); // COUNT(*) for pagination
       db.query.mockResolvedValueOnce([
         [
           { id: 1, name: 'Project1', lastEditedFormatted: '15/03 10:00' }
@@ -69,66 +70,75 @@ describe('projects controller', () => {
 
       expect(db.query).toHaveBeenNthCalledWith(
         1,
-        expect.stringContaining('FROM projects WHERE user_id = ?'),
+        expect.stringContaining('SELECT COUNT(*) AS total FROM projects WHERE user_id = ?'),
         [1]
       );
 
       expect(db.query).toHaveBeenNthCalledWith(
         2,
+        expect.stringContaining('FROM projects WHERE user_id = ?'),
+        [1, 12, 0] // userId, pageSize (default), offset
+      );
+
+      expect(db.query).toHaveBeenNthCalledWith(
+        3,
         expect.stringContaining('FROM project_brush_norms WHERE project_id IN'),
         [1]
       );
 
       expect(db.query).toHaveBeenNthCalledWith(
-        3,
+        4,
         expect.stringContaining('FROM project_typography_norms WHERE project_id IN'),
         [1]
       );
 
       expect(db.query).toHaveBeenNthCalledWith(
-        4,
+        5,
         expect.stringContaining('FROM project_palette WHERE project_id IN'),
         [1]
       );
 
-      expect(db.query).toHaveBeenCalledTimes(4);
+      expect(db.query).toHaveBeenCalledTimes(5);
 
-      expect(res.json).toHaveBeenCalledWith([
-        {
-          id: 1,
-          name: 'Project1',
-          lastEdited: '15/03 10:00',
-          brushNorms: [
-            {
-              id: 10,
-              name: 'Outline',
-              value: '8',
-              unit: 'px',
-              brushName: 'Smooth'
-            }
-          ],
-          typographyNorms: [
-            {
-              id: 11,
-              fontFamily: 'Inter',
-              fontWeight: '700',
-              fontUsage: 'Heading',
-              fontStyle: 'Italic'
-            }
-          ],
-          normsCount: 2,
-          palette: [
-            {
-              id: 5,
-              name: 'Primary',
-              hex: '#112233'
-            }
-          ]
-        }
-      ]);
+      expect(res.json).toHaveBeenCalledWith({
+        projects: [
+          {
+            id: 1,
+            name: 'Project1',
+            lastEdited: '15/03 10:00',
+            brushNorms: [
+              {
+                id: 10,
+                name: 'Outline',
+                value: '8',
+                unit: 'px',
+                brushName: 'Smooth'
+              }
+            ],
+            typographyNorms: [
+              {
+                id: 11,
+                fontFamily: 'Inter',
+                fontWeight: '700',
+                fontUsage: 'Heading',
+                fontStyle: 'Italic'
+              }
+            ],
+            normsCount: 2,
+            palette: [
+              {
+                id: 5,
+                name: 'Primary',
+                hex: '#112233'
+              }
+            ]
+          }
+        ],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 }
+      });
     });
 
-    it('uses 4 SQL queries with 10 projects (instead of 31 with N+1)', async () => {
+    it('uses 5 SQL queries with 10 projects (1 count + 4 batched, not N+1)', async () => {
       const projectsRows = Array.from({ length: 10 }, (_, index) => ({
         id: index + 1,
         name: `Project ${index + 1}`,
@@ -136,6 +146,7 @@ describe('projects controller', () => {
       }));
 
       db.query
+        .mockResolvedValueOnce([[{ total: 10 }]]) // COUNT(*) for pagination
         .mockResolvedValueOnce([projectsRows])
         .mockResolvedValueOnce([
           [
@@ -159,24 +170,26 @@ describe('projects controller', () => {
 
       await projectsController.listProjects(req, res);
 
-      expect(db.query).toHaveBeenCalledTimes(4);
+      expect(db.query).toHaveBeenCalledTimes(5);
       expect(db.query).toHaveBeenNthCalledWith(
-        2,
+        3,
         expect.stringContaining('FROM project_brush_norms WHERE project_id IN'),
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
       );
       expect(db.query).toHaveBeenNthCalledWith(
-        3,
+        4,
         expect.stringContaining('FROM project_typography_norms WHERE project_id IN'),
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
       );
       expect(db.query).toHaveBeenNthCalledWith(
-        4,
+        5,
         expect.stringContaining('FROM project_palette WHERE project_id IN'),
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
       );
 
-      expect(res.json).toHaveBeenCalledWith(expect.any(Array));
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ projects: expect.any(Array) })
+      );
     });
   });
 

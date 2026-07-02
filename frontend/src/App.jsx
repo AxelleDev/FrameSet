@@ -22,9 +22,9 @@
  *       export     -> PDF / JSON export
  *   *              -> NotFound (404)
  */
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Suspense, lazy, useEffect, useRef } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProjectProvider } from './context/ProjectContext';
 import { ToastProvider, useToast } from './context/ToastContext';
@@ -55,6 +55,52 @@ function RouteFallback() {
   );
 }
 
+/**
+ * Manages focus and scroll on client-side navigation. On every route change
+ * (but not the initial load, so autofocused fields and browser scroll restore
+ * still work), it scrolls to the top and moves focus to the main content region
+ * (or the page's <h1>), so keyboard and screen-reader users land at the top of
+ * the new page instead of staying wherever the previous page left them.
+ */
+function RouteFocus() {
+  const { pathname } = useLocation();
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    // Skip the very first render: let initial autofocus / native scroll happen.
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    try {
+      window.scrollTo(0, 0);
+    } catch {
+      // scrollTo is a no-op in some test environments (jsdom); ignore.
+    }
+
+    // Prefer the app shell's main content region, then fall back to the page's
+    // first heading so public pages (which have no #content) still get focus.
+    const target = document.getElementById('content') || document.querySelector('h1');
+    if (!target) return;
+
+    // Make non-interactive targets focusable just for this programmatic focus,
+    // then release the temporary tabindex so they stay out of the tab order.
+    const hadTabIndex = target.hasAttribute('tabindex');
+    if (!hadTabIndex) target.setAttribute('tabindex', '-1');
+    target.focus({ preventScroll: true });
+    if (!hadTabIndex) {
+      const release = () => {
+        target.removeAttribute('tabindex');
+        target.removeEventListener('blur', release);
+      };
+      target.addEventListener('blur', release);
+    }
+  }, [pathname]);
+
+  return null;
+}
+
 /** Redirects users who are already signed in away from the public auth pages. */
 function RedirectIfAuthenticated({ children }) {
   const { user, authLoading } = useAuth();
@@ -82,6 +128,7 @@ function AppRoutes() {
   return (
     <>
       <BrowserRouter>
+        <RouteFocus />
         <Suspense fallback={<RouteFallback />}>
           <Routes>
           <Route path="/" element={<Landing />} />

@@ -15,6 +15,11 @@ const { logger } = require('../utils/logger');
 // Upper bound on palette size to cap per-request work and storage.
 const MAX_PALETTE_SIZE = 50;
 
+// Project-list pagination: default page size, and a hard cap so a client cannot
+// request an unbounded page and defeat the point of paginating.
+const DEFAULT_PROJECTS_PAGE_SIZE = 12;
+const MAX_PROJECTS_PAGE_SIZE = 50;
+
 /**
  * Error type thrown by service functions to signal a business/validation
  * failure that the controller translates into a specific HTTP status + message.
@@ -297,15 +302,39 @@ const logListProjectsPerformance = ({ requestId, userId, projectCount, queryTimi
  * pattern that fetching children per project would cause.
  * @param {number} userId Authenticated user id.
  * @param {*} requestId Request id used for performance logging.
- * @returns {Promise<Array>} The assembled projects.
+ * @param {{ page?: number, pageSize?: number }} [options] Pagination options.
+ * @returns {Promise<{ projects: Array, pagination: { page: number, pageSize: number, total: number, totalPages: number } }>}
+ *   A page of assembled projects plus pagination metadata.
  */
-const listProjectsForUser = async (userId, requestId) => {
+const listProjectsForUser = async (userId, requestId, options = {}) => {
   const queryTimings = [];
+
+  // Clamp pagination inputs to safe bounds (default page 1, capped page size).
+  const page = Number.isFinite(options.page) ? Math.max(1, Math.floor(options.page)) : 1;
+  const pageSize = Number.isFinite(options.pageSize)
+    ? Math.min(MAX_PROJECTS_PAGE_SIZE, Math.max(1, Math.floor(options.pageSize)))
+    : DEFAULT_PROJECTS_PAGE_SIZE;
+  const offset = (page - 1) * pageSize;
+
+  // Total count drives the pagination metadata (and the dashboard's "N projects").
+  const countQuery = await runTimedQuery({
+    label: 'projects_count',
+    sql: 'SELECT COUNT(*) AS total FROM projects WHERE user_id = ?',
+    params: [userId]
+  });
+  queryTimings.push(countQuery.timing);
+  const total = Number(countQuery.rows[0]?.total || 0);
+  const pagination = {
+    page,
+    pageSize,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize))
+  };
 
   const projectsQuery = await runTimedQuery({
     label: 'projects',
-    sql: 'SELECT *, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? ORDER BY created_at DESC',
-    params: [userId]
+    sql: 'SELECT *, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+    params: [userId, pageSize, offset]
   });
 
   queryTimings.push(projectsQuery.timing);
@@ -319,7 +348,7 @@ const listProjectsForUser = async (userId, requestId) => {
       queryTimings
     });
 
-    return [];
+    return { projects: [], pagination };
   }
 
   const projectIds = projectsData.map((project) => Number(project.id));
@@ -408,7 +437,7 @@ const listProjectsForUser = async (userId, requestId) => {
     queryTimings
   });
 
-  return fullProjects;
+  return { projects: fullProjects, pagination };
 };
 
 /**

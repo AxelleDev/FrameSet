@@ -5,6 +5,10 @@ Base URL: `/api` (the frontend reads it from `VITE_API_URL`, default `/api`).
 All responses are JSON. Unless stated otherwise, endpoints expect and return
 `application/json`.
 
+**Interactive docs:** an OpenAPI 3.0 spec is served at `GET /api-docs.json` and
+browsable via Swagger UI at [`/api-docs`](/api-docs). This document is the
+human-readable summary; the spec is the machine-readable source of truth.
+
 ## Conventions
 
 ### Authentication
@@ -77,7 +81,7 @@ or mutate their own projects).
 
 | Method | Path | Body | Success |
 |---|---|---|---|
-| `GET` | `/projects` | – | array of `{ id, name, lastEdited, brushNorms[], typographyNorms[], normsCount, palette[] }` |
+| `GET` | `/projects?page=&pageSize=` | – | `{ projects: [{ id, name, lastEdited, brushNorms[], typographyNorms[], normsCount, palette[] }], pagination: { page, pageSize, total, totalPages } }` (paginated, newest first; `pageSize` defaults to 12, capped at 50) |
 | `POST` | `/projects` | `{ name }` (2–50 chars) | the created project |
 | `PATCH` | `/projects/:id` | `{ name }` | `{ success, name }` |
 | `DELETE` | `/projects/:id` | – | `{ success }` |

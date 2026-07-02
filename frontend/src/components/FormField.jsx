@@ -41,7 +41,11 @@ export default function FormField({
     ? React.cloneElement(children, {
         id: children.props.id || generatedId,
         'aria-invalid': error ? true : children.props['aria-invalid'],
-        'aria-describedby': error ? errorId : children.props['aria-describedby'],
+        // Combine the error id with any describedby the control already had, so
+        // linking the error message never drops an existing description.
+        'aria-describedby': error
+          ? [errorId, children.props['aria-describedby']].filter(Boolean).join(' ')
+          : children.props['aria-describedby'],
         'aria-required': required ? true : children.props['aria-required'],
       })
     : children;
