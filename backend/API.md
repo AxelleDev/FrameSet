@@ -95,3 +95,9 @@ or mutate their own projects).
 
 Field notes: brush `value` is a positive number (≤ 1000), `unit` letters/`%`
 only, `opacity` in `0..1`. Text fields are trimmed and length-bounded.
+
+## Fonts — `/api/fonts`
+
+| Method | Path | Auth | Success |
+|---|---|---|---|
+| `GET` | `/fonts` | ✓ | `{ items: [{ family, variants[] }] }` — Google Fonts catalog, proxied server-side and cached so the API key never ships in the client bundle |

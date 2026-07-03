@@ -12,6 +12,7 @@ const { randomUUID } = require('crypto');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const projectsRoutes = require('./routes/projects.routes');
+const fontsRoutes = require('./routes/fonts.routes');
 const db = require('./database');
 const openapiSpec = require('./docs/openapi');
 const { ensureCsrfCookie, csrfProtection } = require('./middleware/csrfProtection');
@@ -191,6 +192,7 @@ app.use('/api', csrfProtection);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectsRoutes);
+app.use('/api/fonts', fontsRoutes);
 
 // 404 handler.
 app.use((req, res, _next) => {

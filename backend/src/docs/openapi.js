@@ -30,7 +30,8 @@ const openapiSpec = {
     { name: 'Health', description: 'Liveness / readiness probe' },
     { name: 'Auth', description: 'Registration, sessions, password reset, CSRF' },
     { name: 'Users', description: 'Account profile, email and password management' },
-    { name: 'Projects', description: 'Projects and their brush/typography standards and palette' }
+    { name: 'Projects', description: 'Projects and their brush/typography standards and palette' },
+    { name: 'Fonts', description: 'Google Fonts catalog proxy (keeps the API key server-side)' }
   ],
   components: {
     securitySchemes: {
@@ -847,6 +848,39 @@ const openapiSpec = {
           400: { $ref: '#/components/responses/ValidationError' },
           401: { $ref: '#/components/responses/Unauthorized' },
           403: { $ref: '#/components/responses/Forbidden' }
+        }
+      }
+    },
+    '/api/fonts': {
+      get: {
+        tags: ['Fonts'],
+        summary: 'Google Fonts catalog (proxied server-side, key never exposed)',
+        security: AUTH,
+        responses: {
+          200: {
+            description: 'Available font families and their variants.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    items: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          family: { type: 'string', example: 'Roboto' },
+                          variants: { type: 'array', items: { type: 'string' }, example: ['regular', '700'] }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          502: { description: 'The upstream Google Fonts API could not be reached.' }
         }
       }
     }

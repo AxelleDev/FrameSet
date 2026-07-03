@@ -1,24 +1,22 @@
 /**
- * Fetches the Google Fonts catalog for the typography-norm font picker. Exposes
- * { fonts, loading, error }; does nothing until an apiKey is provided.
+ * Fetches the Google Fonts catalog for the typography-norm font picker, via the
+ * backend proxy (`GET /api/fonts`) so the Google API key stays server-side and
+ * never ships in the client bundle. Exposes { fonts, loading, error }.
  */
 import { useEffect, useState } from 'react';
+import api from '../services/api';
 
 // The catalog (~1,900 families) is large and immutable within a session, so we
-// cache it and only request the fields the picker actually needs.
+// cache it to avoid refetching on every visit to the norms page.
 const CACHE_KEY = 'gfonts:catalog';
 
-export default function useGoogleFonts(apiKey) {
+export default function useGoogleFonts() {
   const [fonts, setFonts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // No key means the picker stays empty rather than hitting the API.
-    if (!apiKey) return undefined;
-
-    // Serve from the per-session cache when available to avoid refetching the
-    // whole catalog every time the norms page mounts.
+    // Serve from the per-session cache when available.
     try {
       const cached = sessionStorage.getItem(CACHE_KEY);
       if (cached) {
@@ -31,13 +29,11 @@ export default function useGoogleFonts(apiKey) {
 
     let cancelled = false;
     setLoading(true);
-    // `fields` trims the response to what the picker renders, shrinking the
-    // payload from hundreds of KB to a fraction of that.
-    fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}&fields=items(family,variants)`)
-      .then(res => res.json())
-      .then(data => {
+    api
+      .get('/fonts')
+      .then((data) => {
         if (cancelled) return;
-        const items = data.items || [];
+        const items = data?.items || [];
         setFonts(items);
         setLoading(false);
         try {
@@ -46,7 +42,7 @@ export default function useGoogleFonts(apiKey) {
           // Storage full/unavailable — the catalog still works, just uncached.
         }
       })
-      .catch(err => {
+      .catch((err) => {
         if (cancelled) return;
         setError(err);
         setLoading(false);
@@ -55,7 +51,7 @@ export default function useGoogleFonts(apiKey) {
     return () => {
       cancelled = true;
     };
-  }, [apiKey]);
+  }, []);
 
   return { fonts, loading, error };
 }

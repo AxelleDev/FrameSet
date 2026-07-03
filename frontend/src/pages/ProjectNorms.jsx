@@ -106,9 +106,9 @@ export default function ProjectNorms() {
       // font-load would re-iterate every norm, and the ref guard handles dedup.
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeProject?.typographyNorms]);
-  // Google Fonts catalog used to populate the font picker and resolve weights.
-  const GOOGLE_FONTS_API_KEY = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
-  const { fonts: googleFonts, loading: loadingFonts, error: errorFonts } = useGoogleFonts(GOOGLE_FONTS_API_KEY);
+  // Google Fonts catalog (proxied by the backend) used to populate the font
+  // picker and resolve weights.
+  const { fonts: googleFonts, loading: loadingFonts, error: errorFonts } = useGoogleFonts();
 
   // Open the edit modal pre-filled from the selected norm (by type).
   const openEditNorm = (norm, type) => {
