@@ -15,7 +15,7 @@ const {
   healthCheckLimiter,
   PROJECT_CREATE_LIMIT,
   PROJECT_CREATE_WINDOW_MS,
-  PROJECT_CREATE_LIMIT_MESSAGE
+  PROJECT_CREATE_LIMIT_MESSAGE,
 } = require('../../src/middleware/projectCreateLimiter');
 
 // The module builds more than one limiter, so select each one's options by its
@@ -41,12 +41,15 @@ describe('middleware projectCreateLimiter', () => {
   });
 
   it('generates a key per authenticated user', () => {
-    expect(optionsFor(PROJECT_CREATE_WINDOW_MS).keyGenerator({ user: { id: 7 } })).toBe('project-create:7');
+    expect(optionsFor(PROJECT_CREATE_WINDOW_MS).keyGenerator({ user: { id: 7 } })).toBe(
+      'project-create:7',
+    );
   });
 
   it('generates a key per IP for an anonymous visitor', () => {
-    expect(optionsFor(PROJECT_CREATE_WINDOW_MS).keyGenerator({ ip: '203.0.113.5' }))
-      .toBe('project-create:anonymous:ip:203.0.113.5');
+    expect(optionsFor(PROJECT_CREATE_WINDOW_MS).keyGenerator({ ip: '203.0.113.5' })).toBe(
+      'project-create:anonymous:ip:203.0.113.5',
+    );
   });
 
   it('responds 429 with the dedicated message via the handler', () => {

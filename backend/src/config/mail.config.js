@@ -13,13 +13,13 @@ const MAIL_PASS = process.env.MAIL_PASS || '';
 
 // True only when every SMTP setting is present.
 const hasSmtpConfig = Boolean(
-  MAIL_HOST && MAIL_PORT_RAW && MAIL_SECURE_RAW !== undefined && MAIL_USER && MAIL_PASS
+  MAIL_HOST && MAIL_PORT_RAW && MAIL_SECURE_RAW !== undefined && MAIL_USER && MAIL_PASS,
 );
 
 // A real SMTP is non-negotiable in production: fail fast on boot.
 if (isProduction && !hasSmtpConfig) {
   throw new Error(
-    'SMTP configuration (MAIL_HOST, MAIL_PORT, MAIL_SECURE, MAIL_USER, MAIL_PASS) is required in production.'
+    'SMTP configuration (MAIL_HOST, MAIL_PORT, MAIL_SECURE, MAIL_USER, MAIL_PASS) is required in production.',
   );
 }
 
@@ -47,5 +47,5 @@ module.exports = {
   MAIL_PORT,
   MAIL_SECURE,
   MAIL_USER,
-  MAIL_PASS
+  MAIL_PASS,
 };

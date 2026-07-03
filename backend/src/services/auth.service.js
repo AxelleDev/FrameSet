@@ -10,7 +10,11 @@ const mailService = require('./mail.service');
 const { generateVerificationCode, getInitials } = require('../utils/auth.utils');
 const { isTokenStaleByPasswordChange } = require('./token.service');
 const { hashOtp, safeOtpEqual, MAX_OTP_ATTEMPTS } = require('../utils/otp');
-const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
+const {
+  BCRYPT_SALT_ROUNDS,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_COMPLEXITY_REGEX,
+} = require('../config/security.config');
 
 // Records a wrong one-time-code attempt on the account and, once MAX_OTP_ATTEMPTS
 // is reached, invalidates the stored code (clears `codeColumn`) so it can't be
@@ -18,7 +22,9 @@ const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = r
 const registerFailedOtpAttempt = async (userDb, codeColumn) => {
   const attempts = (userDb.otp_attempts || 0) + 1;
   if (attempts >= MAX_OTP_ATTEMPTS) {
-    await db.query(`UPDATE users SET ${codeColumn} = NULL, otp_attempts = 0 WHERE id = ?`, [userDb.id]);
+    await db.query(`UPDATE users SET ${codeColumn} = NULL, otp_attempts = 0 WHERE id = ?`, [
+      userDb.id,
+    ]);
   } else {
     await db.query('UPDATE users SET otp_attempts = ? WHERE id = ?', [attempts, userDb.id]);
   }
@@ -41,7 +47,10 @@ class AuthServiceError extends Error {
 // Registers a user: validates, enforces the password policy, stores the account
 // unverified with a one-time code, and emails it. Throws 'validation' on bad
 // input and 'duplicate_email' when the email already exists.
-const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassword }, { onMailError } = {}) => {
+const registerUser = async (
+  { name: rawName, email: rawEmail, password: rawPassword },
+  { onMailError } = {},
+) => {
   const name = normalizeInput(rawName);
   const email = normalizeInput(rawEmail);
   const password = normalizeInput(rawPassword);
@@ -62,7 +71,10 @@ const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassw
     throw new AuthServiceError('validation', 'Password too short.');
   }
   if (!validator.matches(password, PASSWORD_COMPLEXITY_REGEX)) {
-    throw new AuthServiceError('validation', 'The password must contain at least one uppercase letter, one lowercase letter, and one digit.');
+    throw new AuthServiceError(
+      'validation',
+      'The password must contain at least one uppercase letter, one lowercase letter, and one digit.',
+    );
   }
 
   const initials = getInitials(name);
@@ -75,7 +87,7 @@ const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassw
 
     const [result] = await db.query(
       'INSERT INTO users (name, email, password, avatar_initials, is_verified, verification_code, verification_code_expires, password_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, email, hashedPassword, initials, false, hashOtp(verificationCode), expires, now]
+      [name, email, hashedPassword, initials, false, hashOtp(verificationCode), expires, now],
     );
 
     try {
@@ -86,8 +98,8 @@ const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassw
         html: mailService.buildTemplate({
           title: 'Confirm your registration',
           message: 'Use the code below to confirm your email address.',
-          code: verificationCode
-        })
+          code: verificationCode,
+        }),
       });
     } catch (mailError) {
       // The account is already created; a failed send must not 500 the user (which
@@ -103,9 +115,9 @@ const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassw
         name,
         email,
         avatarInitials: initials,
-        is_verified: false,
-        passwordUpdatedAt: now
-      }
+        isVerified: false,
+        passwordUpdatedAt: now,
+      },
     };
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
@@ -133,7 +145,10 @@ const authenticateUser = async ({ email: rawEmail, password: rawPassword }) => {
     throw new AuthServiceError('invalid_email_format', 'Invalid email.');
   }
 
-  const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+  const [rows] = await db.query(
+    'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_verified, password FROM users WHERE email = ?',
+    [email],
+  );
   if (rows.length === 0) {
     throw new AuthServiceError('invalid_credentials');
   }
@@ -154,7 +169,7 @@ const authenticateUser = async ({ email: rawEmail, password: rawPassword }) => {
     email: userDb.email,
     avatarInitials: userDb.avatar_initials,
     passwordUpdatedAt: userDb.password_updated_at,
-    pendingEmail: userDb.pending_email
+    pendingEmail: userDb.pending_email,
   };
 };
 
@@ -173,7 +188,10 @@ const verifyEmailCode = async ({ email, code }) => {
   }
 
   const normalizedEmail = validator.trim(String(email));
-  const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
+  const [rows] = await db.query(
+    'SELECT id, is_verified, verification_code, verification_code_expires, otp_attempts FROM users WHERE email = ?',
+    [normalizedEmail],
+  );
   // Anti-enumeration: a missing account and an already-verified one are made
   // indistinguishable from a wrong code (same generic error).
   if (rows.length === 0) {
@@ -187,10 +205,16 @@ const verifyEmailCode = async ({ email, code }) => {
     await registerFailedOtpAttempt(userDb, 'verification_code');
     throw new AuthServiceError('validation', 'Incorrect code.');
   }
-  if (!userDb.verification_code_expires || new Date() > new Date(userDb.verification_code_expires)) {
+  if (
+    !userDb.verification_code_expires ||
+    new Date() > new Date(userDb.verification_code_expires)
+  ) {
     throw new AuthServiceError('validation', 'Code expired. Please request a new one.');
   }
-  await db.query('UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL, otp_attempts = 0 WHERE email = ?', [normalizedEmail]);
+  await db.query(
+    'UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL, otp_attempts = 0 WHERE email = ?',
+    [normalizedEmail],
+  );
   return { success: true };
 };
 
@@ -205,7 +229,9 @@ const resendVerificationCode = async ({ email }) => {
   }
 
   const normalizedEmail = validator.trim(String(email));
-  const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
+  const [rows] = await db.query('SELECT id, is_verified FROM users WHERE email = ?', [
+    normalizedEmail,
+  ]);
 
   // Anti-enumeration: only send when an unverified account actually exists, but
   // always return the same generic response so the caller can't tell.
@@ -213,7 +239,7 @@ const resendVerificationCode = async ({ email }) => {
     const { code: newCode, expires } = generateVerificationCode();
     await db.query(
       'UPDATE users SET verification_code = ?, verification_code_expires = ?, otp_attempts = 0 WHERE email = ?',
-      [hashOtp(newCode), expires, normalizedEmail]
+      [hashOtp(newCode), expires, normalizedEmail],
     );
     try {
       await mailService.sendMail({
@@ -223,8 +249,8 @@ const resendVerificationCode = async ({ email }) => {
         html: mailService.buildTemplate({
           title: 'New verification code',
           message: 'Here is your new verification code.',
-          code: newCode
-        })
+          code: newCode,
+        }),
       });
     } catch {
       // Swallow send failures so the response stays generic (the code is stored).
@@ -253,7 +279,7 @@ const startPasswordReset = async ({ email: rawEmail }, { onMailError } = {}) => 
     const { code, expires } = generateVerificationCode();
     await db.query(
       'UPDATE users SET reset_code = ?, reset_code_expires = ?, otp_attempts = 0 WHERE email = ?',
-      [hashOtp(code), expires, email]
+      [hashOtp(code), expires, email],
     );
 
     try {
@@ -264,8 +290,8 @@ const startPasswordReset = async ({ email: rawEmail }, { onMailError } = {}) => 
         html: mailService.buildTemplate({
           title: 'Reset your password',
           message: 'Use the code below to choose a new password.',
-          code
-        })
+          code,
+        }),
       });
     } catch (mailError) {
       // Report the send failure but keep the generic response; the stored code stays valid.
@@ -292,10 +318,16 @@ const completePasswordReset = async ({ email: rawEmail, code: rawCode, newPasswo
     throw new AuthServiceError('validation', 'Password too short.');
   }
   if (!validator.matches(password, PASSWORD_COMPLEXITY_REGEX)) {
-    throw new AuthServiceError('validation', 'The password must contain at least one uppercase letter, one lowercase letter, and one digit.');
+    throw new AuthServiceError(
+      'validation',
+      'The password must contain at least one uppercase letter, one lowercase letter, and one digit.',
+    );
   }
 
-  const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+  const [rows] = await db.query(
+    'SELECT id, reset_code, reset_code_expires, otp_attempts FROM users WHERE email = ?',
+    [email],
+  );
   if (rows.length === 0) {
     throw new AuthServiceError('validation', 'Incorrect code.');
   }
@@ -312,7 +344,7 @@ const completePasswordReset = async ({ email: rawEmail, code: rawCode, newPasswo
   const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
   await db.query(
     'UPDATE users SET password = ?, password_updated_at = NOW(), reset_code = NULL, reset_code_expires = NULL, otp_attempts = 0 WHERE email = ?',
-    [hashedPassword, email]
+    [hashedPassword, email],
   );
 
   return { success: true };
@@ -327,5 +359,5 @@ module.exports = {
   verifyEmailCode,
   resendVerificationCode,
   startPasswordReset,
-  completePasswordReset
+  completePasswordReset,
 };

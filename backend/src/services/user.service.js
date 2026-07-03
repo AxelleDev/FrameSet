@@ -9,7 +9,11 @@ const validator = require('validator');
 const db = require('../database');
 const mailService = require('./mail.service');
 const { generateVerificationCode } = require('../utils/auth.utils');
-const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
+const {
+  BCRYPT_SALT_ROUNDS,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_COMPLEXITY_REGEX,
+} = require('../config/security.config');
 const { hashOtp, safeOtpEqual } = require('../utils/otp');
 const { registerFailedOtpAttempt } = require('./auth.service');
 
@@ -33,7 +37,7 @@ const getUserCount = async () => {
 const getUserProfile = async (userId) => {
   const [rows] = await db.query(
     'SELECT id, name, email, avatar_initials, password_updated_at, pending_email FROM users WHERE id = ?',
-    [userId]
+    [userId],
   );
 
   if (rows.length === 0) {
@@ -47,7 +51,7 @@ const getUserProfile = async (userId) => {
     email: userDb.email,
     avatarInitials: userDb.avatar_initials,
     passwordUpdatedAt: userDb.password_updated_at,
-    pendingEmail: userDb.pending_email || null
+    pendingEmail: userDb.pending_email || null,
   };
 };
 
@@ -75,7 +79,7 @@ const updateUserProfile = async (userId, { name, email }) => {
   if (isEmailChanged) {
     const [existing] = await db.query(
       'SELECT id FROM users WHERE (email = ? OR pending_email = ?) AND id <> ?',
-      [trimmedEmail, trimmedEmail, userId]
+      [trimmedEmail, trimmedEmail, userId],
     );
     if (existing.length > 0) {
       throw new UserServiceError('email_in_use', 'This email is already in use.');
@@ -85,7 +89,7 @@ const updateUserProfile = async (userId, { name, email }) => {
 
     await db.query(
       'UPDATE users SET name = ?, pending_email = ?, pending_email_code = ?, pending_email_expires = ?, otp_attempts = 0 WHERE id = ?',
-      [trimmedName, trimmedEmail, hashOtp(pendingCode), expires, userId]
+      [trimmedName, trimmedEmail, hashOtp(pendingCode), expires, userId],
     );
 
     await mailService.sendMail({
@@ -95,8 +99,8 @@ const updateUserProfile = async (userId, { name, email }) => {
       html: mailService.buildTemplate({
         title: 'Confirm your new email',
         message: 'Use the code below to confirm your new email.',
-        code: pendingCode
-      })
+        code: pendingCode,
+      }),
     });
 
     return { name: trimmedName, email: currentEmail, pendingEmail: trimmedEmail };
@@ -109,7 +113,10 @@ const updateUserProfile = async (userId, { name, email }) => {
 // Confirm a pending email change: validate the one-time code/expiry, then atomically
 // promote pending_email to the account email and clear the pending fields.
 const confirmPendingEmail = async (userId, { email, code }) => {
-  const [rows] = await db.query('SELECT * FROM users WHERE id = ? AND pending_email = ?', [userId, email]);
+  const [rows] = await db.query(
+    'SELECT id, name, avatar_initials, password_updated_at, pending_email_code, pending_email_expires, otp_attempts FROM users WHERE id = ? AND pending_email = ?',
+    [userId, email],
+  );
   if (rows.length === 0) {
     throw new UserServiceError('no_pending', 'No pending email found.');
   }
@@ -125,7 +132,7 @@ const confirmPendingEmail = async (userId, { email, code }) => {
   try {
     await db.query(
       'UPDATE users SET email = pending_email, pending_email = NULL, pending_email_code = NULL, pending_email_expires = NULL, otp_attempts = 0 WHERE id = ?',
-      [userDb.id]
+      [userDb.id],
     );
   } catch (error) {
     // The address was taken by another account between staging and confirmation:
@@ -133,7 +140,7 @@ const confirmPendingEmail = async (userId, { email, code }) => {
     if (error.code === 'ER_DUP_ENTRY') {
       await db.query(
         'UPDATE users SET pending_email = NULL, pending_email_code = NULL, pending_email_expires = NULL, otp_attempts = 0 WHERE id = ?',
-        [userDb.id]
+        [userDb.id],
       );
       throw new UserServiceError('email_in_use', 'This email is already in use.');
     }
@@ -146,13 +153,16 @@ const confirmPendingEmail = async (userId, { email, code }) => {
     email,
     avatarInitials: userDb.avatar_initials,
     passwordUpdatedAt: userDb.password_updated_at,
-    pendingEmail: null
+    pendingEmail: null,
   };
 };
 
 // Regenerate and re-send the confirmation code for a pending email change.
 const resendPendingEmail = async (userId, { email }) => {
-  const [rows] = await db.query('SELECT * FROM users WHERE id = ? AND pending_email = ?', [userId, email]);
+  const [rows] = await db.query('SELECT id FROM users WHERE id = ? AND pending_email = ?', [
+    userId,
+    email,
+  ]);
   if (rows.length === 0) {
     throw new UserServiceError('no_pending', 'No pending email found.');
   }
@@ -161,7 +171,7 @@ const resendPendingEmail = async (userId, { email }) => {
 
   await db.query(
     'UPDATE users SET pending_email_code = ?, pending_email_expires = ?, otp_attempts = 0 WHERE id = ?',
-    [hashOtp(newCode), expires, userDb.id]
+    [hashOtp(newCode), expires, userDb.id],
   );
 
   await mailService.sendMail({
@@ -171,8 +181,8 @@ const resendPendingEmail = async (userId, { email }) => {
     html: mailService.buildTemplate({
       title: 'New confirmation code',
       message: 'Here is your new code to confirm your email.',
-      code: newCode
-    })
+      code: newCode,
+    }),
   });
 };
 
@@ -193,7 +203,10 @@ const changeUserPassword = async (userId, { currentPassword, newPassword }) => {
     throw new UserServiceError('validation', 'Password too short.');
   }
   if (!validator.matches(trimmedNewPassword, PASSWORD_COMPLEXITY_REGEX)) {
-    throw new UserServiceError('validation', 'The password must contain at least one uppercase letter, one lowercase letter, and one digit.');
+    throw new UserServiceError(
+      'validation',
+      'The password must contain at least one uppercase letter, one lowercase letter, and one digit.',
+    );
   }
 
   const [rows] = await db.query('SELECT password FROM users WHERE id = ?', [userId]);
@@ -205,7 +218,10 @@ const changeUserPassword = async (userId, { currentPassword, newPassword }) => {
     throw new UserServiceError('invalid_current_password', 'Current password is incorrect.');
   }
   const hashedPassword = await bcrypt.hash(trimmedNewPassword, BCRYPT_SALT_ROUNDS);
-  await db.query('UPDATE users SET password = ?, password_updated_at = NOW() WHERE id = ?', [hashedPassword, userId]);
+  await db.query('UPDATE users SET password = ?, password_updated_at = NOW() WHERE id = ?', [
+    hashedPassword,
+    userId,
+  ]);
 
   return { passwordUpdatedAt: new Date() };
 };
@@ -227,5 +243,5 @@ module.exports = {
   confirmPendingEmail,
   resendPendingEmail,
   changeUserPassword,
-  deleteUserAccount
+  deleteUserAccount,
 };

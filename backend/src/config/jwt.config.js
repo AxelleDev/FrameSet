@@ -27,5 +27,5 @@ module.exports = {
   // Short-lived access token limits the exposure window if a token leaks.
   JWT_EXPIRES: '2h',
   // Longer-lived refresh token; rotated and revocable server-side.
-  JWT_REFRESH_EXPIRES: '7d'
+  JWT_REFRESH_EXPIRES: '7d',
 };

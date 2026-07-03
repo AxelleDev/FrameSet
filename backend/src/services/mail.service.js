@@ -11,7 +11,7 @@ const {
   MAIL_PORT,
   MAIL_SECURE,
   MAIL_USER,
-  MAIL_PASS
+  MAIL_PASS,
 } = require('../config/mail.config');
 const { logger } = require('../utils/logger');
 
@@ -28,7 +28,7 @@ let transporter = hasSmtpConfig
       host: MAIL_HOST,
       port: MAIL_PORT,
       secure: MAIL_SECURE,
-      auth: { user: MAIL_USER, pass: MAIL_PASS }
+      auth: { user: MAIL_USER, pass: MAIL_PASS },
     })
   : null;
 
@@ -53,14 +53,14 @@ const getTransporter = async () => {
     transporterPromise = nodemailer.createTestAccount().then((account) => {
       logger.info('mail.dev_account.created', {
         message: 'No SMTP configured: an Ethereal test account was created for development.',
-        user: account.user
+        user: account.user,
       });
       mailFrom = account.user;
       transporter = nodemailer.createTransport({
         host: account.smtp.host,
         port: account.smtp.port,
         secure: account.smtp.secure,
-        auth: { user: account.user, pass: account.pass }
+        auth: { user: account.user, pass: account.pass },
       });
       return transporter;
     });
@@ -71,7 +71,8 @@ const getTransporter = async () => {
 // Builds the branded HTML email body. The code block renders only when `code` is
 // supplied; `footer` defaults to the expiry note.
 const buildTemplate = ({ title, message, code, footer }) => {
-  const fontStack = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontStack =
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
   return `
   <!-- FrameSet transactional email -->
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F3FF;margin:0;padding:32px 16px;">
@@ -91,14 +92,18 @@ const buildTemplate = ({ title, message, code, footer }) => {
               <p style="margin:0;font-size:15px;line-height:1.65;color:#6B6B6B;">${message}</p>
             </td>
           </tr>
-          ${code ? `
+          ${
+            code
+              ? `
           <tr>
             <td style="padding:20px 32px 4px;font-family:${fontStack};">
               <div style="background:#F2F3FF;border:1px solid #D9DEFA;border-radius:14px;padding:20px;text-align:center;font-size:30px;font-weight:700;letter-spacing:8px;color:#3C3D48;">
                 ${code}
               </div>
             </td>
-          </tr>` : ''}
+          </tr>`
+              : ''
+          }
           <tr>
             <td style="padding:16px 32px 28px;font-family:${fontStack};">
               <p style="margin:0;font-size:13px;line-height:1.6;color:#9AA0AC;">${footer || 'This code expires in 10 minutes.'}</p>
@@ -129,7 +134,7 @@ const sendMail = async ({ to, subject, text, html }) => {
     text,
     html,
     // Embed the brand logo inline (referenced as cid:frameset-logo in the HTML).
-    attachments: [{ filename: 'frameset-logo.png', path: LOGO_PATH, cid: LOGO_CID }]
+    attachments: [{ filename: 'frameset-logo.png', path: LOGO_PATH, cid: LOGO_CID }],
   });
 
   // In non-production, log the Ethereal preview URL so the email can be read
@@ -144,5 +149,5 @@ const sendMail = async ({ to, subject, text, html }) => {
 
 module.exports = {
   sendMail,
-  buildTemplate
+  buildTemplate,
 };

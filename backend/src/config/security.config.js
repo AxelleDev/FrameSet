@@ -14,12 +14,11 @@ const parsedRounds = Number(process.env.BCRYPT_SALT_ROUNDS);
 
 // Allow tuning the cost factor via env, but never below 4 (bcrypt's practical
 // minimum); fall back to the secure default for any invalid value.
-const BCRYPT_SALT_ROUNDS = Number.isInteger(parsedRounds) && parsedRounds >= 4
-  ? parsedRounds
-  : DEFAULT_BCRYPT_SALT_ROUNDS;
+const BCRYPT_SALT_ROUNDS =
+  Number.isInteger(parsedRounds) && parsedRounds >= 4 ? parsedRounds : DEFAULT_BCRYPT_SALT_ROUNDS;
 
 module.exports = {
   BCRYPT_SALT_ROUNDS,
   PASSWORD_MIN_LENGTH,
-  PASSWORD_COMPLEXITY_REGEX
+  PASSWORD_COMPLEXITY_REGEX,
 };

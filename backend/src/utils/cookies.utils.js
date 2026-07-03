@@ -19,19 +19,19 @@ const getCookieBaseOptions = () => ({
   httpOnly: true,
   secure: isProduction(),
   sameSite: isProduction() ? 'strict' : 'lax',
-  path: '/'
+  path: '/',
 });
 
 /** Cookie options for the short-lived access token (matches JWT access TTL). */
 const getAccessTokenCookieOptions = () => ({
   ...getCookieBaseOptions(),
-  maxAge: ACCESS_TOKEN_MAX_AGE_MS
+  maxAge: ACCESS_TOKEN_MAX_AGE_MS,
 });
 
 /** Cookie options for the longer-lived refresh token (matches JWT refresh TTL). */
 const getRefreshTokenCookieOptions = () => ({
   ...getCookieBaseOptions(),
-  maxAge: REFRESH_TOKEN_MAX_AGE_MS
+  maxAge: REFRESH_TOKEN_MAX_AGE_MS,
 });
 
 // CSRF token cookie options. httpOnly is deliberately false: the double-submit pattern needs
@@ -39,7 +39,7 @@ const getRefreshTokenCookieOptions = () => ({
 const getCsrfTokenCookieOptions = () => ({
   ...getCookieBaseOptions(),
   httpOnly: false,
-  maxAge: CSRF_TOKEN_MAX_AGE_MS
+  maxAge: CSRF_TOKEN_MAX_AGE_MS,
 });
 
 // Reads one cookie from the raw Cookie header (no cookie-parser); URL-decoded value or null.
@@ -70,5 +70,5 @@ module.exports = {
   getAccessTokenCookieOptions,
   getRefreshTokenCookieOptions,
   getCsrfTokenCookieOptions,
-  getCookieValue
+  getCookieValue,
 };

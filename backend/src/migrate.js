@@ -16,22 +16,23 @@ const SKIPPABLE_MIGRATION_ERROR_CODES = new Set([
   'ER_DUP_FIELDNAME',
   'ER_CANT_DROP_FIELD_OR_KEY',
   'ER_TABLE_EXISTS_ERROR',
-  'ER_DUP_KEYNAME'
+  'ER_DUP_KEYNAME',
 ]);
 const migrationLogger = logger.child({ component: 'migrations' });
 
 // Dedicated migration pool. multipleStatements is enabled so a single .sql file
 // with several statements runs in one query call.
-const getPool = () => mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'frameset_db',
-  waitForConnections: true,
-  connectionLimit: 5,
-  queueLimit: 0,
-  multipleStatements: true
-});
+const getPool = () =>
+  mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'frameset_db',
+    waitForConnections: true,
+    connectionLimit: 5,
+    queueLimit: 0,
+    multipleStatements: true,
+  });
 
 // Runs a task with a pool, creating an ephemeral one when none is supplied and
 // closing only the pool it created (so callers can share a pool without leaks).
@@ -103,7 +104,9 @@ const run = async (pool) => {
 
       if (!sql) {
         migrationLogger.warn('migrations.empty_skipped', { file });
-        await resolvedPool.query('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)', [file]);
+        await resolvedPool.query('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)', [
+          file,
+        ]);
         continue;
       }
 
@@ -118,11 +121,13 @@ const run = async (pool) => {
 
         migrationLogger.warn('migrations.already_reflected', {
           file,
-          errorCode: error.code
+          errorCode: error.code,
         });
       }
 
-      await resolvedPool.query('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)', [file]);
+      await resolvedPool.query('INSERT IGNORE INTO schema_migrations (filename) VALUES (?)', [
+        file,
+      ]);
     }
   } catch (error) {
     migrationLogger.error('migrations.run.error', { error });
@@ -147,5 +152,5 @@ if (require.main === module) {
 module.exports = {
   ensureMigrationsTable,
   getPendingMigrations,
-  run
+  run,
 };

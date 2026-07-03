@@ -12,56 +12,56 @@ const router = express.Router();
 // Login: tight per-IP limit to slow credential stuffing. Separate from register
 // so a burst of one can't consume the other's quota.
 const loginLimiter = rateLimit({
-	windowMs: 60 * 1000,
-	max: 5,
-	message: 'Too many attempts, please try again in a minute.'
+  windowMs: 60 * 1000,
+  max: 5,
+  message: 'Too many attempts, please try again in a minute.',
 });
 
 // Register: per-IP limit to slow spam signups, independent from login.
 const registerLimiter = rateLimit({
-	windowMs: 60 * 1000,
-	max: 5,
-	message: 'Too many attempts, please try again in a minute.'
+  windowMs: 60 * 1000,
+  max: 5,
+  message: 'Too many attempts, please try again in a minute.',
 });
 
 // Email verification: limits brute-force guessing of the 6-digit code. A dedicated
 // instance per route (not shared with reset-password) so one route's traffic can't
 // consume the other's quota and lock out a legitimate user.
 const verifyCodeLimiter = rateLimit({
-	windowMs: 10 * 60 * 1000,
-	max: 10,
-	message: 'Too many verification attempts, try again in 10 minutes.'
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  message: 'Too many verification attempts, try again in 10 minutes.',
 });
 
 // Password reset: limits brute-force guessing of the reset code. Separate instance
 // from email verification so the two flows keep independent quotas.
 const resetPasswordLimiter = rateLimit({
-	windowMs: 10 * 60 * 1000,
-	max: 10,
-	message: 'Too many attempts, try again in 10 minutes.'
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  message: 'Too many attempts, try again in 10 minutes.',
 });
 
 // Verification-code resend: strict cap to prevent using the service as an email-spam
 // relay. Dedicated instance, independent from the forgot-password quota below.
 const resendCodeLimiter = rateLimit({
-	windowMs: 10 * 60 * 1000,
-	max: 3,
-	message: 'Too many resend requests, try again in 10 minutes.'
+  windowMs: 10 * 60 * 1000,
+  max: 3,
+  message: 'Too many resend requests, try again in 10 minutes.',
 });
 
 // Forgot-password: strict cap on reset-code emails. Separate instance from the
 // resend limiter so neither flow can exhaust the other's quota.
 const forgotPasswordLimiter = rateLimit({
-	windowMs: 10 * 60 * 1000,
-	max: 3,
-	message: 'Too many requests, try again in 10 minutes.'
+  windowMs: 10 * 60 * 1000,
+  max: 3,
+  message: 'Too many requests, try again in 10 minutes.',
 });
 
 // Token refresh: bounds how often clients can rotate tokens.
 const refreshLimiter = rateLimit({
-	windowMs: 60 * 1000,
-	max: 10,
-	message: 'Too many refresh requests, please try again in a minute.'
+  windowMs: 60 * 1000,
+  max: 10,
+  message: 'Too many refresh requests, please try again in a minute.',
 });
 
 router.post('/register', registerLimiter, authController.register);

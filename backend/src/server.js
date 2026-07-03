@@ -29,7 +29,7 @@ const startCleanupScheduler = () => {
   logger.info('token.cleanup.scheduler.started', {
     intervalMs: REVOKED_TOKENS_CLEANUP_INTERVAL_MS,
     frequency: '24h',
-    retentionDays: 30
+    retentionDays: 30,
   });
 
   cleanupInterval = setInterval(async () => {
@@ -37,17 +37,17 @@ const startCleanupScheduler = () => {
       const hasCleaned = await tokenService.cleanupExpiredRevokedTokens();
       if (!hasCleaned) {
         logger.warn('token.cleanup.completed_with_errors', {
-          retentionDays: 30
+          retentionDays: 30,
         });
         return;
       }
 
       logger.info('token.cleanup.completed', {
-        retentionDays: 30
+        retentionDays: 30,
       });
     } catch (error) {
       logger.error('token.cleanup.failed', {
-        error
+        error,
       });
     }
   }, REVOKED_TOKENS_CLEANUP_INTERVAL_MS);
@@ -63,7 +63,7 @@ const onServerListening = () => {
   logger.info('server.started', {
     port: Number(PORT),
     host: HOST || '::',
-    nodeEnv: process.env.NODE_ENV || 'development'
+    nodeEnv: process.env.NODE_ENV || 'development',
   });
 
   startCleanupScheduler();
@@ -74,16 +74,17 @@ const server = HOST
   : app.listen(PORT, onServerListening);
 
 // Promisified server.close(): resolves once connections have drained.
-const closeServer = () => new Promise((resolve, reject) => {
-  server.close((error) => {
-    if (error) {
-      reject(error);
-      return;
-    }
+const closeServer = () =>
+  new Promise((resolve, reject) => {
+    server.close((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
 
-    resolve();
+      resolve();
+    });
   });
-});
 
 // Graceful shutdown: stop scheduler, drain server, close DB pool, then exit
 // (0 on success, 1 on failure). Idempotent via the isShuttingDown guard.
@@ -95,7 +96,7 @@ const shutdownGracefully = async (signal) => {
   isShuttingDown = true;
 
   logger.info('Graceful shutdown started', {
-    signal
+    signal,
   });
 
   if (cleanupInterval) {
@@ -107,7 +108,7 @@ const shutdownGracefully = async (signal) => {
   const forcedExitTimer = setTimeout(() => {
     logger.error('Graceful shutdown timed out, forcing exit', {
       signal,
-      timeoutMs: SHUTDOWN_TIMEOUT_MS
+      timeoutMs: SHUTDOWN_TIMEOUT_MS,
     });
 
     process.exit(1);
@@ -130,14 +131,14 @@ const shutdownGracefully = async (signal) => {
     clearTimeout(forcedExitTimer);
 
     logger.info('Graceful shutdown completed', {
-      signal
+      signal,
     });
 
     process.exit(0);
   } catch (error) {
     logger.error('Graceful shutdown failed', {
       signal,
-      error
+      error,
     });
 
     process.exit(1);
@@ -159,7 +160,7 @@ process.on('SIGINT', () => {
 // process in an undefined state, so log it and shut down cleanly rather than limp on.
 process.on('unhandledRejection', (reason) => {
   logger.error('process.unhandledRejection', {
-    error: reason instanceof Error ? reason : new Error(String(reason))
+    error: reason instanceof Error ? reason : new Error(String(reason)),
   });
 
   void shutdownGracefully('unhandledRejection');
@@ -175,5 +176,5 @@ module.exports = {
   server,
   startCleanupScheduler,
   shutdownGracefully,
-  REVOKED_TOKENS_CLEANUP_INTERVAL_MS
+  REVOKED_TOKENS_CLEANUP_INTERVAL_MS,
 };

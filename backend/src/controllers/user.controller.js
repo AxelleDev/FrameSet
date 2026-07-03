@@ -18,11 +18,17 @@ const STATUS_BY_ERROR_CODE = {
   no_pending: 400,
   invalid_code: 400,
   code_expired: 400,
-  invalid_current_password: 401
+  invalid_current_password: 401,
 };
 
 // Sends a business error as its mapped status, or logs and returns a generic 500.
-const handleServiceError = (req, res, operation, error, { serverErrorMessage = 'Server error.' } = {}) => {
+const handleServiceError = (
+  req,
+  res,
+  operation,
+  error,
+  { serverErrorMessage = 'Server error.' } = {},
+) => {
   if (error instanceof userService.UserServiceError) {
     return res.status(STATUS_BY_ERROR_CODE[error.code] || 400).json({ error: error.message });
   }
@@ -107,7 +113,10 @@ const changePassword = async (req, res) => {
   }
 
   try {
-    const { passwordUpdatedAt } = await userService.changeUserPassword(authenticatedUserId, req.body || {});
+    const { passwordUpdatedAt } = await userService.changeUserPassword(
+      authenticatedUserId,
+      req.body || {},
+    );
     issueAuthCookies(res, { id: authenticatedUserId, email: req.user?.email });
     res.json({ success: true, passwordUpdatedAt });
   } catch (error) {
@@ -137,5 +146,5 @@ module.exports = {
   verifyPendingEmail,
   resendPendingEmail,
   changePassword,
-  deleteAccount
+  deleteAccount,
 };

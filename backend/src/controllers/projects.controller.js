@@ -38,7 +38,7 @@ const listProjects = async (req, res) => {
     const parsedPageSize = Number.parseInt(query.pageSize, 10);
     const result = await projectsService.listProjectsForUser(userId, req.id, {
       page: Number.isNaN(parsedPage) ? undefined : parsedPage,
-      pageSize: Number.isNaN(parsedPageSize) ? undefined : parsedPageSize
+      pageSize: Number.isNaN(parsedPageSize) ? undefined : parsedPageSize,
     });
     res.json(result);
   } catch (error) {
@@ -107,7 +107,13 @@ const addBrushNorm = async (req, res) => {
   const { name, value, unit, brushName, opacity } = req.body;
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
-    const result = await projectsService.addBrushNormToProject(id, { name, value, unit, brushName, opacity });
+    const result = await projectsService.addBrushNormToProject(id, {
+      name,
+      value,
+      unit,
+      brushName,
+      opacity,
+    });
     res.status(201).json(result);
   } catch (error) {
     if (error.code === 'validation') {
@@ -124,7 +130,12 @@ const addTypographyNorm = async (req, res) => {
   const { fontFamily, fontWeight, fontUsage, fontStyle } = req.body;
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
-    const result = await projectsService.addTypographyNormToProject(id, { fontFamily, fontWeight, fontUsage, fontStyle });
+    const result = await projectsService.addTypographyNormToProject(id, {
+      fontFamily,
+      fontWeight,
+      fontUsage,
+      fontStyle,
+    });
     res.status(201).json(result);
   } catch (error) {
     if (error.code === 'validation') {
@@ -175,7 +186,7 @@ const deleteBrushNorm = async (req, res) => {
   } catch (error) {
     logProjectsControllerError(req, 'delete_brush_norm', error, {
       projectId,
-      normId
+      normId,
     });
     res.status(500).json({ error: 'Database error.' });
   }
@@ -193,7 +204,7 @@ const deleteTypographyNorm = async (req, res) => {
   } catch (error) {
     logProjectsControllerError(req, 'delete_typography_norm', error, {
       projectId,
-      normId
+      normId,
     });
     res.status(500).json({ error: 'Database error.' });
   }
@@ -205,7 +216,15 @@ const updateBrushNorm = async (req, res) => {
   const { name, value, unit, brushName, opacity } = req.body;
   try {
     if (!(await ensureProjectOwnership(req, res, projectId))) return;
-    res.json(await projectsService.updateBrushNormInProject(projectId, normId, { name, value, unit, brushName, opacity }));
+    res.json(
+      await projectsService.updateBrushNormInProject(projectId, normId, {
+        name,
+        value,
+        unit,
+        brushName,
+        opacity,
+      }),
+    );
   } catch (error) {
     if (error.code === 'validation') {
       return res.status(400).json({ error: error.message });
@@ -215,7 +234,7 @@ const updateBrushNorm = async (req, res) => {
     }
     logProjectsControllerError(req, 'update_brush_norm', error, {
       projectId,
-      normId
+      normId,
     });
     res.status(500).json({ error: 'Database error.' });
   }
@@ -227,7 +246,14 @@ const updateTypographyNorm = async (req, res) => {
   const { fontFamily, fontWeight, fontUsage, fontStyle } = req.body;
   try {
     if (!(await ensureProjectOwnership(req, res, projectId))) return;
-    res.json(await projectsService.updateTypographyNormInProject(projectId, normId, { fontFamily, fontWeight, fontUsage, fontStyle }));
+    res.json(
+      await projectsService.updateTypographyNormInProject(projectId, normId, {
+        fontFamily,
+        fontWeight,
+        fontUsage,
+        fontStyle,
+      }),
+    );
   } catch (error) {
     if (error.code === 'validation') {
       return res.status(400).json({ error: error.message });
@@ -237,7 +263,7 @@ const updateTypographyNorm = async (req, res) => {
     }
     logProjectsControllerError(req, 'update_typography_norm', error, {
       projectId,
-      normId
+      normId,
     });
     res.status(500).json({ error: 'Database error.' });
   }
@@ -254,5 +280,5 @@ module.exports = {
   deleteBrushNorm,
   deleteTypographyNorm,
   updateBrushNorm,
-  updateTypographyNorm
+  updateTypographyNorm,
 };

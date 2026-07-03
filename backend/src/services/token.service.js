@@ -23,17 +23,17 @@ function hashToken(token) {
 function generateRefreshToken(payload) {
   return jwt.sign(payload, JWT_REFRESH_SECRET, {
     expiresIn: JWT_REFRESH_EXPIRES,
-    jwtid: randomUUID()
+    jwtid: randomUUID(),
   });
 }
 
 // Verifies a refresh token's signature and expiry; returns the decoded payload or null.
 function verifyRefreshToken(token) {
   try {
-     const user = jwt.verify(token, JWT_REFRESH_SECRET, { algorithms: ['HS256'] });
-     return user;
+    const user = jwt.verify(token, JWT_REFRESH_SECRET, { algorithms: ['HS256'] });
+    return user;
   } catch (err) {
-     return null;
+    return null;
   }
 }
 
@@ -51,7 +51,7 @@ async function revokeToken(userId, token) {
   try {
     const [result] = await db.query(
       'INSERT IGNORE INTO revoked_tokens (user_id, token) VALUES (?, ?)',
-      [userId, tokenHash]
+      [userId, tokenHash],
     );
     return result?.affectedRows === 1;
   } catch (error) {
@@ -71,7 +71,7 @@ async function isTokenRevoked(userId, token) {
   try {
     const [rows] = await db.query(
       'SELECT id FROM revoked_tokens WHERE user_id = ? AND token = ? LIMIT 1',
-      [userId, tokenHash]
+      [userId, tokenHash],
     );
     return rows.length > 0;
   } catch (error) {
@@ -95,10 +95,9 @@ async function isTokenStaleByPasswordChange(userId, tokenIatSeconds) {
   }
 
   try {
-    const [rows] = await db.query(
-      'SELECT password_updated_at FROM users WHERE id = ? LIMIT 1',
-      [userId]
-    );
+    const [rows] = await db.query('SELECT password_updated_at FROM users WHERE id = ? LIMIT 1', [
+      userId,
+    ]);
     if (rows.length === 0) {
       return true;
     }
@@ -122,7 +121,7 @@ async function isTokenStaleByPasswordChange(userId, tokenIatSeconds) {
 async function cleanupExpiredRevokedTokens() {
   try {
     await db.query(
-      'DELETE FROM revoked_tokens WHERE revoked_at < DATE_SUB(NOW(), INTERVAL 30 DAY)'
+      'DELETE FROM revoked_tokens WHERE revoked_at < DATE_SUB(NOW(), INTERVAL 30 DAY)',
     );
     return true;
   } catch (error) {
@@ -136,5 +135,5 @@ module.exports = {
   revokeToken,
   isTokenRevoked,
   isTokenStaleByPasswordChange,
-  cleanupExpiredRevokedTokens
+  cleanupExpiredRevokedTokens,
 };

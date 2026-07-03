@@ -15,7 +15,7 @@ const pool = mysql.createPool({
   connectionLimit: Number(process.env.DB_CONNECTION_LIMIT) || 10,
   // Fail a stuck connection attempt instead of hanging indefinitely.
   connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT_MS) || 10000,
-  queueLimit: 0
+  queueLimit: 0,
 });
 
 // Expose the promise-based API so callers can use async/await.

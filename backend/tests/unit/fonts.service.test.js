@@ -18,7 +18,7 @@ describe('fonts service (Google Fonts proxy)', () => {
     process.env.GOOGLE_FONTS_API_KEY = 'test-key';
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ items: [{ family: 'Roboto', variants: ['regular'] }] })
+      json: async () => ({ items: [{ family: 'Roboto', variants: ['regular'] }] }),
     });
 
     const items = await fontsService.getGoogleFontsCatalog();

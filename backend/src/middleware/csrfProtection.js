@@ -9,7 +9,7 @@ const { randomBytes, timingSafeEqual } = require('crypto');
 const {
   CSRF_TOKEN_COOKIE_NAME,
   getCookieValue,
-  getCsrfTokenCookieOptions
+  getCsrfTokenCookieOptions,
 } = require('../utils/cookies.utils');
 
 const CSRF_HEADER_NAME = 'x-csrf-token';
@@ -69,5 +69,5 @@ const csrfProtection = (req, res, next) => {
 module.exports = {
   csrfProtection,
   ensureCsrfCookie,
-  createCsrfToken
+  createCsrfToken,
 };

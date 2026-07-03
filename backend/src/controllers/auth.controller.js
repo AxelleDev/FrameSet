@@ -16,7 +16,7 @@ const {
   CSRF_TOKEN_COOKIE_NAME,
   getCsrfTokenCookieOptions,
   getCookieBaseOptions,
-  getCookieValue
+  getCookieValue,
 } = require('../utils/cookies.utils');
 const { logger } = require('../utils/logger');
 
@@ -28,7 +28,8 @@ const clearAuthCookies = (res) => {
 };
 
 /** Resolves the access token from the Authorization header or the cookie. */
-const getAccessTokenFromRequest = (req) => getBearerToken(req) || getCookieValue(req, ACCESS_TOKEN_COOKIE_NAME);
+const getAccessTokenFromRequest = (req) =>
+  getBearerToken(req) || getCookieValue(req, ACCESS_TOKEN_COOKIE_NAME);
 
 // Verify an access token -> decoded payload or null. ignoreExpiration lets logout
 // still identify and revoke an expired-but-valid token.
@@ -66,9 +67,9 @@ const register = async (req, res) => {
         logger.error('auth.register.mail_failed', {
           requestId: req.id,
           emailFingerprint: getIdentifierFingerprint(body.email),
-          error: mailError
+          error: mailError,
         });
-      }
+      },
     });
     res.status(201).json({ success: true, ...user });
   } catch (error) {
@@ -79,7 +80,7 @@ const register = async (req, res) => {
     if (error.code === 'duplicate_email') {
       logger.warn('auth.register.duplicate_email', {
         requestId: req.id,
-        emailFingerprint: getIdentifierFingerprint(email)
+        emailFingerprint: getIdentifierFingerprint(email),
       });
       return res.status(400).json({ error: 'Something went wrong while creating your account.' });
     }
@@ -87,7 +88,7 @@ const register = async (req, res) => {
     logger.error('auth.register.error', {
       requestId: req.id,
       emailFingerprint: getIdentifierFingerprint(email),
-      error
+      error,
     });
 
     res.status(500).json({ error: 'Server error.' });
@@ -102,7 +103,7 @@ const login = async (req, res) => {
 
   logger.info('auth.login.attempt', {
     requestId: req.id,
-    emailFingerprint
+    emailFingerprint,
   });
 
   try {
@@ -110,7 +111,7 @@ const login = async (req, res) => {
 
     logger.info('auth.login.success', {
       requestId: req.id,
-      userId: user.id
+      userId: user.id,
     });
 
     issueAuthCookies(res, user);
@@ -120,7 +121,7 @@ const login = async (req, res) => {
       logger.warn('auth.login.validation_failed', {
         requestId: req.id,
         emailFingerprint,
-        reason: 'missing_credentials'
+        reason: 'missing_credentials',
       });
 
       return res.status(400).json({ error: error.message });
@@ -129,7 +130,7 @@ const login = async (req, res) => {
       logger.warn('auth.login.validation_failed', {
         requestId: req.id,
         emailFingerprint,
-        reason: 'invalid_email_format'
+        reason: 'invalid_email_format',
       });
 
       return res.status(400).json({ error: error.message });
@@ -138,7 +139,7 @@ const login = async (req, res) => {
       logger.info('auth.login.blocked', {
         requestId: req.id,
         userId: error.userId,
-        reason: 'email_not_verified'
+        reason: 'email_not_verified',
       });
 
       return res.status(401).json({ error: 'Please verify your email before signing in.' });
@@ -148,7 +149,7 @@ const login = async (req, res) => {
         requestId: req.id,
         ...(error.userId ? { userId: error.userId } : {}),
         emailFingerprint,
-        reason: 'invalid_credentials'
+        reason: 'invalid_credentials',
       });
 
       return res.status(401).json({ error: 'Incorrect email or password.' });
@@ -157,7 +158,7 @@ const login = async (req, res) => {
     logger.error('auth.login.error', {
       requestId: req.id,
       emailFingerprint,
-      error
+      error,
     });
 
     res.status(500).json({ error: 'Server error.' });
@@ -173,7 +174,7 @@ const refresh = async (req, res) => {
   if (!refreshToken) {
     logger.warn('auth.refresh.validation_failed', {
       requestId: req.id,
-      reason: 'missing_refresh_token'
+      reason: 'missing_refresh_token',
     });
 
     return res.status(400).json({ error: 'Missing refresh token.' });
@@ -183,7 +184,7 @@ const refresh = async (req, res) => {
   if (!user) {
     logger.warn('auth.refresh.failed', {
       requestId: req.id,
-      reason: 'invalid_or_expired_refresh_token'
+      reason: 'invalid_or_expired_refresh_token',
     });
 
     return res.status(403).json({ error: 'Invalid or expired refresh token.' });
@@ -200,7 +201,7 @@ const refresh = async (req, res) => {
       requestId: req.id,
       userId: user.id,
       reason: 'revocation_check_failed',
-      error
+      error,
     });
 
     return res.status(503).json({ error: 'Service temporarily unavailable.' });
@@ -209,7 +210,7 @@ const refresh = async (req, res) => {
     logger.warn('auth.refresh.failed', {
       requestId: req.id,
       userId: user.id,
-      reason: 'revoked_refresh_token'
+      reason: 'revoked_refresh_token',
     });
 
     return res.status(403).json({ error: 'Invalid or expired refresh token.' });
@@ -227,7 +228,7 @@ const refresh = async (req, res) => {
     logger.warn('auth.refresh.failed', {
       requestId: req.id,
       userId: user.id,
-      reason: 'password_changed'
+      reason: 'password_changed',
     });
 
     return res.status(403).json({ error: 'Invalid or expired refresh token.' });
@@ -235,7 +236,7 @@ const refresh = async (req, res) => {
 
   logger.info('auth.refresh.success', {
     requestId: req.id,
-    userId: user.id
+    userId: user.id,
   });
 
   // Claim the rotation atomically: revoke the presented token FIRST and only proceed
@@ -246,7 +247,7 @@ const refresh = async (req, res) => {
     logger.warn('auth.refresh.rotation_failed', {
       requestId: req.id,
       userId: user.id,
-      reason: 'refresh_token_already_rotated'
+      reason: 'refresh_token_already_rotated',
     });
 
     return res.status(403).json({ error: 'Invalid or expired refresh token.' });
@@ -268,7 +269,7 @@ const verify = async (req, res) => {
     logger.error('auth.verify.error', {
       requestId: req.id,
       emailFingerprint: getIdentifierFingerprint(email),
-      error
+      error,
     });
 
     res.status(500).json({ error: 'Server error.' });
@@ -287,7 +288,7 @@ const resendCode = async (req, res) => {
     logger.error('auth.resend_code.error', {
       requestId: req.id,
       emailFingerprint: getIdentifierFingerprint(email),
-      error
+      error,
     });
 
     res.status(500).json({ error: 'Server error.' });
@@ -326,7 +327,7 @@ const logout = async (req, res) => {
 
     logger.info('auth.logout.success', {
       requestId: req.id,
-      userId: authenticatedUserId
+      userId: authenticatedUserId,
     });
 
     res.json({ success: true });
@@ -336,7 +337,7 @@ const logout = async (req, res) => {
     logger.error('auth.logout.error', {
       requestId: req.id,
       userId: authenticatedUserId,
-      error
+      error,
     });
 
     res.status(500).json({ error: 'Server error.' });
@@ -355,10 +356,10 @@ const forgotPassword = async (req, res) => {
           logger.error('auth.forgot_password.mail_failed', {
             requestId: req.id,
             emailFingerprint: getIdentifierFingerprint(email),
-            error: mailError
+            error: mailError,
           });
-        }
-      }
+        },
+      },
     );
 
     res.json({ success: true });
@@ -369,7 +370,7 @@ const forgotPassword = async (req, res) => {
     logger.error('auth.forgot_password.error', {
       requestId: req.id,
       emailFingerprint: getIdentifierFingerprint(email),
-      error
+      error,
     });
     res.status(500).json({ error: 'Server error.' });
   }
@@ -388,7 +389,7 @@ const resetPassword = async (req, res) => {
     logger.error('auth.reset_password.error', {
       requestId: req.id,
       emailFingerprint: getIdentifierFingerprint(email),
-      error
+      error,
     });
     res.status(500).json({ error: 'Server error.' });
   }
@@ -403,5 +404,5 @@ module.exports = {
   refresh,
   logout,
   forgotPassword,
-  resetPassword
+  resetPassword,
 };

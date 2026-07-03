@@ -8,13 +8,12 @@ const nodemailer = require('nodemailer');
 const mockSendMail = jest.fn().mockResolvedValue(true);
 jest.mock('nodemailer', () => ({
   createTransport: jest.fn(() => ({
-    sendMail: mockSendMail
-  }))
+    sendMail: mockSendMail,
+  })),
 }));
 const mailService = require('../../src/services/mail.service');
 
 describe('mail service', () => {
-
   it('configures the SMTP transport from environment variables', () => {
     expect(nodemailer.createTransport).toHaveBeenCalledWith({
       host: process.env.MAIL_HOST,
@@ -22,8 +21,8 @@ describe('mail service', () => {
       secure: process.env.MAIL_SECURE === 'true',
       auth: {
         user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS
-      }
+        pass: process.env.MAIL_PASS,
+      },
     });
   });
 
@@ -36,7 +35,12 @@ describe('mail service', () => {
   it('sends an email', async () => {
     mockSendMail.mockClear();
     mockSendMail.mockResolvedValueOnce(true);
-    await mailService.sendMail({ to: 'axelle@example.com', subject: 'Test', text: 'Hello', html: '<div>Test</div>' });
+    await mailService.sendMail({
+      to: 'axelle@example.com',
+      subject: 'Test',
+      text: 'Hello',
+      html: '<div>Test</div>',
+    });
     expect(mockSendMail).toHaveBeenCalled();
   });
 });

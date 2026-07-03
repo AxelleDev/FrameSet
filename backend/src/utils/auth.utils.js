@@ -13,21 +13,21 @@ const getAuthenticatedUserId = (req) => {
 // middleware and the auth controller so the header parsing lives in one place.
 const getBearerToken = (req) => {
   const authHeader = req?.headers?.authorization;
-  return authHeader && authHeader.startsWith('Bearer ')
-    ? authHeader.split(' ')[1]
-    : null;
+  return authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
 };
 
 // Single-use 6-digit verification code (crypto.randomInt, unbiased/unpredictable), valid 10 min.
 const generateVerificationCode = () => ({
   code: randomInt(100000, 1000000).toString(),
-  expires: new Date(Date.now() + 10 * 60 * 1000)
+  expires: new Date(Date.now() + 10 * 60 * 1000),
 });
 
 // Irreversible SHA-256 fingerprint (first 12 hex) of an identifier for logs: correlate without
 // storing PII in plaintext. Returns null if empty.
 const getIdentifierFingerprint = (value) => {
-  const normalizedValue = String(value || '').trim().toLowerCase();
+  const normalizedValue = String(value || '')
+    .trim()
+    .toLowerCase();
   if (!normalizedValue) {
     return null;
   }
@@ -36,14 +36,15 @@ const getIdentifierFingerprint = (value) => {
 };
 
 // Up to two uppercase initials from a display name, for avatar placeholders.
-const getInitials = (name) => String(name || '')
-  .trim()
-  .split(/\s+/)
-  .filter(Boolean)
-  .map((word) => word[0])
-  .join('')
-  .substring(0, 2)
-  .toUpperCase();
+const getInitials = (name) =>
+  String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
 
 /**
  * Factory: returns an error logger emitting `<namespace>.<operation>.error`,
@@ -51,16 +52,18 @@ const getInitials = (name) => String(name || '')
  * @param {string} namespace Logical controller name (e.g. "projects", "users").
  * @returns {(req: Object, operation: string, error: Error, meta?: Object) => void}
  */
-const createControllerLogger = (namespace) => (req, operation, error, meta = {}) => {
-  const userId = getAuthenticatedUserId(req);
-  const logMeta = {
-    requestId: req.id,
-    ...meta,
-    error
+const createControllerLogger =
+  (namespace) =>
+  (req, operation, error, meta = {}) => {
+    const userId = getAuthenticatedUserId(req);
+    const logMeta = {
+      requestId: req.id,
+      ...meta,
+      error,
+    };
+    if (userId) logMeta.userId = userId;
+    logger.error(`${namespace}.${operation}.error`, logMeta);
   };
-  if (userId) logMeta.userId = userId;
-  logger.error(`${namespace}.${operation}.error`, logMeta);
-};
 
 module.exports = {
   getAuthenticatedUserId,
@@ -68,5 +71,5 @@ module.exports = {
   generateVerificationCode,
   getIdentifierFingerprint,
   getInitials,
-  createControllerLogger
+  createControllerLogger,
 };

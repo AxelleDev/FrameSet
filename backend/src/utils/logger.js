@@ -6,7 +6,7 @@ const LEVEL_PRIORITY = Object.freeze({
   debug: 10,
   info: 20,
   warn: 30,
-  error: 40
+  error: 40,
 });
 
 const DEFAULT_LOG_LEVEL = 'info';
@@ -31,7 +31,7 @@ const serializeError = (error) => {
 
   const serialized = {
     name: error.name,
-    message: error.message
+    message: error.message,
   };
 
   if (error.code) {
@@ -86,7 +86,7 @@ const write = (level, message, meta = {}) => {
     timestamp: new Date().toISOString(),
     level,
     message,
-    ...sanitizeMeta(meta)
+    ...sanitizeMeta(meta),
   };
 
   const output = JSON.stringify(payload);
@@ -110,7 +110,7 @@ const createLogger = (context = {}) => ({
   info: (message, meta = {}) => write('info', message, { ...context, ...meta }),
   warn: (message, meta = {}) => write('warn', message, { ...context, ...meta }),
   error: (message, meta = {}) => write('error', message, { ...context, ...meta }),
-  child: (nextContext = {}) => createLogger({ ...context, ...nextContext })
+  child: (nextContext = {}) => createLogger({ ...context, ...nextContext }),
 });
 
 const logger = createLogger();
@@ -118,5 +118,5 @@ const logger = createLogger();
 module.exports = {
   logger,
   createLogger,
-  activeLogLevel
+  activeLogLevel,
 };

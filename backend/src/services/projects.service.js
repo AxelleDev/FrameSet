@@ -28,10 +28,10 @@ class ProjectServiceError extends Error {
 // can read/mutate another user's project by guessing its id. Returns true/false;
 // the controller maps false to a 403.
 const userOwnsProject = async (userId, projectId) => {
-  const [rows] = await db.query(
-    'SELECT id FROM projects WHERE id = ? AND user_id = ?',
-    [projectId, userId]
-  );
+  const [rows] = await db.query('SELECT id FROM projects WHERE id = ? AND user_id = ?', [
+    projectId,
+    userId,
+  ]);
 
   return rows.length > 0;
 };
@@ -61,9 +61,8 @@ const sanitizeOptionalTextField = (value, { maxLength }) => {
 };
 
 /** Builds the standard user-facing error message for an invalid hex color. */
-const buildInvalidHexColorError = (value) => (
-  `Invalid color: the hex value "${value}" is not a valid format (#RGB or #RRGGBB).`
-);
+const buildInvalidHexColorError = (value) =>
+  `Invalid color: the hex value "${value}" is not a valid format (#RGB or #RRGGBB).`;
 
 // Validates a hex color (leading '#', #RGB/#RRGGBB). Returns { value } or { error }.
 const validateHexColorField = (value) => {
@@ -108,7 +107,10 @@ const validateBrushNormPayload = ({ name, value, unit, brushName, opacity }) => 
   }
 
   const trimmedUnit = validator.trim(unitInput);
-  if (!validator.isLength(trimmedUnit, { min: 1, max: 20 }) || !validator.matches(trimmedUnit, /^[a-zA-Z%]+$/)) {
+  if (
+    !validator.isLength(trimmedUnit, { min: 1, max: 20 }) ||
+    !validator.matches(trimmedUnit, /^[a-zA-Z%]+$/)
+  ) {
     return { error: 'The brush unit is invalid.' };
   }
 
@@ -136,8 +138,8 @@ const validateBrushNormPayload = ({ name, value, unit, brushName, opacity }) => 
       value: trimmedValue,
       unit: trimmedUnit,
       brushName: normalizedBrushName.value,
-      opacity: validatedOpacity
-    }
+      opacity: validatedOpacity,
+    },
   };
 };
 
@@ -173,8 +175,8 @@ const validateTypographyNormPayload = ({ fontFamily, fontWeight, fontUsage, font
       fontFamily: trimmedFontFamily,
       fontWeight: normalizedFontWeight.value,
       fontUsage: normalizedFontUsage.value,
-      fontStyle: normalizedFontStyle.value
-    }
+      fontStyle: normalizedFontStyle.value,
+    },
   };
 };
 
@@ -190,8 +192,8 @@ const runTimedQuery = async ({ label, sql, params }) => {
     timing: {
       label,
       durationMs,
-      rowCount: Array.isArray(rows) ? rows.length : 0
-    }
+      rowCount: Array.isArray(rows) ? rows.length : 0,
+    },
   };
 };
 
@@ -217,29 +219,23 @@ const groupRowsByProjectId = (rows, mapper) => {
   return groupedRows;
 };
 
-// Logs list-endpoint performance, contrasting queries issued against the N+1
-// baseline (1 + 3 per project) to make the optimization observable in metrics.
+// Logs list-endpoint SQL timing at debug level for local profiling only. It is a
+// developer aid, not an operational metric, so it stays out of the default (info)
+// log stream in production.
 const logListProjectsPerformance = ({ requestId, userId, projectCount, queryTimings }) => {
-  const legacyNPlusOneQueryCount = 1 + (projectCount * 3);
-  const optimizedSqlQueries = queryTimings.length;
-  const queryReduction = legacyNPlusOneQueryCount - optimizedSqlQueries;
-  const queryReductionPercent = legacyNPlusOneQueryCount === 0
-    ? 0
-    : Number(((queryReduction / legacyNPlusOneQueryCount) * 100).toFixed(2));
   const totalSqlTimeMs = Number(
-    queryTimings.reduce((accumulator, queryTiming) => accumulator + queryTiming.durationMs, 0).toFixed(2)
+    queryTimings
+      .reduce((accumulator, queryTiming) => accumulator + queryTiming.durationMs, 0)
+      .toFixed(2),
   );
 
-  logger.info('projects.list.performance', {
+  logger.debug('projects.list.performance', {
     requestId,
     userId,
     projectCount,
-    legacyNPlusOneQueryCount,
-    optimizedSqlQueries,
-    queryReduction,
-    queryReductionPercent,
+    sqlQueries: queryTimings.length,
     totalSqlTimeMs,
-    sqlTimings: queryTimings
+    sqlTimings: queryTimings,
   });
 };
 
@@ -261,7 +257,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
   const countQuery = await runTimedQuery({
     label: 'projects_count',
     sql: 'SELECT COUNT(*) AS total FROM projects WHERE user_id = ?',
-    params: [userId]
+    params: [userId],
   });
   queryTimings.push(countQuery.timing);
   const total = Number(countQuery.rows[0]?.total || 0);
@@ -269,13 +265,13 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
     page,
     pageSize,
     total,
-    totalPages: Math.max(1, Math.ceil(total / pageSize))
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
   };
 
   const projectsQuery = await runTimedQuery({
     label: 'projects',
-    sql: 'SELECT *, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-    params: [userId, pageSize, offset]
+    sql: 'SELECT id, name, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+    params: [userId, pageSize, offset],
   });
 
   queryTimings.push(projectsQuery.timing);
@@ -286,7 +282,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
       requestId,
       userId,
       projectCount: 0,
-      queryTimings
+      queryTimings,
     });
 
     return { projects: [], pagination };
@@ -301,57 +297,44 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
     runTimedQuery({
       label: 'project_brush_norms',
       sql: `SELECT id, project_id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id IN (${placeholders})`,
-      params: projectIds
+      params: projectIds,
     }),
     runTimedQuery({
       label: 'project_typography_norms',
       sql: `SELECT id, project_id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id IN (${placeholders})`,
-      params: projectIds
+      params: projectIds,
     }),
     runTimedQuery({
       label: 'project_palette',
       sql: `SELECT id, project_id, name, hex FROM project_palette WHERE project_id IN (${placeholders}) ORDER BY project_id ASC, position ASC, id ASC`,
-      params: projectIds
-    })
+      params: projectIds,
+    }),
   ]);
 
-  queryTimings.push(
-    brushNormsQuery.timing,
-    typographyNormsQuery.timing,
-    paletteQuery.timing
-  );
+  queryTimings.push(brushNormsQuery.timing, typographyNormsQuery.timing, paletteQuery.timing);
 
-  const brushNormsByProjectId = groupRowsByProjectId(
-    brushNormsQuery.rows,
-    (norm) => ({
-      id: norm.id,
-      name: norm.name,
-      value: norm.value,
-      unit: norm.unit,
-      brushName: norm.brush_name,
-      opacity: norm.opacity
-    })
-  );
+  const brushNormsByProjectId = groupRowsByProjectId(brushNormsQuery.rows, (norm) => ({
+    id: norm.id,
+    name: norm.name,
+    value: norm.value,
+    unit: norm.unit,
+    brushName: norm.brush_name,
+    opacity: norm.opacity,
+  }));
 
-  const typographyNormsByProjectId = groupRowsByProjectId(
-    typographyNormsQuery.rows,
-    (norm) => ({
-      id: norm.id,
-      fontFamily: norm.font_family,
-      fontWeight: norm.font_weight,
-      fontUsage: norm.font_usage,
-      fontStyle: norm.font_style
-    })
-  );
+  const typographyNormsByProjectId = groupRowsByProjectId(typographyNormsQuery.rows, (norm) => ({
+    id: norm.id,
+    fontFamily: norm.font_family,
+    fontWeight: norm.font_weight,
+    fontUsage: norm.font_usage,
+    fontStyle: norm.font_style,
+  }));
 
-  const paletteByProjectId = groupRowsByProjectId(
-    paletteQuery.rows,
-    (color) => ({
-      id: color.id,
-      name: color.name,
-      hex: color.hex
-    })
-  );
+  const paletteByProjectId = groupRowsByProjectId(paletteQuery.rows, (color) => ({
+    id: color.id,
+    name: color.name,
+    hex: color.hex,
+  }));
 
   const fullProjects = projectsData.map((project) => {
     const projectId = Number(project.id);
@@ -366,7 +349,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
       brushNorms,
       typographyNorms,
       normsCount: brushNorms.length + typographyNorms.length,
-      palette
+      palette,
     };
   });
 
@@ -374,7 +357,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
     requestId,
     userId,
     projectCount: projectsData.length,
-    queryTimings
+    queryTimings,
   });
 
   return { projects: fullProjects, pagination };
@@ -391,10 +374,10 @@ const createProjectForUser = async (userId, rawName) => {
     throw new ProjectServiceError('invalid_name');
   }
 
-  const [result] = await db.query(
-    'INSERT INTO projects (user_id, name) VALUES (?, ?)',
-    [userId, name]
-  );
+  const [result] = await db.query('INSERT INTO projects (user_id, name) VALUES (?, ?)', [
+    userId,
+    name,
+  ]);
   const newId = result.insertId;
 
   return {
@@ -403,13 +386,16 @@ const createProjectForUser = async (userId, rawName) => {
     lastEdited: 'Just now',
     normsCount: 0,
     norms: [],
-    palette: []
+    palette: [],
   };
 };
 
 // Renames a project (name already validated) and refreshes last_edited.
 const renameProject = async (projectId, name) => {
-  await db.query('UPDATE projects SET name = ?, last_edited = NOW() WHERE id = ?', [name.trim(), projectId]);
+  await db.query('UPDATE projects SET name = ?, last_edited = NOW() WHERE id = ?', [
+    name.trim(),
+    projectId,
+  ]);
   return { success: true, name: name.trim() };
 };
 
@@ -435,8 +421,8 @@ const addBrushNormToProject = async (projectId, payload) => {
       validatedBrushNorm.value.value,
       validatedBrushNorm.value.unit,
       validatedBrushNorm.value.brushName,
-      validatedBrushNorm.value.opacity
-    ]
+      validatedBrushNorm.value.opacity,
+    ],
   );
   await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [projectId]);
   return { success: true, id: result.insertId };
@@ -457,8 +443,8 @@ const addTypographyNormToProject = async (projectId, payload) => {
       validatedTypographyNorm.value.fontFamily,
       validatedTypographyNorm.value.fontWeight,
       validatedTypographyNorm.value.fontUsage,
-      validatedTypographyNorm.value.fontStyle
-    ]
+      validatedTypographyNorm.value.fontStyle,
+    ],
   );
   await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [projectId]);
   return { success: true, id: result.insertId };
@@ -471,7 +457,10 @@ const validatePalettePayload = (colors) => {
     throw new ProjectServiceError('validation', 'The palette must be an array of colors.');
   }
   if (colors.length > MAX_PALETTE_SIZE) {
-    throw new ProjectServiceError('validation', `The palette cannot exceed ${MAX_PALETTE_SIZE} colors.`);
+    throw new ProjectServiceError(
+      'validation',
+      `The palette cannot exceed ${MAX_PALETTE_SIZE} colors.`,
+    );
   }
 
   // Validate and normalize every color up front, before opening a transaction.
@@ -514,7 +503,7 @@ const replaceProjectPalette = async (projectId, validatedColors) => {
     // and to ensure a client-supplied id can't target another project's color.
     const [existingRows] = await connection.query(
       'SELECT id FROM project_palette WHERE project_id = ?',
-      [projectId]
+      [projectId],
     );
     const existingIds = new Set(existingRows.map((row) => row.id));
 
@@ -528,7 +517,7 @@ const replaceProjectPalette = async (projectId, validatedColors) => {
       const placeholders = keptIds.map(() => '?').join(', ');
       await connection.query(
         `DELETE FROM project_palette WHERE project_id = ? AND id NOT IN (${placeholders})`,
-        [projectId, ...keptIds]
+        [projectId, ...keptIds],
       );
     } else {
       await connection.query('DELETE FROM project_palette WHERE project_id = ?', [projectId]);
@@ -540,12 +529,12 @@ const replaceProjectPalette = async (projectId, validatedColors) => {
       if (color.id !== null && existingIds.has(color.id)) {
         await connection.query(
           'UPDATE project_palette SET name = ?, hex = ?, position = ? WHERE id = ? AND project_id = ?',
-          [color.name, color.hex, position, color.id, projectId]
+          [color.name, color.hex, position, color.id, projectId],
         );
       } else {
         await connection.query(
           'INSERT INTO project_palette (project_id, name, hex, position) VALUES (?, ?, ?, ?)',
-          [projectId, color.name, color.hex, position]
+          [projectId, color.name, color.hex, position],
         );
       }
     }
@@ -555,7 +544,7 @@ const replaceProjectPalette = async (projectId, validatedColors) => {
     // Return the saved palette (with ids) so the client can adopt the canonical state.
     const [paletteRows] = await connection.query(
       'SELECT id, name, hex FROM project_palette WHERE project_id = ? ORDER BY position ASC, id ASC',
-      [projectId]
+      [projectId],
     );
 
     await connection.commit();
@@ -571,13 +560,19 @@ const replaceProjectPalette = async (projectId, validatedColors) => {
 // Deletes a brush norm, scoped by both norm id and project id (defense in depth
 // beyond the ownership check). Returns false when no row matched.
 const deleteBrushNormFromProject = async (projectId, normId) => {
-  const [result] = await db.query('DELETE FROM project_brush_norms WHERE id = ? AND project_id = ?', [normId, projectId]);
+  const [result] = await db.query(
+    'DELETE FROM project_brush_norms WHERE id = ? AND project_id = ?',
+    [normId, projectId],
+  );
   return result.affectedRows > 0;
 };
 
 // Deletes a typography norm, scoped by norm id and project id. Returns false when no row matched.
 const deleteTypographyNormFromProject = async (projectId, normId) => {
-  const [result] = await db.query('DELETE FROM project_typography_norms WHERE id = ? AND project_id = ?', [normId, projectId]);
+  const [result] = await db.query(
+    'DELETE FROM project_typography_norms WHERE id = ? AND project_id = ?',
+    [normId, projectId],
+  );
   return result.affectedRows > 0;
 };
 
@@ -598,8 +593,8 @@ const updateBrushNormInProject = async (projectId, normId, payload) => {
       validatedBrushNorm.value.brushName,
       validatedBrushNorm.value.opacity,
       normId,
-      projectId
-    ]
+      projectId,
+    ],
   );
   if (result.affectedRows === 0) {
     throw new ProjectServiceError('not_found');
@@ -624,8 +619,8 @@ const updateTypographyNormInProject = async (projectId, normId, payload) => {
       validatedTypographyNorm.value.fontUsage,
       validatedTypographyNorm.value.fontStyle,
       normId,
-      projectId
-    ]
+      projectId,
+    ],
   );
   if (result.affectedRows === 0) {
     throw new ProjectServiceError('not_found');
@@ -648,5 +643,5 @@ module.exports = {
   deleteBrushNormFromProject,
   deleteTypographyNormFromProject,
   updateBrushNormInProject,
-  updateTypographyNormInProject
+  updateTypographyNormInProject,
 };

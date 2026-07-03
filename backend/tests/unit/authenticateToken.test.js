@@ -2,12 +2,12 @@ process.env.JWT_SECRET = 'test_jwt_secret';
 process.env.JWT_REFRESH_SECRET = 'test_jwt_refresh_secret';
 
 jest.mock('jsonwebtoken', () => ({
-  verify: jest.fn(() => ({ id: 1 }))
+  verify: jest.fn(() => ({ id: 1 })),
 }));
 
 jest.mock('../../src/services/token.service', () => ({
   isTokenRevoked: jest.fn().mockResolvedValue(false),
-  isTokenStaleByPasswordChange: jest.fn().mockResolvedValue(false)
+  isTokenStaleByPasswordChange: jest.fn().mockResolvedValue(false),
 }));
 
 const jwt = require('jsonwebtoken');
@@ -15,7 +15,6 @@ const tokenService = require('../../src/services/token.service');
 const authenticateToken = require('../../src/middleware/authenticateToken');
 
 describe('middleware authenticateToken', () => {
-
   beforeEach(() => {
     jest.resetAllMocks();
     jwt.verify.mockReturnValue({ id: 1 });

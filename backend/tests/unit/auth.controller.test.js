@@ -8,8 +8,8 @@ process.env.MAIL_PASS = process.env.MAIL_PASS || 'test_mail_password';
 
 jest.mock('nodemailer', () => ({
   createTransport: () => ({
-    sendMail: jest.fn().mockResolvedValue(true)
-  })
+    sendMail: jest.fn().mockResolvedValue(true),
+  }),
 }));
 jest.mock('../../src/services/mail.service');
 
@@ -18,6 +18,7 @@ const authController = require('../../src/controllers/auth.controller');
 const db = require('../../src/database');
 const mailService = require('../../src/services/mail.service');
 const tokenService = require('../../src/services/token.service');
+const bcrypt = require('bcryptjs');
 const { hashOtp } = require('../../src/utils/otp');
 
 jest.mock('../../src/database');
@@ -28,11 +29,18 @@ describe('authentication controller', () => {
     jest.resetAllMocks();
   });
 
+  afterEach(() => {
+    // Restore any jest.spyOn (e.g. on bcrypt) so a stubbed impl never leaks into the next test.
+    jest.restoreAllMocks();
+  });
+
   describe('registration', () => {
     it('registers a user without issuing tokens before verification', async () => {
       db.query.mockResolvedValueOnce([{ insertId: 1 }]);
       mailService.sendMail.mockResolvedValueOnce();
-      const req = { body: { name: '  Jane   Doe  ', email: '  axelle@example.com  ', password: '  Pass1234  ' } };
+      const req = {
+        body: { name: '  Jane   Doe  ', email: '  axelle@example.com  ', password: '  Pass1234  ' },
+      };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
       await authController.register(req, res);
@@ -46,7 +54,7 @@ describe('authentication controller', () => {
       expect(payload.refreshToken).toBeUndefined();
       expect(db.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO users'),
-        expect.arrayContaining(['Jane   Doe', 'axelle@example.com'])
+        expect.arrayContaining(['Jane   Doe', 'axelle@example.com']),
       );
     });
 
@@ -65,8 +73,19 @@ describe('authentication controller', () => {
 
   describe('login', () => {
     it('logs a user in and sets the HttpOnly cookies', async () => {
-      db.query.mockResolvedValueOnce([[{ id: 1, name: 'Jane Doe', email: 'axelle@example.com', password: 'hashed', avatar_initials: 'JD', is_verified: true }]]);
-      require('bcryptjs').compare = jest.fn().mockResolvedValue(true);
+      db.query.mockResolvedValueOnce([
+        [
+          {
+            id: 1,
+            name: 'Jane Doe',
+            email: 'axelle@example.com',
+            password: 'hashed',
+            avatar_initials: 'JD',
+            is_verified: true,
+          },
+        ],
+      ]);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       tokenService.generateRefreshToken.mockReturnValue('refreshToken');
       const req = { body: { email: 'axelle@example.com', password: 'pass' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
@@ -78,7 +97,6 @@ describe('authentication controller', () => {
       expect(payload.refreshToken).toBeUndefined();
     });
   });
-
 
   describe('refresh', () => {
     it('refreshes the token', async () => {
@@ -135,12 +153,14 @@ describe('authentication controller', () => {
     it('revokes the access token and the refresh token', async () => {
       tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
       tokenService.revokeToken.mockResolvedValue(true);
-      const accessToken = jwt.sign({ id: 1, email: 'axelle@example.com' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const accessToken = jwt.sign({ id: 1, email: 'axelle@example.com' }, process.env.JWT_SECRET, {
+        expiresIn: '1h',
+      });
 
       const req = {
         id: 'req-logout-1',
         token: accessToken,
-        body: { refreshToken: 'refresh-token' }
+        body: { refreshToken: 'refresh-token' },
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
 
@@ -155,12 +175,16 @@ describe('authentication controller', () => {
     it('allows logout with an expired access token when the refresh token is valid', async () => {
       tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
       tokenService.revokeToken.mockResolvedValue(true);
-      const expiredAccessToken = jwt.sign({ id: 1, email: 'axelle@example.com' }, process.env.JWT_SECRET, { expiresIn: -10 });
+      const expiredAccessToken = jwt.sign(
+        { id: 1, email: 'axelle@example.com' },
+        process.env.JWT_SECRET,
+        { expiresIn: -10 },
+      );
 
       const req = {
         id: 'req-logout-2',
         headers: { authorization: `Bearer ${expiredAccessToken}` },
-        body: { refreshToken: 'refresh-token' }
+        body: { refreshToken: 'refresh-token' },
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
 
@@ -186,11 +210,18 @@ describe('authentication controller', () => {
   describe('verify email code', () => {
     it('verifies a correct code', async () => {
       db.query
-        .mockResolvedValueOnce([[{
-          id: 1, email: 'a@b.com', is_verified: 0,
-          verification_code: hashOtp('123456'),
-          verification_code_expires: new Date(Date.now() + 10000), otp_attempts: 0
-        }]])
+        .mockResolvedValueOnce([
+          [
+            {
+              id: 1,
+              email: 'a@b.com',
+              is_verified: 0,
+              verification_code: hashOtp('123456'),
+              verification_code_expires: new Date(Date.now() + 10000),
+              otp_attempts: 0,
+            },
+          ],
+        ])
         .mockResolvedValueOnce([{ affectedRows: 1 }]); // the verify UPDATE
       const req = { body: { email: 'a@b.com', code: '123456' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
@@ -200,10 +231,17 @@ describe('authentication controller', () => {
 
     it('rejects an incorrect code with a generic 400', async () => {
       db.query
-        .mockResolvedValueOnce([[{
-          id: 1, email: 'a@b.com', is_verified: 0,
-          verification_code: hashOtp('123456'), otp_attempts: 0
-        }]])
+        .mockResolvedValueOnce([
+          [
+            {
+              id: 1,
+              email: 'a@b.com',
+              is_verified: 0,
+              verification_code: hashOtp('123456'),
+              otp_attempts: 0,
+            },
+          ],
+        ])
         .mockResolvedValueOnce([{}]); // the failed-attempt UPDATE
       const req = { body: { email: 'a@b.com', code: '000000' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
@@ -262,11 +300,17 @@ describe('authentication controller', () => {
   describe('reset password', () => {
     it('resets the password with a correct code', async () => {
       db.query
-        .mockResolvedValueOnce([[{
-          id: 1, email: 'a@b.com',
-          reset_code: hashOtp('123456'),
-          reset_code_expires: new Date(Date.now() + 10000), otp_attempts: 0
-        }]])
+        .mockResolvedValueOnce([
+          [
+            {
+              id: 1,
+              email: 'a@b.com',
+              reset_code: hashOtp('123456'),
+              reset_code_expires: new Date(Date.now() + 10000),
+              otp_attempts: 0,
+            },
+          ],
+        ])
         .mockResolvedValueOnce([{}]); // UPDATE password
       const req = { body: { email: 'a@b.com', code: '123456', newPassword: 'NewPass123' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
@@ -276,10 +320,16 @@ describe('authentication controller', () => {
 
     it('rejects a wrong reset code with a generic 400', async () => {
       db.query
-        .mockResolvedValueOnce([[{
-          id: 1, email: 'a@b.com',
-          reset_code: hashOtp('123456'), otp_attempts: 0
-        }]])
+        .mockResolvedValueOnce([
+          [
+            {
+              id: 1,
+              email: 'a@b.com',
+              reset_code: hashOtp('123456'),
+              otp_attempts: 0,
+            },
+          ],
+        ])
         .mockResolvedValueOnce([{}]); // failed-attempt UPDATE
       const req = { body: { email: 'a@b.com', code: '000000', newPassword: 'NewPass123' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
