@@ -20,6 +20,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
 import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
+import Seo from '../components/Seo';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 
 export default function ProjectNorms() {
@@ -121,28 +122,39 @@ export default function ProjectNorms() {
     }
   };
 
-  // Persist edits for the norm currently open in the edit modal.
+  // submitting guards both add and edit against a double submit.
+  const [isSubmittingNorm, setIsSubmittingNorm] = useState(false);
+
+  // Persist edits for the norm currently open in the edit modal. Only closes the
+  // modal and confirms when the save actually succeeded.
   const handleEditNorm = async () => {
-    if (!id || !editingNorm) return;
-    if (editingType === 'brush') {
-      if (!isBrushFormValid) return;
-      await updateBrushNorm(id, editingNorm.id, {
-        name: brushForm.usage,
-        value: brushForm.value,
-        unit: brushForm.unit,
-        brushName: brushForm.name,
-        opacity: brushForm.opacity
-      });
-    } else {
-      await updateTypographyNorm(id, editingNorm.id, {
-        fontFamily: typoForm.fontFamily,
-        fontWeight: typoForm.fontWeight,
-        fontUsage: typoForm.fontUsage,
-        fontStyle: typoForm.fontStyle
-      });
+    if (!id || !editingNorm || isSubmittingNorm) return;
+    setIsSubmittingNorm(true);
+    try {
+      let ok;
+      if (editingType === 'brush') {
+        if (!isBrushFormValid) return;
+        ok = await updateBrushNorm(id, editingNorm.id, {
+          name: brushForm.usage,
+          value: brushForm.value,
+          unit: brushForm.unit,
+          brushName: brushForm.name,
+          opacity: brushForm.opacity
+        });
+      } else {
+        ok = await updateTypographyNorm(id, editingNorm.id, {
+          fontFamily: typoForm.fontFamily,
+          fontWeight: typoForm.fontWeight,
+          fontUsage: typoForm.fontUsage,
+          fontStyle: typoForm.fontStyle
+        });
+      }
+      if (!ok) return;
+      setEditingNorm(null);
+      showToast('Standard updated.');
+    } finally {
+      setIsSubmittingNorm(false);
     }
-    setEditingNorm(null);
-    showToast('Standard updated.');
   };
 
   // loadingDelete holds the id of the norm whose deletion spinner is showing.
@@ -169,33 +181,41 @@ export default function ProjectNorms() {
   // Create a norm of the selected type. For typography, eagerly load the chosen
   // font so its preview appears immediately.
   const handleAddNorm = async () => {
-    if (!id) return;
-    if (addType === 'brush') {
-      if (!isBrushFormValid) return;
-      await addBrushNorm(id, {
-        name: brushForm.usage,
-        value: brushForm.value,
-        unit: brushForm.unit,
-        brushName: brushForm.name,
-        opacity: brushForm.opacity
-      });
-    } else {
-      if (!typoForm.fontFamily) return;
-      // Preload the font (prefer the 'regular'/400 variant, else the first one).
-      const selectedFont = googleFonts.find(f => f.family === typoForm.fontFamily);
-      if (selectedFont) {
-        loadGoogleFont(selectedFont.family, selectedFont.variants?.includes('regular') ? '400' : selectedFont.variants?.[0] || '400');
+    if (!id || isSubmittingNorm) return;
+    setIsSubmittingNorm(true);
+    try {
+      let saved;
+      if (addType === 'brush') {
+        if (!isBrushFormValid) return;
+        saved = await addBrushNorm(id, {
+          name: brushForm.usage,
+          value: brushForm.value,
+          unit: brushForm.unit,
+          brushName: brushForm.name,
+          opacity: brushForm.opacity
+        });
+      } else {
+        if (!typoForm.fontFamily) return;
+        // Preload the font (prefer the 'regular'/400 variant, else the first one).
+        const selectedFont = googleFonts.find(f => f.family === typoForm.fontFamily);
+        if (selectedFont) {
+          loadGoogleFont(selectedFont.family, selectedFont.variants?.includes('regular') ? '400' : selectedFont.variants?.[0] || '400');
+        }
+        saved = await addTypographyNorm(id, {
+          fontFamily: typoForm.fontFamily,
+          fontWeight: typoForm.fontWeight,
+          fontUsage: typoForm.fontUsage,
+          fontStyle: typoForm.fontStyle
+        });
       }
-      await addTypographyNorm(id, {
-        fontFamily: typoForm.fontFamily,
-        fontWeight: typoForm.fontWeight,
-        fontUsage: typoForm.fontUsage,
-        fontStyle: typoForm.fontStyle
-      });
+      // Only close and confirm when the standard was actually saved.
+      if (!saved) return;
+      setIsAddingNorm(false);
+      resetForm();
+      showToast('Standard added.');
+    } finally {
+      setIsSubmittingNorm(false);
     }
-    setIsAddingNorm(false);
-    resetForm();
-    showToast('Standard added.');
   };
 
   // Display filter: 'all', 'brush', or 'typography'.
@@ -203,6 +223,7 @@ export default function ProjectNorms() {
 
   return (
     <>
+      <Seo title="Graphic standards" noindex />
       <PageHeader
         title="Graphic standards"
         subtitle="This project's graphic rules, all in one place."
@@ -511,14 +532,13 @@ export default function ProjectNorms() {
           if (!confirmDeleteNorm) return;
           // Show the spinner on the targeted card, delete by type, then clear state.
           setLoadingDelete(confirmDeleteNorm.id);
-          if (confirmDeleteNorm.type === 'brush') {
-            await deleteBrushNorm(id, confirmDeleteNorm.id);
-          } else {
-            await deleteTypographyNorm(id, confirmDeleteNorm.id);
-          }
+          const ok = confirmDeleteNorm.type === 'brush'
+            ? await deleteBrushNorm(id, confirmDeleteNorm.id)
+            : await deleteTypographyNorm(id, confirmDeleteNorm.id);
           setLoadingDelete(null);
           setConfirmDeleteNorm(null);
-          showToast('Standard deleted.');
+          // Only confirm when the deletion actually went through.
+          if (ok) showToast('Standard deleted.');
         }}
       />
     </>

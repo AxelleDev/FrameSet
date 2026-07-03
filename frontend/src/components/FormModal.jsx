@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import PropTypes from 'prop-types';
 import AppModal from './AppModal';
 
@@ -17,17 +17,19 @@ export default function FormModal({
   decorationClassName = 'absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50',
   titleClassName = 'text-xl font-medium text-primary mb-6'
 }) {
+  // Unique per instance so two modals open at once can't share a title id.
+  const titleId = useId();
   return (
     <AppModal
       isOpen={isOpen}
       onClose={onClose}
       showClose={showClose}
       panelClassName={panelClassName}
-      ariaLabelledby={title ? 'form-modal-title' : undefined}
+      ariaLabelledby={title ? titleId : undefined}
     >
       <div className={decorationClassName}></div>
       {title ? (
-        <h3 id="form-modal-title" className={`${titleClassName} relative z-10`.trim()}>{title}</h3>
+        <h3 id={titleId} className={`${titleClassName} relative z-10`.trim()}>{title}</h3>
       ) : null}
       <div className={`relative z-10 ${bodyClassName}`.trim()}>{children}</div>
     </AppModal>

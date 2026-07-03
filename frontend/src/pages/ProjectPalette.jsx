@@ -17,6 +17,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import CopyBadge from '../components/CopyBadge';
 import AddTile from '../components/AddTile';
 import PageHeader from '../components/PageHeader';
+import Seo from '../components/Seo';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useClipboard from '../hooks/useClipboard';
 import useActiveProject from '../hooks/useActiveProject';
@@ -52,6 +53,11 @@ export default function ProjectPalette() {
   const skipFlip = useRef(false);
   const didDrop = useRef(false);
   const flipPending = useRef(false);
+  // Holds the post-drop persistence timeout so it can be cancelled on unmount.
+  const dropPersistTimer = useRef(null);
+
+  // Cancel any pending post-drop persistence timer if we unmount before it fires.
+  useEffect(() => () => clearTimeout(dropPersistTimer.current), []);
 
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null);
   const { copy, copiedValue } = useClipboard({ timeout: 1200 });
@@ -306,23 +312,31 @@ export default function ProjectPalette() {
   // Move the swatch at `idx` to `target`, persist, and keep focus on it. Shared
   // by the arrow-key handler and the on-tile buttons, so reorder works by
   // keyboard and by a single click, not only by drag.
-  const moveColor = (idx, target) => {
+  const moveColor = async (idx, target) => {
     if (target < 0 || target >= palette.length) return;
+    const previous = palette;
     const next = [...palette];
     const [moved] = next.splice(idx, 1);
     next.splice(target, 0, moved);
     setPalette(next);
     setPreviewPalette(next);
-    persistPalette(next);
     // Keep focus on the moved swatch after it re-renders into its new slot.
     requestAnimationFrame(() => {
       const el = itemRefs.current[moved.id];
       if (el) el.focus();
     });
+    // Roll back the optimistic reorder if persistence failed, so local state
+    // doesn't silently diverge from the server.
+    const saved = await persistPalette(next);
+    if (!saved) {
+      setPalette(previous);
+      setPreviewPalette(previous);
+    }
   };
 
   return (
     <>
+      <Seo title="Color palette" noindex />
       <PageHeader
         title="Color palette"
         subtitle="This project's reference colors."
@@ -412,7 +426,8 @@ export default function ProjectPalette() {
                   const [moved] = newPalette.splice(draggedIndex, 1);
                   newPalette.splice(dragOverIndex, 0, moved);
                   setPalette(newPalette);
-                  setTimeout(() => {
+                  clearTimeout(dropPersistTimer.current);
+                  dropPersistTimer.current = setTimeout(() => {
                     persistPalette(newPalette);
                   }, 200);
                 }

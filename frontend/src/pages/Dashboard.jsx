@@ -15,6 +15,7 @@ import AddTile from '../components/AddTile';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
+import Seo from '../components/Seo';
 
 // Formats `lastEdited` for the "Edited " prefix: API sends "DD/MM HH:MM" or a
 // sentinel; renders "on DD/MM at HH:MM" or "just now".
@@ -42,8 +43,9 @@ export default function Dashboard() {
     setActiveProjectId(null);
   }, [setActiveProjectId]);
 
-  // Aggregate norm count across the loaded projects for the summary stat.
-  const totalNorms = projects.reduce((acc, p) => acc + p.normsCount, 0);
+  // Aggregate norm count across the loaded projects for the summary stat. Guard
+  // each normsCount so a project missing the field can't turn the total into NaN.
+  const totalNorms = projects.reduce((acc, p) => acc + (p.normsCount || 0), 0);
   // Authoritative project total from the server (all pages), guarded so it never
   // shows fewer than what is currently on screen.
   const paginationTotal = projectsPagination?.total ?? projects.length;
@@ -51,12 +53,21 @@ export default function Dashboard() {
   const hasMoreProjects = projects.length < paginationTotal;
 
   // Create a project from the modal, ignoring blank names, then reset the form.
+  // submitting guards against a double submit (Enter key + button click).
+  const [isSubmittingProject, setIsSubmittingProject] = useState(false);
   const handleCreateProject = async () => {
-    if (newProjectName && newProjectName.trim().length > 0) {
-      await addProject(newProjectName);
+    if (isSubmittingProject) return;
+    if (!newProjectName || newProjectName.trim().length === 0) return;
+    setIsSubmittingProject(true);
+    try {
+      const created = await addProject(newProjectName);
+      // Only confirm and close the modal when the project was actually created.
+      if (!created) return;
       setIsCreatingProject(false);
       setNewProjectName('');
       showToast('Project created.');
+    } finally {
+      setIsSubmittingProject(false);
     }
   };
 
@@ -70,18 +81,26 @@ export default function Dashboard() {
 
   const handleEditProject = async () => {
     setEditProjectError("");
+    if (isSubmittingProject) return;
     if (!editProjectId || !editProjectName || !editProjectName.trim()) {
       setEditProjectError("Give your project a name.");
       return;
     }
+    setIsSubmittingProject(true);
     try {
-      await updateProjectName(editProjectId, { name: editProjectName.trim() });
+      // updateProjectName never throws; it returns false on failure (the global
+      // error banner already surfaced the reason).
+      const ok = await updateProjectName(editProjectId, { name: editProjectName.trim() });
+      if (!ok) {
+        setEditProjectError("Something went wrong updating the project.");
+        return;
+      }
       setIsEditingProject(false);
       setEditProjectId(null);
       setEditProjectName("");
       showToast('Project updated.');
-    } catch (e) {
-      setEditProjectError(e?.message || "Something went wrong updating the project.");
+    } finally {
+      setIsSubmittingProject(false);
     }
   };
 
@@ -99,6 +118,7 @@ export default function Dashboard() {
 
   return (
     <>
+      <Seo title="Dashboard" noindex />
       <Card className="overflow-hidden mb-12 animate-fade-in">
         <div className="relative z-10 p-6 sm:p-10 md:p-14 flex flex-col md:flex-row items-start justify-between gap-6 md:gap-8">
           <div>
@@ -253,9 +273,9 @@ export default function Dashboard() {
         onCancel={() => setConfirmDeleteProject(null)}
         onConfirm={async () => {
           if (!confirmDeleteProject?.id) return;
-          await deleteProject(confirmDeleteProject.id);
+          const ok = await deleteProject(confirmDeleteProject.id);
           setConfirmDeleteProject(null);
-          showToast('Project deleted.');
+          if (ok) showToast('Project deleted.');
         }}
       />
     </>

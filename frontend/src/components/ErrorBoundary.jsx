@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 // User-facing fallback text shown when a render error is caught.
 const FALLBACK_MESSAGE = 'Something went wrong. Please reload the page.';
@@ -40,5 +41,10 @@ export default class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+ErrorBoundary.propTypes = {
+  children: PropTypes.node,
+  onError: PropTypes.func,
+};
 
 export { FALLBACK_MESSAGE };

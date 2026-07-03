@@ -38,6 +38,16 @@ export default function Modal({
     };
   }, [isOpen]);
 
+  // Lock body scroll while the modal is open so the page behind it can't scroll.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   // Keyboard handling: Escape closes the modal; Tab is trapped within the panel,
   // wrapping from last to first (and vice-versa with Shift).
   const handleKeyDown = (e) => {
@@ -47,8 +57,10 @@ export default function Modal({
       return;
     }
     if (e.key !== 'Tab') return;
+    // Exclude disabled controls: a .focus() on them no-ops and would break the
+    // trap at its edges (Tab could escape the modal).
     const focusableEls = panelRef.current.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     );
     const focusable = Array.prototype.slice.call(focusableEls);
     if (!focusable.length) return;

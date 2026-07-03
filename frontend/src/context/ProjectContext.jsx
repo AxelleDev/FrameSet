@@ -28,6 +28,10 @@ export const ProjectProvider = ({ children }) => {
   }, []);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [projectsLoading, setProjectsLoading] = useState(false);
+  // Monotonic token to discard out-of-order responses: two interleaved fetches
+  // (silent page-1 on login + a "load more", or a StrictMode double-mount) must
+  // not let a stale response overwrite the newer list/pagination.
+  const fetchSeq = useRef(0);
 
   // Fetches a page of projects. Page 1 replaces the list; later pages are
   // appended and de-duplicated by id (so an insertion between fetches can't
@@ -40,11 +44,16 @@ export const ProjectProvider = ({ children }) => {
       return [];
     }
 
+    const seq = (fetchSeq.current += 1);
     setProjectsLoading(true);
 
     try {
       const options = silent ? undefined : { onGlobalError: setGlobalError };
       const data = await api.get(`/projects?page=${page}`, options);
+      // A newer fetch started while this one was in flight: drop this response.
+      if (seq !== fetchSeq.current) {
+        return data?.projects || [];
+      }
       const fetched = data?.projects || [];
       updatePagination(data?.pagination || { ...DEFAULT_PAGINATION, total: fetched.length });
       setProjects((prev) => {
@@ -57,7 +66,10 @@ export const ProjectProvider = ({ children }) => {
       logger.error('projects.fetch.error', error);
       return [];
     } finally {
-      setProjectsLoading(false);
+      // Only the latest fetch owns the loading flag.
+      if (seq === fetchSeq.current) {
+        setProjectsLoading(false);
+      }
     }
   }, [user?.id, setGlobalError, updatePagination]);
 
@@ -88,21 +100,25 @@ export const ProjectProvider = ({ children }) => {
     projects.find((project) => String(project.id) === String(activeProjectId)) || null
   ), [projects, activeProjectId]);
 
-  /** Creates a project and prepends it to the local list. */
+  // Creates a project and prepends it to the local list. Returns the created
+  // project on success, or null on failure (so callers can gate toasts/modals).
   const addProject = useCallback(async (name) => {
-    if (!user) return;
+    if (!user) return null;
 
     try {
       const newProject = await api.post('/projects', { name }, { onGlobalError: setGlobalError });
       setProjects((prevProjects) => [newProject, ...prevProjects]);
       updatePagination({ ...paginationRef.current, total: paginationRef.current.total + 1 });
+      return newProject;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to add the project.');
       logger.error('projects.add.error', error);
+      return null;
     }
   }, [user, setGlobalError, updatePagination]);
 
-  /** Deletes a project and removes it locally, clearing the active id if it matched. */
+  // Deletes a project and removes it locally, clearing the active id if it
+  // matched. Returns true on success, false on failure.
   const deleteProject = useCallback(async (id) => {
     try {
       await api.delete(`/projects/${id}`, null, { onGlobalError: setGlobalError });
@@ -111,9 +127,11 @@ export const ProjectProvider = ({ children }) => {
       if (String(activeProjectId) === String(id)) {
         setActiveProjectId(null);
       }
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to delete the project.');
       logger.error('projects.delete.error', error);
+      return false;
     }
   }, [activeProjectId, setGlobalError, updatePagination]);
 
@@ -141,7 +159,8 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
-  /** Renames a project and locally marks it as just edited. */
+  // Renames a project and locally marks it as just edited. Returns true on
+  // success, false on failure.
   const updateProjectName = useCallback(async (projectId, { name }) => {
     try {
       await api.patch(`/projects/${projectId}`, { name }, { onGlobalError: setGlobalError });
@@ -152,9 +171,11 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to rename the project.');
       logger.error('projects.updateName.error', error);
+      return false;
     }
   }, [setGlobalError]);
 
@@ -222,9 +243,11 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to delete the standard.');
       logger.error('projects.deleteBrushNorm.error', error);
+      return false;
     }
   }, [setGlobalError]);
 
@@ -244,9 +267,11 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to delete the standard.');
       logger.error('projects.deleteTypographyNorm.error', error);
+      return false;
     }
   }, [setGlobalError]);
 
@@ -266,9 +291,11 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to update the standard.');
       logger.error('projects.updateBrushNorm.error', error);
+      return false;
     }
   }, [setGlobalError]);
 
@@ -288,9 +315,11 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to update the standard.');
       logger.error('projects.updateTypographyNorm.error', error);
+      return false;
     }
   }, [setGlobalError]);
 

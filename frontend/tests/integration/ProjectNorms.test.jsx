@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import ProjectNorms from '../../src/pages/ProjectNorms';
 
 const { projectState } = vi.hoisted(() => ({ projectState: {} }));
@@ -22,9 +23,9 @@ vi.mock('../../src/hooks/useGoogleFonts', () => ({
 
 const renderPage = () =>
   render(
-    <MemoryRouter>
+    <HelmetProvider><MemoryRouter>
       <ProjectNorms />
-    </MemoryRouter>
+    </MemoryRouter></HelmetProvider>
   );
 
 describe('ProjectNorms', () => {

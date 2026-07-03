@@ -7,6 +7,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Card from '../components/Card';
+import Seo from '../components/Seo';
 import Button from '../components/Button';
 import Avatar from '../components/Avatar';
 import FormField from '../components/FormField';
@@ -197,7 +198,7 @@ export default function Profile() {
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">
-      
+      <Seo title="Profile" noindex />
       <Card className="p-6 sm:p-8 mb-8 flex flex-col sm:flex-row items-center gap-5 sm:gap-8">
         <Avatar initials={user.avatarInitials} className="w-24 h-24 text-3xl sm:w-28 sm:h-28 sm:text-4xl shrink-0" />
 

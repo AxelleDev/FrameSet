@@ -277,12 +277,29 @@ const request = async (path, {
         }
       }
 
+      // An unexpected 401 on a protected (non-auth) route means there is no valid
+      // session at all. Treat it as terminal — clear the session rather than leave
+      // a phantom logged-in UI. Auth endpoints (login/forgot/...) legitimately
+      // return 401 for bad credentials and must not trigger a logout.
+      if (e?.status === 401 && !path.startsWith('/auth/')) {
+        if (typeof sessionExpiredHandler === 'function') {
+          sessionExpiredHandler();
+        }
+        throw e;
+      }
+
       // Classify the failure to decide whether a retry is worthwhile.
       const isNetworkError = e instanceof TypeError || e.message === 'Failed to fetch';
       const isServerError = typeof e?.status === 'number' && e.status >= 500;
       // Abort that was NOT caused by the caller means our own timeout fired.
       const isTimeoutAbort = e?.name === 'AbortError' && !parentAborted;
-      const shouldRetry = isNetworkError || isServerError || isTimeoutAbort;
+      // Only replay a transient failure for safe methods. A network error / 5xx /
+      // timeout can hide a request the server actually processed, so retrying a
+      // POST/PUT/PATCH/DELETE risks a duplicate side effect (e.g. two projects) or
+      // a spurious 404 on a re-deleted resource. CSRF/token-refresh replays above
+      // are unaffected: those only re-run a request the server definitively rejected.
+      const isSafeMethod = normalizedMethod === 'GET' || normalizedMethod === 'HEAD';
+      const shouldRetry = (isNetworkError || isServerError || isTimeoutAbort) && isSafeMethod;
 
       if (!shouldRetry) {
         throw e;

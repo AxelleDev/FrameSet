@@ -31,43 +31,58 @@ export default function Verify() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [resendMsg, setResendMsg] = useState('');
+  // Guards against a double submit (e.g. a double-Enter firing /auth/verify twice);
+  // the submit Button is type="submit", so it doesn't get onClick auto-loading.
+  const [submitting, setSubmitting] = useState(false);
 
   // Submit the code through the matching flow, then redirect after a short delay.
   const handleVerify = async () => {
+    if (submitting) return;
     setError('');
     if (!email.trim()) {
       setError('Enter your email address.');
       return;
     }
-    const result = type === 'pending-email'
-      ? await verifyPendingEmail(email, code)
-      : await verifyEmail(email, code);
+    setSubmitting(true);
+    try {
+      const result = type === 'pending-email'
+        ? await verifyPendingEmail(email, code)
+        : await verifyEmail(email, code);
 
-    if (result.success) {
-      setSuccess(true);
-      // Brief success message before redirecting to the relevant destination.
-      setTimeout(() => navigate(type === 'pending-email' ? '/app/profile' : '/login'), 2000);
-    } else {
-      setError(result.message || 'That code is incorrect.');
+      if (result.success) {
+        setSuccess(true);
+        // Brief success message before redirecting to the relevant destination.
+        setTimeout(() => navigate(type === 'pending-email' ? '/app/profile' : '/login'), 2000);
+      } else {
+        setError(result.message || 'That code is incorrect.');
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
   // Request a fresh code via the matching flow.
   const handleResend = async () => {
+    if (submitting) return;
     setResendMsg('');
     setError('');
     if (!email.trim()) {
       setError('Enter your email address.');
       return;
     }
-    const result = type === 'pending-email'
-      ? await resendPendingEmailCode(email)
-      : await resendVerificationCode(email);
+    setSubmitting(true);
+    try {
+      const result = type === 'pending-email'
+        ? await resendPendingEmailCode(email)
+        : await resendVerificationCode(email);
 
-    if (result.success) {
-      setResendMsg('Code resent! Check your email.');
-    } else {
-      setError(result.message || 'Something went wrong sending the code.');
+      if (result.success) {
+        setResendMsg('Code resent! Check your email.');
+      } else {
+        setError(result.message || 'Something went wrong sending the code.');
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -134,8 +149,8 @@ export default function Verify() {
             </FormField>
 
             <div className="flex flex-col gap-3">
-              <Button type="submit" fullWidth>Verify</Button>
-              <Button type="button" onClick={handleResend} variant="ghost" className="w-full">
+              <Button type="submit" fullWidth loading={submitting} disabled={submitting}>Verify</Button>
+              <Button type="button" onClick={handleResend} variant="ghost" className="w-full" disabled={submitting}>
                 Resend code
               </Button>
             </div>

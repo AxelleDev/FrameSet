@@ -83,7 +83,7 @@ export function extractColorsFromImage(file, maxColors = 8) {
 
     image.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error('Image illisible'));
+      reject(new Error('Unreadable image'));
     };
 
     image.src = objectUrl;

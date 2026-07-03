@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 
 /**
@@ -46,8 +46,20 @@ export function ToastProvider({ children }) {
     [dismiss]
   );
 
+  // Clear any pending auto-dismiss timers if the provider unmounts.
+  useEffect(() => {
+    const timersSnapshot = timers.current;
+    return () => {
+      Object.values(timersSnapshot).forEach(clearTimeout);
+    };
+  }, []);
+
+  // Stable context value so every useToast() consumer doesn't re-render each time
+  // a toast is shown/dismissed (both callbacks are already stable).
+  const contextValue = useMemo(() => ({ showToast, dismiss }), [showToast, dismiss]);
+
   return (
-    <ToastContext.Provider value={{ showToast, dismiss }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       {createPortal(
         <div

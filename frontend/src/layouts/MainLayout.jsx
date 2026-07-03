@@ -15,8 +15,12 @@ import Seo from '../components/Seo';
  */
 export default function MainLayout() {
   const { user, authLoading } = useAuth();
-  const { activeProject, projectsLoading } = useProjects();
-  const loading = authLoading || projectsLoading;
+  const { activeProject, projects, projectsLoading } = useProjects();
+  // Block the whole shell only on auth or the FIRST projects load (empty list).
+  // A later fetch (e.g. "Load more") must keep the page mounted — otherwise the
+  // layout is replaced by a full-screen spinner, losing scroll position; those
+  // fetches show their own inline spinner instead.
+  const loading = authLoading || (projectsLoading && projects.length === 0);
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const asideRef = useRef(null);

@@ -5,6 +5,7 @@ import { useProjects } from '../context/ProjectContext';
 import { useParams } from 'react-router-dom';
 import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
+import Seo from '../components/Seo';
 import Button from '../components/Button';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useActiveProject from '../hooks/useActiveProject';
@@ -148,6 +149,7 @@ export default function ProjectExport() {
 
   return (
     <>
+      <Seo title="Export standards" noindex />
       <PageHeader
         title="Export standards"
         subtitle="Export the essentials of your art direction."

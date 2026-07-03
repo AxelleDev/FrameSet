@@ -1,5 +1,6 @@
 // Layout for authentication pages (login / register).
 import React from 'react';
+import PropTypes from 'prop-types';
 import PublicTopBar from './PublicTopBar';
 
 // Two-column auth layout: a hero/marketing column and a form column.
@@ -24,3 +25,9 @@ export default function AuthLayout({ hero, children, swapOnMobile = false }) {
     </div>
   );
 }
+
+AuthLayout.propTypes = {
+  hero: PropTypes.node,
+  children: PropTypes.node,
+  swapOnMobile: PropTypes.bool,
+};

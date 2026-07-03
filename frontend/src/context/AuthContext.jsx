@@ -201,7 +201,7 @@ export const AuthProvider = ({ children }) => {
   // (business) errors, shown inline in the form.
   const changePassword = useCallback(async ({ currentPassword, newPassword }) => {
     if (!user) {
-      return { success: false, message: 'Utilisateur non connecte.' };
+      return { success: false, message: 'You are not signed in.' };
     }
 
     try {

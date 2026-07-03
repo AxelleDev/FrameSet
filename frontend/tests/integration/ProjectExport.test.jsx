@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import ProjectExport from '../../src/pages/ProjectExport';
 
 const { projectState } = vi.hoisted(() => ({ projectState: {} }));
@@ -17,9 +18,9 @@ vi.mock('../../src/context/ProjectContext', () => ({
 
 const renderPage = () =>
   render(
-    <MemoryRouter>
+    <HelmetProvider><MemoryRouter>
       <ProjectExport />
-    </MemoryRouter>
+    </MemoryRouter></HelmetProvider>
   );
 
 describe('ProjectExport', () => {
