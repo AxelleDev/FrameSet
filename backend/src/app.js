@@ -20,6 +20,11 @@ const { healthCheckLimiter } = require('./middleware/projectCreateLimiter');
 const { logger } = require('./utils/logger');
 
 const app = express();
+// Trust the first proxy hop (Render/Railway/nginx/…): so req.ip is the real
+// client IP from X-Forwarded-For and per-IP rate limiting stays per-client
+// instead of collapsing to the proxy's single IP. `1` = trust one hop only
+// (not permissive), which express-rate-limit accepts without warning.
+app.set('trust proxy', 1);
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 const isDevelopment = process.env.NODE_ENV !== 'production';
 // API docs are served unless explicitly disabled (ENABLE_API_DOCS=false), so a

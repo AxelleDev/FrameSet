@@ -6,8 +6,8 @@
 	</picture>
 	<p><b>FRAMESET — The graphic reference, built for digital illustration.</b></p>
 	<p>
-		<a href="https://github.com/AxelleDev/frameset/actions/workflows/ci.yml">
-			<img src="https://github.com/AxelleDev/frameset/actions/workflows/ci.yml/badge.svg" alt="CI status" />
+		<a href="https://github.com/AxelleDev/FrameSet/actions/workflows/ci.yml">
+			<img src="https://github.com/AxelleDev/FrameSet/actions/workflows/ci.yml/badge.svg" alt="CI status" />
 		</a>
 	</p>
 </div>
@@ -63,15 +63,28 @@ documented in [backend/API.md](backend/API.md).
 
 ## ✧･ﾟ: ✧･ﾟ Getting started
 
+### Prerequisites
+
+- **Node.js ≥ 20** (see `.nvmrc`) and **npm**
+- **MySQL 8** or **MariaDB** — your own install, or the bundled dev database:
+  `docker compose up -d` (starts MySQL and creates `frameset_db` for you)
+
 ### Backend (API)
 
 ```bash
 cd backend
 npm install
 cp .env.example .env   # configure the DB, JWT and mail settings
-npm run migrate        # run the migrations
-npm start
+
+# Create the database first (skip this if you used `docker compose up -d`):
+#   mysql -u root -p -e "CREATE DATABASE frameset_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+npm run migrate        # create the tables
+npm start              # API on http://localhost:3000
 ```
+
+Interactive API docs (Swagger UI) are served at `/api-docs`, with a health probe
+at `/health`. Set `ENABLE_API_DOCS=false` to hide the docs in a deployment.
 
 ### Frontend (app)
 
@@ -79,20 +92,58 @@ npm start
 cd frontend
 npm install
 cp .env.example .env
-npm run dev
+npm run dev            # app on http://localhost:5173
 ```
+
+> From the repo root, convenience scripts proxy to each package:
+> `npm run dev:backend`, `npm run dev:frontend`, `npm run migrate:backend`,
+> `npm run test:backend`, `npm run test:frontend`, `npm run build:frontend`.
 
 ---
 
 ## ✧･ﾟ: ✧･ﾟ CI (GitHub Actions)
 
-The CI pipeline automatically runs:
+On every push / pull request to `main`, GitHub Actions runs — for both backend
+and frontend:
 
-- backend tests
-- frontend tests
+- a production dependency audit (`npm audit`, high severity)
+- linting (ESLint)
+- the test suites (Jest + Supertest / Vitest)
 - the frontend build
 
-Workflow: `.github/workflows/ci.yml`
+Workflow: `.github/workflows/ci.yml`. Dependency updates are proposed monthly by
+Dependabot (`.github/dependabot.yml`).
+
+---
+
+## ✧･ﾟ: ✧･ﾟ Deployment
+
+The two halves deploy independently — the API does **not** serve the frontend build:
+
+- **Frontend** — a static SPA (`frontend/`), built with `npm run build`. SPA
+  fallback + security headers/CSP are configured for Vercel
+  ([`frontend/vercel.json`](frontend/vercel.json)); a Netlify redirect file
+  ([`frontend/public/_redirects`](frontend/public/_redirects)) is also provided —
+  keep the one matching your host.
+- **Backend** — the Express API (`backend/`) runs as a plain Node service behind a
+  reverse proxy that terminates HTTPS.
+
+Production checklist:
+
+- Set **`NODE_ENV=production`** on the API (enables secure cookies, HSTS, JSON
+  logs, and makes SMTP config mandatory).
+- Run the API behind **exactly one** reverse proxy — it trusts a single hop
+  (`trust proxy = 1`) so per-IP rate limiting stays per-client.
+- **Cross-domain cookies**: auth cookies are `HttpOnly` + `SameSite`. If the app
+  and API are on different domains, set `FRONTEND_ORIGIN` (API) and
+  `VITE_API_URL` (frontend) to the real HTTPS origins.
+- Point the frontend CSP `connect-src` (in `vercel.json`) at the real API origin.
+- Restrict the `GOOGLE_FONTS_API_KEY` in the Google console; optionally set
+  `ENABLE_API_DOCS=false` to hide `/api-docs`.
+- Run `npm run migrate` against the production database.
+
+> Not yet provided (add when the hosting target is chosen): a continuous
+> deployment workflow, a backend Dockerfile, and migration rollbacks.
 
 ---
 

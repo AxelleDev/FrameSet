@@ -1,0 +1,27 @@
+# Local development database only (the app itself runs via npm — front on Vercel,
+# API as a plain Node process). Spin it up with `docker compose up -d`, then run
+# the migrations: `cd backend && npm run migrate`.
+#
+# `MYSQL_DATABASE` creates `frameset_db` on first start, so no manual
+# `CREATE DATABASE` is needed when using Docker. Point backend/.env at it:
+#   DB_HOST=localhost  DB_USER=root  DB_PASSWORD=root  DB_NAME=frameset_db
+
+services:
+  db:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: frameset_db
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - frameset_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  frameset_db_data:
