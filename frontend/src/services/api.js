@@ -1,18 +1,15 @@
 /**
- * Centralized network layer for talking to the backend API.
- *
- * Exposes thin per-verb helpers (get/post/put/patch/delete) built on a single
- * `request` function. The session is carried by HttpOnly cookies
- * (credentials: 'include'), so this module never stores the access token; it
- * only manages the CSRF token and transparently handles three concerns:
- *   1. CSRF protection for mutating requests (with token caching + retry).
- *   2. Silent access-token refresh on 403, then a single replay of the request.
- *   3. Retrying transient failures (network errors, 5xx, timeouts) within a
- *      bounded time window.
+ * Network layer: per-verb helpers over a single `request`. The session rides in
+ * HttpOnly cookies (credentials: 'include'), so this module never stores the
+ * access token — it only manages the CSRF token and transparently handles:
+ *   1. CSRF protection for mutating requests (token caching + retry).
+ *   2. Silent access-token refresh on 403, then a single replay.
+ *   3. Retrying transient failures (network, 5xx, timeouts) within a time budget.
  */
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 const RETRY_WINDOW_MS = 5000;      // total budget for retrying a single request
 const RETRY_INTERVAL_MS = 500;     // delay between transient-failure retries
+const COOKIE_PROPAGATION_DELAY_MS = 100; // brief pause after a token refresh so the new auth cookie is applied before the replay
 const CSRF_HEADER_NAME = 'x-csrf-token';
 const METHODS_REQUIRING_CSRF = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -33,42 +30,23 @@ export const setSessionExpiredHandler = (handler) => {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/**
- * Whether a request needs a CSRF token: only mutating methods, and never the
- * CSRF token endpoint itself (which would otherwise create a chicken-and-egg).
- * @param {string} method HTTP method.
- * @param {string} path Request path (relative to API_URL).
- * @returns {boolean}
- */
+// Needs a CSRF token: mutating methods only, and never the CSRF endpoint itself
+// (which would otherwise be a chicken-and-egg).
 const isCsrfProtectedRequest = (method, path) => (
   METHODS_REQUIRING_CSRF.has(String(method || '').toUpperCase())
   && path !== '/auth/csrf-token'
 );
 
-/**
- * Detects a 403 that was specifically caused by an invalid/expired CSRF token
- * (as opposed to an expired access token), so we can refresh the CSRF token
- * and replay rather than attempting a full auth refresh.
- * @param {object} error Enriched error thrown by `request`.
- * @returns {boolean}
- */
+// Detects a 403 caused by an invalid/expired CSRF token (vs. an expired access
+// token), so we refresh the CSRF token and replay instead of a full auth refresh.
 const isInvalidCsrfError = (error) => (
   error?.status === 403
   && String(error?.data?.error || '').toLowerCase().includes('csrf')
 );
 
-/**
- * Returns a valid CSRF token, fetching it from the backend if needed.
- *
- * Caching matters: the token is reused across requests so we do not hit the
- * CSRF endpoint before every mutation. An in-flight promise is shared so
- * concurrent callers wait on a single request instead of racing. Pass
- * `forceRefresh` to bypass both the cache and any in-flight promise (used after
- * the server rejects the cached token as invalid).
- *
- * @param {{ forceRefresh?: boolean }} [opts]
- * @returns {Promise<string>} The CSRF token.
- */
+// Returns a valid CSRF token, fetching from the backend if needed. Cached and
+// reused across requests; a shared in-flight promise de-dupes concurrent callers.
+// forceRefresh bypasses both (used after the server rejects the cached token).
 const fetchCsrfToken = async ({ forceRefresh = false } = {}) => {
   if (!forceRefresh && csrfTokenCache) {
     return csrfTokenCache;
@@ -105,27 +83,16 @@ const fetchCsrfToken = async ({ forceRefresh = false } = {}) => {
   }
 };
 
-/**
- * Builds the request headers, adding the JSON content-type when a body is sent.
- * @param {boolean} [isJson] Whether the request carries a JSON body.
- * @param {object} [extra] Additional headers (e.g. the CSRF token).
- * @returns {object} The merged headers object.
- */
+// Merges headers, adding the JSON content-type when a body is sent.
 const buildHeaders = (isJson = true, extra = {}) => {
   const headers = { ...extra };
   if (isJson) headers['Content-Type'] = 'application/json';
   return headers;
 };
 
-/**
- * Attempts to refresh the access token via the refresh-token cookie.
- *
- * The refresh endpoint is itself CSRF-protected, so we obtain a CSRF token
- * first; if the server rejects it with 403 we force-refresh the CSRF token once
- * and retry the refresh.
- *
- * @returns {Promise<boolean>} True if a new access token was issued.
- */
+// Refreshes the access token via the refresh cookie. The refresh endpoint is
+// itself CSRF-protected, so we get a CSRF token first and, on a 403, force-refresh
+// it once and retry. Returns true if a new access token was issued.
 const attemptTokenRefresh = async () => {
   let csrfToken;
 
@@ -169,30 +136,18 @@ const attemptTokenRefresh = async () => {
 };
 
 /**
- * Generic request driver used by the exported per-verb helpers.
- *
- * Responsibilities, in order:
+ * Generic request driver behind the per-verb helpers. Responsibilities, in order:
  *  - Attach a CSRF token to mutating requests.
- *  - Enforce a total RETRY_WINDOW_MS budget across all attempts; each attempt
- *    is aborted when the remaining budget elapses (acts as a timeout).
- *  - On an invalid-CSRF 403: force-refresh the token and replay once.
- *  - On a generic 403 (expired access token): try a silent token refresh and,
- *    if it succeeds, replay once.
- *  - Retry transient failures (network errors, 5xx, timeout aborts) until the
- *    budget runs out; surface a user-facing message via `onGlobalError`.
+ *  - Enforce a total RETRY_WINDOW_MS budget; each attempt aborts when the
+ *    remaining budget elapses (acts as a timeout).
+ *  - Invalid-CSRF 403: force-refresh the token and replay once.
+ *  - Generic 403 (expired access token): silent token refresh, then replay once.
+ *  - Retry transient failures (network, 5xx, timeout aborts) until the budget
+ *    runs out; surface a user-facing message via onGlobalError.
  *
- * Throws an enriched Error (with `.status` and `.data`) when the HTTP status is
- * not ok, or a REQUEST_RETRY_TIMEOUT error when the budget is exhausted.
- *
- * @param {string} path API path relative to API_URL.
- * @param {object} [options]
- * @param {string} [options.method] HTTP method (default GET).
- * @param {*} [options.body] Request body; serialized to JSON unless a string.
- * @param {object} [options.headers] Extra headers.
- * @param {AbortSignal} [options.signal] Caller abort signal (e.g. component unmount).
- * @param {(msg: string) => void} [options.onGlobalError] Callback for surfacing errors globally.
- * @param {boolean} [options.skipTokenRefresh] Skip the 403 access-token refresh (used during session hydration).
- * @returns {Promise<*>} Parsed JSON response body, or null when not JSON.
+ * Throws an enriched Error (.status/.data) on non-ok HTTP, or a
+ * REQUEST_RETRY_TIMEOUT error when the budget is exhausted. Notable options:
+ * signal (caller abort, e.g. unmount) and skipTokenRefresh (used during hydration).
  */
 const request = async (path, {
   method = 'GET',
@@ -313,7 +268,7 @@ const request = async (path, {
         const refreshSuccess = await attemptTokenRefresh();
         if (refreshSuccess) {
           opts = await buildRequestOptions();
-          await sleep(100); // brief pause so the new auth cookie is applied
+          await sleep(COOKIE_PROPAGATION_DELAY_MS);
           continue;
         }
         // Refresh failed: the session is terminally invalid. Notify the app so
@@ -323,12 +278,29 @@ const request = async (path, {
         }
       }
 
+      // An unexpected 401 on a protected (non-auth) route means there is no valid
+      // session at all. Treat it as terminal — clear the session rather than leave
+      // a phantom logged-in UI. Auth endpoints (login/forgot/...) legitimately
+      // return 401 for bad credentials and must not trigger a logout.
+      if (e?.status === 401 && !path.startsWith('/auth/')) {
+        if (typeof sessionExpiredHandler === 'function') {
+          sessionExpiredHandler();
+        }
+        throw e;
+      }
+
       // Classify the failure to decide whether a retry is worthwhile.
       const isNetworkError = e instanceof TypeError || e.message === 'Failed to fetch';
       const isServerError = typeof e?.status === 'number' && e.status >= 500;
       // Abort that was NOT caused by the caller means our own timeout fired.
       const isTimeoutAbort = e?.name === 'AbortError' && !parentAborted;
-      const shouldRetry = isNetworkError || isServerError || isTimeoutAbort;
+      // Only replay a transient failure for safe methods. A network error / 5xx /
+      // timeout can hide a request the server actually processed, so retrying a
+      // POST/PUT/PATCH/DELETE risks a duplicate side effect (e.g. two projects) or
+      // a spurious 404 on a re-deleted resource. CSRF/token-refresh replays above
+      // are unaffected: those only re-run a request the server definitively rejected.
+      const isSafeMethod = normalizedMethod === 'GET' || normalizedMethod === 'HEAD';
+      const shouldRetry = (isNetworkError || isServerError || isTimeoutAbort) && isSafeMethod;
 
       if (!shouldRetry) {
         throw e;

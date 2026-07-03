@@ -15,7 +15,7 @@ const buildTestApp = () => {
     deleteBrushNorm: jest.fn((req, res) => res.status(200).json({ success: true })),
     deleteTypographyNorm: jest.fn((req, res) => res.status(200).json({ success: true })),
     updateBrushNorm: jest.fn((req, res) => res.status(200).json({ success: true })),
-    updateTypographyNorm: jest.fn((req, res) => res.status(200).json({ success: true }))
+    updateTypographyNorm: jest.fn((req, res) => res.status(200).json({ success: true })),
   };
 
   jest.doMock('../../src/controllers/projects.controller', () => controllerMocks);
@@ -57,7 +57,7 @@ describe('projects routes', () => {
 
     expect(overflowResponse.status).toBe(429);
     expect(overflowResponse.body).toEqual({
-      error: 'Too many project or standard creations, try again in an hour.'
+      error: 'Too many project or standard creations, try again in an hour.',
     });
     expect(controllerMocks.createProject).toHaveBeenCalledTimes(30);
   });

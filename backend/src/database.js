@@ -1,22 +1,21 @@
 /**
- * MySQL database access module.
- *
- * Creates a connection pool from environment configuration and exposes its
- * promise-based interface as the app-wide database handle. Two convenience
- * methods are attached: ping() for health checks and closePool() for graceful
- * shutdown. Pooling reuses connections and bounds concurrency under load.
+ * MySQL access: app-wide promise-based connection pool with ping() (health
+ * checks) and closePool() (graceful shutdown) attached.
  */
 
 const mysql = require('mysql2');
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT) || 3306,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+  connectionLimit: Number(process.env.DB_CONNECTION_LIMIT) || 10,
+  // Fail a stuck connection attempt instead of hanging indefinitely.
+  connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT_MS) || 10000,
+  queueLimit: 0,
 });
 
 // Expose the promise-based API so callers can use async/await.

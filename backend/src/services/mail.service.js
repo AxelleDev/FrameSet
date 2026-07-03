@@ -1,9 +1,6 @@
 /**
- * Mail service.
- *
- * Wraps a single nodemailer SMTP transport and provides a reusable branded HTML
- * template. Used to deliver email verification and confirmation codes during
- * registration, email-change and code-resend flows.
+ * Mail service: wraps a nodemailer SMTP transport and a reusable branded HTML template.
+ * Delivers verification/confirmation codes for registration, email-change and resend flows.
  */
 
 const path = require('path');
@@ -14,7 +11,7 @@ const {
   MAIL_PORT,
   MAIL_SECURE,
   MAIL_USER,
-  MAIL_PASS
+  MAIL_PASS,
 } = require('../config/mail.config');
 const { logger } = require('../utils/logger');
 
@@ -31,7 +28,7 @@ let transporter = hasSmtpConfig
       host: MAIL_HOST,
       port: MAIL_PORT,
       secure: MAIL_SECURE,
-      auth: { user: MAIL_USER, pass: MAIL_PASS }
+      auth: { user: MAIL_USER, pass: MAIL_PASS },
     })
   : null;
 
@@ -46,12 +43,8 @@ const formatFromAddress = (address) => (address ? `${MAIL_FROM_NAME} <${address}
 
 let transporterPromise = null;
 
-/**
- * Returns the SMTP transport. When no SMTP is configured (dev convenience), an
- * Ethereal test account is created on the first call so the app can send without
- * any email setup; each send then logs a preview URL to read the message.
- * @returns {Promise<object>} A nodemailer transport.
- */
+// Returns the SMTP transport. With no SMTP configured (dev), an Ethereal test
+// account is created on the first call so the app can send without email setup.
 const getTransporter = async () => {
   if (transporter) {
     return transporter;
@@ -60,14 +53,14 @@ const getTransporter = async () => {
     transporterPromise = nodemailer.createTestAccount().then((account) => {
       logger.info('mail.dev_account.created', {
         message: 'No SMTP configured: an Ethereal test account was created for development.',
-        user: account.user
+        user: account.user,
       });
       mailFrom = account.user;
       transporter = nodemailer.createTransport({
         host: account.smtp.host,
         port: account.smtp.port,
         secure: account.smtp.secure,
-        auth: { user: account.user, pass: account.pass }
+        auth: { user: account.user, pass: account.pass },
       });
       return transporter;
     });
@@ -75,18 +68,11 @@ const getTransporter = async () => {
   return transporterPromise;
 };
 
-/**
- * Builds the branded HTML body for a transactional email. The code block is
- * rendered only when a code is supplied.
- * @param {Object} params
- * @param {string} params.title Heading shown in the email header.
- * @param {string} params.message Body message.
- * @param {string} [params.code] Optional verification code to highlight.
- * @param {string} [params.footer] Optional footer note (defaults to expiry text).
- * @returns {string} HTML markup.
- */
+// Builds the branded HTML email body. The code block renders only when `code` is
+// supplied; `footer` defaults to the expiry note.
 const buildTemplate = ({ title, message, code, footer }) => {
-  const fontStack = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const fontStack =
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
   return `
   <!-- FrameSet transactional email -->
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F3FF;margin:0;padding:32px 16px;">
@@ -106,14 +92,18 @@ const buildTemplate = ({ title, message, code, footer }) => {
               <p style="margin:0;font-size:15px;line-height:1.65;color:#6B6B6B;">${message}</p>
             </td>
           </tr>
-          ${code ? `
+          ${
+            code
+              ? `
           <tr>
             <td style="padding:20px 32px 4px;font-family:${fontStack};">
               <div style="background:#F2F3FF;border:1px solid #D9DEFA;border-radius:14px;padding:20px;text-align:center;font-size:30px;font-weight:700;letter-spacing:8px;color:#3C3D48;">
                 ${code}
               </div>
             </td>
-          </tr>` : ''}
+          </tr>`
+              : ''
+          }
           <tr>
             <td style="padding:16px 32px 28px;font-family:${fontStack};">
               <p style="margin:0;font-size:13px;line-height:1.6;color:#9AA0AC;">${footer || 'This code expires in 10 minutes.'}</p>
@@ -134,15 +124,7 @@ const buildTemplate = ({ title, message, code, footer }) => {
   `;
 };
 
-/**
- * Sends an email through the configured SMTP transport.
- * @param {Object} params
- * @param {string} params.to Recipient address.
- * @param {string} params.subject Subject line.
- * @param {string} params.text Plain-text fallback body.
- * @param {string} params.html HTML body.
- * @returns {Promise<void>}
- */
+// Sends an email through the configured SMTP transport.
 const sendMail = async ({ to, subject, text, html }) => {
   const transport = await getTransporter();
   const info = await transport.sendMail({
@@ -152,12 +134,11 @@ const sendMail = async ({ to, subject, text, html }) => {
     text,
     html,
     // Embed the brand logo inline (referenced as cid:frameset-logo in the HTML).
-    attachments: [{ filename: 'frameset-logo.png', path: LOGO_PATH, cid: LOGO_CID }]
+    attachments: [{ filename: 'frameset-logo.png', path: LOGO_PATH, cid: LOGO_CID }],
   });
 
-  // In non-production, surface the Ethereal preview URL so the email (and the
-  // code it contains) can be read straight from the server console — no need to
-  // open a real inbox during local development.
+  // In non-production, log the Ethereal preview URL so the email can be read
+  // from the server console without a real inbox.
   if (process.env.NODE_ENV !== 'production' && typeof nodemailer.getTestMessageUrl === 'function') {
     const previewUrl = nodemailer.getTestMessageUrl(info);
     if (previewUrl) {
@@ -168,5 +149,5 @@ const sendMail = async ({ to, subject, text, html }) => {
 
 module.exports = {
   sendMail,
-  buildTemplate
+  buildTemplate,
 };

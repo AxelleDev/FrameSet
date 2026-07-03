@@ -87,3 +87,19 @@ input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* Neutralize the browser autofill styling. Chrome/Edge/Safari force an opaque
+   light background and dark text on autofilled fields, which breaks our themed
+   translucent inputs (bg-blue/10 + text-primary) on the dark canvas. We can't
+   override the autofill background directly, so we defer its repaint with a
+   near-infinite transition and re-assert our own text/caret colors. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: rgb(var(--color-primary));
+  caret-color: rgb(var(--color-primary));
+  transition: background-color 100000s ease-in-out 0s;
+}

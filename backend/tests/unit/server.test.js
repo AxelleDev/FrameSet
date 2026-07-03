@@ -4,25 +4,25 @@ jest.mock('../../src/app', () => ({
   listen: jest.fn((port, cb) => {
     cb && cb();
     return {
-      close: mockCloseServer
+      close: mockCloseServer,
     };
-  })
+  }),
 }));
 
 jest.mock('../../src/database', () => ({
-  closePool: jest.fn().mockResolvedValue(true)
+  closePool: jest.fn().mockResolvedValue(true),
 }));
 
 jest.mock('../../src/services/token.service', () => ({
-  cleanupExpiredRevokedTokens: jest.fn().mockResolvedValue(true)
+  cleanupExpiredRevokedTokens: jest.fn().mockResolvedValue(true),
 }));
 
 jest.mock('../../src/utils/logger', () => ({
   logger: {
     info: jest.fn(),
     warn: jest.fn(),
-    error: jest.fn()
-  }
+    error: jest.fn(),
+  },
 }));
 
 describe('server', () => {
@@ -44,7 +44,7 @@ describe('server', () => {
 
   it('starts the server and enables the cleanup scheduler', () => {
     const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation(() => ({
-      unref: jest.fn()
+      unref: jest.fn(),
     }));
     const app = require('../../src/app');
     const { logger } = require('../../src/utils/logger');
@@ -60,8 +60,8 @@ describe('server', () => {
       expect.objectContaining({
         intervalMs: 24 * 60 * 60 * 1000,
         frequency: '24h',
-        retentionDays: 30
-      })
+        retentionDays: 30,
+      }),
     );
 
     setIntervalSpy.mockRestore();
@@ -91,7 +91,7 @@ describe('server', () => {
 
   it('closes the HTTP server and the DB pool during the graceful shutdown', async () => {
     const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation(() => ({
-      unref: jest.fn()
+      unref: jest.fn(),
     }));
     const clearIntervalSpy = jest.spyOn(global, 'clearInterval').mockImplementation(() => {});
     const { logger } = require('../../src/utils/logger');

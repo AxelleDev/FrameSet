@@ -1,10 +1,7 @@
 /**
- * Maps a raw/technical error message to friendly, user-facing English text.
- * Used to surface global (server/session/network) errors as a toast rather than
- * exposing internal wording. Returns null when there is no message.
- *
- * @param {string} message - Raw error message.
- * @returns {string|null} A friendly message, or null when there is nothing to show.
+ * Maps a raw/technical error message to friendly, user-facing English for the
+ * global-error toast, so internal wording never reaches the user. Returns null
+ * when there is nothing to show.
  */
 export function getFriendlyMessage(message) {
   if (!message) return null;
@@ -34,9 +31,9 @@ export function getFriendlyMessage(message) {
   if (message.trim() === 'Not Found') {
     return "The requested service is unavailable or doesn't exist. Please try again later.";
   }
-  // Fallback for technical messages that are too short to be meaningful.
-  if (message.trim().length < 5) {
-    return 'Something went wrong. Please try again.';
-  }
-  return message;
+  // Anything unmapped is treated as a technical/server error (this helper is only
+  // used for global 5xx/network errors, never for 4xx business messages, which
+  // components surface themselves). Return a generic message rather than risk
+  // leaking internal server wording.
+  return 'Something went wrong. Please try again.';
 }

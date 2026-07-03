@@ -1,11 +1,6 @@
 /**
- * Token service: refresh token issuance and server-side revocation.
- *
- * Implements a stateful revocation layer on top of stateless JWTs. Revoked
- * tokens are persisted (as hashes) in the revoked_tokens table so that logout
- * and refresh-token rotation can immediately invalidate a token before its JWT
- * expiry. Tokens are stored hashed (never in plaintext) to limit the impact of
- * a database disclosure.
+ * Token service: refresh-token issuance and a stateful revocation layer over stateless JWTs.
+ * Revoked tokens are stored hashed in revoked_tokens so logout/rotation can invalidate before JWT expiry.
  */
 
 const jwt = require('jsonwebtoken');
@@ -13,13 +8,8 @@ const { createHash, randomUUID } = require('crypto');
 const db = require('../database');
 const { JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES } = require('../config/jwt.config');
 
-/**
- * Hashes a token for storage/lookup in the revocation table. Hashing means the
- * raw token (a bearer credential) is never written to the database, so leaking
- * the table does not leak usable tokens.
- * @param {string} token Raw JWT string.
- * @returns {string|null} SHA-256 hex digest, or null for invalid input.
- */
+// Hashes a token for the revocation table so the raw bearer credential is never
+// stored: leaking the table doesn't leak usable tokens. Returns null on invalid input.
 function hashToken(token) {
   if (typeof token !== 'string' || token.length === 0) {
     return null;
@@ -28,42 +18,30 @@ function hashToken(token) {
   return createHash('sha256').update(token).digest('hex');
 }
 
-/**
- * Signs a new refresh token. A unique jwtid (jti) is embedded so that each
- * issued token is distinct; this supports rotation, where every refresh mints a
- * brand-new token even for the same user/payload.
- * @param {Object} payload Claims to embed (e.g. { id, email }).
- * @returns {string} Signed refresh JWT.
- */
+// Signs a refresh token with a unique jti so each issued token is distinct,
+// supporting rotation (every refresh mints a new token for the same payload).
 function generateRefreshToken(payload) {
   return jwt.sign(payload, JWT_REFRESH_SECRET, {
     expiresIn: JWT_REFRESH_EXPIRES,
-    jwtid: randomUUID()
+    jwtid: randomUUID(),
   });
 }
 
-/**
- * Verifies a refresh token's signature and expiry.
- * @param {string} token Raw refresh JWT.
- * @returns {Object|null} Decoded payload if valid, otherwise null.
- */
+// Verifies a refresh token's signature and expiry; returns the decoded payload or null.
 function verifyRefreshToken(token) {
   try {
-     const user = jwt.verify(token, JWT_REFRESH_SECRET);
-     return user;
+    const user = jwt.verify(token, JWT_REFRESH_SECRET, { algorithms: ['HS256'] });
+    return user;
   } catch (err) {
-     return null;
+    return null;
   }
 }
 
-/**
- * Records a token as revoked for the given user. Used on logout and during
- * refresh-token rotation to invalidate the previous token immediately. Stores
- * only the hash; INSERT IGNORE makes repeated revocations idempotent.
- * @param {number} userId Owner of the token.
- * @param {string} token Raw JWT to revoke.
- * @returns {Promise<boolean>} True on success, false on invalid input or DB error.
- */
+// Records a token as revoked (logout/rotation), storing only the hash. INSERT IGNORE
+// makes this an atomic claim: it returns true only when THIS call inserted the row,
+// and false when the row already existed (someone else revoked it first) or on invalid
+// input / DB error. Rotation relies on that to let only one of two concurrent refreshes
+// through; logout ignores the return and just needs the row to exist.
 async function revokeToken(userId, token) {
   const tokenHash = hashToken(token);
   if (!tokenHash) {
@@ -71,27 +49,19 @@ async function revokeToken(userId, token) {
   }
 
   try {
-    await db.query(
+    const [result] = await db.query(
       'INSERT IGNORE INTO revoked_tokens (user_id, token) VALUES (?, ?)',
-      [userId, tokenHash]
+      [userId, tokenHash],
     );
-    return true;
+    return result?.affectedRows === 1;
   } catch (error) {
     return false;
   }
 }
 
-/**
- * Checks whether a token has been revoked for the given user. Called by the
- * auth middleware and refresh flow so that revoked-but-not-yet-expired JWTs are
- * rejected. Fails closed: invalid input is treated as revoked, and a DB error
- * throws (rather than silently allowing access) so the caller can respond with
- * a service-unavailable status instead of authenticating on a stale check.
- * @param {number} userId Owner of the token.
- * @param {string} token Raw JWT to check.
- * @returns {Promise<boolean>} True if revoked (or input invalid).
- * @throws {Error} TOKEN_REVOCATION_CHECK_FAILED when the lookup query fails.
- */
+// Whether a token is revoked for the user; rejects revoked-but-not-yet-expired
+// JWTs. Fails closed: invalid input counts as revoked, and a DB error throws
+// TOKEN_REVOCATION_CHECK_FAILED rather than authenticating on a stale check.
 async function isTokenRevoked(userId, token) {
   const tokenHash = hashToken(token);
   if (!tokenHash || userId === null || userId === undefined) {
@@ -101,7 +71,7 @@ async function isTokenRevoked(userId, token) {
   try {
     const [rows] = await db.query(
       'SELECT id FROM revoked_tokens WHERE user_id = ? AND token = ? LIMIT 1',
-      [userId, tokenHash]
+      [userId, tokenHash],
     );
     return rows.length > 0;
   } catch (error) {
@@ -111,17 +81,10 @@ async function isTokenRevoked(userId, token) {
   }
 }
 
-/**
- * Whether a token was issued before the user's password was last changed, so
- * that every session minted before a password change/reset is invalidated
- * (the token's `iat` predates `users.password_updated_at`). A 5-second leeway
- * absorbs clock skew between the app and the database so a freshly re-issued
- * token is never wrongly rejected. A missing user is treated as invalidated.
- * @param {number} userId Owner of the token.
- * @param {number} tokenIatSeconds The token's `iat` claim (seconds since epoch).
- * @returns {Promise<boolean>} True if the token is stale and must be rejected.
- * @throws {Error} CREDENTIALS_CHECK_FAILED when the lookup query fails.
- */
+// Whether a token predates the user's last password change (iat vs
+// password_updated_at), invalidating every session minted before a change/reset.
+// A 5s leeway absorbs app/DB clock skew so a freshly re-issued token isn't wrongly
+// rejected; a missing user counts as invalidated. Throws CREDENTIALS_CHECK_FAILED on DB error.
 async function isTokenStaleByPasswordChange(userId, tokenIatSeconds) {
   if (userId === null || userId === undefined) {
     return true;
@@ -132,10 +95,9 @@ async function isTokenStaleByPasswordChange(userId, tokenIatSeconds) {
   }
 
   try {
-    const [rows] = await db.query(
-      'SELECT password_updated_at FROM users WHERE id = ? LIMIT 1',
-      [userId]
-    );
+    const [rows] = await db.query('SELECT password_updated_at FROM users WHERE id = ? LIMIT 1', [
+      userId,
+    ]);
     if (rows.length === 0) {
       return true;
     }
@@ -154,18 +116,12 @@ async function isTokenStaleByPasswordChange(userId, tokenIatSeconds) {
   }
 }
 
-/**
- * Purges revocation records older than the retention window. Once a token's JWT
- * has expired it can no longer be used, so its revocation entry is no longer
- * needed; pruning keeps the table bounded. Invoked periodically by the server's
- * cleanup scheduler.
- * @returns {Promise<boolean>} True on success, false on DB error.
- */
+// Prunes revocation records past the retention window: once a JWT has expired its
+// entry is moot, so dropping it keeps the table bounded. Run by the cleanup scheduler.
 async function cleanupExpiredRevokedTokens() {
   try {
-    // Delete tokens that were revoked more than 30 days ago.
     await db.query(
-      'DELETE FROM revoked_tokens WHERE revoked_at < DATE_SUB(NOW(), INTERVAL 30 DAY)'
+      'DELETE FROM revoked_tokens WHERE revoked_at < DATE_SUB(NOW(), INTERVAL 30 DAY)',
     );
     return true;
   } catch (error) {
@@ -179,5 +135,5 @@ module.exports = {
   revokeToken,
   isTokenRevoked,
   isTokenStaleByPasswordChange,
-  cleanupExpiredRevokedTokens
+  cleanupExpiredRevokedTokens,
 };

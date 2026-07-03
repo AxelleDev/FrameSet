@@ -1,9 +1,5 @@
-/**
- * 404 page (route: catch-all "*").
- *
- * Shown for any unmatched route. The "home" link points to the dashboard when
- * the user is authenticated, otherwise to the login page.
- */
+// 404 page (catch-all route "*"): home link goes to the dashboard when authed,
+// otherwise to login.
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';

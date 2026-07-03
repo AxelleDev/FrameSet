@@ -1,10 +1,7 @@
 /**
- * Project routes.
- *
- * CRUD endpoints for projects and their nested resources (brush norms,
- * typography norms, color palette). Every route requires authentication, and
- * creation routes additionally pass through the project-create rate limiter.
- * Per-resource ownership is enforced inside the controllers.
+ * Project routes: CRUD for projects and their nested resources (brush/typography
+ * norms, palette). All require auth; creation routes also pass the create limiter.
+ * Per-resource ownership is enforced in the controllers.
  */
 
 const express = require('express');
@@ -19,14 +16,45 @@ router.post('/', authenticateToken, projectCreateLimiter, projectsController.cre
 router.patch('/:id', authenticateToken, projectsController.updateProjectName);
 router.delete('/:id', authenticateToken, projectsController.deleteProject);
 
-router.post('/:id/brush-norms', authenticateToken, projectCreateLimiter, projectsController.addBrushNorm);
-router.post('/:id/typography-norms', authenticateToken, projectCreateLimiter, projectsController.addTypographyNorm);
-router.post('/:id/palette', authenticateToken, projectCreateLimiter, projectsController.updatePalette);
+router.post(
+  '/:id/brush-norms',
+  authenticateToken,
+  projectCreateLimiter,
+  projectsController.addBrushNorm,
+);
+router.post(
+  '/:id/typography-norms',
+  authenticateToken,
+  projectCreateLimiter,
+  projectsController.addTypographyNorm,
+);
+router.post(
+  '/:id/palette',
+  authenticateToken,
+  projectCreateLimiter,
+  projectsController.updatePalette,
+);
 
-router.delete('/:projectId/brush-norms/:normId', authenticateToken, projectsController.deleteBrushNorm);
-router.delete('/:projectId/typography-norms/:normId', authenticateToken, projectsController.deleteTypographyNorm);
+router.delete(
+  '/:projectId/brush-norms/:normId',
+  authenticateToken,
+  projectsController.deleteBrushNorm,
+);
+router.delete(
+  '/:projectId/typography-norms/:normId',
+  authenticateToken,
+  projectsController.deleteTypographyNorm,
+);
 
-router.put('/:projectId/brush-norms/:normId', authenticateToken, projectsController.updateBrushNorm);
-router.put('/:projectId/typography-norms/:normId', authenticateToken, projectsController.updateTypographyNorm);
+router.put(
+  '/:projectId/brush-norms/:normId',
+  authenticateToken,
+  projectsController.updateBrushNorm,
+);
+router.put(
+  '/:projectId/typography-norms/:normId',
+  authenticateToken,
+  projectsController.updateTypographyNorm,
+);
 
 module.exports = router;

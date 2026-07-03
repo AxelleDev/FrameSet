@@ -1,33 +1,19 @@
 /**
- * Authentication middleware.
- *
- * Protects routes by validating the access token presented either as a Bearer
- * Authorization header or via the httpOnly access-token cookie. On success it
- * attaches the decoded user and the raw token to the request for downstream
- * handlers; otherwise it short-circuits with an appropriate status.
+ * Auth middleware: validates the access token (Bearer header or httpOnly cookie)
+ * and attaches the decoded user + raw token to the request on success.
  */
 
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../config/jwt.config');
 const { isTokenRevoked, isTokenStaleByPasswordChange } = require('../services/token.service');
 const { ACCESS_TOKEN_COOKIE_NAME, getCookieValue } = require('../utils/cookies.utils');
+const { getBearerToken } = require('../utils/auth.utils');
 
-/**
- * Express middleware that authenticates the request.
- *
- * Beyond verifying the JWT signature and expiry, it also consults the
- * server-side revocation list so a logged-out or rotated token is rejected even
- * before its natural expiry. A revocation-check failure returns 503 (fail
- * closed) rather than granting access on an unverified state.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- * @param {Function} next Next middleware.
- */
+// Beyond signature/expiry, consults the server-side revocation list so a
+// logged-out or rotated token is rejected early. Revocation-check failure
+// returns 503 (fail closed) rather than granting access on unverified state.
 async function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const bearerToken = authHeader && authHeader.startsWith('Bearer ')
-    ? authHeader.split(' ')[1]
-    : null;
+  const bearerToken = getBearerToken(req);
   const cookieToken = getCookieValue(req, ACCESS_TOKEN_COOKIE_NAME);
   // Prefer an explicit Authorization header, falling back to the cookie.
   const token = bearerToken || cookieToken;
@@ -36,7 +22,7 @@ async function authenticateToken(req, res, next) {
 
   let user;
   try {
-    user = jwt.verify(token, JWT_SECRET);
+    user = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
   } catch (error) {
     return res.status(403).json({ error: 'Invalid or expired token.' });
   }

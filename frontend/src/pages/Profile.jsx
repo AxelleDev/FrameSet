@@ -1,10 +1,5 @@
-/**
- * Profile page (route: /app/profile).
- *
- * Lets the user view and edit their personal info (name/email), change their
- * password, log out, and delete their account. Editing the email triggers a
- * pending-email verification flow surfaced via a link to the verify page.
- */
+// Profile page (/app/profile): edit name/email, change password, log out,
+// delete account. Changing the email triggers a pending-email verification flow.
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -12,6 +7,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Card from '../components/Card';
+import Seo from '../components/Seo';
+import { formatRelativeTime } from '../utils/date';
 import Button from '../components/Button';
 import Avatar from '../components/Avatar';
 import FormField from '../components/FormField';
@@ -43,7 +40,6 @@ export default function Profile() {
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
-  // Controls the logout confirmation dialog.
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   // Keep the edit form fields in sync with the current user.
@@ -56,28 +52,26 @@ export default function Profile() {
     }
   }, [user]);
 
-  // Trimmed field values and whether anything actually changed vs. the saved
-  // user — used to disable "Save" and to avoid a pointless "updated" toast.
+  // Trimmed values + whether anything changed vs. the saved user; gates "Save"
+  // and avoids a pointless "updated" toast.
   const trimmedName = editForm.name.trim();
   const trimmedEmail = editForm.email.trim();
   const hasChanges = trimmedName !== (user?.name ?? '') || trimmedEmail !== (user?.email ?? '');
 
-  // Enter edit mode, seeding the form from the current user.
   const startEdit = () => {
     setEditForm({ name: user.name, email: user.email });
     setEditError('');
     setIsEditing(true);
   };
 
-  // Leave edit mode without saving, discarding any changes.
   const cancelEdit = () => {
     setEditForm({ name: user.name, email: user.email });
     setEditError('');
     setIsEditing(false);
   };
 
-  // Validate then persist the profile. Nothing changed → just close (no toast).
-  // On a changed email, the backend stages it as a pending email to confirm.
+  // Validate then persist. No changes -> just close. A changed email is staged
+  // by the backend as a pending email to confirm.
   const saveProfile = async () => {
     setEditError('');
 
@@ -98,7 +92,7 @@ export default function Profile() {
     setIsSaving(true);
     try {
       const result = await updateUserProfile({ name: trimmedName, email: trimmedEmail });
-      // Keep the user in edit mode on a business error so they can fix it inline.
+      // Stay in edit mode on a business error so it can be fixed inline.
       if (result?.success === false) {
         setEditError(result.message || 'Something went wrong updating your profile.');
         return;
@@ -140,13 +134,12 @@ export default function Profile() {
     setIsPasswordModalOpen(false);
   };
 
-  // Validate the password form locally (all fields + matching confirmation),
-  // then submit; success/error feedback is shown inside the modal.
+  // Validate locally (all fields + matching confirmation), then submit.
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     setPasswordError('');
 
-    // Client-side validation stays inline (a small hint inside the modal).
+    // Client-side validation stays inline (a hint inside the modal).
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
       setPasswordError('Fill in all fields.');
       return;
@@ -163,8 +156,7 @@ export default function Profile() {
         newPassword: passwordForm.newPassword
       });
 
-      // The action result (success or business error) is surfaced as a toast,
-      // like every other in-app action.
+      // Surface success/business error as a toast, like every in-app action.
       if (!result.success) {
         if (result.message) showToast(result.message, 'danger');
         return;
@@ -180,39 +172,9 @@ export default function Profile() {
 
   if (!user) return null;
 
-  /**
-   * Formats a date into an English relative-time string (e.g. "3 days ago").
-   * Returns "Never changed" for missing/invalid dates. Used for the password's
-   * last-changed label.
-   * @param {string|number|Date} dateValue
-   * @returns {string}
-   */
-  const formatRelativeTime = (dateValue) => {
-    if (!dateValue) return 'Never changed';
-    const date = new Date(dateValue);
-    if (Number.isNaN(date.getTime())) return 'Never changed';
-
-    const diffMs = Date.now() - date.getTime();
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    if (diffMinutes < 1) return 'Just now';
-    if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
-
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-
-    const diffMonths = Math.floor(diffDays / 30);
-    if (diffMonths < 12) return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
-
-    const diffYears = Math.floor(diffMonths / 12);
-    return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
-  };
-
   return (
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">
-      
+      <Seo title="Profile" noindex />
       <Card className="p-6 sm:p-8 mb-8 flex flex-col sm:flex-row items-center gap-5 sm:gap-8">
         <Avatar initials={user.avatarInitials} className="w-24 h-24 text-3xl sm:w-28 sm:h-28 sm:text-4xl shrink-0" />
 
@@ -266,7 +228,7 @@ export default function Profile() {
                     <p className="text-xs text-primary/60 mt-2">
                       Email pending verification: {user.pendingEmail}
                       {' '}·{' '}
-                      <Link to={`/verify?email=${encodeURIComponent(user.pendingEmail)}&type=pending-email`} className="underline hover:text-primary">
+                      <Link to="/verify" state={{ email: user.pendingEmail, type: 'pending-email' }} className="underline hover:text-primary">
                         Verify
                       </Link>
                     </p>
@@ -325,7 +287,7 @@ export default function Profile() {
         cancelLabel="Cancel"
         onConfirm={confirmLogout}
         onCancel={cancelLogout}
-        confirmClassName="bg-blue text-white"
+        primaryVariant="primary"
       />
 
       <AppModal
@@ -366,7 +328,7 @@ export default function Profile() {
               Cancel
             </Button>
             <Button type="submit" disabled={isPasswordSaving} loading={isPasswordSaving} variant="primary" className="text-sm">
-              {isPasswordSaving ? 'Saving...' : 'Save'}
+              {isPasswordSaving ? 'Saving…' : 'Save'}
             </Button>
           </div>
         </form>

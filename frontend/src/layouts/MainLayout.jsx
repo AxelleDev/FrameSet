@@ -15,9 +15,12 @@ import Seo from '../components/Seo';
  */
 export default function MainLayout() {
   const { user, authLoading } = useAuth();
-  const { activeProject, projectsLoading } = useProjects();
-  // Combined loading flag while either auth or projects are still resolving.
-  const loading = authLoading || projectsLoading;
+  const { activeProject, projects, projectsLoading } = useProjects();
+  // Block the whole shell only on auth or the FIRST projects load (empty list).
+  // A later fetch (e.g. "Load more") must keep the page mounted — otherwise the
+  // layout is replaced by a full-screen spinner, losing scroll position; those
+  // fetches show their own inline spinner instead.
+  const loading = authLoading || (projectsLoading && projects.length === 0);
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const asideRef = useRef(null);
@@ -31,32 +34,49 @@ export default function MainLayout() {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // While the mobile drawer is open, close it on Escape and move focus into it so
-  // keyboard/screen-reader users aren't left on the (now-obscured) trigger.
+  // While the mobile drawer is open, close it on Escape, trap Tab inside it (so
+  // focus can't reach the content masked behind the overlay), and move focus into
+  // it so keyboard/screen-reader users aren't left on the (now-obscured) trigger.
   useEffect(() => {
     if (!isMobileMenuOpen) return undefined;
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') setIsMobileMenuOpen(false);
+      if (e.key === 'Escape') {
+        setIsMobileMenuOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab' || !asideRef.current) return;
+      const focusable = Array.from(
+        asideRef.current.querySelectorAll(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener('keydown', onKeyDown);
     asideRef.current?.querySelector('a, button')?.focus();
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [isMobileMenuOpen]);
 
-  // Compute NavLink classes based on the active route state.
   const navLinkClass = ({ isActive }) =>
     `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-base focus-ring ${
       isActive ? 'bg-blue/15 text-blue' : 'text-primary hover:text-blue hover:bg-blue/10'
     }`;
 
-  // Derive the header title from the active project or the current route.
   const getPageTitle = () => {
     if (activeProject) return activeProject.name;
     if (location.pathname.includes('profile')) return 'Profile';
     return 'Dashboard';
   };
 
-  // Show a loading state until auth/projects resolve.
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-dvh bg-canvas" role="status" aria-live="polite">
@@ -65,7 +85,6 @@ export default function MainLayout() {
       </div>
     );
   }
-  // Redirect unauthenticated users to the login page.
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -99,7 +118,7 @@ export default function MainLayout() {
         {/* No close (×) button: the menu closes on backdrop tap or nav-item tap,
             staying consistent with the site's modals (none use a × either). */}
         <div className="p-8 flex justify-center">
-            <Logo className="w-[65%] h-auto object-contain" style={{ maxWidth: '260px' }} />
+            <Logo className="w-[65%] max-w-[260px] h-auto object-contain" />
         </div>
 
         <nav aria-label="Main navigation" className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
@@ -165,7 +184,7 @@ export default function MainLayout() {
 
       <main className="flex-1 overflow-auto focus:outline-none relative">
         <header className="h-20 flex items-center gap-3 px-4 md:px-8 sticky top-0 z-sticky bg-canvas/90 backdrop-blur-md md:bg-transparent md:backdrop-blur-0 transition-all duration-slow">
-          <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Open menu" className="md:hidden -ml-1 shrink-0 text-primary hover:text-blue transition-colors p-2 rounded-lg hover:bg-blue/10">
+          <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Open menu" className="md:hidden -ml-1 shrink-0 text-primary hover:text-blue transition-colors p-2 rounded-lg hover:bg-blue/10 focus-ring">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
 

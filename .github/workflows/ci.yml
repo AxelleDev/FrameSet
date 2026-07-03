@@ -23,12 +23,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: backend/package-lock.json
 
       - name: Install backend dependencies
         run: npm ci
+
+      - name: Audit backend dependencies (production, high severity)
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint backend
         run: npm run lint
@@ -49,12 +52,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install frontend dependencies
         run: npm ci
+
+      - name: Audit frontend dependencies (production, high severity)
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint frontend
         run: npm run lint

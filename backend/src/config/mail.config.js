@@ -1,11 +1,6 @@
 /**
- * Mail (SMTP) configuration module.
- *
- * In PRODUCTION a complete SMTP configuration is mandatory and validated at
- * import time (fail fast). In DEVELOPMENT/TEST it is optional: when it is absent,
- * the mail service transparently falls back to an auto-created Ethereal test
- * account (see mail.service.js), so the app runs with zero email setup — handy
- * for first-time contributors who just clone and `npm run dev`.
+ * SMTP config. Mandatory and validated at import time in production (fail fast);
+ * optional in dev/test, where mail.service.js falls back to an Ethereal account.
  */
 
 const isProduction = (process.env.NODE_ENV || 'development') === 'production';
@@ -18,13 +13,13 @@ const MAIL_PASS = process.env.MAIL_PASS || '';
 
 // True only when every SMTP setting is present.
 const hasSmtpConfig = Boolean(
-  MAIL_HOST && MAIL_PORT_RAW && MAIL_SECURE_RAW !== undefined && MAIL_USER && MAIL_PASS
+  MAIL_HOST && MAIL_PORT_RAW && MAIL_SECURE_RAW !== undefined && MAIL_USER && MAIL_PASS,
 );
 
 // A real SMTP is non-negotiable in production: fail fast on boot.
 if (isProduction && !hasSmtpConfig) {
   throw new Error(
-    'SMTP configuration (MAIL_HOST, MAIL_PORT, MAIL_SECURE, MAIL_USER, MAIL_PASS) is required in production.'
+    'SMTP configuration (MAIL_HOST, MAIL_PORT, MAIL_SECURE, MAIL_USER, MAIL_PASS) is required in production.',
   );
 }
 
@@ -52,5 +47,5 @@ module.exports = {
   MAIL_PORT,
   MAIL_SECURE,
   MAIL_USER,
-  MAIL_PASS
+  MAIL_PASS,
 };

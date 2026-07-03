@@ -1,9 +1,5 @@
-/**
- * Hook that fetches the total registered-user count, shown as social proof on
- * the login and register pages.
- *
- * @returns {number|null} The user count, or null while loading / on failure.
- */
+// Fetches the total registered-user count (social proof on login/register).
+// Returns the count, or null while loading / on failure.
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 
@@ -11,18 +7,23 @@ export default function useUserCount() {
   const [userCount, setUserCount] = useState(null);
 
   useEffect(() => {
-    // isMounted guards against setting state after the component unmounts.
+    // Abort the in-flight request (and its retry budget) if we unmount, instead of
+    // letting it run to completion; isMounted still guards the state update.
+    const controller = new AbortController();
     let isMounted = true;
     (async () => {
       try {
-        const data = await api.get('/users/count');
+        const data = await api.get('/users/count', { signal: controller.signal });
         if (isMounted) setUserCount(data.count);
       } catch (e) {
         if (isMounted) setUserCount(null);
       }
     })();
 
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
   }, []);
 
   return userCount;

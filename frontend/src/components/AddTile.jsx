@@ -2,15 +2,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-/**
- * Dashed placeholder tile that triggers creation of a new item when clicked.
- *
- * @param {object} props
- * @param {Function} props.onClick - Click handler invoked to start creation.
- * @param {string} [props.label] - Visible label (defaults to "Add").
- * @param {string} [props.className] - Extra classes for the outer button (sizing, layout).
- * @param {string} [props.labelClassName] - Classes applied to the label text.
- */
+// Dashed placeholder tile that triggers creation of a new item when clicked.
 export default function AddTile({
   onClick,
   label = 'Add',

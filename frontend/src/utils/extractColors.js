@@ -1,14 +1,8 @@
 /**
- * Client-side dominant-color extraction from an image file (no dependency).
- *
- * The image is drawn onto a downscaled canvas; pixels are grouped into coarse
- * RGB buckets, the most frequent buckets are kept — skipping fully transparent
- * pixels and near-duplicate colors so the result is diverse — and each kept
- * bucket is returned as an averaged #RRGGBB hex, ordered by prominence.
- *
- * @param {File} file - The image file to analyze.
- * @param {number} [maxColors=8] - Maximum number of colors to return.
- * @returns {Promise<string[]>} Hex colors (e.g. "#A1B2C3") ordered by prominence.
+ * Client-side dominant-color extraction from an image (no dependency). Draws it
+ * onto a downscaled canvas, groups pixels into coarse RGB buckets, and returns
+ * the most frequent (skipping transparent and near-duplicate colors) as averaged
+ * #RRGGBB hexes ordered by prominence. Resolves to at most maxColors (default 8).
  */
 export function extractColorsFromImage(file, maxColors = 8) {
   return new Promise((resolve, reject) => {
@@ -89,7 +83,7 @@ export function extractColorsFromImage(file, maxColors = 8) {
 
     image.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error('Image illisible'));
+      reject(new Error('Unreadable image'));
     };
 
     image.src = objectUrl;

@@ -1,9 +1,6 @@
 /**
- * Rate limiter for project and norm creation endpoints.
- *
- * Caps how many projects/norms a single user (or anonymous IP) can create per
- * hour. This curbs abuse and accidental loops that would otherwise flood the
- * database with writes, while leaving normal usage unaffected.
+ * Rate limiters: caps project/norm creation per user (or anon IP) per hour to
+ * curb write floods, plus a per-IP cap on the public /health probe.
  */
 
 const rateLimit = require('express-rate-limit');
@@ -12,7 +9,8 @@ const { getAuthenticatedUserId } = require('../utils/auth.utils');
 
 const PROJECT_CREATE_LIMIT = 30;
 const PROJECT_CREATE_WINDOW_MS = 60 * 60 * 1000;
-const PROJECT_CREATE_LIMIT_MESSAGE = 'Too many project or standard creations, try again in an hour.';
+const PROJECT_CREATE_LIMIT_MESSAGE =
+  'Too many project or standard creations, try again in an hour.';
 
 const projectCreateLimiter = rateLimit({
   windowMs: PROJECT_CREATE_WINDOW_MS,
@@ -23,11 +21,13 @@ const projectCreateLimiter = rateLimit({
   // account; fall back to the client IP for unauthenticated callers.
   keyGenerator: (req) => {
     const userId = getAuthenticatedUserId(req);
-    return userId ? `project-create:${userId}` : `project-create:anonymous:${ipKeyGenerator(req.ip)}`;
+    return userId
+      ? `project-create:${userId}`
+      : `project-create:anonymous:${ipKeyGenerator(req.ip)}`;
   },
   handler: (req, res) => {
     res.status(429).json({ error: PROJECT_CREATE_LIMIT_MESSAGE });
-  }
+  },
 });
 
 // The health probe is public and unauthenticated, so cap it per IP to keep it
@@ -42,7 +42,7 @@ const healthCheckLimiter = rateLimit({
   legacyHeaders: false,
   handler: (req, res) => {
     res.status(429).json({ error: 'Too many health checks, please slow down.' });
-  }
+  },
 });
 
 module.exports = {
@@ -50,5 +50,5 @@ module.exports = {
   healthCheckLimiter,
   PROJECT_CREATE_LIMIT,
   PROJECT_CREATE_WINDOW_MS,
-  PROJECT_CREATE_LIMIT_MESSAGE
+  PROJECT_CREATE_LIMIT_MESSAGE,
 };

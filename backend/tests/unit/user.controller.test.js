@@ -9,6 +9,8 @@ process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_jwt_ref
 const userController = require('../../src/controllers/user.controller');
 const db = require('../../src/database');
 const mailService = require('../../src/services/mail.service');
+const bcrypt = require('bcryptjs');
+const { hashOtp } = require('../../src/utils/otp');
 
 jest.mock('../../src/database');
 jest.mock('../../src/services/mail.service');
@@ -16,6 +18,11 @@ jest.mock('../../src/services/mail.service');
 describe('user controller', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+  });
+
+  afterEach(() => {
+    // Restore any jest.spyOn (e.g. on bcrypt) so a stubbed impl never leaks into the next test.
+    jest.restoreAllMocks();
   });
 
   describe('count users', () => {
@@ -30,14 +37,18 @@ describe('user controller', () => {
 
   describe('user profile', () => {
     it('returns the profile of the authenticated user', async () => {
-      db.query.mockResolvedValueOnce([[{
-        id: 1,
-        name: 'Jane Doe',
-        email: 'axelle@example.com',
-        avatar_initials: 'JD',
-        password_updated_at: new Date('2026-01-01T00:00:00.000Z'),
-        pending_email: null
-      }]]);
+      db.query.mockResolvedValueOnce([
+        [
+          {
+            id: 1,
+            name: 'Jane Doe',
+            email: 'axelle@example.com',
+            avatar_initials: 'JD',
+            password_updated_at: new Date('2026-01-01T00:00:00.000Z'),
+            pending_email: null,
+          },
+        ],
+      ]);
 
       const req = { user: { id: 1 } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
@@ -46,14 +57,16 @@ describe('user controller', () => {
 
       expect(db.query).toHaveBeenCalledWith(
         'SELECT id, name, email, avatar_initials, password_updated_at, pending_email FROM users WHERE id = ?',
-        [1]
+        [1],
       );
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        id: 1,
-        name: 'Jane Doe',
-        email: 'axelle@example.com',
-        avatarInitials: 'JD'
-      }));
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 1,
+          name: 'Jane Doe',
+          email: 'axelle@example.com',
+          avatarInitials: 'JD',
+        }),
+      );
     });
   });
 
@@ -62,29 +75,57 @@ describe('user controller', () => {
       db.query.mockResolvedValueOnce([[{ email: 'axelle@example.com', pending_email: null }]]);
       db.query.mockResolvedValueOnce([]);
       db.query.mockResolvedValueOnce();
-      const req = { user: { id: 1 }, body: { id: 999, name: 'Jane Doe', email: 'axelle@example.com' } };
+      const req = {
+        user: { id: 1 },
+        body: { id: 999, name: 'Jane Doe', email: 'axelle@example.com' },
+      };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await userController.updateUser(req, res);
-      expect(db.query).toHaveBeenCalledWith('SELECT email, pending_email FROM users WHERE id = ?', [1]);
-      expect(res.json).toHaveBeenCalledWith({ success: true, name: 'Jane Doe', email: 'axelle@example.com', pendingEmail: null });
+      expect(db.query).toHaveBeenCalledWith(
+        'SELECT email, pending_email FROM users WHERE id = ?',
+        [1],
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        name: 'Jane Doe',
+        email: 'axelle@example.com',
+        pendingEmail: null,
+      });
     });
   });
 
   describe('verify the pending email', () => {
     it('verifies the pending email', async () => {
       db.query
-        .mockResolvedValueOnce([[{ id: 1, name: 'Jane Doe', pending_email: 'axelle@example.com', pending_email_code: '123456', pending_email_expires: new Date(Date.now() + 10000), avatar_initials: 'JD', password_updated_at: null }]])
+        .mockResolvedValueOnce([
+          [
+            {
+              id: 1,
+              name: 'Jane Doe',
+              pending_email: 'axelle@example.com',
+              pending_email_code: hashOtp('123456'),
+              pending_email_expires: new Date(Date.now() + 10000),
+              avatar_initials: 'JD',
+              password_updated_at: null,
+            },
+          ],
+        ])
         .mockResolvedValueOnce([[]]);
       const req = { user: { id: 1 }, body: { email: 'axelle@example.com', code: '123456' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await userController.verifyPendingEmail(req, res);
-      expect(res.json).toHaveBeenCalledWith({ success: true, user: expect.objectContaining({ email: 'axelle@example.com' }) });
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        user: expect.objectContaining({ email: 'axelle@example.com' }),
+      });
     });
   });
 
   describe('resend the pending email', () => {
     it('resends the pending email', async () => {
-      db.query.mockResolvedValueOnce([[{ id: 1, name: 'Jane Doe', pending_email: 'axelle@example.com' }]]);
+      db.query.mockResolvedValueOnce([
+        [{ id: 1, name: 'Jane Doe', pending_email: 'axelle@example.com' }],
+      ]);
       db.query.mockResolvedValueOnce();
       mailService.sendMail.mockResolvedValueOnce();
       const req = { user: { id: 1 }, body: { email: 'axelle@example.com' } };
@@ -94,13 +135,43 @@ describe('user controller', () => {
     });
   });
 
+  describe('delete the account', () => {
+    it('deletes the authenticated account', async () => {
+      db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
+      const req = { user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await userController.deleteAccount(req, res);
+      expect(db.query).toHaveBeenCalledWith('DELETE FROM users WHERE id = ?', [1]);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('returns 404 when no row was deleted', async () => {
+      db.query.mockResolvedValueOnce([{ affectedRows: 0 }]);
+      const req = { user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await userController.deleteAccount(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ error: 'User not found.' });
+    });
+
+    it('returns 401 when not authenticated', async () => {
+      const req = {};
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await userController.deleteAccount(req, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+  });
+
   describe('change the password', () => {
     it('changes the password', async () => {
       db.query.mockResolvedValueOnce([[{ password: 'hashed' }]]);
-      require('bcryptjs').compare = jest.fn().mockResolvedValue(true);
-      require('bcryptjs').hash = jest.fn().mockResolvedValue('newHashed');
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('newHashed');
       db.query.mockResolvedValueOnce();
-      const req = { user: { id: 1, email: 'axelle@example.com' }, body: { id: 999, currentPassword: 'old', newPassword: 'NewPass123' } };
+      const req = {
+        user: { id: 1, email: 'axelle@example.com' },
+        body: { id: 999, currentPassword: 'old', newPassword: 'NewPass123' },
+      };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
       await userController.changePassword(req, res);
       expect(db.query).toHaveBeenCalledWith('SELECT password FROM users WHERE id = ?', [1]);

@@ -1,26 +1,7 @@
 /**
- * Root application component and route configuration.
- *
- * Wires up the global provider stack (AuthProvider then ProjectProvider so
- * project data can depend on the authenticated user) and declares every client
- * route via a BrowserRouter. Clean URLs work on static hosting thanks to the
- * SPA fallback rewrites configured for the deploy targets (frontend/vercel.json
- * for Vercel, frontend/public/_redirects for Netlify), which serve index.html
- * for any non-asset path.
- *
- * Route map:
- *   /              -> public Landing page
- *   /login         -> Login page
- *   /register      -> Register page
- *   /verify        -> email verification (signup or pending email change)
- *   /app           -> authenticated shell (MainLayout)
- *     dashboard    -> project list
- *     profile      -> user profile
- *     project/:id  -> per-project section, wrapped in an ErrorBoundary
- *       norms      -> graphic standards (brush + typography)
- *       palette    -> color palette
- *       export     -> PDF / JSON export
- *   *              -> NotFound (404)
+ * Root component and route tree. Provider order (Auth then Project) lets project
+ * data depend on the authenticated user. SPA fallback rewrites (vercel.json /
+ * public/_redirects) serve index.html so clean URLs work on static hosting.
  */
 import React, { Suspense, lazy, useEffect, useRef } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
@@ -55,13 +36,9 @@ function RouteFallback() {
   );
 }
 
-/**
- * Manages focus and scroll on client-side navigation. On every route change
- * (but not the initial load, so autofocused fields and browser scroll restore
- * still work), it scrolls to the top and moves focus to the main content region
- * (or the page's <h1>), so keyboard and screen-reader users land at the top of
- * the new page instead of staying wherever the previous page left them.
- */
+// On route change (but not initial load, so autofocus / native scroll restore
+// still work), scroll to top and focus the main content region (or the <h1>) so
+// keyboard and screen-reader users land at the top of the new page.
 function RouteFocus() {
   const { pathname } = useLocation();
   const isFirstRender = useRef(true);
@@ -109,12 +86,8 @@ function RedirectIfAuthenticated({ children }) {
   return children;
 }
 
-/**
- * Renders the full route tree. Kept separate from <App /> so it can consume the
- * auth context (it must live inside AuthProvider). Global (server/session/network)
- * errors from the auth context are surfaced as a dismissible toast — the same
- * bottom-right feedback used everywhere else — instead of a top banner.
- */
+// Route tree. Separate from <App /> so it can live inside AuthProvider and
+// surface global auth errors as a toast (same feedback used everywhere else).
 function AppRoutes() {
   const { globalError, setGlobalError } = useAuth();
   const { showToast } = useToast();
@@ -161,10 +134,7 @@ function AppRoutes() {
   );
 }
 
-/**
- * Top-level component. Establishes the provider hierarchy that the rest of the
- * app depends on (auth first, then projects).
- */
+// Establishes the provider hierarchy (auth first, then projects).
 export default function App() {
   return (
     <HelmetProvider>

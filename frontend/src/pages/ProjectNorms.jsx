@@ -1,17 +1,9 @@
-/**
- * Project norms page (route: /app/project/:id/norms).
- *
- * Lets the user define the project's graphic norms in two categories:
- *   - Brush norms (usage, brush name, size/unit, opacity).
- *   - Typography norms (Google Font family, weight, usage, style).
- * Norms can be added, edited, deleted and filtered by type. Typography norms
- * are previewed in their actual font, which requires dynamically loading the
- * Google Font (see the effect below).
- */
-import React, { useState, useRef } from 'react';
+// Project norms page (/app/project/:id/norms): add/edit/delete/filter brush and
+// typography norms. Typography previews load the real Google Font dynamically.
+import React, { useState } from 'react';
 import CustomSelect from '../components/CustomSelect';
-import FontFaceObserver from 'fontfaceobserver';
 import useGoogleFonts from '../hooks/useGoogleFonts';
+import useNormFontLoader from '../hooks/useNormFontLoader';
 import { loadGoogleFont } from '../utils/loadGoogleFont';
 import useFormState from '../hooks/useFormState';
 import useActiveProject from '../hooks/useActiveProject';
@@ -28,6 +20,8 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
 import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
+import Seo from '../components/Seo';
+import { EditIcon, DeleteIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 
 export default function ProjectNorms() {
@@ -51,79 +45,24 @@ export default function ProjectNorms() {
   const { values: brushForm, setValues: setBrushForm, setField: setBrushField, reset: resetBrushForm } = useFormState({ usage: '', name: '', value: '', unit: 'px', opacity: '' });
   const { values: typoForm, setValues: setTypoForm, setField: setTypoField, reset: resetTypoForm } = useFormState({ fontFamily: '', fontWeight: '', fontUsage: '', fontStyle: '' });
 
-  // Brush form validation: the size must be a positive number (<= 1000) and the
-  // opacity, when provided, must be between 0 and 1. Gates the submit buttons so
-  // invalid values never reach the API.
+  // Brush validation (gates submit): size a positive number <= 1000, and
+  // opacity, when given, between 0 and 1.
   const brushValueNum = parseFloat(brushForm.value);
   const isBrushValueValid = brushForm.value !== '' && Number.isFinite(brushValueNum) && brushValueNum > 0 && brushValueNum <= 1000;
   const opacityNum = parseFloat(brushForm.opacity);
   const isOpacityValid = brushForm.opacity === '' || (Number.isFinite(opacityNum) && opacityNum >= 0 && opacityNum <= 1);
   const isBrushFormValid = !!brushForm.usage && isBrushValueValid && isOpacityValid;
 
-  // loadedFonts: families whose web font has finished loading (drives the
-  // preview switch from "Loading…" to the rendered AaBbCc sample).
-  // loadingFontsRef: families currently being loaded, kept in a ref so it does
-  // not retrigger this effect and to dedupe concurrent loads.
-  const [loadedFonts, setLoadedFonts] = useState([]);
-  const loadingFontsRef = useRef({});
+  // Google Fonts catalog (proxied by the backend) used to populate the font
+  // picker and resolve weights.
+  const { fonts: googleFonts, loading: loadingFonts, error: errorFonts } = useGoogleFonts();
 
-    // For each typography norm, dynamically load its Google Font so the preview
-    // can render in the real typeface, then mark it as loaded. Each family is
-    // loaded at most once.
-    React.useEffect(() => {
-      if (activeProject?.typographyNorms) {
-        activeProject.typographyNorms.forEach(async norm => {
-          // Dedupe via the ref only: it is set on first sight and never cleared,
-          // so a family is loaded at most once without depending on loadedFonts.
-          if (norm.fontFamily && !loadingFontsRef.current[norm.fontFamily]) {
-            loadingFontsRef.current[norm.fontFamily] = true;
-            try {
-              // Look up the font's metadata in the Google Fonts catalog.
-              const fontMeta = (googleFonts || []).find(f => f.family === norm.fontFamily);
-              let fontWeight = norm.fontWeight || '400';
-              let availableWeights = [];
-              if (fontMeta && fontMeta.variants) {
-                // Extract the numeric weights from variant labels (e.g. 'regular',
-                // '700italic', '400'), deduplicated.
-                availableWeights = fontMeta.variants
-                  .map(v => v.replace(/[^0-9]/g, '') || '400')
-                  .filter((v, i, arr) => arr.indexOf(v) === i); // unique
-              }
-              // Fall back to an available weight (or 400) if the requested one is missing.
-              if (availableWeights.length === 0) {
-                fontWeight = '400';
-              } else if (!availableWeights.includes(fontWeight)) {
-                fontWeight = availableWeights[0] || '400';
-              }
-              // Inject the stylesheet; loadGoogleFont may return a promise to await.
-              const maybePromise = loadGoogleFont(norm.fontFamily, fontWeight);
-              if (maybePromise && typeof maybePromise.then === 'function') {
-                await maybePromise;
-              }
-              // Wait until the font is actually usable. Omit the weight option when
-              // no weights were resolved so FontFaceObserver does not over-constrain.
-              const fontObserverOpts = availableWeights.length > 0 ? { weight: fontWeight } : {};
-              const font = new FontFaceObserver(norm.fontFamily, fontObserverOpts);
-              await font.load(null, 5000); // give up after 5s
-              setLoadedFonts(prev => [...prev, norm.fontFamily]);
-            } catch (e) {
-              // On timeout/failure still mark as loaded so the UI stops waiting
-              // (the preview falls back to the system font).
-              setLoadedFonts(prev => [...prev, norm.fontFamily]);
-            }
-          }
-        });
-      }
-      // loadedFonts is intentionally excluded so the effect does not re-run (and
-      // re-iterate every norm) each time a single font finishes loading; the ref
-      // guard handles dedup. googleFonts is likewise excluded (static metadata).
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeProject?.typographyNorms]);
-  // Google Fonts catalog used to populate the font picker and resolve weights.
-  const GOOGLE_FONTS_API_KEY = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
-  const { fonts: googleFonts, loading: loadingFonts, error: errorFonts } = useGoogleFonts(GOOGLE_FONTS_API_KEY);
+  // Families whose web font has finished loading (switches each preview from
+  // "Loading…" to the rendered sample). The hook re-resolves weights once the
+  // catalog arrives, fixing norms that loaded before it was available.
+  const loadedFonts = useNormFontLoader(activeProject?.typographyNorms, googleFonts);
 
-  // Open the edit modal pre-filled from the selected norm (per its type).
+  // Open the edit modal pre-filled from the selected norm (by type).
   const openEditNorm = (norm, type) => {
     setEditingNorm(norm);
     setEditingType(type);
@@ -134,28 +73,39 @@ export default function ProjectNorms() {
     }
   };
 
-  // Persist edits for the norm currently open in the edit modal.
+  // submitting guards both add and edit against a double submit.
+  const [isSubmittingNorm, setIsSubmittingNorm] = useState(false);
+
+  // Persist edits for the norm currently open in the edit modal. Only closes the
+  // modal and confirms when the save actually succeeded.
   const handleEditNorm = async () => {
-    if (!id || !editingNorm) return;
-    if (editingType === 'brush') {
-      if (!isBrushFormValid) return;
-      await updateBrushNorm(id, editingNorm.id, {
-        name: brushForm.usage,
-        value: brushForm.value,
-        unit: brushForm.unit,
-        brushName: brushForm.name,
-        opacity: brushForm.opacity
-      });
-    } else {
-      await updateTypographyNorm(id, editingNorm.id, {
-        fontFamily: typoForm.fontFamily,
-        fontWeight: typoForm.fontWeight,
-        fontUsage: typoForm.fontUsage,
-        fontStyle: typoForm.fontStyle
-      });
+    if (!id || !editingNorm || isSubmittingNorm) return;
+    setIsSubmittingNorm(true);
+    try {
+      let ok;
+      if (editingType === 'brush') {
+        if (!isBrushFormValid) return;
+        ok = await updateBrushNorm(id, editingNorm.id, {
+          name: brushForm.usage,
+          value: brushForm.value,
+          unit: brushForm.unit,
+          brushName: brushForm.name,
+          opacity: brushForm.opacity
+        });
+      } else {
+        ok = await updateTypographyNorm(id, editingNorm.id, {
+          fontFamily: typoForm.fontFamily,
+          fontWeight: typoForm.fontWeight,
+          fontUsage: typoForm.fontUsage,
+          fontStyle: typoForm.fontStyle
+        });
+      }
+      if (!ok) return;
+      setEditingNorm(null);
+      showToast('Standard updated.');
+    } finally {
+      setIsSubmittingNorm(false);
     }
-    setEditingNorm(null);
-    showToast('Standard updated.');
   };
 
   // loadingDelete holds the id of the norm whose deletion spinner is showing.
@@ -179,36 +129,44 @@ export default function ProjectNorms() {
     resetTypoForm();
   };
 
-  // Create a norm of the currently selected type from the add modal. For
-  // typography, eagerly load the chosen font so its preview appears immediately.
+  // Create a norm of the selected type. For typography, eagerly load the chosen
+  // font so its preview appears immediately.
   const handleAddNorm = async () => {
-    if (!id) return;
-    if (addType === 'brush') {
-      if (!isBrushFormValid) return;
-      await addBrushNorm(id, {
-        name: brushForm.usage,
-        value: brushForm.value,
-        unit: brushForm.unit,
-        brushName: brushForm.name,
-        opacity: brushForm.opacity
-      });
-    } else {
-      if (!typoForm.fontFamily) return;
-      // Preload the font (prefer the 'regular'/400 variant, else the first one).
-      const selectedFont = googleFonts.find(f => f.family === typoForm.fontFamily);
-      if (selectedFont) {
-        loadGoogleFont(selectedFont.family, selectedFont.variants?.includes('regular') ? '400' : selectedFont.variants?.[0] || '400');
+    if (!id || isSubmittingNorm) return;
+    setIsSubmittingNorm(true);
+    try {
+      let saved;
+      if (addType === 'brush') {
+        if (!isBrushFormValid) return;
+        saved = await addBrushNorm(id, {
+          name: brushForm.usage,
+          value: brushForm.value,
+          unit: brushForm.unit,
+          brushName: brushForm.name,
+          opacity: brushForm.opacity
+        });
+      } else {
+        if (!typoForm.fontFamily) return;
+        // Preload the font (prefer the 'regular'/400 variant, else the first one).
+        const selectedFont = googleFonts.find(f => f.family === typoForm.fontFamily);
+        if (selectedFont) {
+          loadGoogleFont(selectedFont.family, selectedFont.variants?.includes('regular') ? '400' : selectedFont.variants?.[0] || '400');
+        }
+        saved = await addTypographyNorm(id, {
+          fontFamily: typoForm.fontFamily,
+          fontWeight: typoForm.fontWeight,
+          fontUsage: typoForm.fontUsage,
+          fontStyle: typoForm.fontStyle
+        });
       }
-      await addTypographyNorm(id, {
-        fontFamily: typoForm.fontFamily,
-        fontWeight: typoForm.fontWeight,
-        fontUsage: typoForm.fontUsage,
-        fontStyle: typoForm.fontStyle
-      });
+      // Only close and confirm when the standard was actually saved.
+      if (!saved) return;
+      setIsAddingNorm(false);
+      resetForm();
+      showToast('Standard added.');
+    } finally {
+      setIsSubmittingNorm(false);
     }
-    setIsAddingNorm(false);
-    resetForm();
-    showToast('Standard added.');
   };
 
   // Display filter: 'all', 'brush', or 'typography'.
@@ -216,6 +174,7 @@ export default function ProjectNorms() {
 
   return (
     <>
+      <Seo title="Graphic standards" noindex />
       <PageHeader
         title="Graphic standards"
         subtitle="This project's graphic rules, all in one place."
@@ -246,16 +205,14 @@ export default function ProjectNorms() {
             />
             {/* Brush norm cards (hidden when filtering to typography only) */}
             {filterType !== 'typography' && activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
-              <Card key={norm.id} clickable className="p-6 relative group flex flex-col justify-between h-full">
+              <Card key={norm.id} className="p-6 relative group flex flex-col justify-between h-full">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
                     onClick={() => openEditNorm(norm, 'brush')}
                     title="Edit standard"
                     intent="edit"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
-                    </svg>
+                    <EditIcon />
                   </ActionIconButton>
                   <ActionIconButton
                     onClick={(e) => handleDeleteNorm(e, norm.id, 'brush')}
@@ -267,9 +224,7 @@ export default function ProjectNorms() {
                         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      <DeleteIcon />
                     )}
                   </ActionIconButton>
                 </div>
@@ -302,16 +257,14 @@ export default function ProjectNorms() {
             ))}
             {/* Typography norm cards (hidden when filtering to brush only) */}
             {filterType !== 'brush' && activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
-              <Card key={norm.id} clickable className="p-6 relative group flex flex-col justify-between h-full">
+              <Card key={norm.id} className="p-6 relative group flex flex-col justify-between h-full">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
                     onClick={() => openEditNorm(norm, 'typography')}
                     title="Edit standard"
                     intent="edit"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
-                    </svg>
+                    <EditIcon />
                   </ActionIconButton>
                   <ActionIconButton
                     onClick={(e) => handleDeleteNorm(e, norm.id, 'typography')}
@@ -323,9 +276,7 @@ export default function ProjectNorms() {
                         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      <DeleteIcon />
                     )}
                   </ActionIconButton>
                 </div>
@@ -524,14 +475,13 @@ export default function ProjectNorms() {
           if (!confirmDeleteNorm) return;
           // Show the spinner on the targeted card, delete by type, then clear state.
           setLoadingDelete(confirmDeleteNorm.id);
-          if (confirmDeleteNorm.type === 'brush') {
-            await deleteBrushNorm(id, confirmDeleteNorm.id);
-          } else {
-            await deleteTypographyNorm(id, confirmDeleteNorm.id);
-          }
+          const ok = confirmDeleteNorm.type === 'brush'
+            ? await deleteBrushNorm(id, confirmDeleteNorm.id)
+            : await deleteTypographyNorm(id, confirmDeleteNorm.id);
           setLoadingDelete(null);
           setConfirmDeleteNorm(null);
-          showToast('Standard deleted.');
+          // Only confirm when the deletion actually went through.
+          if (ok) showToast('Standard deleted.');
         }}
       />
     </>

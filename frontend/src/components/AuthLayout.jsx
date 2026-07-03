@@ -1,16 +1,9 @@
 // Layout for authentication pages (login / register).
 import React from 'react';
+import PropTypes from 'prop-types';
 import PublicTopBar from './PublicTopBar';
 
-/**
- * Two-column layout for auth screens: a hero/marketing column and a form column
- * on a flat solid background.
- *
- * @param {object} props
- * @param {React.ReactNode} props.hero - Content for the hero/marketing column.
- * @param {React.ReactNode} props.children - The form (rendered in the second column).
- * @param {boolean} [props.swapOnMobile] - When true, shows the form above the hero on mobile.
- */
+// Two-column auth layout: a hero/marketing column and a form column.
 export default function AuthLayout({ hero, children, swapOnMobile = false }) {
   // Reorder hero/form columns so the form can appear first on small screens.
   const heroOrderClass = swapOnMobile ? 'order-2 md:order-1' : 'order-1';
@@ -32,3 +25,9 @@ export default function AuthLayout({ hero, children, swapOnMobile = false }) {
     </div>
   );
 }
+
+AuthLayout.propTypes = {
+  hero: PropTypes.node,
+  children: PropTypes.node,
+  swapOnMobile: PropTypes.bool,
+};

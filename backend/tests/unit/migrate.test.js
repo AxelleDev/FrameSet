@@ -12,13 +12,13 @@ const mockReaddirSync = jest.fn();
 const mockReadFileSync = jest.fn(() => 'SQL');
 
 jest.mock('mysql2/promise', () => ({
-  createPool: (...args) => mockCreatePool(...args)
+  createPool: (...args) => mockCreatePool(...args),
 }));
 
 jest.mock('fs', () => ({
   existsSync: mockExistsSync,
   readdirSync: mockReaddirSync,
-  readFileSync: (...args) => mockReadFileSync(...args)
+  readFileSync: (...args) => mockReadFileSync(...args),
 }));
 const migrate = require('../../src/migrate');
 
@@ -65,11 +65,11 @@ describe('migrations', () => {
     await migrate.run(mockPool);
 
     expect(mockQuery).toHaveBeenCalledWith(
-      'ALTER TABLE users ADD COLUMN password_updated_at TIMESTAMP NULL'
+      'ALTER TABLE users ADD COLUMN password_updated_at TIMESTAMP NULL',
     );
     expect(mockQuery).toHaveBeenCalledWith(
       'INSERT IGNORE INTO schema_migrations (filename) VALUES (?)',
-      ['002_add_password_updated_at.sql']
+      ['002_add_password_updated_at.sql'],
     );
     expect(mockPool.end).not.toHaveBeenCalled();
   });
@@ -83,7 +83,11 @@ describe('migrations', () => {
       if (sql && typeof sql === 'string' && sql.includes('SELECT filename')) {
         return Promise.resolve([[{ filename: '001_init.sql' }]]);
       }
-      if (sql && typeof sql === 'string' && sql.includes('ALTER TABLE users ADD COLUMN password_updated_at')) {
+      if (
+        sql &&
+        typeof sql === 'string' &&
+        sql.includes('ALTER TABLE users ADD COLUMN password_updated_at')
+      ) {
         const error = new Error('duplicate field');
         error.code = 'ER_DUP_FIELDNAME';
         return Promise.reject(error);
@@ -94,7 +98,7 @@ describe('migrations', () => {
     await expect(migrate.run(mockPool)).resolves.not.toThrow();
     expect(mockQuery).toHaveBeenCalledWith(
       'INSERT IGNORE INTO schema_migrations (filename) VALUES (?)',
-      ['002_add_password_updated_at.sql']
+      ['002_add_password_updated_at.sql'],
     );
   });
 
@@ -107,4 +111,3 @@ describe('migrations', () => {
     expect(mockPool.end).toHaveBeenCalledTimes(1);
   });
 });
-

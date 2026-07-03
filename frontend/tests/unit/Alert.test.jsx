@@ -17,7 +17,7 @@ describe('Alert', () => {
 
   it('uses the "status" role and the right color for info/success', () => {
     const { rerender } = render(<Alert variant="info">Info</Alert>);
-    expect(screen.getByRole('status')).toHaveClass('text-primary');
+    expect(screen.getByRole('status')).toHaveClass('text-blue');
 
     rerender(<Alert variant="success">OK</Alert>);
     expect(screen.getByRole('status')).toHaveClass('text-success');

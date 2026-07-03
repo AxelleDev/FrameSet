@@ -1,20 +1,7 @@
 /**
- * Project data context provider.
- *
- * Holds the authenticated user's projects and the currently active project, and
- * exposes CRUD actions for projects plus their palette colors, brush norms and
- * typography norms. All mutations call the API and then optimistically update
- * local state so the UI stays in sync without a refetch; failures are surfaced
- * through the auth context's global error banner.
- *
- * Exposed via useProjects():
- *   State:   projects, projectsPagination, activeProjectId, activeProject,
- *            projectsLoading
- *   Setters: setActiveProjectId
- *   Actions: fetchProjects, loadMoreProjects, addProject, deleteProject,
- *            updateProjectName, updateProjectPalette, addBrushNorm,
- *            addTypographyNorm, deleteBrushNorm, deleteTypographyNorm,
- *            updateBrushNorm, updateTypographyNorm
+ * Project context: holds the user's projects and the active project, exposing
+ * CRUD for projects, palette and norms via useProjects(). Mutations optimistically
+ * update local state (no refetch); failures go to the global error banner.
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import api from '../services/api';
@@ -41,15 +28,14 @@ export const ProjectProvider = ({ children }) => {
   }, []);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [projectsLoading, setProjectsLoading] = useState(false);
+  // Monotonic token to discard out-of-order responses: two interleaved fetches
+  // (silent page-1 on login + a "load more", or a StrictMode double-mount) must
+  // not let a stale response overwrite the newer list/pagination.
+  const fetchSeq = useRef(0);
 
-  /**
-   * Fetches a page of the current user's projects into state. Page 1 replaces
-   * the list; later pages are appended (accumulating "load more"), de-duplicated
-   * by id so an insertion between fetches can't produce duplicate React keys.
-   * @param {{ silent?: boolean, page?: number }} [opts] silent suppresses the
-   *   global error banner; page selects which page to fetch (default 1).
-   * @returns {Promise<Array>} The fetched page of projects (empty on none/failure).
-   */
+  // Fetches a page of projects. Page 1 replaces the list; later pages are
+  // appended and de-duplicated by id (so an insertion between fetches can't
+  // produce duplicate React keys). silent suppresses the global error banner.
   const fetchProjects = useCallback(async ({ silent = false, page = 1 } = {}) => {
     if (!user?.id) {
       setProjects([]);
@@ -58,11 +44,16 @@ export const ProjectProvider = ({ children }) => {
       return [];
     }
 
+    const seq = (fetchSeq.current += 1);
     setProjectsLoading(true);
 
     try {
       const options = silent ? undefined : { onGlobalError: setGlobalError };
       const data = await api.get(`/projects?page=${page}`, options);
+      // A newer fetch started while this one was in flight: drop this response.
+      if (seq !== fetchSeq.current) {
+        return data?.projects || [];
+      }
       const fetched = data?.projects || [];
       updatePagination(data?.pagination || { ...DEFAULT_PAGINATION, total: fetched.length });
       setProjects((prev) => {
@@ -75,7 +66,10 @@ export const ProjectProvider = ({ children }) => {
       logger.error('projects.fetch.error', error);
       return [];
     } finally {
-      setProjectsLoading(false);
+      // Only the latest fetch owns the loading flag.
+      if (seq === fetchSeq.current) {
+        setProjectsLoading(false);
+      }
     }
   }, [user?.id, setGlobalError, updatePagination]);
 
@@ -106,21 +100,25 @@ export const ProjectProvider = ({ children }) => {
     projects.find((project) => String(project.id) === String(activeProjectId)) || null
   ), [projects, activeProjectId]);
 
-  /** Creates a project and prepends it to the local list. */
+  // Creates a project and prepends it to the local list. Returns the created
+  // project on success, or null on failure (so callers can gate toasts/modals).
   const addProject = useCallback(async (name) => {
-    if (!user) return;
+    if (!user) return null;
 
     try {
       const newProject = await api.post('/projects', { name }, { onGlobalError: setGlobalError });
       setProjects((prevProjects) => [newProject, ...prevProjects]);
       updatePagination({ ...paginationRef.current, total: paginationRef.current.total + 1 });
+      return newProject;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to add the project.');
       logger.error('projects.add.error', error);
+      return null;
     }
   }, [user, setGlobalError, updatePagination]);
 
-  /** Deletes a project and removes it locally, clearing the active id if it matched. */
+  // Deletes a project and removes it locally, clearing the active id if it
+  // matched. Returns true on success, false on failure.
   const deleteProject = useCallback(async (id) => {
     try {
       await api.delete(`/projects/${id}`, null, { onGlobalError: setGlobalError });
@@ -129,19 +127,17 @@ export const ProjectProvider = ({ children }) => {
       if (String(activeProjectId) === String(id)) {
         setActiveProjectId(null);
       }
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to delete the project.');
       logger.error('projects.delete.error', error);
+      return false;
     }
   }, [activeProjectId, setGlobalError, updatePagination]);
 
-  /**
-   * Replaces a project's whole palette with the given ordered array of colors
-   * and adopts the canonical palette returned by the server (each color carries
-   * its id and persisted order). Used for every palette change: add, edit,
-   * delete and reorder.
-   * @returns {Promise<Array|null>} The saved palette on success, or null on failure.
-   */
+  // Replaces the whole palette and adopts the canonical one returned by the
+  // server (ids + persisted order). Used for every palette change: add, edit,
+  // delete, reorder. Returns the saved palette, or null on failure.
   const updateProjectPalette = useCallback(async (projectId, palette) => {
     try {
       const response = await api.post(
@@ -163,7 +159,8 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
-  /** Renames a project and locally marks it as just edited. */
+  // Renames a project and locally marks it as just edited. Returns true on
+  // success, false on failure.
   const updateProjectName = useCallback(async (projectId, { name }) => {
     try {
       await api.patch(`/projects/${projectId}`, { name }, { onGlobalError: setGlobalError });
@@ -174,16 +171,15 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to rename the project.');
       logger.error('projects.updateName.error', error);
+      return false;
     }
   }, [setGlobalError]);
 
-  /**
-   * Adds a brush norm. Uses the server-assigned id and keeps normsCount in sync.
-   * @returns {Promise<object|null>} The created standard (with id), or null on failure.
-   */
+  // Adds a brush norm using the server-assigned id; keeps normsCount in sync.
   const addBrushNorm = useCallback(async (projectId, norm) => {
     try {
       const data = await api.post(`/projects/${projectId}/brush-norms`, norm, { onGlobalError: setGlobalError });
@@ -207,10 +203,7 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
-  /**
-   * Adds a typography norm. Uses the server-assigned id and bumps normsCount.
-   * @returns {Promise<object|null>} The created standard (with id), or null on failure.
-   */
+  // Adds a typography norm using the server-assigned id; bumps normsCount.
   const addTypographyNorm = useCallback(async (projectId, norm) => {
     try {
       const data = await api.post(`/projects/${projectId}/typography-norms`, norm, { onGlobalError: setGlobalError });
@@ -250,9 +243,11 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to delete the standard.');
       logger.error('projects.deleteBrushNorm.error', error);
+      return false;
     }
   }, [setGlobalError]);
 
@@ -272,9 +267,11 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to delete the standard.');
       logger.error('projects.deleteTypographyNorm.error', error);
+      return false;
     }
   }, [setGlobalError]);
 
@@ -294,9 +291,11 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to update the standard.');
       logger.error('projects.updateBrushNorm.error', error);
+      return false;
     }
   }, [setGlobalError]);
 
@@ -316,9 +315,11 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to update the standard.');
       logger.error('projects.updateTypographyNorm.error', error);
+      return false;
     }
   }, [setGlobalError]);
 
@@ -369,10 +370,7 @@ export const ProjectProvider = ({ children }) => {
   );
 };
 
-/**
- * Accessor hook for the project context. Throws if used outside a ProjectProvider.
- * @returns The project context value (state + actions).
- */
+// Accessor hook for the project context. Throws if used outside a ProjectProvider.
 export const useProjects = () => {
   const context = useContext(ProjectContext);
   if (!context) {

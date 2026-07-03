@@ -2,8 +2,18 @@ node_modules
 dist
 build
 .DS_Store
+
+# Environment: never commit real env files; keep the tracked examples.
 .env
-.env.local
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Vercel
+.vercel
 
 # Test coverage reports
 coverage/

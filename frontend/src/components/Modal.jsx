@@ -1,23 +1,10 @@
-// Generic reusable modal.
 import React, { useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 
 /**
- * Low-level modal primitive: renders an overlay + focusable panel, supports
- * backdrop-click close, an optional header (title/subtitle/close button) and a
- * focus trap that keeps Tab navigation within the panel.
- *
- * @param {object} props
- * @param {boolean} props.isOpen - Whether the modal is rendered (returns null when false).
- * @param {Function} props.onClose - Close handler invoked by backdrop click and close button.
- * @param {string} [props.title] - Optional header title (also wires aria-labelledby).
- * @param {string} [props.subtitle] - Optional header subtitle.
- * @param {React.ReactNode} props.children - Modal body content.
- * @param {string} [props.overlayClassName] - Overlay styling classes.
- * @param {string} [props.panelClassName] - Panel styling classes.
- * @param {boolean} [props.showClose] - Whether to render the header close button.
- * @param {boolean} [props.closeOnBackdrop] - Whether clicking the backdrop closes the modal.
+ * Low-level modal primitive: overlay + focusable panel with backdrop-click
+ * close, an optional header (title/subtitle/close) and a Tab focus trap.
  */
 export default function Modal({
   isOpen,
@@ -51,6 +38,16 @@ export default function Modal({
     };
   }, [isOpen]);
 
+  // Lock body scroll while the modal is open so the page behind it can't scroll.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   // Keyboard handling: Escape closes the modal; Tab is trapped within the panel,
   // wrapping from last to first (and vice-versa with Shift).
   const handleKeyDown = (e) => {
@@ -60,8 +57,10 @@ export default function Modal({
       return;
     }
     if (e.key !== 'Tab') return;
+    // Exclude disabled controls: a .focus() on them no-ops and would break the
+    // trap at its edges (Tab could escape the modal).
     const focusableEls = panelRef.current.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     );
     const focusable = Array.prototype.slice.call(focusableEls);
     if (!focusable.length) return;
@@ -80,7 +79,6 @@ export default function Modal({
     }
   };
 
-  // Do not render anything while closed.
   if (!isOpen) return null;
 
   // Close only when the click originated on the overlay itself, not its children.

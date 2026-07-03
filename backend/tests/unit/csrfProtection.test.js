@@ -12,7 +12,7 @@ describe('middleware csrfProtection', () => {
     expect(res.cookie).toHaveBeenCalledWith(
       CSRF_TOKEN_COOKIE_NAME,
       expect.any(String),
-      expect.objectContaining({ httpOnly: false })
+      expect.objectContaining({ httpOnly: false }),
     );
     expect(next).toHaveBeenCalledTimes(1);
   });
@@ -43,8 +43,8 @@ describe('middleware csrfProtection', () => {
     const req = {
       method: 'POST',
       headers: {
-        cookie: `${CSRF_TOKEN_COOKIE_NAME}=cookie-token`
-      }
+        cookie: `${CSRF_TOKEN_COOKIE_NAME}=cookie-token`,
+      },
     };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();
@@ -61,8 +61,8 @@ describe('middleware csrfProtection', () => {
       method: 'PATCH',
       headers: {
         cookie: `${CSRF_TOKEN_COOKIE_NAME}=shared-token`,
-        'x-csrf-token': 'shared-token'
-      }
+        'x-csrf-token': 'shared-token',
+      },
     };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const next = jest.fn();

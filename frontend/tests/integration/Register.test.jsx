@@ -63,6 +63,6 @@ describe('Register', () => {
       email: 'axelle@example.com',
       password: 'Pass1234'
     });
-    expect(mockNavigate).toHaveBeenCalledWith('/verify?email=axelle%40example.com');
+    expect(mockNavigate).toHaveBeenCalledWith('/verify', { state: { email: 'axelle@example.com' } });
   });
 });

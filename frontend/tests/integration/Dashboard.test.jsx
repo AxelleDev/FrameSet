@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import Dashboard from '../../src/pages/Dashboard';
 
 const { mockNavigate, projectState } = vi.hoisted(() => ({
@@ -24,9 +25,9 @@ vi.mock('../../src/context/ProjectContext', () => ({
 
 const renderPage = () =>
   render(
-    <MemoryRouter>
+    <HelmetProvider><MemoryRouter>
       <Dashboard />
-    </MemoryRouter>
+    </MemoryRouter></HelmetProvider>
   );
 
 describe('Dashboard', () => {

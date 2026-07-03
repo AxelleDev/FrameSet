@@ -1,17 +1,11 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 // User-facing fallback text shown when a render error is caught.
 const FALLBACK_MESSAGE = 'Something went wrong. Please reload the page.';
 
-/**
- * React error boundary. Catches render-time errors in its subtree and shows a
- * fallback alert instead of crashing the app. An optional `onError` prop is
- * invoked for logging/reporting.
- *
- * @param {object} props
- * @param {Function} [props.onError] - Callback receiving (error, errorInfo) when an error is caught.
- * @param {React.ReactNode} props.children - Subtree to protect.
- */
+// Error boundary: catches render-time errors in its subtree and shows a fallback alert
+// instead of crashing. Optional `onError(error, errorInfo)` is invoked for logging/reporting.
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -33,7 +27,6 @@ export default class ErrorBoundary extends React.Component {
   }
 
   render() {
-    // Render the accessible fallback UI when an error has been caught.
     if (this.state.hasError) {
       return (
         <div
@@ -48,5 +41,10 @@ export default class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+ErrorBoundary.propTypes = {
+  children: PropTypes.node,
+  onError: PropTypes.func,
+};
 
 export { FALLBACK_MESSAGE };

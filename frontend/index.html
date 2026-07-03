@@ -22,18 +22,9 @@
   <meta name="twitter:title" content="FrameSet — The graphic reference for your projects">
   <meta name="twitter:description" content="FrameSet keeps every project's graphic standards and color palette in one place.">
   <meta name="twitter:image" content="https://frameset.app/FrameSet_Logo.png">
-  <script>
-    // Apply the saved/preferred theme before paint to avoid a flash of the wrong theme.
-    (function () {
-      try {
-        var t = localStorage.getItem('frameset-theme');
-        if (t !== 'dark' && t !== 'light') {
-          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-        if (t === 'dark') document.documentElement.classList.add('dark');
-      } catch (e) { /* ignore */ }
-    })();
-  </script>
+  <!-- Applied before paint (blocking, in <head>) to avoid a theme flash. External
+       file so a strict CSP `script-src 'self'` covers it without an inline hash. -->
+  <script src="/theme-init.js"></script>
 </head>
 <body>
   <div id="root"></div>

@@ -1,10 +1,5 @@
-/**
- * Registration page (route: /register).
- *
- * Collects name + email + password (with confirmation), validates everything on
- * the client (email format, live password policy, matching confirmation), then
- * creates the account via the auth context and redirects to email verification.
- */
+// Registration page (/register): collect name/email/password, validate on the
+// client, create the account, then redirect to email verification.
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -62,7 +57,7 @@ export default function Register() {
       setError('');
       // Prefer the server-confirmed email; fall back to what the user typed.
       const verificationEmail = result.data?.email || formData.email.trim();
-      navigate(`/verify?email=${encodeURIComponent(verificationEmail)}`);
+      navigate('/verify', { state: { email: verificationEmail } });
     } else if (result.message) {
       setError(result.message);
     }
@@ -96,7 +91,7 @@ export default function Register() {
               <p className="text-xs text-blue uppercase tracking-widest">Alyse C., Illustrator</p>
             </div>
             <p className="text-sm text-blue">
-              {userCount !== null ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}` : 'Joined by ... illustrators'}
+              {userCount !== null ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}` : ' '}
             </p>
           </div>
         </>

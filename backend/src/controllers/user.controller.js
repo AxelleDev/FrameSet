@@ -1,44 +1,51 @@
 /**
- * User account controller.
- *
- * Handles the authenticated user's account operations: profile read/update,
- * password change, deletion, and the pending-email change flow (where a new
- * address is only committed after the user confirms a one-time code sent to
- * it). All mutating operations are scoped to the authenticated user id.
+ * User account controller: thin HTTP layer for the account lifecycle (profile
+ * read/update, password change, deletion, pending-email flow). Business logic and
+ * SQL live in user.service; all mutating ops are scoped to the authenticated user id.
  */
 
-const bcrypt = require('bcryptjs');
-const validator = require('validator');
-const db = require('../database');
-const mailService = require('../services/mail.service');
-const { getAuthenticatedUserId, generateVerificationCode, createControllerLogger } = require('../utils/auth.utils');
-const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
+const userService = require('../services/user.service');
+const { getAuthenticatedUserId, createControllerLogger } = require('../utils/auth.utils');
 const { issueAuthCookies } = require('../utils/session.utils');
 
 const logUserControllerError = createControllerLogger('users');
 
-/**
- * Returns the total number of registered users (public stat).
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Maps a UserServiceError code to its HTTP status; the service message is surfaced as-is.
+const STATUS_BY_ERROR_CODE = {
+  validation: 400,
+  not_found: 404,
+  email_in_use: 400,
+  no_pending: 400,
+  invalid_code: 400,
+  code_expired: 400,
+  invalid_current_password: 401,
+};
+
+// Sends a business error as its mapped status, or logs and returns a generic 500.
+const handleServiceError = (
+  req,
+  res,
+  operation,
+  error,
+  { serverErrorMessage = 'Server error.' } = {},
+) => {
+  if (error instanceof userService.UserServiceError) {
+    return res.status(STATUS_BY_ERROR_CODE[error.code] || 400).json({ error: error.message });
+  }
+  logUserControllerError(req, operation, error);
+  return res.status(500).json({ error: serverErrorMessage });
+};
+
+// Return the total number of registered users (public stat).
 const getUserCount = async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT COUNT(*) as count FROM users');
-    res.json({ count: rows[0].count });
+    res.json({ count: await userService.getUserCount() });
   } catch (error) {
-    logUserControllerError(req, 'count', error);
-    res.status(500).json({ error: 'Server error.' });
+    handleServiceError(req, res, 'count', error);
   }
 };
 
-/**
- * Returns the authenticated user's profile. Selects only non-sensitive columns
- * (never the password hash) and resolves the id from the verified token rather
- * than any client-supplied value.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Return the user's profile (id resolved from the verified token, not client input).
 const getProfile = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
   if (!authenticatedUserId) {
@@ -46,254 +53,89 @@ const getProfile = async (req, res) => {
   }
 
   try {
-    const [rows] = await db.query(
-      'SELECT id, name, email, avatar_initials, password_updated_at, pending_email FROM users WHERE id = ?',
-      [authenticatedUserId]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-
-    const userDb = rows[0];
-    return res.json({
-      id: userDb.id,
-      name: userDb.name,
-      email: userDb.email,
-      avatarInitials: userDb.avatar_initials,
-      passwordUpdatedAt: userDb.password_updated_at,
-      pendingEmail: userDb.pending_email || null
-    });
+    return res.json(await userService.getUserProfile(authenticatedUserId));
   } catch (error) {
-    logUserControllerError(req, 'profile', error);
-    return res.status(500).json({ error: 'Server error.' });
+    return handleServiceError(req, res, 'profile', error);
   }
 };
 
-/**
- * Updates the authenticated user's profile. A name-only change is applied
- * immediately. An email change is NOT applied directly: the new address is
- * stored as a pending email with a one-time code emailed to it, and only
- * becomes the account email after confirmation (see verifyPendingEmail). This
- * proves ownership of the new address and prevents account takeover via an
- * unverified email swap. Also rejects an email already in use by another user.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Update the user's profile (name immediately; email via a pending-email code flow).
 const updateUser = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
-  const { name, email } = req.body;
   if (!authenticatedUserId) {
     return res.status(401).json({ error: 'User not authenticated.' });
   }
-  if (!name || !email) {
-    return res.status(400).json({ error: 'All fields are required.' });
-  }
-  const trimmedName = validator.trim(name);
-  const trimmedEmail = validator.trim(email);
-  if (!validator.isEmail(trimmedEmail)) {
-    return res.status(400).json({ error: 'Invalid email.' });
-  }
+
   try {
-    const [rows] = await db.query('SELECT email, pending_email FROM users WHERE id = ?', [authenticatedUserId]);
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-
-    const currentEmail = rows[0].email;
-    const isEmailChanged = trimmedEmail !== currentEmail;
-
-    if (isEmailChanged) {
-      const [existing] = await db.query(
-        'SELECT id FROM users WHERE (email = ? OR pending_email = ?) AND id <> ?',
-        [trimmedEmail, trimmedEmail, authenticatedUserId]
-      );
-      if (existing.length > 0) {
-        return res.status(400).json({ error: 'This email is already in use.' });
-      }
-
-      const { code: pendingCode, expires } = generateVerificationCode();
-
-      await db.query(
-        'UPDATE users SET name = ?, pending_email = ?, pending_email_code = ?, pending_email_expires = ? WHERE id = ?',
-        [trimmedName, trimmedEmail, pendingCode, expires, authenticatedUserId]
-      );
-
-      await mailService.sendMail({
-        to: trimmedEmail,
-        subject: 'Confirm your new email',
-        text: `Your confirmation code is: ${pendingCode}\nThis code expires in 10 minutes.`,
-        html: mailService.buildTemplate({
-          title: 'Confirm your new email',
-          message: 'Use the code below to confirm your new email.',
-          code: pendingCode
-        })
-      });
-
-      return res.json({ success: true, name: trimmedName, email: currentEmail, pendingEmail: trimmedEmail });
-    }
-
-    await db.query('UPDATE users SET name = ? WHERE id = ?', [trimmedName, authenticatedUserId]);
-    res.json({ success: true, name: trimmedName, email: currentEmail, pendingEmail: rows[0].pending_email || null });
+    const result = await userService.updateUserProfile(authenticatedUserId, req.body || {});
+    res.json({ success: true, ...result });
   } catch (error) {
-    logUserControllerError(req, 'update', error);
-    res.status(500).json({ error: 'Database error.' });
+    handleServiceError(req, res, 'update', error, { serverErrorMessage: 'Database error.' });
   }
 };
 
-/**
- * Confirms a pending email change. Validates the one-time code and its expiry,
- * then atomically promotes pending_email to the account email and clears the
- * pending fields. Returns the updated user representation.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Confirm a pending email change with its one-time code.
 const verifyPendingEmail = async (req, res) => {
-  const { email, code } = req.body;
   const authenticatedUserId = getAuthenticatedUserId(req);
   if (!authenticatedUserId) {
     return res.status(401).json({ error: 'User not authenticated.' });
   }
+
   try {
-    const [rows] = await db.query('SELECT * FROM users WHERE id = ? AND pending_email = ?', [authenticatedUserId, email]);
-    if (rows.length === 0) {
-      return res.status(400).json({ error: 'No pending email found.' });
-    }
-    const userDb = rows[0];
-    if (!userDb.pending_email_code || userDb.pending_email_code !== code) {
-      return res.status(400).json({ error: 'Incorrect code.' });
-    }
-    if (!userDb.pending_email_expires || new Date() > new Date(userDb.pending_email_expires)) {
-      return res.status(400).json({ error: 'Code expired. Please request a new one.' });
-    }
-
-    await db.query(
-      'UPDATE users SET email = pending_email, pending_email = NULL, pending_email_code = NULL, pending_email_expires = NULL WHERE id = ?',
-      [userDb.id]
-    );
-
-    const updatedUser = {
-      id: userDb.id,
-      name: userDb.name,
-      email,
-      avatarInitials: userDb.avatar_initials,
-      passwordUpdatedAt: userDb.password_updated_at,
-      pendingEmail: null
-    };
-
-    res.json({ success: true, user: updatedUser });
+    const user = await userService.confirmPendingEmail(authenticatedUserId, req.body || {});
+    res.json({ success: true, user });
   } catch (error) {
-    logUserControllerError(req, 'verify_pending_email', error);
-    res.status(500).json({ error: 'Server error.' });
+    handleServiceError(req, res, 'verify_pending_email', error);
   }
 };
 
-/**
- * Regenerates and re-sends the confirmation code for a pending email change,
- * replacing the previous code and expiry.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Regenerate and re-send the confirmation code for a pending email change.
 const resendPendingEmail = async (req, res) => {
-  const { email } = req.body;
   const authenticatedUserId = getAuthenticatedUserId(req);
   if (!authenticatedUserId) {
     return res.status(401).json({ error: 'User not authenticated.' });
   }
+
   try {
-    const [rows] = await db.query('SELECT * FROM users WHERE id = ? AND pending_email = ?', [authenticatedUserId, email]);
-    if (rows.length === 0) {
-      return res.status(400).json({ error: 'No pending email found.' });
-    }
-    const userDb = rows[0];
-    const { code: newCode, expires } = generateVerificationCode();
-
-    await db.query(
-      'UPDATE users SET pending_email_code = ?, pending_email_expires = ? WHERE id = ?',
-      [newCode, expires, userDb.id]
-    );
-
-    await mailService.sendMail({
-      to: email,
-      subject: 'New confirmation code',
-      text: `Your new confirmation code is: ${newCode}\nThis code expires in 10 minutes.`,
-      html: mailService.buildTemplate({
-        title: 'New confirmation code',
-        message: 'Here is your new code to confirm your email.',
-        code: newCode
-      })
-    });
-
+    await userService.resendPendingEmail(authenticatedUserId, req.body || {});
     res.json({ success: true });
   } catch (error) {
-    logUserControllerError(req, 'resend_pending_email', error);
-    res.status(500).json({ error: 'Server error.' });
+    handleServiceError(req, res, 'resend_pending_email', error);
   }
 };
 
-/**
- * Changes the authenticated user's password. Requires the current password and
- * re-verifies it with bcrypt before applying the change (defense against an
- * attacker using a hijacked session). The new password must satisfy the policy
- * and is stored as a fresh bcrypt hash; password_updated_at is bumped.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Change the user's password, then re-issue a fresh session so this session keeps
+// working while every other (older) session is invalidated by the password change.
 const changePassword = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
-  const { currentPassword, newPassword } = req.body;
-  if (!authenticatedUserId || !currentPassword || !newPassword) {
-    return res.status(400).json({ error: 'Required fields are missing.' });
+  if (!authenticatedUserId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
   }
-  const trimmedNewPassword = validator.trim(newPassword);
-  if (!validator.isLength(trimmedNewPassword, { min: PASSWORD_MIN_LENGTH })) {
-    return res.status(400).json({ error: 'Password too short.' });
-  }
-  if (!validator.matches(trimmedNewPassword, PASSWORD_COMPLEXITY_REGEX)) {
-    return res.status(400).json({ error: 'The password must contain at least one uppercase letter, one lowercase letter, and one digit.' });
-  }
+
   try {
-    const [rows] = await db.query('SELECT password FROM users WHERE id = ?', [authenticatedUserId]);
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-    const isMatch = await bcrypt.compare(currentPassword, rows[0].password);
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Current password is incorrect.' });
-    }
-    const hashedPassword = await bcrypt.hash(trimmedNewPassword, BCRYPT_SALT_ROUNDS);
-    await db.query('UPDATE users SET password = ?, password_updated_at = NOW() WHERE id = ?', [hashedPassword, authenticatedUserId]);
-    // Re-issue a fresh token pair so the current session keeps working, while
-    // every other session (tokens issued before this change) is invalidated.
+    const { passwordUpdatedAt } = await userService.changeUserPassword(
+      authenticatedUserId,
+      req.body || {},
+    );
     issueAuthCookies(res, { id: authenticatedUserId, email: req.user?.email });
-    res.json({ success: true, passwordUpdatedAt: new Date() });
+    res.json({ success: true, passwordUpdatedAt });
   } catch (error) {
-    logUserControllerError(req, 'change_password', error);
-    res.status(500).json({ error: 'Server error.' });
+    handleServiceError(req, res, 'change_password', error);
   }
 };
 
-/**
- * Permanently deletes the authenticated user's account. Scoped to the verified
- * user id so a user can only delete their own account; related project data is
- * removed by the schema's cascading foreign keys.
- * @param {Object} req Express request.
- * @param {Object} res Express response.
- */
+// Permanently delete the user's own account (scoped to the verified id).
 const deleteAccount = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
   if (!authenticatedUserId) {
     return res.status(401).json({ error: 'User not authenticated.' });
   }
+
   try {
-    const [result] = await db.query('DELETE FROM users WHERE id = ?', [authenticatedUserId]);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
+    await userService.deleteUserAccount(authenticatedUserId);
     res.json({ success: true });
   } catch (error) {
-    logUserControllerError(req, 'delete_account', error);
-    res.status(500).json({ error: 'Server error.' });
+    handleServiceError(req, res, 'delete_account', error);
   }
 };
 
@@ -304,5 +146,5 @@ module.exports = {
   verifyPendingEmail,
   resendPendingEmail,
   changePassword,
-  deleteAccount
+  deleteAccount,
 };

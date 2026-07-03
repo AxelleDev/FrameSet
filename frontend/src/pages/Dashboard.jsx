@@ -1,10 +1,5 @@
-/**
- * Dashboard page (route: /app/dashboard).
- *
- * The landing screen after login: shows a greeting, project/norm totals, and a
- * grid of project cards. From here the user can create, rename, delete and open
- * projects. Opening a project navigates into its norms section.
- */
+// Dashboard page (route: /app/dashboard): post-login landing with project totals
+// and a grid of cards to create, rename, delete and open projects.
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectContext';
@@ -20,17 +15,9 @@ import AddTile from '../components/AddTile';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
-
-/**
- * Formats a project's `lastEdited` value for display after the "Edited " prefix.
- * The API returns either the just-edited sentinel ("Just now") or a
- * "DD/MM HH:MM" string; we render "just now" or "on DD/MM at HH:MM".
- */
-function formatModified(value) {
-  if (!value) return '';
-  const match = /^(\d{2}\/\d{2})\s+(\d{2}:\d{2})$/.exec(value);
-  return match ? `on ${match[1]} at ${match[2]}` : 'just now';
-}
+import Seo from '../components/Seo';
+import { EditIcon, DeleteIcon } from '../components/icons';
+import { formatModified } from '../utils/date';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -50,8 +37,9 @@ export default function Dashboard() {
     setActiveProjectId(null);
   }, [setActiveProjectId]);
 
-  // Aggregate norm count across the loaded projects for the summary stat.
-  const totalNorms = projects.reduce((acc, p) => acc + p.normsCount, 0);
+  // Aggregate norm count across the loaded projects for the summary stat. Guard
+  // each normsCount so a project missing the field can't turn the total into NaN.
+  const totalNorms = projects.reduce((acc, p) => acc + (p.normsCount || 0), 0);
   // Authoritative project total from the server (all pages), guarded so it never
   // shows fewer than what is currently on screen.
   const paginationTotal = projectsPagination?.total ?? projects.length;
@@ -59,12 +47,21 @@ export default function Dashboard() {
   const hasMoreProjects = projects.length < paginationTotal;
 
   // Create a project from the modal, ignoring blank names, then reset the form.
+  // submitting guards against a double submit (Enter key + button click).
+  const [isSubmittingProject, setIsSubmittingProject] = useState(false);
   const handleCreateProject = async () => {
-    if (newProjectName && newProjectName.trim().length > 0) {
-      await addProject(newProjectName);
+    if (isSubmittingProject) return;
+    if (!newProjectName || newProjectName.trim().length === 0) return;
+    setIsSubmittingProject(true);
+    try {
+      const created = await addProject(newProjectName);
+      // Only confirm and close the modal when the project was actually created.
+      if (!created) return;
       setIsCreatingProject(false);
       setNewProjectName('');
       showToast('Project created.');
+    } finally {
+      setIsSubmittingProject(false);
     }
   };
 
@@ -78,18 +75,26 @@ export default function Dashboard() {
 
   const handleEditProject = async () => {
     setEditProjectError("");
+    if (isSubmittingProject) return;
     if (!editProjectId || !editProjectName || !editProjectName.trim()) {
       setEditProjectError("Give your project a name.");
       return;
     }
+    setIsSubmittingProject(true);
     try {
-      await updateProjectName(editProjectId, { name: editProjectName.trim() });
+      // updateProjectName never throws; it returns false on failure (the global
+      // error banner already surfaced the reason).
+      const ok = await updateProjectName(editProjectId, { name: editProjectName.trim() });
+      if (!ok) {
+        setEditProjectError("Something went wrong updating the project.");
+        return;
+      }
       setIsEditingProject(false);
       setEditProjectId(null);
       setEditProjectName("");
       showToast('Project updated.');
-    } catch (e) {
-      setEditProjectError(e?.message || "Something went wrong updating the project.");
+    } finally {
+      setIsSubmittingProject(false);
     }
   };
 
@@ -107,6 +112,7 @@ export default function Dashboard() {
 
   return (
     <>
+      <Seo title="Dashboard" noindex />
       <Card className="overflow-hidden mb-12 animate-fade-in">
         <div className="relative z-10 p-6 sm:p-10 md:p-14 flex flex-col md:flex-row items-start justify-between gap-6 md:gap-8">
           <div>
@@ -141,35 +147,43 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="flex items-end justify-between mb-6">
-          <h2 className="text-xl font-medium text-primary">{totalProjects === 1 ? 'Active project' : 'Active projects'}</h2>
+          <h2 className="text-xl font-medium text-primary">{totalProjects === 1 ? 'Your project' : 'Your projects'}</h2>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (
-          <Card key={project.id} clickable onClick={() => openProject(project.id)} className="group p-6 overflow-hidden">
+          <Card key={project.id} clickable className="group p-6 overflow-hidden">
             <div className="absolute top-4 right-4 flex gap-2 z-30">
               <ActionIconButton
                 onClick={(e) => openEditProject(e, project)}
                 title="Edit project"
                 intent="edit"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
-                </svg>
+                <EditIcon />
               </ActionIconButton>
               <ActionIconButton
                 onClick={(e) => handleDeleteProject(e, project.id)}
                 title="Delete project"
                 intent="delete"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
+                <DeleteIcon />
               </ActionIconButton>
             </div>
             <div className="relative z-10 flex flex-col h-full min-h-[160px]">
-              <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">{project.name}</h3>
+              {/* Stretched-link: the title is the only "open project" control, and its
+                  ::after overlay makes the whole card body clickable — without making the
+                  container itself a button (which would nest the edit/delete buttons and
+                  break ARIA). The action buttons sit above the overlay (z-30). */}
+              <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">
+                <button
+                  type="button"
+                  onClick={() => openProject(project.id)}
+                  className="text-left rounded focus-ring after:absolute after:inset-0 after:content-['']"
+                >
+                  {project.name}
+                </button>
+              </h3>
               <p className="text-sm text-primary mb-auto">Edited {formatModified(project.lastEdited)}</p>
               <div className="mt-8 pt-4 flex -space-x-2 min-h-[40px] items-center">
                 {project.palette.map((color, i) => (
@@ -261,9 +275,9 @@ export default function Dashboard() {
         onCancel={() => setConfirmDeleteProject(null)}
         onConfirm={async () => {
           if (!confirmDeleteProject?.id) return;
-          await deleteProject(confirmDeleteProject.id);
+          const ok = await deleteProject(confirmDeleteProject.id);
           setConfirmDeleteProject(null);
-          showToast('Project deleted.');
+          if (ok) showToast('Project deleted.');
         }}
       />
     </>

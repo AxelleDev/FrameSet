@@ -1,15 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-/**
- * Small uppercase pill used to label sections/categories (e.g. "Brush",
- * "Typography"). Outlined on white with a per-color accent.
- *
- * @param {object} props
- * @param {'primary'|'blue'|'danger'} [props.color] - Accent color.
- * @param {string} [props.className] - Extra classes.
- * @param {React.ReactNode} props.children - Label content.
- */
+// Small uppercase pill used to label sections/categories, with a per-color accent.
 const COLORS = {
   primary: 'bg-primary/10 text-primary',
   blue: 'bg-blue/10 text-blue',

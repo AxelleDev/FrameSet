@@ -1,16 +1,8 @@
-/**
- * Project palette page (route: /app/project/:id/palette).
- *
- * Displays the project's color swatches and lets the user add, edit, delete,
- * copy (hex to clipboard) and reorder colors. Reordering works both by
- * drag-and-drop (with a FLIP animation so the other swatches slide smoothly)
- * and by keyboard, via per-swatch visually-hidden "move left/right" buttons.
- *
- * Every change persists the whole ordered palette through updateProjectPalette,
- * which returns the canonical palette from the server (each color carrying a
- * stable `id` and its saved order). Colors are identified by `id`, never by hex,
- * so two colors may share the same hex without colliding.
- */
+// Project palette page (/app/project/:id/palette): add/edit/delete/copy/reorder
+// color swatches (drag-and-drop with FLIP, plus keyboard move buttons).
+// Every change persists the whole ordered palette via updateProjectPalette and
+// adopts the server's canonical result. Colors are keyed by stable `id`, never
+// hex, so two colors may share a hex without colliding.
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useToast } from '../context/ToastContext';
@@ -25,6 +17,9 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import CopyBadge from '../components/CopyBadge';
 import AddTile from '../components/AddTile';
 import PageHeader from '../components/PageHeader';
+import Seo from '../components/Seo';
+import { normalizeHexInput, isValidHexValue, handleHexKeyDown } from '../utils/hex';
+import { EditIcon, DeleteIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useClipboard from '../hooks/useClipboard';
 import useActiveProject from '../hooks/useActiveProject';
@@ -42,27 +37,29 @@ export default function ProjectPalette() {
   const [editColorName, setEditColorName] = useState('');
   const [editColorHex, setEditColorHex] = useState('');
 
-  // Drag-and-drop state:
-  //   draggedIndex/draggedId: the swatch being dragged (by index and id).
-  //   dragOverIndex: the slot the dragged swatch would land in.
-  //   palette: the committed order; previewPalette: the live reordered order
-  //     shown during a drag (committed to `palette` only on drop).
+  // Drag-and-drop state. draggedIndex/draggedId: the swatch being dragged.
+  // dragOverIndex: the slot it would land in. palette: committed order;
+  // previewPalette: live reorder shown during a drag (committed only on drop).
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [palette, setPalette] = useState([]);
   const [previewPalette, setPreviewPalette] = useState([]);
-  // Refs used by the FLIP animation:
-  //   itemRefs: color id -> DOM node, to measure positions.
-  //   prevPositions: color id -> bounding rect captured *before* a reorder (First).
-  //   skipFlip: suppress the animation for the next layout pass (e.g. on cancel).
-  //   didDrop: distinguishes a real drop from a cancelled drag in onDragEnd.
-  //   flipPending: marks that a reorder happened and the FLIP should run next.
+  // Refs for the FLIP animation. itemRefs: id -> DOM node (to measure).
+  // prevPositions: id -> rect captured before a reorder (the "First").
+  // skipFlip: suppress the animation next layout pass (e.g. on cancel).
+  // didDrop: real drop vs. cancelled drag in onDragEnd.
+  // flipPending: a reorder happened and the FLIP should run next.
   const itemRefs = useRef({});
   const prevPositions = useRef({});
   const skipFlip = useRef(false);
   const didDrop = useRef(false);
   const flipPending = useRef(false);
+  // Holds the post-drop persistence timeout so it can be cancelled on unmount.
+  const dropPersistTimer = useRef(null);
+
+  // Cancel any pending post-drop persistence timer if we unmount before it fires.
+  useEffect(() => () => clearTimeout(dropPersistTimer.current), []);
 
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null);
   const { copy, copiedValue } = useClipboard({ timeout: 1200 });
@@ -82,12 +79,11 @@ export default function ProjectPalette() {
     }
   }, [activeProject]);
 
-  // FLIP animation (First-Last-Invert-Play). After the previewPalette reorder
-  // re-renders the swatches into their new ("Last") positions, this runs
-  // synchronously before paint to: measure each node's current position,
-  // compute the delta from its pre-reorder ("First") position captured in
-  // prevPositions, instantly translate it back to where it was (Invert), then
-  // clear the transform with a transition so it animates to its new spot (Play).
+  // FLIP animation (First-Last-Invert-Play). After previewPalette re-renders
+  // swatches into their new (Last) spots, this runs before paint: measure each
+  // node, compute the delta from its pre-reorder (First) rect in prevPositions,
+  // translate it back (Invert), then clear the transform with a transition so it
+  // slides to the new spot (Play).
   useLayoutEffect(() => {
     // Cancelled drag: clear any inline styles and skip animating this pass.
     if (skipFlip.current) {
@@ -127,22 +123,17 @@ export default function ProjectPalette() {
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('');
 
-  // "Palette from an image" state:
-  //   imageColors: extracted colors as [{ hex, selected }] shown in the modal.
-  //   extracting: true while analyzing the chosen image.
-  //   fileInputRef: the hidden <input type="file"> opened by the import button.
+  // "Palette from an image" state. imageColors: extracted [{ hex, selected }]
+  // shown in the modal. extracting: true while analyzing. fileInputRef: the
+  // hidden <input type="file"> opened by the import button.
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [imageColors, setImageColors] = useState([]);
   const [imageError, setImageError] = useState('');
   const [extracting, setExtracting] = useState(false);
   const fileInputRef = useRef(null);
 
-  /**
-   * Persists the given ordered palette and adopts the canonical result returned
-   * by the server (with stable ids and saved order).
-   * @param {Array} nextPalette The desired palette, in order.
-   * @returns {Promise<Array|null>} The saved palette, or null on failure.
-   */
+  // Persist the ordered palette and adopt the server's canonical result (stable
+  // ids, saved order). Returns the saved palette, or null on failure.
   const persistPalette = async (nextPalette) => {
     const saved = await updateProjectPalette(id, nextPalette);
     if (saved) {
@@ -152,36 +143,12 @@ export default function ProjectPalette() {
     return saved;
   };
 
-  /**
-   * Normalizes a hex color input: always keeps a leading '#', strips any
-   * non-hex characters, and uppercases. Used to keep hex fields well-formed.
-   * @param {string} val Raw input value.
-   * @returns {string} Normalized hex string (e.g. "#FF00AA").
-   */
-  const normalizeHexInput = (val) => {
-    if (val == null) return '#';
-    let v = String(val).trim();
-    if (!v.startsWith('#')) v = '#' + v;
-    v = '#' + v.slice(1).replace(/[^0-9a-fA-F]/g, '').toUpperCase();
-    return v;
-  };
-
   const handleEditHexChange = (e) => {
     setEditColorHex(normalizeHexInput(e.target.value));
   };
 
   const handleNewHexChange = (e) => {
     setNewColorHex(normalizeHexInput(e.target.value));
-  };
-
-  // Prevent deleting the mandatory leading '#' via Backspace/Delete.
-  const handleHexKeyDown = (e) => {
-    const el = e.target;
-    const selStart = el.selectionStart || 0;
-    const selEnd = el.selectionEnd || 0;
-    if ((e.key === 'Backspace' && selStart <= 1 && selEnd <= 1) || (e.key === 'Delete' && selStart === 0)) {
-      e.preventDefault();
-    }
   };
 
   // Normalize pasted content before it lands in the field.
@@ -200,12 +167,6 @@ export default function ProjectPalette() {
     setEditIdx(idx);
     setEditColorName(palette[idx]?.name || '');
     setEditColorHex(palette[idx]?.hex || '#');
-  };
-
-  // Whether the given hex string is a valid 3- or 6-digit hex color.
-  const isValidHexValue = (value) => {
-    const hex = (value || '').trim();
-    return /^#([0-9A-F]{3}){1,2}$/i.test(hex.startsWith('#') ? hex : '#' + hex);
   };
 
   const isValidEditHex = () => isValidHexValue(editColorHex);
@@ -325,26 +286,34 @@ export default function ProjectPalette() {
     setConfirmDeleteColor(colorId);
   };
 
-  // Move the swatch at `idx` to position `target`, persist, and keep focus on it.
-  // Shared by the arrow-key handler and the on-tile reorder buttons (so the
-  // reorder works by keyboard AND by a single pointer click, not only by drag).
-  const moveColor = (idx, target) => {
+  // Move the swatch at `idx` to `target`, persist, and keep focus on it. Called
+  // by the on-tile reorder buttons, so reordering works by a single click (and by
+  // keyboard, since the buttons are focusable), not only by drag.
+  const moveColor = async (idx, target) => {
     if (target < 0 || target >= palette.length) return;
+    const previous = palette;
     const next = [...palette];
     const [moved] = next.splice(idx, 1);
     next.splice(target, 0, moved);
     setPalette(next);
     setPreviewPalette(next);
-    persistPalette(next);
     // Keep focus on the moved swatch after it re-renders into its new slot.
     requestAnimationFrame(() => {
       const el = itemRefs.current[moved.id];
       if (el) el.focus();
     });
+    // Roll back the optimistic reorder if persistence failed, so local state
+    // doesn't silently diverge from the server.
+    const saved = await persistPalette(next);
+    if (!saved) {
+      setPalette(previous);
+      setPreviewPalette(previous);
+    }
   };
 
   return (
     <>
+      <Seo title="Color palette" noindex />
       <PageHeader
         title="Color palette"
         subtitle="This project's reference colors."
@@ -378,11 +347,12 @@ export default function ProjectPalette() {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
            <AddTile
             onClick={openAddModal}
+            label="New color"
             className="aspect-[4/5]"
            />
 
-          {/* Render the live (preview) order; each node is registered in itemRefs
-              (by id) for FLIP measurement, and the dragged swatch is dimmed. */}
+          {/* Live (preview) order; each node is registered in itemRefs (by id)
+              for FLIP measurement, and the dragged swatch is dimmed. */}
           {previewPalette.map((color, idx) => (
             <div
               key={color.id}
@@ -434,7 +404,8 @@ export default function ProjectPalette() {
                   const [moved] = newPalette.splice(draggedIndex, 1);
                   newPalette.splice(dragOverIndex, 0, moved);
                   setPalette(newPalette);
-                  setTimeout(() => {
+                  clearTimeout(dropPersistTimer.current);
+                  dropPersistTimer.current = setTimeout(() => {
                     persistPalette(newPalette);
                   }, 200);
                 }
@@ -462,11 +433,10 @@ export default function ProjectPalette() {
                 setPreviewPalette(palette);
               }}
             >
-              {/* No `overflow-hidden` here on purpose: combined with `rounded-3xl`
-                  and the hover transform below, Chrome drops the rounded clip
-                  mid-animation and the inset overlay flashes square corners.
-                  The swatch keeps its own rounded background, and the only
-                  full-bleed child (the copy overlay) is rounded to match. */}
+              {/* No `overflow-hidden` on purpose: with `rounded-3xl` and the
+                  hover transform, Chrome drops the rounded clip mid-animation and
+                  the overlay flashes square corners. The swatch and its only
+                  full-bleed child (the copy overlay) are rounded to match. */}
               <div className="flex-1 w-full rounded-3xl relative transition-transform duration-slow group-hover:-translate-y-2"
                    style={{ backgroundColor: color.hex }}>
 
@@ -477,9 +447,7 @@ export default function ProjectPalette() {
                       variant="light"
                       className="absolute top-3 right-3 z-30"
                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      <DeleteIcon />
                    </ActionIconButton>
 
                     <ActionIconButton
@@ -489,15 +457,12 @@ export default function ProjectPalette() {
                       variant="light"
                       className="absolute top-3 left-3 z-30"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
-                      </svg>
+                      <EditIcon />
                     </ActionIconButton>
 
-                   {/* Reorder controls: a keyboard-operable, non-drag alternative
-                       (WCAG 2.5.7). Rendered visually hidden (srOnly) so sighted
-                       users reorder by drag-and-drop while assistive-tech users
-                       still get explicit "move left/right" actions. */}
+                   {/* Reorder controls: keyboard-operable, non-drag alternative
+                       (WCAG 2.5.7). Visually hidden (srOnly) so sighted users
+                       drag while assistive-tech users get "move left/right". */}
                    <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
                      <ActionIconButton
                        onClick={(e) => { e.stopPropagation(); moveColor(idx, idx - 1); }}

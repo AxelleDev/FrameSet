@@ -7,14 +7,14 @@ process.env.MAIL_USER = process.env.MAIL_USER || 'mail@test.local';
 process.env.MAIL_PASS = process.env.MAIL_PASS || 'test_mail_password';
 
 jest.mock('nodemailer', () => ({
-  createTransport: () => ({ sendMail: jest.fn().mockResolvedValue(true) })
+  createTransport: () => ({ sendMail: jest.fn().mockResolvedValue(true) }),
 }));
 
 jest.mock('../../src/database', () => ({
   execute: jest.fn(),
   query: jest.fn(),
   getConnection: jest.fn(),
-  ping: jest.fn()
+  ping: jest.fn(),
 }));
 
 const request = require('supertest');
@@ -30,22 +30,22 @@ describe('application middleware', () => {
     it('returns 200 with an ok status when the database is reachable', async () => {
       db.ping.mockResolvedValueOnce();
 
-      const res = await request(app)
-        .get('/health');
+      const res = await request(app).get('/health');
 
       expect(res.status).toBe(200);
-      expect(res.body).toEqual(expect.objectContaining({
-        status: 'ok',
-        db: 'reachable',
-        uptime: expect.any(Number)
-      }));
+      expect(res.body).toEqual(
+        expect.objectContaining({
+          status: 'ok',
+          db: 'reachable',
+          uptime: expect.any(Number),
+        }),
+      );
     });
   });
 
   describe('security headers', () => {
     it('exposes an explicit Content-Security-Policy header', async () => {
-      const res = await request(app)
-        .get('/api/auth/csrf-token');
+      const res = await request(app).get('/api/auth/csrf-token');
 
       expect(res.status).toBe(200);
       expect(res.headers['content-security-policy']).toContain("default-src 'self'");
@@ -100,6 +100,13 @@ describe('application middleware', () => {
       const res = await request(app).delete('/api/projects/1');
 
       // Not a 415 — it proceeds into the router (then 401/403 without a session).
+      expect(res.status).not.toBe(415);
+    });
+
+    it('allows a body-less POST (e.g. refresh/logout) with no Content-Type', async () => {
+      const res = await request(app).post('/api/auth/refresh');
+
+      // No body -> no payload to misinterpret, so not a 415 (proceeds into the router).
       expect(res.status).not.toBe(415);
     });
   });

@@ -5,10 +5,10 @@ const { createHash } = require('crypto');
 
 jest.mock('jsonwebtoken', () => ({
   sign: jest.fn(() => 'token'),
-  verify: jest.fn(() => ({ id: 1 }))
+  verify: jest.fn(() => ({ id: 1 })),
 }));
 jest.mock('../../src/database', () => ({
-  query: jest.fn()
+  query: jest.fn(),
 }));
 
 const jwt = require('jsonwebtoken');
@@ -35,19 +35,27 @@ describe('token service', () => {
   });
 
   it('returns null for an invalid token', () => {
-    jwt.verify.mockImplementation(() => { throw new Error('fail'); });
+    jwt.verify.mockImplementation(() => {
+      throw new Error('fail');
+    });
     const payload = tokenService.verifyRefreshToken('badtoken');
     expect(payload).toBeNull();
   });
 
   it('revokes a token', async () => {
-    db.query.mockResolvedValueOnce([{}]);
+    db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
     const ok = await tokenService.revokeToken(1, 'abc');
     expect(ok).toBe(true);
     expect(db.query).toHaveBeenCalledWith(
       'INSERT IGNORE INTO revoked_tokens (user_id, token) VALUES (?, ?)',
-      [1, hashToken('abc')]
+      [1, hashToken('abc')],
     );
+  });
+
+  it('reports a lost claim when the token was already revoked', async () => {
+    db.query.mockResolvedValueOnce([{ affectedRows: 0 }]);
+    const ok = await tokenService.revokeToken(1, 'abc');
+    expect(ok).toBe(false);
   });
 
   it('detects a revoked token', async () => {
@@ -56,7 +64,7 @@ describe('token service', () => {
     expect(revoked).toBe(true);
     expect(db.query).toHaveBeenCalledWith(
       'SELECT id FROM revoked_tokens WHERE user_id = ? AND token = ? LIMIT 1',
-      [1, hashToken('abc')]
+      [1, hashToken('abc')],
     );
   });
 
@@ -81,8 +89,8 @@ describe('token service', () => {
   it('throws an error when the revocation check fails in the database', async () => {
     db.query.mockRejectedValueOnce(new Error('db down'));
 
-    await expect(tokenService.isTokenRevoked(1, 'abc'))
-      .rejects
-      .toMatchObject({ message: 'TOKEN_REVOCATION_CHECK_FAILED' });
+    await expect(tokenService.isTokenRevoked(1, 'abc')).rejects.toMatchObject({
+      message: 'TOKEN_REVOCATION_CHECK_FAILED',
+    });
   });
 });

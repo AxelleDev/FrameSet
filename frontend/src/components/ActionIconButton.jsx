@@ -14,20 +14,7 @@ const VARIANT_CLASSES = {
   light: 'bg-white/20'
 };
 
-/**
- * Small circular icon button used for row/card actions (edit, delete, ...).
- * Stays hidden until the parent `group` is hovered.
- *
- * @param {object} props
- * @param {Function} props.onClick - Click handler.
- * @param {string} props.title - Accessible title/label (also used as aria-label).
- * @param {React.ReactNode} props.children - Icon element to render.
- * @param {'edit'|'delete'} [props.intent] - Semantic intent driving the hover color.
- * @param {'dark'|'light'} [props.variant] - Surface variant driving the base background.
- * @param {boolean} [props.srOnly] - Render visually hidden but still operable by
- *   keyboard/assistive tech (the action exists only for screen readers).
- * @param {string} [props.className] - Extra classes appended to the button.
- */
+// Small circular icon button for row/card actions; stays hidden until the parent `group` is hovered.
 export default function ActionIconButton({
   onClick,
   title,
@@ -49,13 +36,11 @@ export default function ActionIconButton({
         icon = React.cloneElement(children, { 'aria-hidden': true, focusable: false });
       }
     } catch (e) {
-      // ignore non-element children
+      // Ignore non-element children.
     }
   }
 
-  // Visually hidden variant: kept in the accessibility tree (and keyboard
-  // focusable) but with no visual footprint, so the action is exposed only to
-  // assistive technologies.
+  // Visually hidden but kept keyboard-focusable, so the action is exposed only to assistive tech.
   if (srOnly) {
     return (
       <button
