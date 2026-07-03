@@ -98,7 +98,7 @@ export default function Login() {
             {error.includes('verify your email') && (
               <Button
                 type="button"
-                onClick={() => navigate(`/verify?email=${encodeURIComponent(formData.email.trim())}`)}
+                onClick={() => navigate('/verify', { state: { email: formData.email.trim() } })}
                 className="mt-3 w-full"
               >
                 Verify my email

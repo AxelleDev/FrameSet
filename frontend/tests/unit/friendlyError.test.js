@@ -18,7 +18,7 @@ describe('getFriendlyMessage', () => {
     expect(getFriendlyMessage('')).toBeNull();
   });
 
-  it('passes a meaningful business message through unchanged', () => {
-    expect(getFriendlyMessage('This email is already in use.')).toBe('This email is already in use.');
+  it('returns a generic message for an unmapped (technical) error, never the raw text', () => {
+    expect(getFriendlyMessage('ER_DUP_ENTRY: duplicate key at users.email line 42')).toMatch(/something went wrong/i);
   });
 });

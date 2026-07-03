@@ -1,5 +1,7 @@
-// Email verification page (route: /verify?email=...&type=...): the `type` param
-// picks the flow — signup (-> /login) or "pending-email" change (-> /app/profile).
+// Email verification page (route: /verify): the email + flow `type` are passed
+// via router navigation state (so the email never lands in the URL / history /
+// Referer). `type` picks the flow — signup (-> /login) or "pending-email"
+// change (-> /app/profile). Falls back to a query string, then to manual entry.
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -16,11 +18,15 @@ export default function Verify() {
   const navigate = useNavigate();
   const location = useLocation();
   const { verifyEmail, resendVerificationCode, verifyPendingEmail, resendPendingEmailCode } = useAuth();
-  // Email and flow type are passed via query string from the originating page.
+  // Prefer router state (keeps the email out of the URL); fall back to the query
+  // string for older links, then to manual entry when nothing was provided.
+  const routeState = location.state || {};
   const params = new URLSearchParams(location.search);
-  const email = params.get('email');
-  const type = params.get('type');
+  const initialEmail = routeState.email || params.get('email') || '';
+  const type = routeState.type || params.get('type') || undefined;
+  const emailWasProvided = Boolean(initialEmail);
 
+  const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -29,6 +35,10 @@ export default function Verify() {
   // Submit the code through the matching flow, then redirect after a short delay.
   const handleVerify = async () => {
     setError('');
+    if (!email.trim()) {
+      setError('Enter your email address.');
+      return;
+    }
     const result = type === 'pending-email'
       ? await verifyPendingEmail(email, code)
       : await verifyEmail(email, code);
@@ -46,6 +56,10 @@ export default function Verify() {
   const handleResend = async () => {
     setResendMsg('');
     setError('');
+    if (!email.trim()) {
+      setError('Enter your email address.');
+      return;
+    }
     const result = type === 'pending-email'
       ? await resendPendingEmailCode(email)
       : await resendVerificationCode(email);
@@ -83,7 +97,9 @@ export default function Verify() {
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Email verification</h2>
           <p className="text-primary text-sm mt-2">
-            Enter the code sent to <strong className="break-all">{email}</strong>.
+            {emailWasProvided
+              ? <>Enter the code sent to <strong className="break-all">{email}</strong>.</>
+              : 'Enter your email and the verification code you received.'}
           </p>
         </div>
 
@@ -93,6 +109,18 @@ export default function Verify() {
 
         {!success && (
           <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleVerify(); }} noValidate>
+            {!emailWasProvided && (
+              <FormField label="Email">
+                <TextInput
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  autoComplete="email"
+                />
+              </FormField>
+            )}
+
             <FormField label="Verification code">
               <TextInput
                 type="text"

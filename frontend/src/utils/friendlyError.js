@@ -31,9 +31,9 @@ export function getFriendlyMessage(message) {
   if (message.trim() === 'Not Found') {
     return "The requested service is unavailable or doesn't exist. Please try again later.";
   }
-  // Fallback for technical messages that are too short to be meaningful.
-  if (message.trim().length < 5) {
-    return 'Something went wrong. Please try again.';
-  }
-  return message;
+  // Anything unmapped is treated as a technical/server error (this helper is only
+  // used for global 5xx/network errors, never for 4xx business messages, which
+  // components surface themselves). Return a generic message rather than risk
+  // leaking internal server wording.
+  return 'Something went wrong. Please try again.';
 }

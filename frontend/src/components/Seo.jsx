@@ -50,7 +50,9 @@ export default function Seo({
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={image} />
 
-      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>}
+      {/* Escape '<' so a value containing "</script>" can never break out of the
+          script context (defense in depth — current JSON-LD is static). */}
+      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>}
     </Helmet>
   );
 }

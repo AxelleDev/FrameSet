@@ -57,7 +57,7 @@ export default function Register() {
       setError('');
       // Prefer the server-confirmed email; fall back to what the user typed.
       const verificationEmail = result.data?.email || formData.email.trim();
-      navigate(`/verify?email=${encodeURIComponent(verificationEmail)}`);
+      navigate('/verify', { state: { email: verificationEmail } });
     } else if (result.message) {
       setError(result.message);
     }

@@ -251,7 +251,7 @@ export default function Profile() {
                     <p className="text-xs text-primary/60 mt-2">
                       Email pending verification: {user.pendingEmail}
                       {' '}·{' '}
-                      <Link to={`/verify?email=${encodeURIComponent(user.pendingEmail)}&type=pending-email`} className="underline hover:text-primary">
+                      <Link to="/verify" state={{ email: user.pendingEmail, type: 'pending-email' }} className="underline hover:text-primary">
                         Verify
                       </Link>
                     </p>
