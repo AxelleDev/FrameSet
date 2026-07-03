@@ -59,7 +59,7 @@ const createProject = async (req, res) => {
   }
   try {
     const newProject = await projectsService.createProjectForUser(userId, name);
-    res.json(newProject);
+    res.status(201).json(newProject);
   } catch (error) {
     if (error.code === 'invalid_name') {
       return res.status(400).json({ error: 'Invalid project name.' });
@@ -108,7 +108,7 @@ const addBrushNorm = async (req, res) => {
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
     const result = await projectsService.addBrushNormToProject(id, { name, value, unit, brushName, opacity });
-    res.json(result);
+    res.status(201).json(result);
   } catch (error) {
     if (error.code === 'validation') {
       return res.status(400).json({ error: error.message });
@@ -125,7 +125,7 @@ const addTypographyNorm = async (req, res) => {
   try {
     if (!(await ensureProjectOwnership(req, res, id))) return;
     const result = await projectsService.addTypographyNormToProject(id, { fontFamily, fontWeight, fontUsage, fontStyle });
-    res.json(result);
+    res.status(201).json(result);
   } catch (error) {
     if (error.code === 'validation') {
       return res.status(400).json({ error: error.message });

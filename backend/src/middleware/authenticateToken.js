@@ -7,15 +7,13 @@ const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../config/jwt.config');
 const { isTokenRevoked, isTokenStaleByPasswordChange } = require('../services/token.service');
 const { ACCESS_TOKEN_COOKIE_NAME, getCookieValue } = require('../utils/cookies.utils');
+const { getBearerToken } = require('../utils/auth.utils');
 
 // Beyond signature/expiry, consults the server-side revocation list so a
 // logged-out or rotated token is rejected early. Revocation-check failure
 // returns 503 (fail closed) rather than granting access on unverified state.
 async function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const bearerToken = authHeader && authHeader.startsWith('Bearer ')
-    ? authHeader.split(' ')[1]
-    : null;
+  const bearerToken = getBearerToken(req);
   const cookieToken = getCookieValue(req, ACCESS_TOKEN_COOKIE_NAME);
   // Prefer an explicit Authorization header, falling back to the cookie.
   const token = bearerToken || cookieToken;

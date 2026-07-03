@@ -171,7 +171,7 @@ describe('integration auth flow', () => {
       .set('x-csrf-token', csrfToken)
       .send(payload);
 
-    expect(registerResponse.status).toBe(200);
+    expect(registerResponse.status).toBe(201);
     expect(registerResponse.body).toEqual(expect.objectContaining({
       success: true,
       email: payload.email,

@@ -11,8 +11,14 @@ const { logger } = require('./utils/logger');
 const tokenService = require('./services/token.service');
 
 const PORT = process.env.PORT || 3000;
+// Bind address: unset means all interfaces (default). Set HOST to restrict, e.g.
+// 127.0.0.1 when the process sits behind a same-host reverse proxy.
+const HOST = process.env.HOST;
 // Run the revoked-token cleanup once per day.
 const REVOKED_TOKENS_CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
+// Hard cap on graceful shutdown: if connections don't drain in time, force exit so
+// an orchestrator's SIGKILL isn't what ultimately stops us.
+const SHUTDOWN_TIMEOUT_MS = Number(process.env.SHUTDOWN_TIMEOUT_MS) || 10000;
 let cleanupInterval;
 // Guards against running the shutdown sequence more than once.
 let isShuttingDown = false;
@@ -53,14 +59,19 @@ const startCleanupScheduler = () => {
   return cleanupInterval;
 };
 
-const server = app.listen(PORT, () => {
+const onServerListening = () => {
   logger.info('server.started', {
     port: Number(PORT),
+    host: HOST || '::',
     nodeEnv: process.env.NODE_ENV || 'development'
   });
 
   startCleanupScheduler();
-});
+};
+
+const server = HOST
+  ? app.listen(PORT, HOST, onServerListening)
+  : app.listen(PORT, onServerListening);
 
 // Promisified server.close(): resolves once connections have drained.
 const closeServer = () => new Promise((resolve, reject) => {
@@ -91,9 +102,32 @@ const shutdownGracefully = async (signal) => {
     clearInterval(cleanupInterval);
   }
 
+  // Force exit if draining stalls (e.g. a lingering keep-alive connection), so we
+  // shut down on our own terms rather than waiting for an external SIGKILL.
+  const forcedExitTimer = setTimeout(() => {
+    logger.error('Graceful shutdown timed out, forcing exit', {
+      signal,
+      timeoutMs: SHUTDOWN_TIMEOUT_MS
+    });
+
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS);
+
+  if (typeof forcedExitTimer.unref === 'function') {
+    forcedExitTimer.unref();
+  }
+
   try {
+    // Close idle keep-alive sockets immediately (Node 18+) so only in-flight
+    // requests hold the drain open.
+    if (typeof server.closeIdleConnections === 'function') {
+      server.closeIdleConnections();
+    }
+
     await closeServer();
     await db.closePool();
+
+    clearTimeout(forcedExitTimer);
 
     logger.info('Graceful shutdown completed', {
       signal
@@ -119,6 +153,22 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   void shutdownGracefully('SIGINT');
+});
+
+// Last-resort safety nets: an unhandled rejection or uncaught exception leaves the
+// process in an undefined state, so log it and shut down cleanly rather than limp on.
+process.on('unhandledRejection', (reason) => {
+  logger.error('process.unhandledRejection', {
+    error: reason instanceof Error ? reason : new Error(String(reason))
+  });
+
+  void shutdownGracefully('unhandledRejection');
+});
+
+process.on('uncaughtException', (error) => {
+  logger.error('process.uncaughtException', { error });
+
+  void shutdownGracefully('uncaughtException');
 });
 
 module.exports = {

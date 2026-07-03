@@ -9,6 +9,15 @@ const getAuthenticatedUserId = (req) => {
   return Number.isInteger(userId) && userId > 0 ? userId : null;
 };
 
+// Extracts a Bearer token from the Authorization header, or null. Shared by the auth
+// middleware and the auth controller so the header parsing lives in one place.
+const getBearerToken = (req) => {
+  const authHeader = req?.headers?.authorization;
+  return authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.split(' ')[1]
+    : null;
+};
+
 // Single-use 6-digit verification code (crypto.randomInt, unbiased/unpredictable), valid 10 min.
 const generateVerificationCode = () => ({
   code: randomInt(100000, 1000000).toString(),
@@ -55,6 +64,7 @@ const createControllerLogger = (namespace) => (req, operation, error, meta = {})
 
 module.exports = {
   getAuthenticatedUserId,
+  getBearerToken,
   generateVerificationCode,
   getIdentifierFingerprint,
   getInitials,

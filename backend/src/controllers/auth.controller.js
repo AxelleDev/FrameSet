@@ -3,43 +3,28 @@
  * Business logic and SQL live in auth.service.
  */
 
-const { randomBytes } = require('crypto');
 const jwt = require('jsonwebtoken');
 const authService = require('../services/auth.service');
-const { getIdentifierFingerprint } = require('../utils/auth.utils');
-const { generateRefreshToken, verifyRefreshToken, revokeToken, isTokenRevoked } = require('../services/token.service');
-const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
+const { getIdentifierFingerprint, getBearerToken } = require('../utils/auth.utils');
+const { issueAuthCookies } = require('../utils/session.utils');
+const { createCsrfToken } = require('../middleware/csrfProtection');
+const { verifyRefreshToken, revokeToken, isTokenRevoked } = require('../services/token.service');
+const { JWT_SECRET } = require('../config/jwt.config');
 const {
   ACCESS_TOKEN_COOKIE_NAME,
   REFRESH_TOKEN_COOKIE_NAME,
   CSRF_TOKEN_COOKIE_NAME,
-  getAccessTokenCookieOptions,
-  getRefreshTokenCookieOptions,
   getCsrfTokenCookieOptions,
   getCookieBaseOptions,
   getCookieValue
 } = require('../utils/cookies.utils');
 const { logger } = require('../utils/logger');
 
-// Store access + refresh tokens as httpOnly cookies (inaccessible to JS, XSS mitigation).
-const setAuthCookies = (res, accessToken, refreshToken) => {
-  res.cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, getAccessTokenCookieOptions());
-  res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, getRefreshTokenCookieOptions());
-};
-
 // Clear auth cookies with the same base options they were set with (path/flags must match to remove).
 const clearAuthCookies = (res) => {
   const cookieOptions = getCookieBaseOptions();
   res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, cookieOptions);
   res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
-};
-
-/** Extracts a Bearer token from the Authorization header, or null. */
-const getBearerToken = (req) => {
-  const authHeader = req?.headers?.authorization;
-  return authHeader && authHeader.startsWith('Bearer ')
-    ? authHeader.split(' ')[1]
-    : null;
 };
 
 /** Resolves the access token from the Authorization header or the cookie. */
@@ -58,16 +43,6 @@ const verifyAccessToken = (token, { ignoreExpiration = false } = {}) => {
     return null;
   }
 };
-
-// Sign a short-lived access token carrying the minimal identity claims.
-const createAccessToken = (user) => jwt.sign(
-  { id: user.id, email: user.email },
-  JWT_SECRET,
-  { expiresIn: JWT_EXPIRES }
-);
-
-/** Generates a 256-bit random CSRF token. */
-const createCsrfToken = () => randomBytes(32).toString('hex');
 
 // Issue (or reuse) the double-submit CSRF token: reuse the cookie value so cookie and
 // body stay in sync. Returned in the body so the SPA can send it as x-csrf-token.
@@ -95,7 +70,7 @@ const register = async (req, res) => {
         });
       }
     });
-    res.json({ success: true, ...user });
+    res.status(201).json({ success: true, ...user });
   } catch (error) {
     const email = body.email;
     if (error.code === 'validation') {
@@ -138,10 +113,7 @@ const login = async (req, res) => {
       userId: user.id
     });
 
-    const token = createAccessToken(user);
-    const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
-
-    setAuthCookies(res, token, refreshToken);
+    issueAuthCookies(res, user);
     res.json({ success: true, ...user });
   } catch (error) {
     if (error.code === 'missing_credentials') {
@@ -217,7 +189,22 @@ const refresh = async (req, res) => {
     return res.status(403).json({ error: 'Invalid or expired refresh token.' });
   }
 
-  const refreshTokenRevoked = await isTokenRevoked(user.id, refreshToken);
+  // isTokenRevoked fails closed by throwing on a DB error. Catch it here (as we do
+  // for isRefreshTokenStale below): under Express 4 an escaped async rejection never
+  // reaches the error middleware and, on Node >=20, would crash the process.
+  let refreshTokenRevoked;
+  try {
+    refreshTokenRevoked = await isTokenRevoked(user.id, refreshToken);
+  } catch (error) {
+    logger.error('auth.refresh.error', {
+      requestId: req.id,
+      userId: user.id,
+      reason: 'revocation_check_failed',
+      error
+    });
+
+    return res.status(503).json({ error: 'Service temporarily unavailable.' });
+  }
   if (refreshTokenRevoked) {
     logger.warn('auth.refresh.failed', {
       requestId: req.id,
@@ -265,9 +252,7 @@ const refresh = async (req, res) => {
     return res.status(403).json({ error: 'Invalid or expired refresh token.' });
   }
 
-  const token = createAccessToken(user);
-  const nextRefreshToken = generateRefreshToken({ id: user.id, email: user.email });
-  setAuthCookies(res, token, nextRefreshToken);
+  issueAuthCookies(res, user);
   res.json({ success: true });
 };
 

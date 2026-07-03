@@ -18,6 +18,7 @@ const authController = require('../../src/controllers/auth.controller');
 const db = require('../../src/database');
 const mailService = require('../../src/services/mail.service');
 const tokenService = require('../../src/services/token.service');
+const { hashOtp } = require('../../src/utils/otp');
 
 jest.mock('../../src/database');
 jest.mock('../../src/services/token.service');
@@ -36,6 +37,7 @@ describe('authentication controller', () => {
 
       await authController.register(req, res);
 
+      expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
       const payload = res.json.mock.calls[0][0];
       expect(payload.name).toBe('Jane   Doe');
@@ -178,6 +180,112 @@ describe('authentication controller', () => {
 
       expect(res.json).toHaveBeenCalledWith({ success: true });
       expect(res.clearCookie).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('verify email code', () => {
+    it('verifies a correct code', async () => {
+      db.query
+        .mockResolvedValueOnce([[{
+          id: 1, email: 'a@b.com', is_verified: 0,
+          verification_code: hashOtp('123456'),
+          verification_code_expires: new Date(Date.now() + 10000), otp_attempts: 0
+        }]])
+        .mockResolvedValueOnce([{ affectedRows: 1 }]); // the verify UPDATE
+      const req = { body: { email: 'a@b.com', code: '123456' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await authController.verify(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('rejects an incorrect code with a generic 400', async () => {
+      db.query
+        .mockResolvedValueOnce([[{
+          id: 1, email: 'a@b.com', is_verified: 0,
+          verification_code: hashOtp('123456'), otp_attempts: 0
+        }]])
+        .mockResolvedValueOnce([{}]); // the failed-attempt UPDATE
+      const req = { body: { email: 'a@b.com', code: '000000' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await authController.verify(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Incorrect code.' });
+    });
+  });
+
+  describe('resend verification code', () => {
+    it('returns a generic success for an unknown email and sends nothing', async () => {
+      db.query.mockResolvedValueOnce([[]]); // SELECT -> no user
+      const req = { body: { email: 'nobody@example.com' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await authController.resendCode(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('re-sends a code for an existing unverified account', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1, email: 'a@b.com', is_verified: 0 }]])
+        .mockResolvedValueOnce([{}]); // UPDATE new code
+      mailService.sendMail.mockResolvedValueOnce();
+      const req = { body: { email: 'a@b.com' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await authController.resendCode(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+      expect(mailService.sendMail).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('forgot password', () => {
+    it('returns a generic success and sends nothing for an unknown email', async () => {
+      db.query.mockResolvedValueOnce([[]]); // SELECT id -> no user
+      const req = { body: { email: 'nobody@example.com' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await authController.forgotPassword(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('stores a reset code and emails it for an existing account', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // SELECT id
+        .mockResolvedValueOnce([{}]); // UPDATE reset_code
+      mailService.sendMail.mockResolvedValueOnce();
+      const req = { body: { email: 'a@b.com' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await authController.forgotPassword(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+      expect(mailService.sendMail).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('reset password', () => {
+    it('resets the password with a correct code', async () => {
+      db.query
+        .mockResolvedValueOnce([[{
+          id: 1, email: 'a@b.com',
+          reset_code: hashOtp('123456'),
+          reset_code_expires: new Date(Date.now() + 10000), otp_attempts: 0
+        }]])
+        .mockResolvedValueOnce([{}]); // UPDATE password
+      const req = { body: { email: 'a@b.com', code: '123456', newPassword: 'NewPass123' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await authController.resetPassword(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('rejects a wrong reset code with a generic 400', async () => {
+      db.query
+        .mockResolvedValueOnce([[{
+          id: 1, email: 'a@b.com',
+          reset_code: hashOtp('123456'), otp_attempts: 0
+        }]])
+        .mockResolvedValueOnce([{}]); // failed-attempt UPDATE
+      const req = { body: { email: 'a@b.com', code: '000000', newPassword: 'NewPass123' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await authController.resetPassword(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Incorrect code.' });
     });
   });
 });

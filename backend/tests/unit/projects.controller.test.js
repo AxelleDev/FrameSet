@@ -248,6 +248,7 @@ describe('projects controller', () => {
         expect.stringContaining('INSERT INTO project_brush_norms'),
         ['1', 'Hair outline', '8', 'px', 'Smooth', null]
       );
+      expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({ success: true, id: 9 });
     });
   });
@@ -378,6 +379,169 @@ describe('projects controller', () => {
         success: true,
         palette: [{ id: 20, name: 'X', hex: '#000000' }]
       });
+    });
+  });
+
+  describe('create project', () => {
+    it('returns 401 when the user is not authenticated', async () => {
+      const req = { body: { name: 'My Project' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.createProject(req, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it('returns 400 when the name is missing', async () => {
+      const req = { user: { id: 1 }, body: {} };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.createProject(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Required fields are missing.' });
+    });
+
+    it('returns 400 for an invalid (too short) name without touching the DB', async () => {
+      const req = { user: { id: 1 }, body: { name: 'A' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.createProject(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid project name.' });
+      expect(db.query).not.toHaveBeenCalled();
+    });
+
+    it('creates a project and returns 201', async () => {
+      db.query.mockResolvedValueOnce([{ insertId: 7 }]);
+      const req = { user: { id: 1 }, body: { name: '  My Project  ' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.createProject(req, res);
+      expect(db.query).toHaveBeenCalledWith(
+        'INSERT INTO projects (user_id, name) VALUES (?, ?)',
+        [1, 'My Project']
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ id: 7, name: 'My Project' }));
+    });
+  });
+
+  describe('rename project', () => {
+    it('returns 400 for an empty name', async () => {
+      const req = { params: { id: '1' }, user: { id: 1 }, body: { name: '   ' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.updateProjectName(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Project name is required.' });
+    });
+
+    it('returns 403 when the user does not own the project', async () => {
+      db.query.mockResolvedValueOnce([[]]); // userOwnsProject -> not owned
+      const req = { params: { id: '1' }, user: { id: 1 }, body: { name: 'New Name' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.updateProjectName(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
+    it('renames the project when owned', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{}]); // UPDATE projects
+      const req = { params: { id: '1' }, user: { id: 1 }, body: { name: 'New Name' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.updateProjectName(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true, name: 'New Name' });
+    });
+  });
+
+  describe('delete project', () => {
+    it('returns 403 when the user does not own the project', async () => {
+      db.query.mockResolvedValueOnce([[]]);
+      const req = { params: { id: '1' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.deleteProject(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
+    it('deletes the project when owned', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{}]); // DELETE
+      const req = { params: { id: '1' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.deleteProject(req, res);
+      expect(db.query).toHaveBeenCalledWith('DELETE FROM projects WHERE id = ?', ['1']);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+  });
+
+  describe('delete norms', () => {
+    it('deletes a brush norm when it exists', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 1 }]); // DELETE brush norm
+      const req = { params: { projectId: '1', normId: '9' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.deleteBrushNorm(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('returns 404 when the brush norm does not exist', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 0 }]); // DELETE matched nothing
+      const req = { params: { projectId: '1', normId: '99' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.deleteBrushNorm(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Standard not found.' });
+    });
+
+    it('deletes a typography norm when it exists', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 1 }]); // DELETE typography norm
+      const req = { params: { projectId: '1', normId: '9' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.deleteTypographyNorm(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+  });
+
+  describe('update norms', () => {
+    it('returns 403 when updating a brush norm on a non-owned project', async () => {
+      db.query.mockResolvedValueOnce([[]]); // not owned
+      const req = { params: { projectId: '1', normId: '9' }, user: { id: 1 }, body: { name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.updateBrushNorm(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
+    it('updates a brush norm when owned and existing', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 1 }]) // UPDATE norm
+        .mockResolvedValueOnce([{}]); // UPDATE projects.last_edited
+      const req = { params: { projectId: '1', normId: '9' }, user: { id: 1 }, body: { name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.updateBrushNorm(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('returns 404 when the brush norm to update does not exist', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 0 }]); // UPDATE matched nothing
+      const req = { params: { projectId: '1', normId: '99' }, user: { id: 1 }, body: { name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.updateBrushNorm(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it('updates a typography norm when owned and existing', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 1 }]) // UPDATE norm
+        .mockResolvedValueOnce([{}]); // UPDATE projects.last_edited
+      const req = { params: { projectId: '1', normId: '9' }, user: { id: 1 }, body: { fontFamily: 'Inter', fontWeight: '700', fontUsage: 'Heading', fontStyle: 'Normal' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.updateTypographyNorm(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
     });
   });
 });

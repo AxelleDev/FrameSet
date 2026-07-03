@@ -127,6 +127,9 @@ const run = async (pool) => {
   } catch (error) {
     migrationLogger.error('migrations.run.error', { error });
     process.exitCode = 1;
+    // Rethrow so a programmatic caller (tests, JS deploy script) sees the failure
+    // rather than assuming success from a resolved promise.
+    throw error;
   } finally {
     if (shouldClosePool) {
       await resolvedPool.end();
@@ -134,9 +137,11 @@ const run = async (pool) => {
   }
 };
 
-// Run migrations automatically only when invoked directly (not when imported).
+// Run migrations automatically only when invoked directly (not when imported). The
+// error is already logged and process.exitCode is set inside run(); swallow the
+// rejection here so the CLI exits non-zero without an unhandled-rejection trace.
 if (require.main === module) {
-  run();
+  run().catch(() => {});
 }
 
 module.exports = {

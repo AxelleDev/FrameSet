@@ -95,6 +95,33 @@ describe('user controller', () => {
     });
   });
 
+  describe('delete the account', () => {
+    it('deletes the authenticated account', async () => {
+      db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
+      const req = { user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await userController.deleteAccount(req, res);
+      expect(db.query).toHaveBeenCalledWith('DELETE FROM users WHERE id = ?', [1]);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('returns 404 when no row was deleted', async () => {
+      db.query.mockResolvedValueOnce([{ affectedRows: 0 }]);
+      const req = { user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await userController.deleteAccount(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ error: 'User not found.' });
+    });
+
+    it('returns 401 when not authenticated', async () => {
+      const req = {};
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await userController.deleteAccount(req, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+  });
+
   describe('change the password', () => {
     it('changes the password', async () => {
       db.query.mockResolvedValueOnce([[{ password: 'hashed' }]]);

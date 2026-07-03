@@ -257,7 +257,7 @@ const openapiSpec = {
           }
         },
         responses: {
-          200: {
+          201: {
             description: 'Account created.',
             content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } }
           },
@@ -614,7 +614,7 @@ const openapiSpec = {
           }
         },
         responses: {
-          200: { description: 'Created project (fresh and empty).', content: { 'application/json': { schema: { $ref: '#/components/schemas/CreatedProject' } } } },
+          201: { description: 'Created project (fresh and empty).', content: { 'application/json': { schema: { $ref: '#/components/schemas/CreatedProject' } } } },
           400: { $ref: '#/components/responses/ValidationError' },
           401: { $ref: '#/components/responses/Unauthorized' },
           429: { $ref: '#/components/responses/RateLimited' }
@@ -691,7 +691,7 @@ const openapiSpec = {
           }
         },
         responses: {
-          200: {
+          201: {
             description: 'Created.',
             content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, id: { type: 'integer' } } } } }
           },
@@ -765,7 +765,7 @@ const openapiSpec = {
           }
         },
         responses: {
-          200: {
+          201: {
             description: 'Created.',
             content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, id: { type: 'integer' } } } } }
           },
