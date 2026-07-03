@@ -1,18 +1,18 @@
 /**
- * Récupère le catalogue Google Fonts côté serveur (clé en variable
- * d'environnement) pour ne jamais exposer la clé dans le bundle client. Le
- * catalogue étant stable, il est mis en cache en mémoire afin de ne pas
- * ré-appeler l'API Google à chaque requête.
+ * Fetches the Google Fonts catalog server-side (key held in an environment
+ * variable) so the key is never exposed in the client bundle. The catalog is
+ * stable, so it is cached in memory to avoid re-calling the Google API on every
+ * request.
  */
 
-// 24 h : le catalogue Google Fonts évolue très lentement.
+// 24 h: the Google Fonts catalog changes very slowly.
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 let catalogCache = { items: null, fetchedAt: 0 };
 
 const getGoogleFontsCatalog = async () => {
   const apiKey = process.env.GOOGLE_FONTS_API_KEY;
-  // Sans clé configurée, le sélecteur reste vide plutôt que d'échouer.
+  // With no key configured, the picker stays empty rather than failing.
   if (!apiKey) {
     return [];
   }
@@ -22,7 +22,7 @@ const getGoogleFontsCatalog = async () => {
     return catalogCache.items;
   }
 
-  // `fields` limite la réponse à ce que le sélecteur utilise réellement.
+  // `fields` limits the response to what the picker actually uses.
   const url = `https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}&fields=items(family,variants)`;
   const response = await fetch(url);
   if (!response.ok) {
@@ -35,7 +35,7 @@ const getGoogleFontsCatalog = async () => {
   return items;
 };
 
-// Réinitialise le cache mémoire (utilisé par les tests).
+// Resets the in-memory cache (used by tests).
 const resetCatalogCache = () => {
   catalogCache = { items: null, fetchedAt: 0 };
 };

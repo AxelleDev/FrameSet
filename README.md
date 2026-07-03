@@ -140,6 +140,8 @@ Production checklist:
 - Point the frontend CSP `connect-src` (in `vercel.json`) at the real API origin.
 - Restrict the `GOOGLE_FONTS_API_KEY` in the Google console; optionally set
   `ENABLE_API_DOCS=false` to hide `/api-docs`.
+- Rate limiting is **in-memory (per instance)**: run a single API instance, or
+  move to a shared store (e.g. Redis) before scaling horizontally.
 - Run `npm run migrate` against the production database.
 
 > Not yet provided (add when the hosting target is chosen): a continuous
@@ -147,8 +149,14 @@ Production checklist:
 
 ---
 
+## ✧･ﾟ: ✧･ﾟ License
+
+Proprietary — © 2026 Axelle Tempier. All rights reserved. This repository is
+public for portfolio purposes only; see [LICENSE](LICENSE). No reuse or
+distribution without written consent.
+
+---
+
 ## ✧･ﾟ: ✧･ﾟ Contact
 
 Made by Axelle — **axelle.tempier@gmail.com**.
-
-© 2026 Axelle. All rights reserved.

@@ -1,6 +1,6 @@
-// Applique le thème sauvegardé/préféré avant le paint pour éviter un flash du
-// mauvais thème. Fichier externe (et non inline) afin qu'une CSP stricte
-// `script-src 'self'` s'applique sans hash ni 'unsafe-inline'.
+// Applies the saved/preferred theme before paint to avoid a flash of the wrong
+// theme. Kept as an external file (not inline) so a strict CSP
+// `script-src 'self'` applies without a hash or 'unsafe-inline'.
 (function () {
   try {
     var t = localStorage.getItem('frameset-theme');

@@ -1,7 +1,7 @@
 /**
- * Route proxy du catalogue Google Fonts, afin de garder la clé API côté serveur
- * (jamais dans le bundle client). Réservée aux utilisateurs authentifiés,
- * puisqu'elle n'est consommée que par l'éditeur de normes typographiques.
+ * Proxy route for the Google Fonts catalog, to keep the API key server-side
+ * (never in the client bundle). Restricted to authenticated users, since it is
+ * only consumed by the typography norms editor.
  */
 
 const express = require('express');

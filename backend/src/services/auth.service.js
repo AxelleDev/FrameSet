@@ -9,7 +9,20 @@ const db = require('../database');
 const mailService = require('./mail.service');
 const { generateVerificationCode, getInitials } = require('../utils/auth.utils');
 const { isTokenStaleByPasswordChange } = require('./token.service');
+const { hashOtp, safeOtpEqual, MAX_OTP_ATTEMPTS } = require('../utils/otp');
 const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
+
+// Records a wrong one-time-code attempt on the account and, once MAX_OTP_ATTEMPTS
+// is reached, invalidates the stored code (clears `codeColumn`) so it can't be
+// brute-forced further. `codeColumn` is an internal constant, never user input.
+const registerFailedOtpAttempt = async (userDb, codeColumn) => {
+  const attempts = (userDb.otp_attempts || 0) + 1;
+  if (attempts >= MAX_OTP_ATTEMPTS) {
+    await db.query(`UPDATE users SET ${codeColumn} = NULL, otp_attempts = 0 WHERE id = ?`, [userDb.id]);
+  } else {
+    await db.query('UPDATE users SET otp_attempts = ? WHERE id = ?', [attempts, userDb.id]);
+  }
+};
 
 /** Coerces a value to a trimmed string, treating null/undefined as empty. */
 const normalizeInput = (value) => validator.trim(String(value ?? ''));
@@ -57,7 +70,7 @@ const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassw
 
     const [result] = await db.query(
       'INSERT INTO users (name, email, password, avatar_initials, is_verified, verification_code, verification_code_expires, password_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, email, hashedPassword, initials, false, verificationCode, expires, now]
+      [name, email, hashedPassword, initials, false, hashOtp(verificationCode), expires, now]
     );
 
     await mailService.sendMail({
@@ -148,20 +161,23 @@ const verifyEmailCode = async ({ email, code }) => {
   }
 
   const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [validator.trim(String(email))]);
+  // Anti-enumeration: a missing account and an already-verified one are made
+  // indistinguishable from a wrong code (same generic error).
   if (rows.length === 0) {
-    throw new AuthServiceError('validation', 'User not found.');
+    throw new AuthServiceError('validation', 'Incorrect code.');
   }
   const userDb = rows[0];
   if (userDb.is_verified) {
-    throw new AuthServiceError('validation', 'User already verified.');
+    throw new AuthServiceError('validation', 'Incorrect code.');
   }
-  if (!userDb.verification_code || userDb.verification_code !== code) {
+  if (!userDb.verification_code || !safeOtpEqual(code, userDb.verification_code)) {
+    await registerFailedOtpAttempt(userDb, 'verification_code');
     throw new AuthServiceError('validation', 'Incorrect code.');
   }
   if (!userDb.verification_code_expires || new Date() > new Date(userDb.verification_code_expires)) {
     throw new AuthServiceError('validation', 'Code expired. Please request a new one.');
   }
-  await db.query('UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL WHERE email = ?', [email]);
+  await db.query('UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL, otp_attempts = 0 WHERE email = ?', [email]);
   return { success: true };
 };
 
@@ -175,27 +191,32 @@ const resendVerificationCode = async ({ email }) => {
     throw new AuthServiceError('validation', 'Invalid email.');
   }
 
-  const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [validator.trim(String(email))]);
-  if (rows.length === 0) {
-    throw new AuthServiceError('validation', 'User not found.');
-  }
-  const userDb = rows[0];
-  if (userDb.is_verified) {
-    throw new AuthServiceError('validation', 'User already verified.');
-  }
-  const { code: newCode, expires } = generateVerificationCode();
-  await db.query('UPDATE users SET verification_code = ?, verification_code_expires = ? WHERE email = ?', [newCode, expires, email]);
+  const normalizedEmail = validator.trim(String(email));
+  const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
 
-  await mailService.sendMail({
-    to: email,
-    subject: 'New verification code',
-    text: `Your new verification code is: ${newCode}\nThis code expires in 10 minutes.`,
-    html: mailService.buildTemplate({
-      title: 'New verification code',
-      message: 'Here is your new verification code.',
-      code: newCode
-    })
-  });
+  // Anti-enumeration: only send when an unverified account actually exists, but
+  // always return the same generic response so the caller can't tell.
+  if (rows.length > 0 && !rows[0].is_verified) {
+    const { code: newCode, expires } = generateVerificationCode();
+    await db.query(
+      'UPDATE users SET verification_code = ?, verification_code_expires = ?, otp_attempts = 0 WHERE email = ?',
+      [hashOtp(newCode), expires, normalizedEmail]
+    );
+    try {
+      await mailService.sendMail({
+        to: normalizedEmail,
+        subject: 'New verification code',
+        text: `Your new verification code is: ${newCode}\nThis code expires in 10 minutes.`,
+        html: mailService.buildTemplate({
+          title: 'New verification code',
+          message: 'Here is your new verification code.',
+          code: newCode
+        })
+      });
+    } catch {
+      // Swallow send failures so the response stays generic (the code is stored).
+    }
+  }
 
   return { success: true };
 };
@@ -218,8 +239,8 @@ const startPasswordReset = async ({ email: rawEmail }, { onMailError } = {}) => 
   if (rows.length > 0) {
     const { code, expires } = generateVerificationCode();
     await db.query(
-      'UPDATE users SET reset_code = ?, reset_code_expires = ? WHERE email = ?',
-      [code, expires, email]
+      'UPDATE users SET reset_code = ?, reset_code_expires = ?, otp_attempts = 0 WHERE email = ?',
+      [hashOtp(code), expires, email]
     );
 
     try {
@@ -267,7 +288,8 @@ const completePasswordReset = async ({ email: rawEmail, code: rawCode, newPasswo
   }
 
   const userDb = rows[0];
-  if (!userDb.reset_code || userDb.reset_code !== code) {
+  if (!userDb.reset_code || !safeOtpEqual(code, userDb.reset_code)) {
+    await registerFailedOtpAttempt(userDb, 'reset_code');
     throw new AuthServiceError('validation', 'Incorrect code.');
   }
   if (!userDb.reset_code_expires || new Date() > new Date(userDb.reset_code_expires)) {
@@ -276,7 +298,7 @@ const completePasswordReset = async ({ email: rawEmail, code: rawCode, newPasswo
 
   const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
   await db.query(
-    'UPDATE users SET password = ?, password_updated_at = NOW(), reset_code = NULL, reset_code_expires = NULL WHERE email = ?',
+    'UPDATE users SET password = ?, password_updated_at = NOW(), reset_code = NULL, reset_code_expires = NULL, otp_attempts = 0 WHERE email = ?',
     [hashedPassword, email]
   );
 
@@ -285,6 +307,7 @@ const completePasswordReset = async ({ email: rawEmail, code: rawCode, newPasswo
 
 module.exports = {
   AuthServiceError,
+  registerFailedOtpAttempt,
   registerUser,
   authenticateUser,
   isRefreshTokenStale,

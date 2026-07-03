@@ -9,6 +9,7 @@ process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_jwt_ref
 const userController = require('../../src/controllers/user.controller');
 const db = require('../../src/database');
 const mailService = require('../../src/services/mail.service');
+const { hashOtp } = require('../../src/utils/otp');
 
 jest.mock('../../src/database');
 jest.mock('../../src/services/mail.service');
@@ -73,7 +74,7 @@ describe('user controller', () => {
   describe('verify the pending email', () => {
     it('verifies the pending email', async () => {
       db.query
-        .mockResolvedValueOnce([[{ id: 1, name: 'Jane Doe', pending_email: 'axelle@example.com', pending_email_code: '123456', pending_email_expires: new Date(Date.now() + 10000), avatar_initials: 'JD', password_updated_at: null }]])
+        .mockResolvedValueOnce([[{ id: 1, name: 'Jane Doe', pending_email: 'axelle@example.com', pending_email_code: hashOtp('123456'), pending_email_expires: new Date(Date.now() + 10000), avatar_initials: 'JD', password_updated_at: null }]])
         .mockResolvedValueOnce([[]]);
       const req = { user: { id: 1 }, body: { email: 'axelle@example.com', code: '123456' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };

@@ -1,6 +1,6 @@
 /**
- * Contrôleur du proxy Google Fonts : renvoie le catalogue (récupéré côté
- * serveur) pour que la clé API ne soit jamais présente dans le client.
+ * Google Fonts proxy controller: returns the catalog (fetched server-side) so
+ * the API key is never present in the client.
  */
 
 const fontsService = require('../services/fonts.service');

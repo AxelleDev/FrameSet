@@ -30,7 +30,7 @@ function generateRefreshToken(payload) {
 // Verifies a refresh token's signature and expiry; returns the decoded payload or null.
 function verifyRefreshToken(token) {
   try {
-     const user = jwt.verify(token, JWT_REFRESH_SECRET);
+     const user = jwt.verify(token, JWT_REFRESH_SECRET, { algorithms: ['HS256'] });
      return user;
   } catch (err) {
      return null;

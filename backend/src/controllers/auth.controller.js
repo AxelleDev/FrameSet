@@ -53,7 +53,7 @@ const verifyAccessToken = (token, { ignoreExpiration = false } = {}) => {
   }
 
   try {
-    return jwt.verify(token, JWT_SECRET, { ignoreExpiration });
+    return jwt.verify(token, JWT_SECRET, { ignoreExpiration, algorithms: ['HS256'] });
   } catch (error) {
     return null;
   }

@@ -7,6 +7,13 @@ jest.mock('../../src/services/mail.service', () => ({
   buildTemplate: jest.fn(() => '<p>template</p>')
 }));
 
+// Fixed verification code so the test knows the plaintext: only its SHA-256 hash
+// is stored in the (mocked) DB.
+jest.mock('../../src/utils/auth.utils', () => ({
+  ...jest.requireActual('../../src/utils/auth.utils'),
+  generateVerificationCode: () => ({ code: '135790', expires: new Date(Date.now() + 10 * 60 * 1000) })
+}));
+
 jest.mock('../../src/database', () => {
   let users = [];
   let revokedTokens = [];
@@ -52,7 +59,7 @@ jest.mock('../../src/database', () => {
       return [foundUsers];
     }
 
-    if (normalizedSql === 'UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL WHERE email = ?') {
+    if (normalizedSql === 'UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL, otp_attempts = 0 WHERE email = ?') {
       const [email] = params;
       const user = users.find((item) => item.email === email);
 
@@ -174,14 +181,16 @@ describe('integration auth flow', () => {
     const [createdUser] = db.__getUsers();
     expect(createdUser).toBeDefined();
     expect(createdUser.email).toBe(payload.email);
+    // The stored code is the SHA-256 hash, never the plaintext.
     expect(createdUser.verification_code).toBeTruthy();
+    expect(createdUser.verification_code).not.toBe('135790');
 
     const verifyResponse = await agent
       .post('/api/auth/verify')
       .set('x-csrf-token', csrfToken)
       .send({
         email: payload.email,
-        code: createdUser.verification_code
+        code: '135790'
       });
 
     expect(verifyResponse.status).toBe(200);

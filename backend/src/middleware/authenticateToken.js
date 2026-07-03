@@ -24,7 +24,7 @@ async function authenticateToken(req, res, next) {
 
   let user;
   try {
-    user = jwt.verify(token, JWT_SECRET);
+    user = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
   } catch (error) {
     return res.status(403).json({ error: 'Invalid or expired token.' });
   }

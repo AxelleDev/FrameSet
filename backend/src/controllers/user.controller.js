@@ -10,6 +10,8 @@ const mailService = require('../services/mail.service');
 const { getAuthenticatedUserId, generateVerificationCode, createControllerLogger } = require('../utils/auth.utils');
 const { BCRYPT_SALT_ROUNDS, PASSWORD_MIN_LENGTH, PASSWORD_COMPLEXITY_REGEX } = require('../config/security.config');
 const { issueAuthCookies } = require('../utils/session.utils');
+const { hashOtp, safeOtpEqual } = require('../utils/otp');
+const { registerFailedOtpAttempt } = require('../services/auth.service');
 
 const logUserControllerError = createControllerLogger('users');
 
@@ -95,8 +97,8 @@ const updateUser = async (req, res) => {
       const { code: pendingCode, expires } = generateVerificationCode();
 
       await db.query(
-        'UPDATE users SET name = ?, pending_email = ?, pending_email_code = ?, pending_email_expires = ? WHERE id = ?',
-        [trimmedName, trimmedEmail, pendingCode, expires, authenticatedUserId]
+        'UPDATE users SET name = ?, pending_email = ?, pending_email_code = ?, pending_email_expires = ?, otp_attempts = 0 WHERE id = ?',
+        [trimmedName, trimmedEmail, hashOtp(pendingCode), expires, authenticatedUserId]
       );
 
       await mailService.sendMail({
@@ -135,7 +137,8 @@ const verifyPendingEmail = async (req, res) => {
       return res.status(400).json({ error: 'No pending email found.' });
     }
     const userDb = rows[0];
-    if (!userDb.pending_email_code || userDb.pending_email_code !== code) {
+    if (!userDb.pending_email_code || !safeOtpEqual(code, userDb.pending_email_code)) {
+      await registerFailedOtpAttempt(userDb, 'pending_email_code');
       return res.status(400).json({ error: 'Incorrect code.' });
     }
     if (!userDb.pending_email_expires || new Date() > new Date(userDb.pending_email_expires)) {
@@ -143,7 +146,7 @@ const verifyPendingEmail = async (req, res) => {
     }
 
     await db.query(
-      'UPDATE users SET email = pending_email, pending_email = NULL, pending_email_code = NULL, pending_email_expires = NULL WHERE id = ?',
+      'UPDATE users SET email = pending_email, pending_email = NULL, pending_email_code = NULL, pending_email_expires = NULL, otp_attempts = 0 WHERE id = ?',
       [userDb.id]
     );
 
@@ -179,8 +182,8 @@ const resendPendingEmail = async (req, res) => {
     const { code: newCode, expires } = generateVerificationCode();
 
     await db.query(
-      'UPDATE users SET pending_email_code = ?, pending_email_expires = ? WHERE id = ?',
-      [newCode, expires, userDb.id]
+      'UPDATE users SET pending_email_code = ?, pending_email_expires = ?, otp_attempts = 0 WHERE id = ?',
+      [hashOtp(newCode), expires, userDb.id]
     );
 
     await mailService.sendMail({
