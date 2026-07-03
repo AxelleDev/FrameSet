@@ -84,7 +84,8 @@ npm start              # API on http://localhost:3000
 ```
 
 Interactive API docs (Swagger UI) are served at `/api-docs`, with a health probe
-at `/health`. Set `ENABLE_API_DOCS=false` to hide the docs in a deployment.
+at `/health`. The docs are on by default in development; in production they are
+opt-in — set `ENABLE_API_DOCS=true` to expose them.
 
 ### Frontend (app)
 
@@ -138,8 +139,8 @@ Production checklist:
   and API are on different domains, set `FRONTEND_ORIGIN` (API) and
   `VITE_API_URL` (frontend) to the real HTTPS origins.
 - Point the frontend CSP `connect-src` (in `vercel.json`) at the real API origin.
-- Restrict the `GOOGLE_FONTS_API_KEY` in the Google console; optionally set
-  `ENABLE_API_DOCS=false` to hide `/api-docs`.
+- Restrict the `GOOGLE_FONTS_API_KEY` in the Google console; `/api-docs` stays
+  hidden in production unless you opt in with `ENABLE_API_DOCS=true`.
 - Rate limiting is **in-memory (per instance)**: run a single API instance, or
   move to a shared store (e.g. Redis) before scaling horizontally.
 - Run `npm run migrate` against the production database.

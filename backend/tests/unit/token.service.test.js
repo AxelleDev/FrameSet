@@ -41,13 +41,19 @@ describe('token service', () => {
   });
 
   it('revokes a token', async () => {
-    db.query.mockResolvedValueOnce([{}]);
+    db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
     const ok = await tokenService.revokeToken(1, 'abc');
     expect(ok).toBe(true);
     expect(db.query).toHaveBeenCalledWith(
       'INSERT IGNORE INTO revoked_tokens (user_id, token) VALUES (?, ?)',
       [1, hashToken('abc')]
     );
+  });
+
+  it('reports a lost claim when the token was already revoked', async () => {
+    db.query.mockResolvedValueOnce([{ affectedRows: 0 }]);
+    const ok = await tokenService.revokeToken(1, 'abc');
+    expect(ok).toBe(false);
   });
 
   it('detects a revoked token', async () => {

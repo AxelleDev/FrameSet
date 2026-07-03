@@ -145,10 +145,23 @@ const verifyPendingEmail = async (req, res) => {
       return res.status(400).json({ error: 'Code expired. Please request a new one.' });
     }
 
-    await db.query(
-      'UPDATE users SET email = pending_email, pending_email = NULL, pending_email_code = NULL, pending_email_expires = NULL, otp_attempts = 0 WHERE id = ?',
-      [userDb.id]
-    );
+    try {
+      await db.query(
+        'UPDATE users SET email = pending_email, pending_email = NULL, pending_email_code = NULL, pending_email_expires = NULL, otp_attempts = 0 WHERE id = ?',
+        [userDb.id]
+      );
+    } catch (error) {
+      // The address was taken by another account between staging and confirmation:
+      // surface a clean 400 and clear the now-unusable pending fields.
+      if (error.code === 'ER_DUP_ENTRY') {
+        await db.query(
+          'UPDATE users SET pending_email = NULL, pending_email_code = NULL, pending_email_expires = NULL, otp_attempts = 0 WHERE id = ?',
+          [userDb.id]
+        );
+        return res.status(400).json({ error: 'This email is already in use.' });
+      }
+      throw error;
+    }
 
     const updatedUser = {
       id: userDb.id,
@@ -211,6 +224,11 @@ const changePassword = async (req, res) => {
   const authenticatedUserId = getAuthenticatedUserId(req);
   const { currentPassword, newPassword } = req.body;
   if (!authenticatedUserId || !currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Required fields are missing.' });
+  }
+  // Guard against non-string bodies (e.g. a JSON object/array): bcrypt.compare and
+  // validator.trim throw on non-strings, which would surface as a 500 instead of 400.
+  if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
     return res.status(400).json({ error: 'Required fields are missing.' });
   }
   const trimmedNewPassword = validator.trim(newPassword);

@@ -41,7 +41,7 @@ class AuthServiceError extends Error {
 // Registers a user: validates, enforces the password policy, stores the account
 // unverified with a one-time code, and emails it. Throws 'validation' on bad
 // input and 'duplicate_email' when the email already exists.
-const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassword }) => {
+const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassword }, { onMailError } = {}) => {
   const name = normalizeInput(rawName);
   const email = normalizeInput(rawEmail);
   const password = normalizeInput(rawPassword);
@@ -50,6 +50,11 @@ const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassw
     throw new AuthServiceError('validation', 'All fields are required.');
   }
 
+  // Bound the name to the column width so an over-long value is a clean 400, not a
+  // MySQL ER_DATA_TOO_LONG surfacing as a generic 500.
+  if (!validator.isLength(name, { max: 255 })) {
+    throw new AuthServiceError('validation', 'Name is too long.');
+  }
   if (!validator.isEmail(email)) {
     throw new AuthServiceError('validation', 'Invalid email.');
   }
@@ -73,16 +78,23 @@ const registerUser = async ({ name: rawName, email: rawEmail, password: rawPassw
       [name, email, hashedPassword, initials, false, hashOtp(verificationCode), expires, now]
     );
 
-    await mailService.sendMail({
-      to: email,
-      subject: 'Confirm your registration',
-      text: `Your confirmation code is: ${verificationCode}\nThis code expires in 10 minutes.`,
-      html: mailService.buildTemplate({
-        title: 'Confirm your registration',
-        message: 'Use the code below to confirm your email address.',
-        code: verificationCode
-      })
-    });
+    try {
+      await mailService.sendMail({
+        to: email,
+        subject: 'Confirm your registration',
+        text: `Your confirmation code is: ${verificationCode}\nThis code expires in 10 minutes.`,
+        html: mailService.buildTemplate({
+          title: 'Confirm your registration',
+          message: 'Use the code below to confirm your email address.',
+          code: verificationCode
+        })
+      });
+    } catch (mailError) {
+      // The account is already created; a failed send must not 500 the user (which
+      // would strand them on a "duplicate email" retry). Report it and let them use
+      // resend-code. Mirrors startPasswordReset's onMailError contract.
+      if (onMailError) onMailError(mailError);
+    }
 
     return {
       email,
@@ -160,7 +172,8 @@ const verifyEmailCode = async ({ email, code }) => {
     throw new AuthServiceError('validation', 'Invalid email.');
   }
 
-  const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [validator.trim(String(email))]);
+  const normalizedEmail = validator.trim(String(email));
+  const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
   // Anti-enumeration: a missing account and an already-verified one are made
   // indistinguishable from a wrong code (same generic error).
   if (rows.length === 0) {
@@ -177,7 +190,7 @@ const verifyEmailCode = async ({ email, code }) => {
   if (!userDb.verification_code_expires || new Date() > new Date(userDb.verification_code_expires)) {
     throw new AuthServiceError('validation', 'Code expired. Please request a new one.');
   }
-  await db.query('UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL, otp_attempts = 0 WHERE email = ?', [email]);
+  await db.query('UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL, otp_attempts = 0 WHERE email = ?', [normalizedEmail]);
   return { success: true };
 };
 

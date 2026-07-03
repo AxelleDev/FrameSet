@@ -1,17 +1,25 @@
 /**
  * JWT secrets and token lifetimes. Secrets are validated at import time so the
- * app fails fast on boot rather than start with a missing signing key.
+ * app fails fast on boot rather than start with a missing or weak signing key.
  */
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET must be defined in the environment variables');
-}
+// Enforce a minimum secret length only in production: dev/test can use short,
+// throwaway secrets, but a real deployment must not ship a guessable signing key.
+const MIN_SECRET_LENGTH = 32;
+const isProduction = process.env.NODE_ENV === 'production';
 
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
-if (!JWT_REFRESH_SECRET) {
-  throw new Error('JWT_REFRESH_SECRET must be defined in the environment variables');
-}
+const requireSecret = (value, name) => {
+  if (!value) {
+    throw new Error(`${name} must be defined in the environment variables`);
+  }
+  if (isProduction && value.length < MIN_SECRET_LENGTH) {
+    throw new Error(`${name} must be at least ${MIN_SECRET_LENGTH} characters in production`);
+  }
+  return value;
+};
+
+const JWT_SECRET = requireSecret(process.env.JWT_SECRET, 'JWT_SECRET');
+const JWT_REFRESH_SECRET = requireSecret(process.env.JWT_REFRESH_SECRET, 'JWT_REFRESH_SECRET');
 
 module.exports = {
   JWT_SECRET,

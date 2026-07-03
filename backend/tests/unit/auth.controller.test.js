@@ -109,11 +109,13 @@ describe('authentication controller', () => {
       expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired refresh token.' });
     });
 
-    it('returns 500 when the refresh token rotation fails', async () => {
+    it('rejects the refresh when the rotation claim is lost (token already rotated)', async () => {
       const refreshHandler = authController.refresh || authController.refreshToken;
       tokenService.verifyRefreshToken.mockReturnValue({ id: 1, email: 'axelle@example.com' });
       tokenService.isTokenRevoked.mockResolvedValue(false);
       tokenService.generateRefreshToken.mockReturnValue('rotated-refresh-token');
+      // revokeToken returns false: the row already existed, so this call lost the race
+      // and must not issue a fresh pair.
       tokenService.revokeToken.mockResolvedValue(false);
 
       const req = { id: 'req-refresh-1', body: { refreshToken: 'token' } };
@@ -121,8 +123,8 @@ describe('authentication controller', () => {
 
       await refreshHandler(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Server error.' });
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired refresh token.' });
       expect(res.cookie).not.toHaveBeenCalled();
     });
   });

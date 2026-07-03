@@ -25,11 +25,21 @@ const app = express();
 // instead of collapsing to the proxy's single IP. `1` = trust one hop only
 // (not permissive), which express-rate-limit accepts without warning.
 app.set('trust proxy', 1);
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 const isDevelopment = process.env.NODE_ENV !== 'production';
-// API docs are served unless explicitly disabled (ENABLE_API_DOCS=false), so a
-// deployment can hide its API surface with a single env var and no code change.
-const apiDocsEnabled = process.env.ENABLE_API_DOCS !== 'false';
+// Fail fast in production if the frontend origin isn't set, rather than silently
+// falling back to localhost (which would leave CORS/cookies broken but undetected).
+if (!isDevelopment && !process.env.FRONTEND_ORIGIN) {
+	throw new Error('FRONTEND_ORIGIN must be defined in production');
+}
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+// API docs: served by default in development, but opt-in in production
+// (ENABLE_API_DOCS=true) so a deployment never exposes its API surface by accident.
+const apiDocsEnabled = isDevelopment
+	? process.env.ENABLE_API_DOCS !== 'false'
+	: process.env.ENABLE_API_DOCS === 'true';
+// Accepted shape for a client-supplied x-request-id: bounded and restricted to safe
+// characters, so an arbitrary/oversized value can't pollute logs or the echoed header.
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 
 // Interactive API documentation (Swagger UI) + the raw OpenAPI spec. Mounted
 // before the global strict CSP with its own relaxed policy so the bundled UI's
@@ -91,9 +101,11 @@ app.use(express.json({ limit: '10kb' }));
 app.use((req, res, next) => {
 	const requestStartedAt = process.hrtime.bigint();
 	const incomingRequestId = req.headers['x-request-id'];
-	const requestId = Array.isArray(incomingRequestId)
-		? incomingRequestId[0]
-		: incomingRequestId || randomUUID();
+	const candidateRequestId = Array.isArray(incomingRequestId) ? incomingRequestId[0] : incomingRequestId;
+	// Honor a client-supplied id only when it matches the safe pattern; otherwise mint one.
+	const requestId = (typeof candidateRequestId === 'string' && REQUEST_ID_PATTERN.test(candidateRequestId))
+		? candidateRequestId
+		: randomUUID();
 
 	req.id = requestId;
 	res.setHeader('x-request-id', requestId);

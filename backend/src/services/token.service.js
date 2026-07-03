@@ -37,8 +37,11 @@ function verifyRefreshToken(token) {
   }
 }
 
-// Records a token as revoked (logout/rotation), storing only the hash. INSERT
-// IGNORE makes repeated revocations idempotent. Returns false on invalid input or DB error.
+// Records a token as revoked (logout/rotation), storing only the hash. INSERT IGNORE
+// makes this an atomic claim: it returns true only when THIS call inserted the row,
+// and false when the row already existed (someone else revoked it first) or on invalid
+// input / DB error. Rotation relies on that to let only one of two concurrent refreshes
+// through; logout ignores the return and just needs the row to exist.
 async function revokeToken(userId, token) {
   const tokenHash = hashToken(token);
   if (!tokenHash) {
@@ -46,11 +49,11 @@ async function revokeToken(userId, token) {
   }
 
   try {
-    await db.query(
+    const [result] = await db.query(
       'INSERT IGNORE INTO revoked_tokens (user_id, token) VALUES (?, ?)',
       [userId, tokenHash]
     );
-    return true;
+    return result?.affectedRows === 1;
   } catch (error) {
     return false;
   }

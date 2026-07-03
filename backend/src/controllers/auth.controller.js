@@ -84,7 +84,17 @@ const getCsrfToken = (req, res) => {
 const register = async (req, res) => {
   const body = req.body || {};
   try {
-    const { user } = await authService.registerUser(body);
+    const { user } = await authService.registerUser(body, {
+      onMailError: (mailError) => {
+        // The account was created; log the send failure but still return success so
+        // the user isn't stranded (they can request a new code via resend-code).
+        logger.error('auth.register.mail_failed', {
+          requestId: req.id,
+          emailFingerprint: getIdentifierFingerprint(body.email),
+          error: mailError
+        });
+      }
+    });
     res.json({ success: true, ...user });
   } catch (error) {
     const email = body.email;
@@ -241,20 +251,22 @@ const refresh = async (req, res) => {
     userId: user.id
   });
 
-  const token = createAccessToken(user);
-  const nextRefreshToken = generateRefreshToken({ id: user.id, email: user.email });
-  const revokeSucceeded = await revokeToken(user.id, refreshToken);
-
-  if (!revokeSucceeded) {
-    logger.error('auth.refresh.rotation_failed', {
+  // Claim the rotation atomically: revoke the presented token FIRST and only proceed
+  // if this call actually inserted the revocation row. INSERT IGNORE is the lock, so
+  // two concurrent refreshes with the same token can't both mint a fresh valid pair.
+  const rotationClaimed = await revokeToken(user.id, refreshToken);
+  if (!rotationClaimed) {
+    logger.warn('auth.refresh.rotation_failed', {
       requestId: req.id,
       userId: user.id,
-      reason: 'refresh_token_revoke_failed'
+      reason: 'refresh_token_already_rotated'
     });
 
-    return res.status(500).json({ error: 'Server error.' });
+    return res.status(403).json({ error: 'Invalid or expired refresh token.' });
   }
 
+  const token = createAccessToken(user);
+  const nextRefreshToken = generateRefreshToken({ id: user.id, email: user.email });
   setAuthCookies(res, token, nextRefreshToken);
   res.json({ success: true });
 };

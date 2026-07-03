@@ -46,7 +46,15 @@ const deleteAccountLimiter = rateLimit({
 	message: 'Too many attempts, try again in 10 minutes.'
 });
 
-router.get('/count', userController.getUserCount);
+// User count: intentionally public (shown on the landing page) but rate limited,
+// since every call runs a COUNT(*) and it is otherwise a free DB-load vector.
+const userCountLimiter = rateLimit({
+	windowMs: 60 * 1000,
+	max: 30,
+	message: 'Too many requests, please try again in a minute.'
+});
+
+router.get('/count', userCountLimiter, userController.getUserCount);
 router.get('/profile', authenticateToken, userController.getProfile);
 router.put('/', authenticateToken, updateProfileLimiter, userController.updateUser);
 router.post('/password', authenticateToken, passwordChangeLimiter, userController.changePassword);
