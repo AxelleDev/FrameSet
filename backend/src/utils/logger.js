@@ -17,10 +17,12 @@ const normalizeLogLevel = (value) => {
   return LEVEL_PRIORITY[level] ? level : DEFAULT_LOG_LEVEL;
 };
 
-const activeLogLevel = normalizeLogLevel(process.env.LOG_LEVEL);
+// Resolved on each call (not once at import) so LOG_LEVEL can be changed at runtime
+// (e.g. flipped to "debug" to diagnose an incident) without a restart.
+const getActiveLogLevel = () => normalizeLogLevel(process.env.LOG_LEVEL);
 
 // True if a message at this level should be emitted under the active log level.
-const shouldLog = (level) => LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[activeLogLevel];
+const shouldLog = (level) => LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[getActiveLogLevel()];
 
 // Converts an Error to a serializable object (non-Errors pass through untouched).
 // Stack is included only outside production, to avoid leaking internal paths in prod logs.
@@ -118,5 +120,5 @@ const logger = createLogger();
 module.exports = {
   logger,
   createLogger,
-  activeLogLevel,
+  getActiveLogLevel,
 };

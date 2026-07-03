@@ -8,6 +8,7 @@ import AppModal from '../components/AppModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Card from '../components/Card';
 import Seo from '../components/Seo';
+import { formatRelativeTime } from '../utils/date';
 import Button from '../components/Button';
 import Avatar from '../components/Avatar';
 import FormField from '../components/FormField';
@@ -170,31 +171,6 @@ export default function Profile() {
   };
 
   if (!user) return null;
-
-  // Relative-time string (e.g. "3 days ago") for the password last-changed
-  // label; "Never changed" for missing/invalid dates.
-  const formatRelativeTime = (dateValue) => {
-    if (!dateValue) return 'Never changed';
-    const date = new Date(dateValue);
-    if (Number.isNaN(date.getTime())) return 'Never changed';
-
-    const diffMs = Date.now() - date.getTime();
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    if (diffMinutes < 1) return 'Just now';
-    if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
-
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-
-    const diffMonths = Math.floor(diffDays / 30);
-    if (diffMonths < 12) return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
-
-    const diffYears = Math.floor(diffMonths / 12);
-    return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
-  };
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">

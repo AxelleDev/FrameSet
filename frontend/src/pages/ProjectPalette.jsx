@@ -18,6 +18,8 @@ import CopyBadge from '../components/CopyBadge';
 import AddTile from '../components/AddTile';
 import PageHeader from '../components/PageHeader';
 import Seo from '../components/Seo';
+import { normalizeHexInput, isValidHexValue, handleHexKeyDown } from '../utils/hex';
+import { EditIcon, DeleteIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useClipboard from '../hooks/useClipboard';
 import useActiveProject from '../hooks/useActiveProject';
@@ -141,31 +143,12 @@ export default function ProjectPalette() {
     return saved;
   };
 
-  // Normalize a hex input: force a leading '#', strip non-hex chars, uppercase.
-  const normalizeHexInput = (val) => {
-    if (val == null) return '#';
-    let v = String(val).trim();
-    if (!v.startsWith('#')) v = '#' + v;
-    v = '#' + v.slice(1).replace(/[^0-9a-fA-F]/g, '').toUpperCase();
-    return v;
-  };
-
   const handleEditHexChange = (e) => {
     setEditColorHex(normalizeHexInput(e.target.value));
   };
 
   const handleNewHexChange = (e) => {
     setNewColorHex(normalizeHexInput(e.target.value));
-  };
-
-  // Prevent deleting the mandatory leading '#' via Backspace/Delete.
-  const handleHexKeyDown = (e) => {
-    const el = e.target;
-    const selStart = el.selectionStart || 0;
-    const selEnd = el.selectionEnd || 0;
-    if ((e.key === 'Backspace' && selStart <= 1 && selEnd <= 1) || (e.key === 'Delete' && selStart === 0)) {
-      e.preventDefault();
-    }
   };
 
   // Normalize pasted content before it lands in the field.
@@ -184,12 +167,6 @@ export default function ProjectPalette() {
     setEditIdx(idx);
     setEditColorName(palette[idx]?.name || '');
     setEditColorHex(palette[idx]?.hex || '#');
-  };
-
-  // Whether the given hex string is a valid 3- or 6-digit hex color.
-  const isValidHexValue = (value) => {
-    const hex = (value || '').trim();
-    return /^#([0-9A-F]{3}){1,2}$/i.test(hex.startsWith('#') ? hex : '#' + hex);
   };
 
   const isValidEditHex = () => isValidHexValue(editColorHex);
@@ -470,9 +447,7 @@ export default function ProjectPalette() {
                       variant="light"
                       className="absolute top-3 right-3 z-30"
                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      <DeleteIcon />
                    </ActionIconButton>
 
                     <ActionIconButton
@@ -482,9 +457,7 @@ export default function ProjectPalette() {
                       variant="light"
                       className="absolute top-3 left-3 z-30"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
-                      </svg>
+                      <EditIcon />
                     </ActionIconButton>
 
                    {/* Reorder controls: keyboard-operable, non-drag alternative

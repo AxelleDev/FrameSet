@@ -1,9 +1,9 @@
 // Project norms page (/app/project/:id/norms): add/edit/delete/filter brush and
 // typography norms. Typography previews load the real Google Font dynamically.
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import CustomSelect from '../components/CustomSelect';
-import FontFaceObserver from 'fontfaceobserver';
 import useGoogleFonts from '../hooks/useGoogleFonts';
+import useNormFontLoader from '../hooks/useNormFontLoader';
 import { loadGoogleFont } from '../utils/loadGoogleFont';
 import useFormState from '../hooks/useFormState';
 import useActiveProject from '../hooks/useActiveProject';
@@ -21,6 +21,7 @@ import AddTile from '../components/AddTile';
 import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
 import Seo from '../components/Seo';
+import { EditIcon, DeleteIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 
 export default function ProjectNorms() {
@@ -52,64 +53,14 @@ export default function ProjectNorms() {
   const isOpacityValid = brushForm.opacity === '' || (Number.isFinite(opacityNum) && opacityNum >= 0 && opacityNum <= 1);
   const isBrushFormValid = !!brushForm.usage && isBrushValueValid && isOpacityValid;
 
-  // loadedFonts: families whose web font finished loading (switches the preview
-  // from "Loading…" to the rendered sample).
-  // loadingFontsRef: families currently loading, kept in a ref so it does not
-  // retrigger the effect and to dedupe concurrent loads.
-  const [loadedFonts, setLoadedFonts] = useState([]);
-  const loadingFontsRef = useRef({});
-
-    // Load each typography norm's Google Font (once) so its preview renders in
-    // the real typeface, then mark it loaded.
-    React.useEffect(() => {
-      if (activeProject?.typographyNorms) {
-        activeProject.typographyNorms.forEach(async norm => {
-          // Dedupe via the ref only: set on first sight, never cleared, so a
-          // family loads at most once without depending on loadedFonts.
-          if (norm.fontFamily && !loadingFontsRef.current[norm.fontFamily]) {
-            loadingFontsRef.current[norm.fontFamily] = true;
-            try {
-              const fontMeta = (googleFonts || []).find(f => f.family === norm.fontFamily);
-              let fontWeight = norm.fontWeight || '400';
-              let availableWeights = [];
-              if (fontMeta && fontMeta.variants) {
-                // Numeric weights from variant labels (e.g. 'regular', '700italic'), deduped.
-                availableWeights = fontMeta.variants
-                  .map(v => v.replace(/[^0-9]/g, '') || '400')
-                  .filter((v, i, arr) => arr.indexOf(v) === i);
-              }
-              // Fall back to an available weight (or 400) when the requested one is missing.
-              if (availableWeights.length === 0) {
-                fontWeight = '400';
-              } else if (!availableWeights.includes(fontWeight)) {
-                fontWeight = availableWeights[0] || '400';
-              }
-              // Inject the stylesheet; loadGoogleFont may return a promise to await.
-              const maybePromise = loadGoogleFont(norm.fontFamily, fontWeight);
-              if (maybePromise && typeof maybePromise.then === 'function') {
-                await maybePromise;
-              }
-              // Wait until the font is usable. Omit the weight option when none
-              // resolved so FontFaceObserver does not over-constrain.
-              const fontObserverOpts = availableWeights.length > 0 ? { weight: fontWeight } : {};
-              const font = new FontFaceObserver(norm.fontFamily, fontObserverOpts);
-              await font.load(null, 5000); // give up after 5s
-              setLoadedFonts(prev => [...prev, norm.fontFamily]);
-            } catch (e) {
-              // On timeout/failure, still mark loaded so the UI stops waiting
-              // (preview falls back to the system font).
-              setLoadedFonts(prev => [...prev, norm.fontFamily]);
-            }
-          }
-        });
-      }
-      // loadedFonts and googleFonts are excluded on purpose: re-running per
-      // font-load would re-iterate every norm, and the ref guard handles dedup.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeProject?.typographyNorms]);
   // Google Fonts catalog (proxied by the backend) used to populate the font
   // picker and resolve weights.
   const { fonts: googleFonts, loading: loadingFonts, error: errorFonts } = useGoogleFonts();
+
+  // Families whose web font has finished loading (switches each preview from
+  // "Loading…" to the rendered sample). The hook re-resolves weights once the
+  // catalog arrives, fixing norms that loaded before it was available.
+  const loadedFonts = useNormFontLoader(activeProject?.typographyNorms, googleFonts);
 
   // Open the edit modal pre-filled from the selected norm (by type).
   const openEditNorm = (norm, type) => {
@@ -261,9 +212,7 @@ export default function ProjectNorms() {
                     title="Edit standard"
                     intent="edit"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
-                    </svg>
+                    <EditIcon />
                   </ActionIconButton>
                   <ActionIconButton
                     onClick={(e) => handleDeleteNorm(e, norm.id, 'brush')}
@@ -275,9 +224,7 @@ export default function ProjectNorms() {
                         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      <DeleteIcon />
                     )}
                   </ActionIconButton>
                 </div>
@@ -317,9 +264,7 @@ export default function ProjectNorms() {
                     title="Edit standard"
                     intent="edit"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
-                    </svg>
+                    <EditIcon />
                   </ActionIconButton>
                   <ActionIconButton
                     onClick={(e) => handleDeleteNorm(e, norm.id, 'typography')}
@@ -331,9 +276,7 @@ export default function ProjectNorms() {
                         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      <DeleteIcon />
                     )}
                   </ActionIconButton>
                 </div>

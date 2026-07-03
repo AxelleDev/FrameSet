@@ -16,20 +16,8 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
 import Seo from '../components/Seo';
-
-const MONTH_ABBREVIATIONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-// Formats `lastEdited` for the "Edited " prefix: API sends "DD/MM HH:MM" or a
-// sentinel; renders an unambiguous "on 2 Jul at 14:30" (not "02/07", which reads
-// as a US date) or "just now".
-function formatModified(value) {
-  if (!value) return '';
-  const match = /^(\d{2})\/(\d{2})\s+(\d{2}:\d{2})$/.exec(value);
-  if (!match) return 'just now';
-  const [, day, month, time] = match;
-  const monthName = MONTH_ABBREVIATIONS[Number(month) - 1] || month;
-  return `on ${Number(day)} ${monthName} at ${time}`;
-}
+import { EditIcon, DeleteIcon } from '../components/icons';
+import { formatModified } from '../utils/date';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -172,18 +160,14 @@ export default function Dashboard() {
                 title="Edit project"
                 intent="edit"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13z" />
-                </svg>
+                <EditIcon />
               </ActionIconButton>
               <ActionIconButton
                 onClick={(e) => handleDeleteProject(e, project.id)}
                 title="Delete project"
                 intent="delete"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
+                <DeleteIcon />
               </ActionIconButton>
             </div>
             <div className="relative z-10 flex flex-col h-full min-h-[160px]">

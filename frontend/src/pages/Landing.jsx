@@ -273,7 +273,7 @@ export default function Landing() {
       <footer className="relative border-t border-primary/10">
         <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-primary/60">
           <Logo className="object-contain w-1/5 max-w-[80px] h-auto" />
-          <p>© 2026 FrameSet. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} FrameSet. All rights reserved.</p>
         </div>
       </footer>
     </div>

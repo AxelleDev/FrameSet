@@ -9,6 +9,7 @@
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 const RETRY_WINDOW_MS = 5000;      // total budget for retrying a single request
 const RETRY_INTERVAL_MS = 500;     // delay between transient-failure retries
+const COOKIE_PROPAGATION_DELAY_MS = 100; // brief pause after a token refresh so the new auth cookie is applied before the replay
 const CSRF_HEADER_NAME = 'x-csrf-token';
 const METHODS_REQUIRING_CSRF = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -267,7 +268,7 @@ const request = async (path, {
         const refreshSuccess = await attemptTokenRefresh();
         if (refreshSuccess) {
           opts = await buildRequestOptions();
-          await sleep(100); // brief pause so the new auth cookie is applied
+          await sleep(COOKIE_PROPAGATION_DELAY_MS);
           continue;
         }
         // Refresh failed: the session is terminally invalid. Notify the app so
