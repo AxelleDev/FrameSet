@@ -55,7 +55,7 @@ export default function PasswordInput({
           type="button"
           onClick={() => setIsVisible((prev) => !prev)}
           disabled={disabled}
-          className={`absolute inset-y-0 right-0 px-3 flex items-center justify-center transition-colors ${buttonClassName} ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`.trim()}
+          className={`absolute inset-y-0 right-0 px-3 flex items-center justify-center rounded-lg transition-colors focus-ring ${buttonClassName} ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`.trim()}
           aria-label={isVisible ? 'Hide password' : 'Show password'}
           aria-pressed={isVisible}
         >

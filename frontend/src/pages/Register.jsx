@@ -91,7 +91,7 @@ export default function Register() {
               <p className="text-xs text-blue uppercase tracking-widest">Alyse C., Illustrator</p>
             </div>
             <p className="text-sm text-blue">
-              {userCount !== null ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}` : 'Joined by ... illustrators'}
+              {userCount !== null ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}` : ' '}
             </p>
           </div>
         </>

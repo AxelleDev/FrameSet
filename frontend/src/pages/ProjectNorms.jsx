@@ -254,7 +254,7 @@ export default function ProjectNorms() {
             />
             {/* Brush norm cards (hidden when filtering to typography only) */}
             {filterType !== 'typography' && activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
-              <Card key={norm.id} clickable className="p-6 relative group flex flex-col justify-between h-full">
+              <Card key={norm.id} className="p-6 relative group flex flex-col justify-between h-full">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
                     onClick={() => openEditNorm(norm, 'brush')}
@@ -310,7 +310,7 @@ export default function ProjectNorms() {
             ))}
             {/* Typography norm cards (hidden when filtering to brush only) */}
             {filterType !== 'brush' && activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
-              <Card key={norm.id} clickable className="p-6 relative group flex flex-col justify-between h-full">
+              <Card key={norm.id} className="p-6 relative group flex flex-col justify-between h-full">
                 <div className="absolute top-3 right-3 flex gap-2 z-30">
                   <ActionIconButton
                     onClick={() => openEditNorm(norm, 'typography')}

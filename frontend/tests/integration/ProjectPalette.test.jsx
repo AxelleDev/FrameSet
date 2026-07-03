@@ -45,7 +45,8 @@ describe('ProjectPalette', () => {
   it('opens the add-color modal', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByRole('button', { name: 'Add' }));
-    expect(await screen.findByText(/new color/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'New color' }));
+    // The add-color modal opens (its title is an <h3>, distinct from the tile button).
+    expect(await screen.findByRole('heading', { name: 'New color' })).toBeInTheDocument();
   });
 });

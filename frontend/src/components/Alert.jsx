@@ -5,7 +5,8 @@ import PropTypes from 'prop-types';
 // ARIA role keeps it announced to assistive tech.
 const TONES = {
   danger: 'text-danger',
-  info: 'text-primary',
+  // Brand accent so an info message stands out from ordinary body text.
+  info: 'text-blue',
   success: 'text-success',
 };
 

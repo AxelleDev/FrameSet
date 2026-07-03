@@ -30,6 +30,9 @@ export default {
         overlay: '1035',
         drawer: '1040',
         modal: '1050',
+        // Floating menus (e.g. a portaled select): above modals so they show when
+        // opened inside one, but below toasts so an open menu can't hide them.
+        popover: '1055',
         toast: '1060',
       },
       // Named motion durations. Use these three everywhere instead of raw values.

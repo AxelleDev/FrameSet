@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import AuthLayout from '../components/AuthLayout';
 import Logo from '../components/Logo';
 import FormField from '../components/FormField';
@@ -20,6 +21,7 @@ import { isPasswordValid, isValidEmail } from '../utils/passwordRules';
 export default function ForgotPassword() {
   const navigate = useNavigate();
   const { requestPasswordReset, resetPassword } = useAuth();
+  const { showToast } = useToast();
 
   const [step, setStep] = useState('request');
   const { values: form, setField } = useFormState({
@@ -68,7 +70,9 @@ export default function ForgotPassword() {
     setSubmitting(false);
 
     if (result.success) {
-      // Send the user to the login page to sign in with the new password.
+      // Send the user to the login page and confirm the change (the ToastProvider
+      // sits above the router, so the toast survives the navigation).
+      showToast('Password changed. Sign in with your new password.');
       navigate('/login');
     } else if (result.message) {
       setError(result.message);

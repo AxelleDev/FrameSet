@@ -311,7 +311,7 @@ export default function Profile() {
         cancelLabel="Cancel"
         onConfirm={confirmLogout}
         onCancel={cancelLogout}
-        confirmClassName="bg-blue text-white"
+        primaryVariant="primary"
       />
 
       <AppModal
@@ -352,7 +352,7 @@ export default function Profile() {
               Cancel
             </Button>
             <Button type="submit" disabled={isPasswordSaving} loading={isPasswordSaving} variant="primary" className="text-sm">
-              {isPasswordSaving ? 'Saving...' : 'Save'}
+              {isPasswordSaving ? 'Saving…' : 'Save'}
             </Button>
           </div>
         </form>

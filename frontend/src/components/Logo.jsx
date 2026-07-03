@@ -13,8 +13,7 @@ export default function Logo({ className = '', style }) {
       />
       <img
         src="/FrameSet_Logo_Reversed.png"
-        alt=""
-        aria-hidden="true"
+        alt="FrameSet"
         className={`${className} hidden dark:block`.trim()}
         style={style}
       />

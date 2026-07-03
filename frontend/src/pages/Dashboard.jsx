@@ -17,12 +17,18 @@ import Button from '../components/Button';
 import Alert from '../components/Alert';
 import Seo from '../components/Seo';
 
+const MONTH_ABBREVIATIONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 // Formats `lastEdited` for the "Edited " prefix: API sends "DD/MM HH:MM" or a
-// sentinel; renders "on DD/MM at HH:MM" or "just now".
+// sentinel; renders an unambiguous "on 2 Jul at 14:30" (not "02/07", which reads
+// as a US date) or "just now".
 function formatModified(value) {
   if (!value) return '';
-  const match = /^(\d{2}\/\d{2})\s+(\d{2}:\d{2})$/.exec(value);
-  return match ? `on ${match[1]} at ${match[2]}` : 'just now';
+  const match = /^(\d{2})\/(\d{2})\s+(\d{2}:\d{2})$/.exec(value);
+  if (!match) return 'just now';
+  const [, day, month, time] = match;
+  const monthName = MONTH_ABBREVIATIONS[Number(month) - 1] || month;
+  return `on ${Number(day)} ${monthName} at ${time}`;
 }
 
 export default function Dashboard() {
@@ -153,13 +159,13 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="flex items-end justify-between mb-6">
-          <h2 className="text-xl font-medium text-primary">{totalProjects === 1 ? 'Active project' : 'Active projects'}</h2>
+          <h2 className="text-xl font-medium text-primary">{totalProjects === 1 ? 'Your project' : 'Your projects'}</h2>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (
-          <Card key={project.id} clickable onClick={() => openProject(project.id)} className="group p-6 overflow-hidden">
+          <Card key={project.id} clickable className="group p-6 overflow-hidden">
             <div className="absolute top-4 right-4 flex gap-2 z-30">
               <ActionIconButton
                 onClick={(e) => openEditProject(e, project)}
@@ -181,7 +187,19 @@ export default function Dashboard() {
               </ActionIconButton>
             </div>
             <div className="relative z-10 flex flex-col h-full min-h-[160px]">
-              <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">{project.name}</h3>
+              {/* Stretched-link: the title is the only "open project" control, and its
+                  ::after overlay makes the whole card body clickable — without making the
+                  container itself a button (which would nest the edit/delete buttons and
+                  break ARIA). The action buttons sit above the overlay (z-30). */}
+              <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">
+                <button
+                  type="button"
+                  onClick={() => openProject(project.id)}
+                  className="text-left rounded focus-ring after:absolute after:inset-0 after:content-['']"
+                >
+                  {project.name}
+                </button>
+              </h3>
               <p className="text-sm text-primary mb-auto">Edited {formatModified(project.lastEdited)}</p>
               <div className="mt-8 pt-4 flex -space-x-2 min-h-[40px] items-center">
                 {project.palette.map((color, i) => (

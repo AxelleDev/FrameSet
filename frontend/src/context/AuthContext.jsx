@@ -131,7 +131,9 @@ export const AuthProvider = ({ children }) => {
       return { success: true, data: userData };
     } catch (err) {
       const { message } = handleApiError(err, setGlobalError, 'Something went wrong.');
-      return { success: false, message };
+      // Surface the server error code (e.g. EMAIL_NOT_VERIFIED) so callers branch on
+      // a stable identifier instead of matching the human-readable message text.
+      return { success: false, message, code: err?.data?.code };
     }
   }, [setAuthenticatedUser]);
 

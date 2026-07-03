@@ -24,6 +24,7 @@ export default function Login() {
     password: '',
   });
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
@@ -47,9 +48,11 @@ export default function Login() {
 
     if (result.success) {
       setError('');
+      setErrorCode('');
       navigate('/app/dashboard');
     } else if (result.message) {
       setError(result.message);
+      setErrorCode(result.code || '');
     }
   };
 
@@ -78,7 +81,7 @@ export default function Login() {
 
           <div className="flex items-center space-x-4 pt-4">
             <span className="text-sm text-blue">
-              {userCount !== null ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}` : 'Joined by ... illustrators'}
+              {userCount !== null ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}` : ' '}
             </span>
           </div>
         </>
@@ -95,7 +98,7 @@ export default function Login() {
           <div className="mb-4">
             <Alert variant="danger">{error}</Alert>
             {/* Offer a verification shortcut when login failed due to an unverified email */}
-            {error.includes('verify your email') && (
+            {errorCode === 'EMAIL_NOT_VERIFIED' && (
               <Button
                 type="button"
                 onClick={() => navigate('/verify', { state: { email: formData.email.trim() } })}

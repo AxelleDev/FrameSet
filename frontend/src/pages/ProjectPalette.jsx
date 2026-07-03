@@ -309,9 +309,9 @@ export default function ProjectPalette() {
     setConfirmDeleteColor(colorId);
   };
 
-  // Move the swatch at `idx` to `target`, persist, and keep focus on it. Shared
-  // by the arrow-key handler and the on-tile buttons, so reorder works by
-  // keyboard and by a single click, not only by drag.
+  // Move the swatch at `idx` to `target`, persist, and keep focus on it. Called
+  // by the on-tile reorder buttons, so reordering works by a single click (and by
+  // keyboard, since the buttons are focusable), not only by drag.
   const moveColor = async (idx, target) => {
     if (target < 0 || target >= palette.length) return;
     const previous = palette;
@@ -370,6 +370,7 @@ export default function ProjectPalette() {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
            <AddTile
             onClick={openAddModal}
+            label="New color"
             className="aspect-[4/5]"
            />
 

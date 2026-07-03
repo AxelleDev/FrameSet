@@ -17,6 +17,7 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
   confirmClassName = '',
+  primaryVariant = 'danger',
   decorationClassName = 'absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50',
   confirmationWord = '',
   confirmationInputLabel = 'Confirmation word',
@@ -84,7 +85,7 @@ export default function ConfirmDialog({
         onPrimary={handleConfirm}
         primaryDisabled={!isConfirmationValid}
         primaryClassName={confirmClassName}
-        primaryVariant="danger"
+        primaryVariant={primaryVariant}
       />
     </FormModal>
   );
@@ -100,6 +101,7 @@ ConfirmDialog.propTypes = {
   onConfirm: PropTypes.func,
   onCancel: PropTypes.func,
   confirmClassName: PropTypes.string,
+  primaryVariant: PropTypes.string,
   decorationClassName: PropTypes.string,
   confirmationWord: PropTypes.string,
   confirmationInputLabel: PropTypes.string,

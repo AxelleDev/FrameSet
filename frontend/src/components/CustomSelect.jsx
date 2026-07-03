@@ -81,9 +81,10 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
           zIndex: 1000, // matches the `dropdown` tier of the z-index scale (tailwind.config.js)
           marginTop: '0.4rem',
         }),
-        // The portal wrapper sits above the modal tier (1050) so the menu still
-        // shows when the select is used inside a FormModal (e.g. the font picker).
-        menuPortal: provided => ({ ...provided, zIndex: 1100 }),
+        // `popover` tier (tailwind.config.js): above the modal tier (1050) so the
+        // menu shows when the select is inside a FormModal (e.g. the font picker),
+        // but below the toast tier (1060) so an open menu never hides a toast.
+        menuPortal: provided => ({ ...provided, zIndex: 1055 }),
         menuList: provided => ({
           ...provided,
           display: 'flex',

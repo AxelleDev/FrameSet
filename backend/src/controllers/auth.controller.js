@@ -142,7 +142,9 @@ const login = async (req, res) => {
         reason: 'email_not_verified',
       });
 
-      return res.status(401).json({ error: 'Please verify your email before signing in.' });
+      return res
+        .status(401)
+        .json({ error: 'Please verify your email before signing in.', code: 'EMAIL_NOT_VERIFIED' });
     }
     if (error.code === 'invalid_credentials') {
       logger.warn('auth.login.failed', {
