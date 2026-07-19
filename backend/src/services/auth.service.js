@@ -5,7 +5,6 @@
 
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
-const { OAuth2Client } = require('google-auth-library');
 const db = require('../database');
 const mailService = require('./mail.service');
 const { generateVerificationCode, getInitials } = require('../utils/auth.utils');
@@ -16,7 +15,7 @@ const {
   PASSWORD_MIN_LENGTH,
   PASSWORD_COMPLEXITY_REGEX,
 } = require('../config/security.config');
-const { GOOGLE_CLIENT_ID } = require('../config/google.config');
+const { verifyGoogleIdToken } = require('./googleIdentity.service');
 
 // Records a wrong one-time-code attempt on the account and, once MAX_OTP_ATTEMPTS
 // is reached, invalidates the stored code (clears `codeColumn`) so it can't be
@@ -195,16 +194,6 @@ const authenticateUser = async ({ email: rawEmail, password: rawPassword }) => {
   };
 };
 
-// Lazily built verifier for Google ID tokens (avoids the construction cost when
-// Google sign-in is not configured or never used).
-let googleClient = null;
-const getGoogleClient = () => {
-  if (!googleClient) {
-    googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
-  }
-  return googleClient;
-};
-
 // Columns returned to build a session user; `password IS NOT NULL` exposes
 // whether a local password exists without ever selecting the hash itself.
 const SESSION_USER_COLUMNS =
@@ -231,35 +220,26 @@ const toSessionUser = (userDb) => ({
 // Throws 'google_not_configured', 'validation', 'invalid_google_token' or
 // 'google_email_not_verified'.
 const authenticateWithGoogle = async (rawCredential, { onMailError } = {}) => {
-  if (!GOOGLE_CLIENT_ID) {
+  const verification = await verifyGoogleIdToken(rawCredential);
+  if (verification.status === 'not_configured') {
     throw new AuthServiceError('google_not_configured');
   }
-
-  const credential = typeof rawCredential === 'string' ? rawCredential.trim() : '';
-  if (!credential) {
+  if (verification.status === 'missing') {
     throw new AuthServiceError('validation', 'Missing Google credential.');
-  }
-
-  let payload;
-  try {
-    const ticket = await getGoogleClient().verifyIdToken({
-      idToken: credential,
-      audience: GOOGLE_CLIENT_ID,
-    });
-    payload = ticket.getPayload();
-  } catch (error) {
-    throw new AuthServiceError('invalid_google_token');
-  }
-
-  const googleId = typeof payload?.sub === 'string' ? payload.sub : '';
-  const email = normalizeInput(payload?.email);
-  if (!googleId || !validator.isEmail(email)) {
-    throw new AuthServiceError('invalid_google_token');
   }
   // Only trust addresses Google itself has verified: linking by an unverified
   // email would let an attacker claim someone else's account.
-  if (!payload.email_verified) {
+  if (verification.status === 'email_not_verified') {
     throw new AuthServiceError('google_email_not_verified');
+  }
+  if (verification.status !== 'ok') {
+    throw new AuthServiceError('invalid_google_token');
+  }
+
+  const { googleId } = verification;
+  const email = normalizeInput(verification.email);
+  if (!validator.isEmail(email)) {
+    throw new AuthServiceError('invalid_google_token');
   }
 
   // 1) Known Google identity.
@@ -310,7 +290,7 @@ const authenticateWithGoogle = async (rawCredential, { onMailError } = {}) => {
   // 3) First sign-in: create an already-verified, passwordless account.
   // password_updated_at stays NULL (no password has ever existed), which also
   // keeps the token-staleness check inert until a password is created.
-  const name = (normalizeInput(payload.name) || email.split('@')[0]).slice(0, 255);
+  const name = (normalizeInput(verification.name) || email.split('@')[0]).slice(0, 255);
   const initials = getInitials(name);
   try {
     const [result] = await db.query(

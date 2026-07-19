@@ -16,6 +16,7 @@ const {
 } = require('../config/security.config');
 const { hashOtp, safeOtpEqual } = require('../utils/otp');
 const { registerFailedOtpAttempt } = require('./auth.service');
+const { verifyGoogleIdToken } = require('./googleIdentity.service');
 
 // Thrown to signal a business/validation failure. The controller maps `code` to an
 // HTTP status; `message`, when present, is surfaced to the client unchanged.
@@ -26,6 +27,45 @@ class UserServiceError extends Error {
     this.code = code;
   }
 }
+
+// Confirms the requester's identity before a critical action (email change,
+// account deletion): a stolen or unattended session alone must not be enough.
+// Accounts with a password confirm with it; Google-only accounts confirm with a
+// fresh Google sign-in whose stable id must match the linked one. `userDb` must
+// carry the `password` and `google_id` columns.
+const verifyUserIdentity = async (userDb, { currentPassword, googleCredential } = {}) => {
+  if (userDb.password) {
+    if (typeof currentPassword !== 'string' || validator.trim(currentPassword) === '') {
+      throw new UserServiceError(
+        'reauth_required',
+        'Please confirm your current password to continue.',
+      );
+    }
+    const isMatch = await bcrypt.compare(validator.trim(currentPassword), userDb.password);
+    if (!isMatch) {
+      throw new UserServiceError('invalid_current_password', 'Current password is incorrect.');
+    }
+    return;
+  }
+
+  if (userDb.google_id) {
+    if (typeof googleCredential !== 'string' || googleCredential.trim() === '') {
+      throw new UserServiceError(
+        'reauth_required',
+        'Please confirm your identity with Google to continue.',
+      );
+    }
+    const verification = await verifyGoogleIdToken(googleCredential);
+    if (verification.status !== 'ok' || verification.googleId !== userDb.google_id) {
+      throw new UserServiceError('reauth_failed', 'Google verification failed. Please try again.');
+    }
+    return;
+  }
+
+  // An account with neither a password nor a linked Google identity should not
+  // exist; fail closed rather than allow the action.
+  throw new UserServiceError('reauth_required', 'Please confirm your identity to continue.');
+};
 
 // Total number of registered users (public stat shown on the landing page).
 const getUserCount = async () => {
@@ -61,9 +101,15 @@ const getUserProfile = async (userId) => {
 // Update the profile. A name change applies immediately; an email change is staged as
 // a pending email confirmed via a one-time code (see confirmPendingEmail), proving
 // ownership and preventing account takeover through an unverified email swap.
+// Changing the email is a critical action: it additionally requires re-authentication
+// (currentPassword or googleCredential) — see verifyUserIdentity.
 // A failed code send is reported via onMailError, not thrown: the pending email is
 // already staged and the user can use "resend", so it must not surface as a 500.
-const updateUserProfile = async (userId, { name, email }, { onMailError } = {}) => {
+const updateUserProfile = async (
+  userId,
+  { name, email, currentPassword, googleCredential },
+  { onMailError } = {},
+) => {
   if (!name || !email) {
     throw new UserServiceError('validation', 'All fields are required.');
   }
@@ -73,7 +119,10 @@ const updateUserProfile = async (userId, { name, email }, { onMailError } = {}) 
     throw new UserServiceError('validation', 'Invalid email.');
   }
 
-  const [rows] = await db.query('SELECT email, pending_email FROM users WHERE id = ?', [userId]);
+  const [rows] = await db.query(
+    'SELECT email, pending_email, password, google_id FROM users WHERE id = ?',
+    [userId],
+  );
   if (rows.length === 0) {
     throw new UserServiceError('not_found', 'User not found.');
   }
@@ -82,6 +131,11 @@ const updateUserProfile = async (userId, { name, email }, { onMailError } = {}) 
   const isEmailChanged = trimmedEmail !== currentEmail;
 
   if (isEmailChanged) {
+    // Re-authenticate before anything else (even the availability check), so an
+    // attacker holding only a session can neither change the email nor probe
+    // which addresses are taken.
+    await verifyUserIdentity(rows[0], { currentPassword, googleCredential });
+
     const [existing] = await db.query(
       'SELECT id FROM users WHERE (email = ? OR pending_email = ?) AND id <> ?',
       [trimmedEmail, trimmedEmail, userId],
@@ -292,8 +346,15 @@ const changeUserPassword = async (
 };
 
 // Permanently delete the user's own account (scoped to the verified id); related project
-// data is removed by cascading foreign keys.
-const deleteUserAccount = async (userId) => {
+// data is removed by cascading foreign keys. Destruction is a critical action:
+// it requires re-authentication (currentPassword or googleCredential).
+const deleteUserAccount = async (userId, { currentPassword, googleCredential } = {}) => {
+  const [rows] = await db.query('SELECT password, google_id FROM users WHERE id = ?', [userId]);
+  if (rows.length === 0) {
+    throw new UserServiceError('not_found', 'User not found.');
+  }
+  await verifyUserIdentity(rows[0], { currentPassword, googleCredential });
+
   const [result] = await db.query('DELETE FROM users WHERE id = ?', [userId]);
   if (result.affectedRows === 0) {
     throw new UserServiceError('not_found', 'User not found.');

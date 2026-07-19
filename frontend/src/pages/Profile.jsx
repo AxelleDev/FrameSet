@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { useNavigate, Link } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ReauthModal from '../components/ReauthModal';
 import Card from '../components/Card';
 import Seo from '../components/Seo';
 import { formatRelativeTime } from '../utils/date';
@@ -41,6 +42,11 @@ export default function Profile() {
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+
+  // Critical actions (email change, deletion) go through a re-authentication
+  // modal: which action is pending, and the profile payload waiting for it.
+  const [reauthAction, setReauthAction] = useState(null); // null | 'email-change' | 'delete'
+  const [pendingProfileUpdate, setPendingProfileUpdate] = useState(null);
 
   // Keep the edit form fields in sync with the current user.
   useEffect(() => {
@@ -88,7 +94,14 @@ export default function Profile() {
       return;
     }
 
-    const emailChanged = trimmedEmail !== (user.email ?? '');
+    // Changing the email is a critical action: collect a re-authentication
+    // (current password, or Google for passwordless accounts) before submitting.
+    if (trimmedEmail !== (user.email ?? '')) {
+      setPendingProfileUpdate({ name: trimmedName, email: trimmedEmail });
+      setReauthAction('email-change');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const result = await updateUserProfile({ name: trimmedName, email: trimmedEmail });
@@ -98,14 +111,42 @@ export default function Profile() {
         return;
       }
       setIsEditing(false);
-      showToast(
-        emailChanged
-          ? 'Profile saved. Check your inbox to confirm your new email.'
-          : 'Profile updated.'
-      );
+      showToast('Profile updated.');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Runs the pending critical action once the user re-authenticated in the
+  // modal. Returns the result so the modal can show a failure (e.g. wrong
+  // password) inline and let the user retry.
+  const handleReauthConfirm = async (credentials) => {
+    if (reauthAction === 'email-change') {
+      const result = await updateUserProfile(pendingProfileUpdate, credentials);
+      if (result?.success === false) {
+        return {
+          success: false,
+          message: result.message || 'Something went wrong updating your profile.'
+        };
+      }
+      setReauthAction(null);
+      setPendingProfileUpdate(null);
+      setIsEditing(false);
+      showToast('Profile saved. Check your inbox to confirm your new email.');
+      return { success: true };
+    }
+
+    if (reauthAction === 'delete') {
+      const result = await deleteAccount(credentials);
+      if (!result.success) {
+        return { success: false, message: result.message || 'Failed to delete the account.' };
+      }
+      setReauthAction(null);
+      navigate('/login');
+      return { success: true };
+    }
+
+    return { success: true };
   };
 
   const handleLogout = () => {
@@ -355,13 +396,27 @@ export default function Profile() {
         confirmationInputLabel="Type the confirmation word"
         confirmationInputPlaceholder="DELETE"
         onCancel={() => setIsDeleteAccountOpen(false)}
-        onConfirm={async () => {
+        onConfirm={() => {
+          // Deletion is a critical action: chain into the re-authentication modal.
           setIsDeleteAccountOpen(false);
-          const result = await deleteAccount();
-          if (result.success) {
-            navigate('/login');
-          }
+          setReauthAction('delete');
         }}
+      />
+
+      <ReauthModal
+        isOpen={reauthAction !== null}
+        onClose={() => {
+          setReauthAction(null);
+          setPendingProfileUpdate(null);
+        }}
+        subtitle={
+          reauthAction === 'delete'
+            ? 'Deleting your account is irreversible — confirm it is really you.'
+            : 'Changing your account email — confirm it is really you.'
+        }
+        confirmLabel={reauthAction === 'delete' ? 'Delete my account' : 'Save changes'}
+        danger={reauthAction === 'delete'}
+        onConfirm={handleReauthConfirm}
       />
 
     </div>

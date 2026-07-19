@@ -9,11 +9,13 @@ process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_jwt_ref
 const userController = require('../../src/controllers/user.controller');
 const db = require('../../src/database');
 const mailService = require('../../src/services/mail.service');
+const googleIdentity = require('../../src/services/googleIdentity.service');
 const bcrypt = require('bcryptjs');
 const { hashOtp } = require('../../src/utils/otp');
 
 jest.mock('../../src/database');
 jest.mock('../../src/services/mail.service');
+jest.mock('../../src/services/googleIdentity.service');
 
 describe('user controller', () => {
   beforeEach(() => {
@@ -73,8 +75,10 @@ describe('user controller', () => {
   });
 
   describe('update a user', () => {
-    it('updates the user name', async () => {
-      db.query.mockResolvedValueOnce([[{ email: 'axelle@example.com', pending_email: null }]]);
+    it('updates the user name without requiring re-authentication', async () => {
+      db.query.mockResolvedValueOnce([
+        [{ email: 'axelle@example.com', pending_email: null, password: 'hashed', google_id: null }],
+      ]);
       db.query.mockResolvedValueOnce([]);
       db.query.mockResolvedValueOnce();
       const req = {
@@ -84,7 +88,7 @@ describe('user controller', () => {
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await userController.updateUser(req, res);
       expect(db.query).toHaveBeenCalledWith(
-        'SELECT email, pending_email FROM users WHERE id = ?',
+        'SELECT email, pending_email, password, google_id FROM users WHERE id = ?',
         [1],
       );
       expect(res.json).toHaveBeenCalledWith({
@@ -95,14 +99,33 @@ describe('user controller', () => {
       });
     });
 
+    it('rejects an email change without re-authentication', async () => {
+      db.query.mockResolvedValueOnce([
+        [{ email: 'old@example.com', pending_email: null, password: 'hashed', google_id: null }],
+      ]);
+      const req = {
+        user: { id: 1 },
+        body: { name: 'Jane Doe', email: 'new@example.com' },
+      };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await userController.updateUser(req, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+      // Nothing staged, nothing sent.
+      expect(db.query).toHaveBeenCalledTimes(1);
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+
     it('still succeeds when the pending-email code send fails', async () => {
-      db.query.mockResolvedValueOnce([[{ email: 'old@example.com', pending_email: null }]]);
+      db.query.mockResolvedValueOnce([
+        [{ email: 'old@example.com', pending_email: null, password: 'hashed', google_id: null }],
+      ]);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       db.query.mockResolvedValueOnce([[]]); // no other account uses the new email
       db.query.mockResolvedValueOnce(); // staging UPDATE
       mailService.sendMail.mockRejectedValueOnce(new Error('smtp down'));
       const req = {
         user: { id: 1 },
-        body: { name: 'Jane Doe', email: 'new@example.com' },
+        body: { name: 'Jane Doe', email: 'new@example.com', currentPassword: 'Pass1234' },
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await userController.updateUser(req, res);
@@ -167,9 +190,11 @@ describe('user controller', () => {
   });
 
   describe('delete the account', () => {
-    it('deletes the authenticated account and clears the session cookies', async () => {
+    it('deletes the account after password re-authentication and clears the cookies', async () => {
+      db.query.mockResolvedValueOnce([[{ password: 'hashed', google_id: null }]]);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
-      const req = { user: { id: 1 } };
+      const req = { user: { id: 1 }, body: { currentPassword: 'Pass1234' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
       await userController.deleteAccount(req, res);
       expect(db.query).toHaveBeenCalledWith('DELETE FROM users WHERE id = ?', [1]);
@@ -179,9 +204,58 @@ describe('user controller', () => {
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
 
-    it('returns 404 when no row was deleted', async () => {
-      db.query.mockResolvedValueOnce([{ affectedRows: 0 }]);
-      const req = { user: { id: 1 } };
+    it('rejects a deletion without re-authentication', async () => {
+      db.query.mockResolvedValueOnce([[{ password: 'hashed', google_id: null }]]);
+      const req = { user: { id: 1 }, body: {} };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
+      await userController.deleteAccount(req, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+      // The DELETE must never run without a verified identity.
+      expect(db.query).toHaveBeenCalledTimes(1);
+      expect(res.clearCookie).not.toHaveBeenCalled();
+    });
+
+    it('rejects a deletion with a wrong current password', async () => {
+      db.query.mockResolvedValueOnce([[{ password: 'hashed', google_id: null }]]);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
+      const req = { user: { id: 1 }, body: { currentPassword: 'wrong' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
+      await userController.deleteAccount(req, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Current password is incorrect.' });
+      expect(db.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('deletes a Google-only account after a fresh Google verification', async () => {
+      db.query.mockResolvedValueOnce([[{ password: null, google_id: 'g-123' }]]);
+      googleIdentity.verifyGoogleIdToken.mockResolvedValueOnce({
+        status: 'ok',
+        googleId: 'g-123',
+      });
+      db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
+      const req = { user: { id: 1 }, body: { googleCredential: 'google-id-token' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
+      await userController.deleteAccount(req, res);
+      expect(googleIdentity.verifyGoogleIdToken).toHaveBeenCalledWith('google-id-token');
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('rejects a Google verification for a different Google identity', async () => {
+      db.query.mockResolvedValueOnce([[{ password: null, google_id: 'g-123' }]]);
+      googleIdentity.verifyGoogleIdToken.mockResolvedValueOnce({
+        status: 'ok',
+        googleId: 'g-OTHER',
+      });
+      const req = { user: { id: 1 }, body: { googleCredential: 'google-id-token' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
+      await userController.deleteAccount(req, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(db.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns 404 when the account no longer exists', async () => {
+      db.query.mockResolvedValueOnce([[]]);
+      const req = { user: { id: 1 }, body: { currentPassword: 'Pass1234' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await userController.deleteAccount(req, res);
       expect(res.status).toHaveBeenCalledWith(404);

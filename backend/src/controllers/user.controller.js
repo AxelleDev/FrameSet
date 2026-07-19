@@ -25,6 +25,8 @@ const STATUS_BY_ERROR_CODE = {
   code_expired: 400,
   invalid_current_password: 401,
   no_password: 400,
+  reauth_required: 401,
+  reauth_failed: 401,
 };
 
 // Sends a business error as its mapped status, or logs and returns a generic 500.
@@ -143,7 +145,7 @@ const deleteAccount = async (req, res) => {
   }
 
   try {
-    await userService.deleteUserAccount(authenticatedUserId);
+    await userService.deleteUserAccount(authenticatedUserId, req.body || {});
     // The account is gone, so the session cookies are dead weight: clear them so
     // the browser doesn't keep replaying now-invalid tokens.
     clearAuthCookies(res);

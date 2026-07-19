@@ -542,6 +542,10 @@ const openapiSpec = {
       put: {
         tags: ['Users'],
         summary: 'Update name / email (email change staged as pendingEmail)',
+        description:
+          'Changing the email is a critical action and requires re-authentication: ' +
+          '`currentPassword` for accounts with a password, or a fresh Google ID token ' +
+          '(`googleCredential`) for Google-only accounts. A name-only change needs neither.',
         security: AUTH,
         parameters: [CSRF_HEADER],
         requestBody: {
@@ -553,6 +557,8 @@ const openapiSpec = {
                 properties: {
                   name: { type: 'string' },
                   email: { type: 'string', format: 'email' },
+                  currentPassword: { type: 'string', format: 'password' },
+                  googleCredential: { type: 'string' },
                 },
               },
             },
@@ -694,8 +700,26 @@ const openapiSpec = {
       delete: {
         tags: ['Users'],
         summary: 'Delete the account (cascades to its projects)',
+        description:
+          'Destructive and irreversible, so it requires re-authentication: `currentPassword` ' +
+          'for accounts with a password, or a fresh Google ID token (`googleCredential`) for ' +
+          'Google-only accounts.',
         security: AUTH,
         parameters: [CSRF_HEADER],
+        requestBody: {
+          required: false,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  currentPassword: { type: 'string', format: 'password' },
+                  googleCredential: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
         responses: {
           200: {
             description: 'Account deleted.',
