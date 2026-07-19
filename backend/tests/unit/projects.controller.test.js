@@ -542,15 +542,76 @@ describe('projects controller', () => {
       expect(res.status).toHaveBeenCalledWith(403);
     });
 
-    it('deletes the project when owned', async () => {
+    it('moves the project to the trash (soft delete) when owned', async () => {
       db.query
         .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
-        .mockResolvedValueOnce([{}]); // DELETE
+        .mockResolvedValueOnce([{}]); // soft-delete UPDATE
       const req = { params: { id: '1' }, user: { id: 1 } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.deleteProject(req, res);
-      expect(db.query).toHaveBeenCalledWith('DELETE FROM projects WHERE id = ?', ['1']);
+      // Soft delete: the row is stamped, never dropped here.
+      expect(db.query).toHaveBeenCalledWith('UPDATE projects SET deleted_at = NOW() WHERE id = ?', [
+        '1',
+      ]);
       expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+  });
+
+  describe('trash', () => {
+    it('lists the trashed projects with their days left', async () => {
+      db.query.mockResolvedValueOnce([
+        [{ id: 3, name: 'Old project', deleted_at: '2026-07-01 10:00:00', days_left: '12' }],
+      ]);
+      const req = { user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.listTrashedProjects(req, res);
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('deleted_at IS NOT NULL'),
+        [30, 1],
+      );
+      expect(res.json).toHaveBeenCalledWith({
+        projects: [{ id: 3, name: 'Old project', deletedAt: '2026-07-01 10:00:00', daysLeft: 12 }],
+      });
+    });
+
+    it('restores a trashed project scoped to its owner', async () => {
+      db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
+      const req = { params: { id: '3' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.restoreProject(req, res);
+      expect(db.query).toHaveBeenCalledWith(
+        'UPDATE projects SET deleted_at = NULL WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL',
+        ['3', 1],
+      );
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it("returns 404 when restoring a project that is not in the user's trash", async () => {
+      db.query.mockResolvedValueOnce([{ affectedRows: 0 }]);
+      const req = { params: { id: '3' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.restoreProject(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it('permanently deletes only a trashed project owned by the user', async () => {
+      db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
+      const req = { params: { id: '3' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.deleteProjectPermanently(req, res);
+      expect(db.query).toHaveBeenCalledWith(
+        'DELETE FROM projects WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL',
+        ['3', 1],
+      );
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('returns 404 when permanently deleting a project that is not trashed', async () => {
+      db.query.mockResolvedValueOnce([{ affectedRows: 0 }]);
+      const req = { params: { id: '3' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.deleteProjectPermanently(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
     });
   });
 

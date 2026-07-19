@@ -109,7 +109,8 @@ const updateProjectName = async (req, res) => {
   }
 };
 
-// Delete a project (cascades to its child norms and palette via schema foreign keys).
+// Move a project to the trash (soft delete): restorable for 30 days via the
+// trash endpoints, then dropped by the scheduled purge.
 const deleteProject = async (req, res) => {
   const { id } = req.params;
   try {
@@ -117,6 +118,56 @@ const deleteProject = async (req, res) => {
     res.json(await projectsService.deleteProjectById(id));
   } catch (error) {
     logProjectsControllerError(req, 'delete', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// List the user's trashed projects with the days left before their purge.
+const listTrashedProjects = async (req, res) => {
+  const userId = getAuthenticatedUserId(req);
+  if (!userId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+  try {
+    res.json({ projects: await projectsService.listTrashedProjectsForUser(userId) });
+  } catch (error) {
+    logProjectsControllerError(req, 'list_trash', error);
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Restore a trashed project back to the dashboard.
+const restoreProject = async (req, res) => {
+  const userId = getAuthenticatedUserId(req);
+  const { id } = req.params;
+  if (!userId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+  try {
+    res.json(await projectsService.restoreProjectForUser(userId, id));
+  } catch (error) {
+    if (error.code === 'not_found') {
+      return res.status(404).json({ error: 'Project not found in the trash.' });
+    }
+    logProjectsControllerError(req, 'restore', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Permanently delete a TRASHED project (children cascade); irreversible.
+const deleteProjectPermanently = async (req, res) => {
+  const userId = getAuthenticatedUserId(req);
+  const { id } = req.params;
+  if (!userId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+  try {
+    res.json(await projectsService.deleteProjectPermanently(userId, id));
+  } catch (error) {
+    if (error.code === 'not_found') {
+      return res.status(404).json({ error: 'Project not found in the trash.' });
+    }
+    logProjectsControllerError(req, 'delete_permanently', error, { projectId: id });
     res.status(500).json({ error: 'Database error.' });
   }
 };
@@ -295,6 +346,9 @@ module.exports = {
   duplicateProject,
   updateProjectName,
   deleteProject,
+  listTrashedProjects,
+  restoreProject,
+  deleteProjectPermanently,
   addBrushNorm,
   addTypographyNorm,
   updatePalette,

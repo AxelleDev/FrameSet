@@ -20,6 +20,12 @@ router.post(
   projectCreateLimiter,
   projectsController.duplicateProject,
 );
+// Trash: soft-deleted projects, restorable for 30 days before the purge.
+// Registered before the '/:id' routes so 'trash' is never read as a project id.
+router.get('/trash', authenticateToken, projectsController.listTrashedProjects);
+router.post('/:id/restore', authenticateToken, projectsController.restoreProject);
+router.delete('/:id/permanent', authenticateToken, projectsController.deleteProjectPermanently);
+
 router.patch('/:id', authenticateToken, projectsController.updateProjectName);
 router.delete('/:id', authenticateToken, projectsController.deleteProject);
 

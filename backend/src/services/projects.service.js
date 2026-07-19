@@ -24,14 +24,18 @@ class ProjectServiceError extends Error {
   }
 }
 
+// How long a trashed project stays restorable before the scheduled purge drops it.
+const TRASH_RETENTION_DAYS = 30;
+
 // Ownership guard preventing IDOR: confirms the user owns the project so no one
-// can read/mutate another user's project by guessing its id. Returns true/false;
-// the controller maps false to a 403.
+// can read/mutate another user's project by guessing its id. Trashed projects
+// don't pass (they are only reachable via the trash endpoints). Returns
+// true/false; the controller maps false to a 403.
 const userOwnsProject = async (userId, projectId) => {
-  const [rows] = await db.query('SELECT id FROM projects WHERE id = ? AND user_id = ?', [
-    projectId,
-    userId,
-  ]);
+  const [rows] = await db.query(
+    'SELECT id FROM projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+    [projectId, userId],
+  );
 
   return rows.length > 0;
 };
@@ -256,7 +260,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
   // Total count drives the pagination metadata (and the dashboard's "N projects").
   const countQuery = await runTimedQuery({
     label: 'projects_count',
-    sql: 'SELECT COUNT(*) AS total FROM projects WHERE user_id = ?',
+    sql: 'SELECT COUNT(*) AS total FROM projects WHERE user_id = ? AND deleted_at IS NULL',
     params: [userId],
   });
   queryTimings.push(countQuery.timing);
@@ -270,7 +274,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
 
   const projectsQuery = await runTimedQuery({
     label: 'projects',
-    sql: 'SELECT id, name, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+    sql: 'SELECT id, name, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?',
     params: [userId, pageSize, offset],
   });
 
@@ -396,10 +400,10 @@ const createProjectForUser = async (userId, rawName) => {
 // so a half-duplicated project can never be left behind. Throws 'not_found'
 // when the project doesn't exist or belongs to someone else.
 const duplicateProjectForUser = async (userId, projectId) => {
-  const [rows] = await db.query('SELECT name FROM projects WHERE id = ? AND user_id = ?', [
-    projectId,
-    userId,
-  ]);
+  const [rows] = await db.query(
+    'SELECT name FROM projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+    [projectId, userId],
+  );
   if (rows.length === 0) {
     throw new ProjectServiceError('not_found');
   }
@@ -495,10 +499,71 @@ const renameProject = async (projectId, name) => {
   return { success: true, name: name.trim() };
 };
 
-// Deletes a project; child norms and palette cascade via the schema's foreign keys.
+// Moves a project to the trash (soft delete): it disappears from the dashboard
+// but stays restorable for TRASH_RETENTION_DAYS before the scheduled purge
+// drops it for good.
 const deleteProjectById = async (projectId) => {
-  await db.query('DELETE FROM projects WHERE id = ?', [projectId]);
+  await db.query('UPDATE projects SET deleted_at = NOW() WHERE id = ?', [projectId]);
   return { success: true };
+};
+
+// Lists the user's trashed projects (newest first), with how many days each one
+// has left before the purge removes it.
+const listTrashedProjectsForUser = async (userId) => {
+  const [rows] = await db.query(
+    'SELECT id, name, deleted_at, GREATEST(0, ? - DATEDIFF(NOW(), deleted_at)) AS days_left FROM projects WHERE user_id = ? AND deleted_at IS NOT NULL ORDER BY deleted_at DESC',
+    [TRASH_RETENTION_DAYS, userId],
+  );
+
+  return rows.map((project) => ({
+    id: project.id,
+    name: project.name,
+    deletedAt: project.deleted_at,
+    daysLeft: Number(project.days_left),
+  }));
+};
+
+// Restores a trashed project. The UPDATE is scoped to the owner and to trashed
+// rows, so it doubles as the ownership check. Throws 'not_found' when nothing
+// matched (wrong owner, already restored, or purged).
+const restoreProjectForUser = async (userId, projectId) => {
+  const [result] = await db.query(
+    'UPDATE projects SET deleted_at = NULL WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL',
+    [projectId, userId],
+  );
+  if (result.affectedRows === 0) {
+    throw new ProjectServiceError('not_found');
+  }
+  return { success: true };
+};
+
+// Permanently deletes a TRASHED project (children cascade). Only reachable from
+// the trash, so a live project can never be hard-deleted in one step. The DELETE
+// is owner- and trash-scoped; throws 'not_found' when nothing matched.
+const deleteProjectPermanently = async (userId, projectId) => {
+  const [result] = await db.query(
+    'DELETE FROM projects WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL',
+    [projectId, userId],
+  );
+  if (result.affectedRows === 0) {
+    throw new ProjectServiceError('not_found');
+  }
+  return { success: true };
+};
+
+// Drops trashed projects past the retention window; children cascade. Run by
+// the daily cleanup scheduler (same pattern as the revoked-token purge).
+// Returns false instead of throwing so a failed purge only logs a warning.
+const purgeExpiredTrashedProjects = async () => {
+  try {
+    await db.query(
+      'DELETE FROM projects WHERE deleted_at IS NOT NULL AND deleted_at < DATE_SUB(NOW(), INTERVAL ? DAY)',
+      [TRASH_RETENTION_DAYS],
+    );
+    return true;
+  } catch (error) {
+    return false;
+  }
 };
 
 // Adds a brush norm after validation, then touches last_edited. Throws
@@ -733,6 +798,11 @@ module.exports = {
   duplicateProjectForUser,
   renameProject,
   deleteProjectById,
+  listTrashedProjectsForUser,
+  restoreProjectForUser,
+  deleteProjectPermanently,
+  purgeExpiredTrashedProjects,
+  TRASH_RETENTION_DAYS,
   addBrushNormToProject,
   addTypographyNormToProject,
   validatePalettePayload,

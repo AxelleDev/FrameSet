@@ -75,6 +75,58 @@ describe('ProjectContext mutations return success signals', () => {
     expect(result.current.projects).toEqual([]);
   });
 
+  it('restoreProject removes the item from the trash and refetches the grid', async () => {
+    apiMock.get.mockResolvedValue({
+      projects: [{ id: 3, name: 'Restored' }],
+      pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+    });
+    const { result } = renderHook(() => useProjects(), { wrapper });
+
+    apiMock.post.mockResolvedValueOnce({ success: true });
+    let ok;
+    await act(async () => {
+      ok = await result.current.restoreProject(3);
+    });
+
+    expect(ok).toBe(true);
+    expect(apiMock.post).toHaveBeenCalledWith('/projects/3/restore', {}, expect.any(Object));
+    // The restored project came back through the silent refetch.
+    expect(result.current.projects).toEqual([{ id: 3, name: 'Restored' }]);
+  });
+
+  it('deleteProjectPermanently returns a boolean and prunes the trash list', async () => {
+    const { result } = renderHook(() => useProjects(), { wrapper });
+
+    apiMock.delete.mockResolvedValueOnce({ success: true });
+    let ok;
+    await act(async () => {
+      ok = await result.current.deleteProjectPermanently(9);
+    });
+    expect(ok).toBe(true);
+    expect(apiMock.delete).toHaveBeenCalledWith('/projects/9/permanent', null, expect.any(Object));
+
+    apiMock.delete.mockRejectedValueOnce(new Error('no'));
+    await act(async () => {
+      ok = await result.current.deleteProjectPermanently(9);
+    });
+    expect(ok).toBe(false);
+  });
+
+  it('fetchTrashedProjects stores the trashed list', async () => {
+    const { result } = renderHook(() => useProjects(), { wrapper });
+
+    apiMock.get.mockResolvedValueOnce({
+      projects: [{ id: 9, name: 'Old poster', deletedAt: '2026-07-10', daysLeft: 21 }],
+    });
+    await act(async () => {
+      await result.current.fetchTrashedProjects();
+    });
+
+    expect(result.current.trashedProjects).toEqual([
+      { id: 9, name: 'Old poster', deletedAt: '2026-07-10', daysLeft: 21 },
+    ]);
+  });
+
   it('deleteProject returns true on success and false on failure', async () => {
     const { result } = renderHook(() => useProjects(), { wrapper });
 

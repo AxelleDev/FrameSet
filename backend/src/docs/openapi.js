@@ -851,7 +851,7 @@ const openapiSpec = {
       },
       delete: {
         tags: ['Projects'],
-        summary: 'Delete a project',
+        summary: 'Move a project to the trash (restorable for 30 days)',
         security: AUTH,
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
@@ -859,11 +859,83 @@ const openapiSpec = {
         ],
         responses: {
           200: {
-            description: 'Deleted.',
+            description: 'Moved to the trash.',
             content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
           },
           401: { $ref: '#/components/responses/Unauthorized' },
           403: { $ref: '#/components/responses/Forbidden' },
+        },
+      },
+    },
+    '/api/projects/trash': {
+      get: {
+        tags: ['Projects'],
+        summary: "List the user's trashed projects (with days left before purge)",
+        security: AUTH,
+        responses: {
+          200: {
+            description: 'Trashed projects.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    projects: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'integer' },
+                          name: { type: 'string' },
+                          deletedAt: { type: 'string', format: 'date-time' },
+                          daysLeft: { type: 'integer' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+        },
+      },
+    },
+    '/api/projects/{id}/restore': {
+      post: {
+        tags: ['Projects'],
+        summary: 'Restore a trashed project to the dashboard',
+        security: AUTH,
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Restored.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          404: { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
+    '/api/projects/{id}/permanent': {
+      delete: {
+        tags: ['Projects'],
+        summary: 'Permanently delete a TRASHED project (irreversible)',
+        security: AUTH,
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Permanently deleted.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          404: { $ref: '#/components/responses/NotFound' },
         },
       },
     },

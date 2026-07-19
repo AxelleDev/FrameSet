@@ -9,6 +9,7 @@ const app = require('./app');
 const db = require('./database');
 const { logger } = require('./utils/logger');
 const tokenService = require('./services/token.service');
+const projectsService = require('./services/projects.service');
 
 const PORT = process.env.PORT || 3000;
 // Bind address: unset means all interfaces (default). Set HOST to restrict, e.g.
@@ -23,8 +24,9 @@ let cleanupInterval;
 // Guards against running the shutdown sequence more than once.
 let isShuttingDown = false;
 
-// Schedules periodic purge of expired revoked tokens to keep the table bounded.
-// The interval is unref()'d so it never keeps the process alive on its own.
+// Schedules the daily maintenance purges (expired revoked tokens + trashed
+// projects past their retention) to keep both tables bounded. The interval is
+// unref()'d so it never keeps the process alive on its own.
 const startCleanupScheduler = () => {
   logger.info('token.cleanup.scheduler.started', {
     intervalMs: REVOKED_TOKENS_CLEANUP_INTERVAL_MS,
@@ -39,12 +41,23 @@ const startCleanupScheduler = () => {
         logger.warn('token.cleanup.completed_with_errors', {
           retentionDays: 30,
         });
-        return;
+      } else {
+        logger.info('token.cleanup.completed', {
+          retentionDays: 30,
+        });
       }
 
-      logger.info('token.cleanup.completed', {
-        retentionDays: 30,
-      });
+      // Same daily tick for the project trash: drop what is past its 30 days.
+      const hasPurgedTrash = await projectsService.purgeExpiredTrashedProjects();
+      if (!hasPurgedTrash) {
+        logger.warn('projects.trash.purge.completed_with_errors', {
+          retentionDays: projectsService.TRASH_RETENTION_DAYS,
+        });
+      } else {
+        logger.info('projects.trash.purge.completed', {
+          retentionDays: projectsService.TRASH_RETENTION_DAYS,
+        });
+      }
     } catch (error) {
       logger.error('token.cleanup.failed', {
         error,

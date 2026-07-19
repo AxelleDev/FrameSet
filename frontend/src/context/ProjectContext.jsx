@@ -28,6 +28,8 @@ export const ProjectProvider = ({ children }) => {
   }, []);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [projectsLoading, setProjectsLoading] = useState(false);
+  // Soft-deleted projects (restorable for 30 days); loaded by the dashboard.
+  const [trashedProjects, setTrashedProjects] = useState([]);
   // Monotonic token to discard out-of-order responses: two interleaved fetches
   // (silent page-1 on login + a "load more", or a StrictMode double-mount) must
   // not let a stale response overwrite the newer list/pagination.
@@ -86,6 +88,7 @@ export const ProjectProvider = ({ children }) => {
 
     if (!user?.id) {
       setProjects([]);
+      setTrashedProjects([]);
       setActiveProjectId(null);
       setProjectsLoading(false);
       return;
@@ -117,6 +120,54 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [user, setGlobalError, updatePagination]);
 
+  // Fetches the trashed projects (small list: id, name, days left). Refreshed
+  // by the dashboard on mount and after every trash mutation.
+  const fetchTrashedProjects = useCallback(async ({ silent = false } = {}) => {
+    if (!user?.id) {
+      setTrashedProjects([]);
+      return [];
+    }
+
+    try {
+      const options = silent ? undefined : { onGlobalError: setGlobalError };
+      const data = await api.get('/projects/trash', options);
+      const fetched = data?.projects || [];
+      setTrashedProjects(fetched);
+      return fetched;
+    } catch (error) {
+      logger.error('projects.fetchTrash.error', error);
+      return [];
+    }
+  }, [user?.id, setGlobalError]);
+
+  // Restores a trashed project. The full project (norms + palette) comes back
+  // to the grid via a silent refetch. Returns true on success.
+  const restoreProject = useCallback(async (id) => {
+    try {
+      await api.post(`/projects/${id}/restore`, {}, { onGlobalError: setGlobalError });
+      setTrashedProjects((prev) => prev.filter((project) => String(project.id) !== String(id)));
+      await fetchProjects({ silent: true });
+      return true;
+    } catch (error) {
+      setGlobalError(error?.message || 'Failed to restore the project.');
+      logger.error('projects.restore.error', error);
+      return false;
+    }
+  }, [setGlobalError, fetchProjects]);
+
+  // Permanently deletes a TRASHED project (irreversible). Returns true on success.
+  const deleteProjectPermanently = useCallback(async (id) => {
+    try {
+      await api.delete(`/projects/${id}/permanent`, null, { onGlobalError: setGlobalError });
+      setTrashedProjects((prev) => prev.filter((project) => String(project.id) !== String(id)));
+      return true;
+    } catch (error) {
+      setGlobalError(error?.message || 'Failed to delete the project.');
+      logger.error('projects.deletePermanently.error', error);
+      return false;
+    }
+  }, [setGlobalError]);
+
   // Duplicates a project (norms + palette copied server-side) and prepends the
   // copy to the local list. Returns the new project on success, or null.
   const duplicateProject = useCallback(async (id) => {
@@ -132,8 +183,10 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError, updatePagination]);
 
-  // Deletes a project and removes it locally, clearing the active id if it
-  // matched. Returns true on success, false on failure.
+  // Moves a project to the trash (soft delete server-side) and removes it from
+  // the grid, clearing the active id if it matched. The trash list is refreshed
+  // silently so the dashboard's trash section stays accurate. Returns true on
+  // success, false on failure.
   const deleteProject = useCallback(async (id) => {
     try {
       await api.delete(`/projects/${id}`, null, { onGlobalError: setGlobalError });
@@ -142,13 +195,14 @@ export const ProjectProvider = ({ children }) => {
       if (String(activeProjectId) === String(id)) {
         setActiveProjectId(null);
       }
+      fetchTrashedProjects({ silent: true });
       return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to delete the project.');
       logger.error('projects.delete.error', error);
       return false;
     }
-  }, [activeProjectId, setGlobalError, updatePagination]);
+  }, [activeProjectId, setGlobalError, updatePagination, fetchTrashedProjects]);
 
   // Replaces the whole palette and adopts the canonical one returned by the
   // server (ids + persisted order). Used for every palette change: add, edit,
@@ -342,15 +396,19 @@ export const ProjectProvider = ({ children }) => {
   const value = useMemo(() => ({
     projects,
     projectsPagination,
+    trashedProjects,
     activeProjectId,
     activeProject,
     projectsLoading,
     setActiveProjectId,
     fetchProjects,
+    fetchTrashedProjects,
     loadMoreProjects,
     addProject,
     duplicateProject,
     deleteProject,
+    restoreProject,
+    deleteProjectPermanently,
     updateProjectName,
     updateProjectPalette,
     addBrushNorm,
@@ -362,14 +420,18 @@ export const ProjectProvider = ({ children }) => {
   }), [
     projects,
     projectsPagination,
+    trashedProjects,
     activeProjectId,
     activeProject,
     projectsLoading,
     fetchProjects,
+    fetchTrashedProjects,
     loadMoreProjects,
     addProject,
     duplicateProject,
     deleteProject,
+    restoreProject,
+    deleteProjectPermanently,
     updateProjectName,
     updateProjectPalette,
     addBrushNorm,

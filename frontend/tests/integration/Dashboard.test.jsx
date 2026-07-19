@@ -35,11 +35,15 @@ describe('Dashboard', () => {
     mockNavigate.mockReset();
     Object.assign(projectState, {
       projects: [],
+      trashedProjects: [],
       setActiveProjectId: vi.fn(),
       addProject: vi.fn().mockResolvedValue({ success: true }),
       duplicateProject: vi.fn(),
       deleteProject: vi.fn(),
       updateProjectName: vi.fn(),
+      fetchTrashedProjects: vi.fn(),
+      restoreProject: vi.fn(),
+      deleteProjectPermanently: vi.fn(),
     });
   });
 
@@ -73,5 +77,42 @@ describe('Dashboard', () => {
     await user.click(screen.getByRole('button', { name: 'Duplicate project' }));
 
     await waitFor(() => expect(projectState.duplicateProject).toHaveBeenCalledWith(3));
+  });
+
+  it('hides the trash section when the trash is empty', () => {
+    renderPage();
+    expect(screen.queryByText('Trash')).not.toBeInTheDocument();
+  });
+
+  it('restores a trashed project from the trash section', async () => {
+    projectState.trashedProjects = [
+      { id: 9, name: 'Old poster', deletedAt: '2026-07-10 10:00:00', daysLeft: 21 },
+    ];
+    projectState.restoreProject = vi.fn().mockResolvedValue(true);
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.getByText('Old poster')).toBeInTheDocument();
+    expect(screen.getByText(/21 days left/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Restore' }));
+    await waitFor(() => expect(projectState.restoreProject).toHaveBeenCalledWith(9));
+  });
+
+  it('permanently deletes a trashed project after its own confirmation', async () => {
+    projectState.trashedProjects = [
+      { id: 9, name: 'Old poster', deletedAt: '2026-07-10 10:00:00', daysLeft: 3 },
+    ];
+    projectState.deleteProjectPermanently = vi.fn().mockResolvedValue(true);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Delete forever' }));
+    // The dedicated dialog warns that this step is irreversible.
+    expect(await screen.findByText(/cannot be undone/i)).toBeInTheDocument();
+    const dialogButtons = screen.getAllByRole('button', { name: 'Delete forever' });
+    await user.click(dialogButtons[dialogButtons.length - 1]);
+
+    await waitFor(() => expect(projectState.deleteProjectPermanently).toHaveBeenCalledWith(9));
   });
 });
