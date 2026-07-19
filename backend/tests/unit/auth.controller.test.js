@@ -97,6 +97,18 @@ describe('authentication controller', () => {
       expect(payload.refreshToken).toBeUndefined();
     });
 
+    it('points a Google-only account to Google sign-in instead of a misleading error', async () => {
+      db.query.mockResolvedValueOnce([
+        [{ id: 3, email: 'g@example.com', is_verified: 1, password: null }],
+      ]);
+      const req = { body: { email: 'g@example.com', password: 'whatever' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      await authController.login(req, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'GOOGLE_ACCOUNT' }));
+      expect(res.cookie).not.toHaveBeenCalled();
+    });
+
     it('runs the same bcrypt comparison for an unknown email (no timing oracle)', async () => {
       db.query.mockResolvedValueOnce([[]]); // no account for this email
       jest.spyOn(bcrypt, 'hash').mockResolvedValue('dummyHash');

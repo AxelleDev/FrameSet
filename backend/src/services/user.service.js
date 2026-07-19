@@ -33,10 +33,12 @@ const getUserCount = async () => {
   return rows[0].count;
 };
 
-// The user's profile: only non-sensitive columns (never the password hash).
+// The user's profile: only non-sensitive columns (never the password hash —
+// `password IS NOT NULL` only says whether a local password exists, so the UI
+// can adapt for Google-only accounts).
 const getUserProfile = async (userId) => {
   const [rows] = await db.query(
-    'SELECT id, name, email, avatar_initials, password_updated_at, pending_email FROM users WHERE id = ?',
+    'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, (password IS NOT NULL) AS has_password FROM users WHERE id = ?',
     [userId],
   );
 
@@ -52,6 +54,7 @@ const getUserProfile = async (userId) => {
     avatarInitials: userDb.avatar_initials,
     passwordUpdatedAt: userDb.password_updated_at,
     pendingEmail: userDb.pending_email || null,
+    hasPassword: Boolean(userDb.has_password),
   };
 };
 
@@ -245,6 +248,14 @@ const changeUserPassword = async (
   const [rows] = await db.query('SELECT email, password FROM users WHERE id = ?', [userId]);
   if (rows.length === 0) {
     throw new UserServiceError('not_found', 'User not found.');
+  }
+  // Google-only account: there is no current password to verify. Creating one
+  // goes through the password-reset flow, which proves email ownership instead.
+  if (!rows[0].password) {
+    throw new UserServiceError(
+      'no_password',
+      'This account uses Google sign-in and has no password. Use "Forgot password" from the sign-in page to create one.',
+    );
   }
   // Trimmed like register/login store and compare it, so a stray space doesn't
   // make a password that still works at login fail here.

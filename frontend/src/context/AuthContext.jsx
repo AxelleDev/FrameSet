@@ -137,6 +137,19 @@ export const AuthProvider = ({ children }) => {
     }
   }, [setAuthenticatedUser]);
 
+  // Authenticates with a Google ID token (from the GIS button): the backend
+  // verifies it, resolves/creates the account, and issues the session cookies.
+  const loginWithGoogle = useCallback(async (credential) => {
+    try {
+      const userData = await api.post('/auth/google', { credential }, { onGlobalError: setGlobalError });
+      setAuthenticatedUser(userData);
+      return { success: true, data: userData };
+    } catch (err) {
+      const { message } = handleApiError(err, setGlobalError, 'Google sign-in failed.');
+      return { success: false, message };
+    }
+  }, [setAuthenticatedUser]);
+
   // Registers a new account without logging in; caller redirects to verification.
   const register = useCallback(async (userData) => {
     try {
@@ -301,6 +314,7 @@ export const AuthProvider = ({ children }) => {
     globalError,
     setGlobalError,
     login,
+    loginWithGoogle,
     register,
     logout,
     refreshAccessToken,
@@ -319,6 +333,7 @@ export const AuthProvider = ({ children }) => {
     authLoading,
     globalError,
     login,
+    loginWithGoogle,
     register,
     logout,
     refreshAccessToken,

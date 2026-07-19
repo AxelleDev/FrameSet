@@ -316,6 +316,44 @@ const openapiSpec = {
         },
       },
     },
+    '/api/auth/google': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Sign in with Google (sets auth cookies)',
+        description:
+          'Verifies a Google ID token (from Google Identity Services) and signs the user in, ' +
+          'creating or linking the account as needed. Returns 503 when Google sign-in is not configured.',
+        parameters: [CSRF_HEADER],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['credential'],
+                properties: {
+                  credential: {
+                    type: 'string',
+                    description: 'Google ID token issued by Google Identity Services.',
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description:
+              'Signed in; sets `frameset_access_token` and `frameset_refresh_token` cookies.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } },
+          },
+          400: { $ref: '#/components/responses/ValidationError' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          429: { $ref: '#/components/responses/RateLimited' },
+          503: { description: 'Google sign-in is not configured on this deployment.' },
+        },
+      },
+    },
     '/api/auth/verify': {
       post: {
         tags: ['Auth'],

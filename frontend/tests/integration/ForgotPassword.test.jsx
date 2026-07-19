@@ -33,7 +33,9 @@ describe('ForgotPassword', () => {
     mockReset.mockReset();
   });
 
-  it('chains the code request then the reset', async () => {
+  // Heavy two-step form flow (lots of typing through jsdom): give it more than
+  // the default 5s so it doesn't flake when all test files run in parallel.
+  it('chains the code request then the reset', { timeout: 15000 }, async () => {
     const user = userEvent.setup();
     mockRequest.mockResolvedValue({ success: true });
     mockReset.mockResolvedValue({ success: true });

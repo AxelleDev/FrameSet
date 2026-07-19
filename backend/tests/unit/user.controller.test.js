@@ -46,6 +46,7 @@ describe('user controller', () => {
             avatar_initials: 'JD',
             password_updated_at: new Date('2026-01-01T00:00:00.000Z'),
             pending_email: null,
+            has_password: 1,
           },
         ],
       ]);
@@ -56,7 +57,7 @@ describe('user controller', () => {
       await userController.getProfile(req, res);
 
       expect(db.query).toHaveBeenCalledWith(
-        'SELECT id, name, email, avatar_initials, password_updated_at, pending_email FROM users WHERE id = ?',
+        'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, (password IS NOT NULL) AS has_password FROM users WHERE id = ?',
         [1],
       );
       expect(res.json).toHaveBeenCalledWith(
@@ -65,6 +66,7 @@ describe('user controller', () => {
           name: 'Jane Doe',
           email: 'axelle@example.com',
           avatarInitials: 'JD',
+          hasPassword: true,
         }),
       );
     });
@@ -215,6 +217,19 @@ describe('user controller', () => {
           subject: 'Your password was changed',
         }),
       );
+    });
+
+    it('rejects a password change for a Google-only account (no password set)', async () => {
+      db.query.mockResolvedValueOnce([[{ email: 'g@example.com', password: null }]]);
+      const req = {
+        user: { id: 1 },
+        body: { currentPassword: 'whatever', newPassword: 'NewPass123' },
+      };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      await userController.changePassword(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.cookie).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
     });
   });
 });

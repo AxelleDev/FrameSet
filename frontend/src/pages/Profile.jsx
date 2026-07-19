@@ -260,13 +260,23 @@ export default function Profile() {
             <svg className="w-5 h-5 mr-2 text-blue shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
             Security &amp; sign-in
           </h2>
-          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-primary">Password</p>
-                <p className="text-xs text-primary/60">Last changed: {formatRelativeTime(user.passwordUpdatedAt)}</p>
-              </div>
-              <Button onClick={openPasswordModal} variant="ghost" className="text-sm font-medium whitespace-nowrap shrink-0">Change password</Button>
-          </div>
+          {user.hasPassword === false ? (
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-primary">Google sign-in</p>
+              <p className="text-xs text-primary/60 mt-1">
+                You sign in with your Google account, so there is no password here. To add one, use
+                “Forgot password” on the sign-in page.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-primary">Password</p>
+                  <p className="text-xs text-primary/60">Last changed: {formatRelativeTime(user.passwordUpdatedAt)}</p>
+                </div>
+                <Button onClick={openPasswordModal} variant="ghost" className="text-sm font-medium whitespace-nowrap shrink-0">Change password</Button>
+            </div>
+          )}
         </Card>
 
           <Card className="p-6 sm:p-8">

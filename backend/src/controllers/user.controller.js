@@ -24,6 +24,7 @@ const STATUS_BY_ERROR_CODE = {
   invalid_code: 400,
   code_expired: 400,
   invalid_current_password: 401,
+  no_password: 400,
 };
 
 // Sends a business error as its mapped status, or logs and returns a generic 500.

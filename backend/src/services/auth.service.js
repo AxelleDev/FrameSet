@@ -5,6 +5,7 @@
 
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
+const { OAuth2Client } = require('google-auth-library');
 const db = require('../database');
 const mailService = require('./mail.service');
 const { generateVerificationCode, getInitials } = require('../utils/auth.utils');
@@ -15,6 +16,7 @@ const {
   PASSWORD_MIN_LENGTH,
   PASSWORD_COMPLEXITY_REGEX,
 } = require('../config/security.config');
+const { GOOGLE_CLIENT_ID } = require('../config/google.config');
 
 // Records a wrong one-time-code attempt on the account and, once MAX_OTP_ATTEMPTS
 // is reached, invalidates the stored code (clears `codeColumn`) so it can't be
@@ -171,6 +173,12 @@ const authenticateUser = async ({ email: rawEmail, password: rawPassword }) => {
     throw new AuthServiceError('not_verified', null, userDb.id);
   }
 
+  // Google-only account (no local password): point the user to the right flow
+  // instead of a misleading "incorrect password".
+  if (!userDb.password) {
+    throw new AuthServiceError('google_account', null, userDb.id);
+  }
+
   const isMatch = await bcrypt.compare(password, userDb.password);
   if (!isMatch) {
     throw new AuthServiceError('invalid_credentials', null, userDb.id);
@@ -183,7 +191,156 @@ const authenticateUser = async ({ email: rawEmail, password: rawPassword }) => {
     avatarInitials: userDb.avatar_initials,
     passwordUpdatedAt: userDb.password_updated_at,
     pendingEmail: userDb.pending_email,
+    hasPassword: true,
   };
+};
+
+// Lazily built verifier for Google ID tokens (avoids the construction cost when
+// Google sign-in is not configured or never used).
+let googleClient = null;
+const getGoogleClient = () => {
+  if (!googleClient) {
+    googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+  }
+  return googleClient;
+};
+
+// Columns returned to build a session user; `password IS NOT NULL` exposes
+// whether a local password exists without ever selecting the hash itself.
+const SESSION_USER_COLUMNS =
+  'id, name, email, avatar_initials, password_updated_at, pending_email, (password IS NOT NULL) AS has_password';
+
+/** Maps a users row (SESSION_USER_COLUMNS) to the session-user shape. */
+const toSessionUser = (userDb) => ({
+  id: userDb.id,
+  name: userDb.name,
+  email: userDb.email,
+  avatarInitials: userDb.avatar_initials,
+  passwordUpdatedAt: userDb.password_updated_at,
+  pendingEmail: userDb.pending_email || null,
+  hasPassword: Boolean(userDb.has_password),
+});
+
+// Authenticates with a Google ID token (credential from Google Identity Services).
+// The token is verified cryptographically against Google's keys and our client id;
+// only then is the identity trusted. Resolution order:
+//   1. google_id (Google's stable "sub") — survives email changes on either side;
+//   2. same Google-verified email — links Google to the existing account (with a
+//      security alert email, via onMailError on failure) and marks it verified;
+//   3. otherwise a new, already-verified account is created without a password.
+// Throws 'google_not_configured', 'validation', 'invalid_google_token' or
+// 'google_email_not_verified'.
+const authenticateWithGoogle = async (rawCredential, { onMailError } = {}) => {
+  if (!GOOGLE_CLIENT_ID) {
+    throw new AuthServiceError('google_not_configured');
+  }
+
+  const credential = typeof rawCredential === 'string' ? rawCredential.trim() : '';
+  if (!credential) {
+    throw new AuthServiceError('validation', 'Missing Google credential.');
+  }
+
+  let payload;
+  try {
+    const ticket = await getGoogleClient().verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch (error) {
+    throw new AuthServiceError('invalid_google_token');
+  }
+
+  const googleId = typeof payload?.sub === 'string' ? payload.sub : '';
+  const email = normalizeInput(payload?.email);
+  if (!googleId || !validator.isEmail(email)) {
+    throw new AuthServiceError('invalid_google_token');
+  }
+  // Only trust addresses Google itself has verified: linking by an unverified
+  // email would let an attacker claim someone else's account.
+  if (!payload.email_verified) {
+    throw new AuthServiceError('google_email_not_verified');
+  }
+
+  // 1) Known Google identity.
+  const [byGoogleId] = await db.query(
+    `SELECT ${SESSION_USER_COLUMNS} FROM users WHERE google_id = ?`,
+    [googleId],
+  );
+  if (byGoogleId.length > 0) {
+    return toSessionUser(byGoogleId[0]);
+  }
+
+  // 2) Existing account with the same Google-verified email: link it. The email
+  // is proven owned by this Google user, which also settles any pending local
+  // verification. google_id is only set when free so an already-linked account
+  // is never silently re-linked to a different Google identity.
+  const [byEmail] = await db.query(`SELECT ${SESSION_USER_COLUMNS} FROM users WHERE email = ?`, [
+    email,
+  ]);
+  if (byEmail.length > 0) {
+    const userDb = byEmail[0];
+    await db.query(
+      'UPDATE users SET google_id = ?, is_verified = true, verification_code = NULL, verification_code_expires = NULL WHERE id = ? AND google_id IS NULL',
+      [googleId, userDb.id],
+    );
+
+    // Security alert: the owner must learn that Google sign-in was attached to
+    // their account. Not awaited so a slow/failing SMTP can't delay the response.
+    Promise.resolve(
+      mailService.sendMail({
+        to: userDb.email,
+        subject: 'Google sign-in was added to your account',
+        text: 'Google sign-in was just linked to your FrameSet account. If this was not you, reset your password immediately.',
+        html: mailService.buildTemplate({
+          title: 'Google sign-in was added to your account',
+          message:
+            'Your FrameSet account can now be accessed with Google sign-in. If this was not you, reset your password immediately from the login page.',
+          footer:
+            'You are receiving this security alert because a sign-in method was added to your account.',
+        }),
+      }),
+    ).catch((mailError) => {
+      if (onMailError) onMailError(mailError);
+    });
+
+    return toSessionUser(userDb);
+  }
+
+  // 3) First sign-in: create an already-verified, passwordless account.
+  // password_updated_at stays NULL (no password has ever existed), which also
+  // keeps the token-staleness check inert until a password is created.
+  const name = (normalizeInput(payload.name) || email.split('@')[0]).slice(0, 255);
+  const initials = getInitials(name);
+  try {
+    const [result] = await db.query(
+      'INSERT INTO users (name, email, password, avatar_initials, is_verified, google_id, password_updated_at) VALUES (?, ?, NULL, ?, true, ?, NULL)',
+      [name, email, initials, googleId],
+    );
+
+    return {
+      id: result.insertId,
+      name,
+      email,
+      avatarInitials: initials,
+      passwordUpdatedAt: null,
+      pendingEmail: null,
+      hasPassword: false,
+    };
+  } catch (error) {
+    // Two concurrent first sign-ins raced on the unique keys: the account now
+    // exists, so read it back instead of failing.
+    if (error.code === 'ER_DUP_ENTRY') {
+      const [retry] = await db.query(
+        `SELECT ${SESSION_USER_COLUMNS} FROM users WHERE google_id = ? OR email = ?`,
+        [googleId, email],
+      );
+      if (retry.length > 0) {
+        return toSessionUser(retry[0]);
+      }
+    }
+    throw error;
+  }
 };
 
 // Wraps token.service.isTokenStaleByPasswordChange so the controller needn't
@@ -394,6 +551,7 @@ module.exports = {
   registerFailedOtpAttempt,
   registerUser,
   authenticateUser,
+  authenticateWithGoogle,
   isRefreshTokenStale,
   verifyEmailCode,
   resendVerificationCode,

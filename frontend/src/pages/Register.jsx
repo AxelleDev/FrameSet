@@ -12,6 +12,7 @@ import Seo from '../components/Seo';
 import PasswordInput from '../components/PasswordInput';
 import TextInput from '../components/TextInput';
 import Alert from '../components/Alert';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 import PasswordChecklist from '../components/PasswordChecklist';
 import useUserCount from '../hooks/useUserCount';
 import useFormState from '../hooks/useFormState';
@@ -19,7 +20,7 @@ import { isPasswordValid, isValidEmail } from '../utils/passwordRules';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
 
   const { values: formData, setField } = useFormState({
     name: '',
@@ -58,6 +59,23 @@ export default function Register() {
       // Prefer the server-confirmed email; fall back to what the user typed.
       const verificationEmail = result.data?.email || formData.email.trim();
       navigate('/verify', { state: { email: verificationEmail } });
+    } else if (result.message) {
+      setError(result.message);
+    }
+  };
+
+  // Google sign-up: the account arrives already verified by Google, so it goes
+  // straight to the dashboard (no email-code step).
+  const handleGoogleCredential = async (credential) => {
+    if (submitting) return;
+
+    setSubmitting(true);
+    const result = await loginWithGoogle(credential);
+    setSubmitting(false);
+
+    if (result.success) {
+      setError('');
+      navigate('/app/dashboard');
     } else if (result.message) {
       setError(result.message);
     }
@@ -168,6 +186,14 @@ export default function Register() {
             Create account
           </Button>
         </form>
+
+        <div className="my-6 flex items-center gap-3" aria-hidden="true">
+          <span className="h-px flex-1 bg-primary/10" />
+          <span className="text-xs uppercase tracking-widest text-primary/50">or</span>
+          <span className="h-px flex-1 bg-primary/10" />
+        </div>
+
+        <GoogleSignInButton onCredential={handleGoogleCredential} disabled={submitting} />
 
         <div className="mt-8 text-center">
           <span className="text-sm text-primary">Already have an account? </span>
