@@ -32,13 +32,30 @@ const loadGisScript = () => {
   return gisScriptPromise;
 };
 
+// GIS renders a fixed-width iframe; it accepts at most 400px.
+const GIS_MAX_WIDTH = 400;
+const GIS_MIN_WIDTH = 200;
+
+/** Whether the app is currently in dark mode (the `dark` class on <html>). */
+const isDarkTheme = () =>
+  typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+
 export default function GoogleSignInButton({ onCredential, disabled = false }) {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const containerRef = useRef(null);
   const [failed, setFailed] = useState(false);
+  const [dark, setDark] = useState(isDarkTheme);
   // Keep the latest callback without re-initializing GIS on each render.
   const onCredentialRef = useRef(onCredential);
   onCredentialRef.current = onCredential;
+
+  // The GIS iframe can't be restyled with CSS, so watch the <html> class and
+  // re-render the button in the matching Google theme when the user toggles.
+  useEffect(() => {
+    const observer = new MutationObserver(() => setDark(isDarkTheme()));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!clientId) return undefined;
@@ -46,7 +63,8 @@ export default function GoogleSignInButton({ onCredential, disabled = false }) {
     let cancelled = false;
     loadGisScript()
       .then(() => {
-        if (cancelled || !containerRef.current) return;
+        const container = containerRef.current;
+        if (cancelled || !container) return;
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: (response) => {
@@ -55,13 +73,24 @@ export default function GoogleSignInButton({ onCredential, disabled = false }) {
             }
           },
         });
-        window.google.accounts.id.renderButton(containerRef.current, {
+        // Match the form fields' width (GIS caps at 400px). Clear first: this
+        // effect re-runs on theme change and renderButton appends, not replaces.
+        const width = Math.min(
+          Math.max(Math.round(container.offsetWidth) || GIS_MAX_WIDTH, GIS_MIN_WIDTH),
+          GIS_MAX_WIDTH,
+        );
+        container.innerHTML = '';
+        window.google.accounts.id.renderButton(container, {
           type: 'standard',
-          theme: 'outline',
+          theme: dark ? 'filled_black' : 'outline',
           size: 'large',
           text: 'continue_with',
           shape: 'pill',
-          logo_alignment: 'left',
+          logo_alignment: 'center',
+          // The whole app is English; without this GIS falls back to the
+          // browser locale and mixes languages on the page.
+          locale: 'en',
+          width,
         });
       })
       .catch((error) => {
@@ -72,7 +101,7 @@ export default function GoogleSignInButton({ onCredential, disabled = false }) {
     return () => {
       cancelled = true;
     };
-  }, [clientId]);
+  }, [clientId, dark]);
 
   if (!clientId || failed) return null;
 
@@ -80,7 +109,7 @@ export default function GoogleSignInButton({ onCredential, disabled = false }) {
     <div
       ref={containerRef}
       data-testid="google-signin"
-      className={`flex justify-center ${disabled ? 'pointer-events-none opacity-60' : ''}`}
+      className={`flex w-full justify-center ${disabled ? 'pointer-events-none opacity-60' : ''}`}
     />
   );
 }

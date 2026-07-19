@@ -142,15 +142,22 @@ export default function Login() {
             />
           </FormField>
 
-          <FormField label="Password" required>
-            <PasswordInput
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Your password"
-              autoComplete="current-password"
-            />
-          </FormField>
+          <div>
+            <FormField label="Password" required>
+              <PasswordInput
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Your password"
+                autoComplete="current-password"
+              />
+            </FormField>
+            <div className="mt-2 flex justify-end">
+              <Link to="/forgot-password" className="text-xs text-blue hover:text-primary transition-colors">
+                Forgot password?
+              </Link>
+            </div>
+          </div>
 
           <Button type="submit" fullWidth className="mt-2" loading={submitting}>
             Sign in
@@ -165,9 +172,16 @@ export default function Login() {
 
         <GoogleSignInButton onCredential={handleGoogleCredential} disabled={submitting} />
 
-        <div className="mt-8 text-center flex flex-col gap-2">
-          <Link to="/register" className="text-sm font-medium text-blue hover:text-primary transition-colors">No account yet? Create one</Link>
-          <Link to="/forgot-password" className="text-xs text-blue hover:text-primary transition-colors">Forgot password?</Link>
+        <p className="mt-6 text-center text-xs text-primary/60">
+          By continuing, you agree to the{' '}
+          <Link to="/terms" className="text-blue hover:text-primary transition-colors underline underline-offset-2">Terms of Service</Link>{' '}
+          and acknowledge the{' '}
+          <Link to="/privacy" className="text-blue hover:text-primary transition-colors underline underline-offset-2">Privacy Policy</Link>.
+        </p>
+
+        <div className="mt-8 text-center">
+          <span className="text-sm text-primary">No account yet? </span>
+          <Link to="/register" className="text-sm font-medium text-blue hover:text-primary transition-colors">Create one</Link>
         </div>
       </Card>
     </AuthLayout>
