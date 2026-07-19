@@ -390,6 +390,102 @@ const createProjectForUser = async (userId, rawName) => {
   };
 };
 
+// Duplicates a project the user owns: copies the project row (name suffixed
+// with " (copy)", capped at the shared 50-char limit) and all of its brush
+// norms, typography norms and palette colors. The copies run in a transaction
+// so a half-duplicated project can never be left behind. Throws 'not_found'
+// when the project doesn't exist or belongs to someone else.
+const duplicateProjectForUser = async (userId, projectId) => {
+  const [rows] = await db.query('SELECT name FROM projects WHERE id = ? AND user_id = ?', [
+    projectId,
+    userId,
+  ]);
+  if (rows.length === 0) {
+    throw new ProjectServiceError('not_found');
+  }
+
+  const suffix = ' (copy)';
+  const name = rows[0].name.slice(0, 50 - suffix.length) + suffix;
+
+  const connection = await db.getConnection();
+  let newProjectId;
+  try {
+    await connection.beginTransaction();
+
+    const [insertResult] = await connection.query(
+      'INSERT INTO projects (user_id, name) VALUES (?, ?)',
+      [userId, name],
+    );
+    newProjectId = insertResult.insertId;
+
+    await connection.query(
+      'INSERT INTO project_brush_norms (project_id, name, value, unit, brush_name, opacity) SELECT ?, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ?',
+      [newProjectId, projectId],
+    );
+    await connection.query(
+      'INSERT INTO project_typography_norms (project_id, font_family, font_weight, font_usage, font_style) SELECT ?, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ?',
+      [newProjectId, projectId],
+    );
+    await connection.query(
+      'INSERT INTO project_palette (project_id, name, hex, position) SELECT ?, name, hex, position FROM project_palette WHERE project_id = ?',
+      [newProjectId, projectId],
+    );
+
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+
+  // Read the copies back so the response carries the new server-assigned ids,
+  // in the same shape as a listProjectsForUser item.
+  const [brushRows] = await db.query(
+    'SELECT id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ?',
+    [newProjectId],
+  );
+  const [typographyRows] = await db.query(
+    'SELECT id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ?',
+    [newProjectId],
+  );
+  const [paletteRows] = await db.query(
+    'SELECT id, name, hex FROM project_palette WHERE project_id = ? ORDER BY position ASC, id ASC',
+    [newProjectId],
+  );
+
+  const brushNorms = brushRows.map((norm) => ({
+    id: norm.id,
+    name: norm.name,
+    value: norm.value,
+    unit: norm.unit,
+    brushName: norm.brush_name,
+    opacity: norm.opacity,
+  }));
+  const typographyNorms = typographyRows.map((norm) => ({
+    id: norm.id,
+    fontFamily: norm.font_family,
+    fontWeight: norm.font_weight,
+    fontUsage: norm.font_usage,
+    fontStyle: norm.font_style,
+  }));
+  const palette = paletteRows.map((color) => ({
+    id: color.id,
+    name: color.name,
+    hex: color.hex,
+  }));
+
+  return {
+    id: newProjectId,
+    name,
+    lastEdited: 'Just now',
+    brushNorms,
+    typographyNorms,
+    normsCount: brushNorms.length + typographyNorms.length,
+    palette,
+  };
+};
+
 // Renames a project (name already validated) and refreshes last_edited.
 const renameProject = async (projectId, name) => {
   await db.query('UPDATE projects SET name = ?, last_edited = NOW() WHERE id = ?', [
@@ -634,6 +730,7 @@ module.exports = {
   userOwnsProject,
   listProjectsForUser,
   createProjectForUser,
+  duplicateProjectForUser,
   renameProject,
   deleteProjectById,
   addBrushNormToProject,

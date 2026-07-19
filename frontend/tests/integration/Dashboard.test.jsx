@@ -37,6 +37,7 @@ describe('Dashboard', () => {
       projects: [],
       setActiveProjectId: vi.fn(),
       addProject: vi.fn().mockResolvedValue({ success: true }),
+      duplicateProject: vi.fn(),
       deleteProject: vi.fn(),
       updateProjectName: vi.fn(),
     });
@@ -57,5 +58,20 @@ describe('Dashboard', () => {
     await user.click(screen.getByRole('button', { name: 'Create project' }));
 
     await waitFor(() => expect(projectState.addProject).toHaveBeenCalledWith('Mon Projet'));
+  });
+
+  it('duplicates a project from its card', async () => {
+    projectState.projects = [
+      { id: 3, name: 'Neo-Tokyo', lastEdited: 'Just now', normsCount: 0, palette: [] },
+    ];
+    projectState.duplicateProject = vi
+      .fn()
+      .mockResolvedValue({ id: 4, name: 'Neo-Tokyo (copy)' });
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Duplicate project' }));
+
+    await waitFor(() => expect(projectState.duplicateProject).toHaveBeenCalledWith(3));
   });
 });

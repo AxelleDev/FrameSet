@@ -13,6 +13,13 @@ const router = express.Router();
 
 router.get('/', authenticateToken, projectsController.listProjects);
 router.post('/', authenticateToken, projectCreateLimiter, projectsController.createProject);
+// Duplication creates a project too, so it shares the creation rate limit.
+router.post(
+  '/:id/duplicate',
+  authenticateToken,
+  projectCreateLimiter,
+  projectsController.duplicateProject,
+);
 router.patch('/:id', authenticateToken, projectsController.updateProjectName);
 router.delete('/:id', authenticateToken, projectsController.deleteProject);
 

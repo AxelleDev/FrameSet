@@ -69,6 +69,26 @@ const createProject = async (req, res) => {
   }
 };
 
+// Duplicate a project owned by the user: same norms and palette under a
+// "<name> (copy)" title. Returns the full new project (201) for the dashboard.
+const duplicateProject = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
+    const duplicated = await projectsService.duplicateProjectForUser(
+      getAuthenticatedUserId(req),
+      id,
+    );
+    res.status(201).json(duplicated);
+  } catch (error) {
+    if (error.code === 'not_found') {
+      return res.status(404).json({ error: 'Project not found.' });
+    }
+    logProjectsControllerError(req, 'duplicate', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
 // Rename a project owned by the user and refresh its last_edited timestamp.
 const updateProjectName = async (req, res) => {
   const { id } = req.params;
@@ -272,6 +292,7 @@ const updateTypographyNorm = async (req, res) => {
 module.exports = {
   listProjects,
   createProject,
+  duplicateProject,
   updateProjectName,
   deleteProject,
   addBrushNorm,

@@ -48,6 +48,33 @@ describe('ProjectContext mutations return success signals', () => {
     expect(returned).toBeNull();
   });
 
+  it('duplicateProject prepends the server copy and returns it', async () => {
+    apiMock.post.mockResolvedValueOnce({ id: 9, name: 'New (copy)', normsCount: 2 });
+    const { result } = renderHook(() => useProjects(), { wrapper });
+
+    let returned;
+    await act(async () => {
+      returned = await result.current.duplicateProject(7);
+    });
+
+    expect(apiMock.post).toHaveBeenCalledWith('/projects/7/duplicate', {}, expect.any(Object));
+    expect(returned).toEqual({ id: 9, name: 'New (copy)', normsCount: 2 });
+    expect(result.current.projects[0]).toEqual({ id: 9, name: 'New (copy)', normsCount: 2 });
+  });
+
+  it('duplicateProject returns null when the request fails', async () => {
+    apiMock.post.mockRejectedValueOnce(new Error('boom'));
+    const { result } = renderHook(() => useProjects(), { wrapper });
+
+    let returned;
+    await act(async () => {
+      returned = await result.current.duplicateProject(7);
+    });
+
+    expect(returned).toBeNull();
+    expect(result.current.projects).toEqual([]);
+  });
+
   it('deleteProject returns true on success and false on failure', async () => {
     const { result } = renderHook(() => useProjects(), { wrapper });
 

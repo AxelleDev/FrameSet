@@ -166,7 +166,7 @@ function ExportMock() {
 const FEATURES = [
   {
     title: 'Graphic standards',
-    text: 'Document your brushes, sizes, opacities and typography so every project keeps a consistent direction — no more guessing your old settings.',
+    text: 'Document your brushes, sizes, opacities and typography so every project keeps a consistent direction — no more guessing your old settings. Starting something new? Duplicate a project and keep your favorite setup as the base.',
     Mock: StandardsMock,
   },
   {

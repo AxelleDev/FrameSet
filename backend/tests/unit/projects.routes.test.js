@@ -7,6 +7,7 @@ const buildTestApp = () => {
   const controllerMocks = {
     listProjects: jest.fn((req, res) => res.status(200).json([])),
     createProject: jest.fn((req, res) => res.status(201).json({ success: true })),
+    duplicateProject: jest.fn((req, res) => res.status(201).json({ success: true })),
     updateProjectName: jest.fn((req, res) => res.status(200).json({ success: true })),
     deleteProject: jest.fn((req, res) => res.status(200).json({ success: true })),
     addBrushNorm: jest.fn((req, res) => res.status(201).json({ success: true })),

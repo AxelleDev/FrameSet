@@ -790,6 +790,27 @@ const openapiSpec = {
         },
       },
     },
+    '/api/projects/{id}/duplicate': {
+      post: {
+        tags: ['Projects'],
+        summary: 'Duplicate a project (norms + palette) as "<name> (copy)"',
+        security: AUTH,
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          201: {
+            description: 'The duplicated project, with its copied norms and palette.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Project' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+          404: { $ref: '#/components/responses/NotFound' },
+          429: { $ref: '#/components/responses/RateLimited' },
+        },
+      },
+    },
     '/api/projects/{id}': {
       patch: {
         tags: ['Projects'],

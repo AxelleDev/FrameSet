@@ -16,12 +16,12 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
 import Seo from '../components/Seo';
-import { EditIcon, DeleteIcon } from '../components/icons';
+import { EditIcon, DuplicateIcon, DeleteIcon } from '../components/icons';
 import { formatModified } from '../utils/date';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { projects, projectsPagination, projectsLoading, loadMoreProjects, setActiveProjectId, addProject, deleteProject, updateProjectName } = useProjects();
+  const { projects, projectsPagination, projectsLoading, loadMoreProjects, setActiveProjectId, addProject, duplicateProject, deleteProject, updateProjectName } = useProjects();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [isCreatingProject, setIsCreatingProject] = useState(false);
@@ -110,6 +110,22 @@ export default function Dashboard() {
     setConfirmDeleteProject(project ? { id: project.id, name: project.name } : { id, name: '' });
   };
 
+  // Duplicate a project (norms + palette) as "<name> (copy)". duplicatingId
+  // disables that card's button while the copy is in flight.
+  const [duplicatingId, setDuplicatingId] = useState(null);
+  const handleDuplicateProject = async (e, id) => {
+    e.stopPropagation();
+    if (duplicatingId) return;
+    setDuplicatingId(id);
+    try {
+      const copy = await duplicateProject(id);
+      // duplicateProject never throws; null means the global banner has the reason.
+      if (copy) showToast(`Project duplicated as "${copy.name}".`);
+    } finally {
+      setDuplicatingId(null);
+    }
+  };
+
   return (
     <>
       <Seo title="Dashboard" noindex />
@@ -161,6 +177,14 @@ export default function Dashboard() {
                 intent="edit"
               >
                 <EditIcon />
+              </ActionIconButton>
+              <ActionIconButton
+                onClick={(e) => handleDuplicateProject(e, project.id)}
+                title="Duplicate project"
+                intent="edit"
+                disabled={duplicatingId === project.id}
+              >
+                <DuplicateIcon />
               </ActionIconButton>
               <ActionIconButton
                 onClick={(e) => handleDeleteProject(e, project.id)}

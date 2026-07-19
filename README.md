@@ -28,7 +28,8 @@ from one drawing to the next.
 - **Accounts & authentication** — sign up, log in (email/password or "Continue
   with Google"), e-mail verification and profile management (JWT, hashed
   passwords, CSRF protection & rate-limiting).
-- **Projects** — a dashboard to create and manage multiple illustration projects.
+- **Projects** — a dashboard to create, duplicate and manage multiple illustration
+  projects (duplication copies the standards and palette, to reuse a setup as a base).
 - **Palettes** — colour management with drag-and-drop reordering and quick code copy.
 - **Specs** — typographies (with Google Fonts loading) and brushes (size, opacity,
   usage…).

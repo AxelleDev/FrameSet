@@ -117,6 +117,21 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [user, setGlobalError, updatePagination]);
 
+  // Duplicates a project (norms + palette copied server-side) and prepends the
+  // copy to the local list. Returns the new project on success, or null.
+  const duplicateProject = useCallback(async (id) => {
+    try {
+      const newProject = await api.post(`/projects/${id}/duplicate`, {}, { onGlobalError: setGlobalError });
+      setProjects((prevProjects) => [newProject, ...prevProjects]);
+      updatePagination({ ...paginationRef.current, total: paginationRef.current.total + 1 });
+      return newProject;
+    } catch (error) {
+      setGlobalError(error?.message || 'Failed to duplicate the project.');
+      logger.error('projects.duplicate.error', error);
+      return null;
+    }
+  }, [setGlobalError, updatePagination]);
+
   // Deletes a project and removes it locally, clearing the active id if it
   // matched. Returns true on success, false on failure.
   const deleteProject = useCallback(async (id) => {
@@ -334,6 +349,7 @@ export const ProjectProvider = ({ children }) => {
     fetchProjects,
     loadMoreProjects,
     addProject,
+    duplicateProject,
     deleteProject,
     updateProjectName,
     updateProjectPalette,
@@ -352,6 +368,7 @@ export const ProjectProvider = ({ children }) => {
     fetchProjects,
     loadMoreProjects,
     addProject,
+    duplicateProject,
     deleteProject,
     updateProjectName,
     updateProjectPalette,

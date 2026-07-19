@@ -423,6 +423,88 @@ describe('projects controller', () => {
     });
   });
 
+  describe('duplicate project', () => {
+    const makeConnection = () => ({
+      query: jest.fn().mockResolvedValue([{}]),
+      beginTransaction: jest.fn(),
+      commit: jest.fn(),
+      rollback: jest.fn(),
+      release: jest.fn(),
+    });
+
+    it('duplicates a project with its norms and palette in a transaction', async () => {
+      db.query.mockResolvedValueOnce([[{ id: 5 }]]); // ownership check
+      db.query.mockResolvedValueOnce([[{ name: 'Neo-Tokyo' }]]); // source name
+      const connection = makeConnection();
+      connection.query.mockResolvedValueOnce([{ insertId: 42 }]); // INSERT projects
+      db.getConnection.mockResolvedValueOnce(connection);
+      // Read-back of the copied children (new server-assigned ids).
+      db.query.mockResolvedValueOnce([
+        [{ id: 7, name: 'Outline', value: '8', unit: 'px', brush_name: 'Smooth', opacity: 80 }],
+      ]);
+      db.query.mockResolvedValueOnce([
+        [
+          {
+            id: 8,
+            font_family: 'Figtree',
+            font_weight: '600',
+            font_usage: 'Heading',
+            font_style: null,
+          },
+        ],
+      ]);
+      db.query.mockResolvedValueOnce([[{ id: 9, name: 'Ink', hex: '#112233' }]]);
+
+      const req = { user: { id: 1 }, params: { id: '5' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.duplicateProject(req, res);
+
+      expect(connection.beginTransaction).toHaveBeenCalled();
+      expect(connection.commit).toHaveBeenCalled();
+      expect(connection.release).toHaveBeenCalled();
+      // The three child tables are copied via INSERT ... SELECT.
+      expect(connection.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO project_brush_norms'),
+        [42, '5'],
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 42,
+          name: 'Neo-Tokyo (copy)',
+          normsCount: 2,
+          palette: [{ id: 9, name: 'Ink', hex: '#112233' }],
+        }),
+      );
+    });
+
+    it('rolls back and releases the connection when a copy fails', async () => {
+      db.query.mockResolvedValueOnce([[{ id: 5 }]]); // ownership check
+      db.query.mockResolvedValueOnce([[{ name: 'Neo-Tokyo' }]]); // source name
+      const connection = makeConnection();
+      connection.query.mockResolvedValueOnce([{ insertId: 42 }]);
+      connection.query.mockRejectedValueOnce(new Error('copy failed'));
+      db.getConnection.mockResolvedValueOnce(connection);
+
+      const req = { user: { id: 1 }, params: { id: '5' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.duplicateProject(req, res);
+
+      expect(connection.rollback).toHaveBeenCalled();
+      expect(connection.release).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("forbids duplicating another user's project", async () => {
+      db.query.mockResolvedValueOnce([[]]); // ownership check fails
+      const req = { user: { id: 1 }, params: { id: '5' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.duplicateProject(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(db.getConnection).not.toHaveBeenCalled();
+    });
+  });
+
   describe('rename project', () => {
     it('returns 400 for an empty name', async () => {
       const req = { params: { id: '1' }, user: { id: 1 }, body: { name: '   ' } };
