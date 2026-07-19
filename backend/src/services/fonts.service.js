@@ -8,6 +8,9 @@
 // 24 h: the Google Fonts catalog changes very slowly.
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
+// Bound the upstream call so a hung Google API can't stall requests indefinitely.
+const FETCH_TIMEOUT_MS = 10 * 1000;
+
 let catalogCache = { items: null, fetchedAt: 0 };
 
 const getGoogleFontsCatalog = async () => {
@@ -24,7 +27,7 @@ const getGoogleFontsCatalog = async () => {
 
   // `fields` limits the response to what the picker actually uses.
   const url = `https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}&fields=items(family,variants)`;
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!response.ok) {
     throw new Error(`Google Fonts API responded with ${response.status}`);
   }

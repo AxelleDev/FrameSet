@@ -92,16 +92,38 @@ describe('user controller', () => {
         pendingEmail: null,
       });
     });
+
+    it('still succeeds when the pending-email code send fails', async () => {
+      db.query.mockResolvedValueOnce([[{ email: 'old@example.com', pending_email: null }]]);
+      db.query.mockResolvedValueOnce([[]]); // no other account uses the new email
+      db.query.mockResolvedValueOnce(); // staging UPDATE
+      mailService.sendMail.mockRejectedValueOnce(new Error('smtp down'));
+      const req = {
+        user: { id: 1 },
+        body: { name: 'Jane Doe', email: 'new@example.com' },
+      };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await userController.updateUser(req, res);
+      // The pending email is staged in DB; a failed send must not turn into a 500
+      // (the user can use "resend").
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        name: 'Jane Doe',
+        email: 'old@example.com',
+        pendingEmail: 'new@example.com',
+      });
+    });
   });
 
   describe('verify the pending email', () => {
-    it('verifies the pending email', async () => {
+    it('verifies the pending email and alerts the previous address', async () => {
       db.query
         .mockResolvedValueOnce([
           [
             {
               id: 1,
               name: 'Jane Doe',
+              email: 'old@example.com',
               pending_email: 'axelle@example.com',
               pending_email_code: hashOtp('123456'),
               pending_email_expires: new Date(Date.now() + 10000),
@@ -118,6 +140,13 @@ describe('user controller', () => {
         success: true,
         user: expect.objectContaining({ email: 'axelle@example.com' }),
       });
+      // The previous owner address is alerted about the change (fire-and-forget send).
+      expect(mailService.sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'old@example.com',
+          subject: 'Your account email was changed',
+        }),
+      );
     });
   });
 
@@ -136,12 +165,15 @@ describe('user controller', () => {
   });
 
   describe('delete the account', () => {
-    it('deletes the authenticated account', async () => {
+    it('deletes the authenticated account and clears the session cookies', async () => {
       db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
       const req = { user: { id: 1 } };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
       await userController.deleteAccount(req, res);
       expect(db.query).toHaveBeenCalledWith('DELETE FROM users WHERE id = ?', [1]);
+      // The dead session cookies must not survive the account.
+      expect(res.clearCookie).toHaveBeenCalledWith('frameset_access_token', expect.any(Object));
+      expect(res.clearCookie).toHaveBeenCalledWith('frameset_refresh_token', expect.any(Object));
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
 
@@ -163,8 +195,8 @@ describe('user controller', () => {
   });
 
   describe('change the password', () => {
-    it('changes the password', async () => {
-      db.query.mockResolvedValueOnce([[{ password: 'hashed' }]]);
+    it('changes the password and emails a security alert', async () => {
+      db.query.mockResolvedValueOnce([[{ email: 'axelle@example.com', password: 'hashed' }]]);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       jest.spyOn(bcrypt, 'hash').mockResolvedValue('newHashed');
       db.query.mockResolvedValueOnce();
@@ -174,8 +206,15 @@ describe('user controller', () => {
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
       await userController.changePassword(req, res);
-      expect(db.query).toHaveBeenCalledWith('SELECT password FROM users WHERE id = ?', [1]);
+      expect(db.query).toHaveBeenCalledWith('SELECT email, password FROM users WHERE id = ?', [1]);
       expect(res.json).toHaveBeenCalledWith({ success: true, passwordUpdatedAt: expect.any(Date) });
+      // The account holder is alerted about the change (fire-and-forget send).
+      expect(mailService.sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'axelle@example.com',
+          subject: 'Your password was changed',
+        }),
+      );
     });
   });
 });

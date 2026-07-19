@@ -6,7 +6,7 @@
 const jwt = require('jsonwebtoken');
 const authService = require('../services/auth.service');
 const { getIdentifierFingerprint, getBearerToken } = require('../utils/auth.utils');
-const { issueAuthCookies } = require('../utils/session.utils');
+const { issueAuthCookies, clearAuthCookies } = require('../utils/session.utils');
 const { createCsrfToken } = require('../middleware/csrfProtection');
 const { verifyRefreshToken, revokeToken, isTokenRevoked } = require('../services/token.service');
 const { JWT_SECRET } = require('../config/jwt.config');
@@ -15,17 +15,9 @@ const {
   REFRESH_TOKEN_COOKIE_NAME,
   CSRF_TOKEN_COOKIE_NAME,
   getCsrfTokenCookieOptions,
-  getCookieBaseOptions,
   getCookieValue,
 } = require('../utils/cookies.utils');
 const { logger } = require('../utils/logger');
-
-// Clear auth cookies with the same base options they were set with (path/flags must match to remove).
-const clearAuthCookies = (res) => {
-  const cookieOptions = getCookieBaseOptions();
-  res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, cookieOptions);
-  res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
-};
 
 /** Resolves the access token from the Authorization header or the cookie. */
 const getAccessTokenFromRequest = (req) =>
@@ -383,7 +375,20 @@ const forgotPassword = async (req, res) => {
 const resetPassword = async (req, res) => {
   const { email, code, newPassword } = req.body || {};
   try {
-    res.json(await authService.completePasswordReset({ email, code, newPassword }));
+    res.json(
+      await authService.completePasswordReset(
+        { email, code, newPassword },
+        {
+          onMailError: (mailError) => {
+            logger.error('auth.reset_password.notice_mail_failed', {
+              requestId: req.id,
+              emailFingerprint: getIdentifierFingerprint(email),
+              error: mailError,
+            });
+          },
+        },
+      ),
+    );
   } catch (error) {
     if (error.code === 'validation') {
       return res.status(400).json({ error: error.message });

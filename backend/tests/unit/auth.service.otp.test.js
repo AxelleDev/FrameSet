@@ -59,7 +59,7 @@ describe('auth service — OTP security hardening', () => {
       ).resolves.toEqual({ success: true });
     });
 
-    it('invalidates the code after too many wrong attempts', async () => {
+    it('counts the attempt atomically and clears the code past the limit', async () => {
       db.query.mockResolvedValueOnce([
         [
           {
@@ -71,12 +71,16 @@ describe('auth service — OTP security hardening', () => {
           },
         ],
       ]);
-      db.query.mockResolvedValueOnce([{}]); // the invalidation UPDATE
+      db.query.mockResolvedValueOnce([{}]); // atomic attempt increment
+      db.query.mockResolvedValueOnce([{}]); // conditional invalidation UPDATE
       await expect(
         authService.verifyEmailCode({ email: 'a@b.com', code: '000000' }),
       ).rejects.toMatchObject({ message: 'Incorrect code.' });
-      // The 5th wrong attempt clears the stored code.
-      expect(db.query.mock.calls[1][0]).toMatch(/verification_code = NULL/);
+      // The counter is incremented in SQL (no read-modify-write race)...
+      expect(db.query.mock.calls[1][0]).toMatch(/otp_attempts = otp_attempts \+ 1/);
+      // ...and the code is cleared once the limit is reached, guarded in SQL too.
+      expect(db.query.mock.calls[2][0]).toMatch(/verification_code = NULL/);
+      expect(db.query.mock.calls[2][0]).toMatch(/otp_attempts >= \?/);
     });
   });
 });
