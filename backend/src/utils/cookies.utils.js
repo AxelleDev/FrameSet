@@ -59,7 +59,13 @@ const getCookieValue = (req, cookieName) => {
   }
 
   const rawValue = cookiePart.slice(cookieName.length + 1);
-  return decodeURIComponent(rawValue || '');
+  // A malformed percent-encoding (e.g. a stray "%") must not throw and turn
+  // every request carrying that cookie into a 500; fall back to the raw value.
+  try {
+    return decodeURIComponent(rawValue || '');
+  } catch {
+    return rawValue || '';
+  }
 };
 
 module.exports = {

@@ -12,12 +12,13 @@ import Seo from '../components/Seo';
 import PasswordInput from '../components/PasswordInput';
 import TextInput from '../components/TextInput';
 import Alert from '../components/Alert';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 import useUserCount from '../hooks/useUserCount';
 import useFormState from '../hooks/useFormState';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
 
   const { values: formData, setField } = useFormState({
     email: '',
@@ -53,6 +54,25 @@ export default function Login() {
     } else if (result.message) {
       setError(result.message);
       setErrorCode(result.code || '');
+    }
+  };
+
+  // Google sign-in: the GIS button hands us a verified-by-Google credential;
+  // the backend does the cryptographic check and opens the session.
+  const handleGoogleCredential = async (credential) => {
+    if (submitting) return;
+
+    setSubmitting(true);
+    const result = await loginWithGoogle(credential);
+    setSubmitting(false);
+
+    if (result.success) {
+      setError('');
+      setErrorCode('');
+      navigate('/app/dashboard');
+    } else if (result.message) {
+      setError(result.message);
+      setErrorCode('');
     }
   };
 
@@ -122,24 +142,46 @@ export default function Login() {
             />
           </FormField>
 
-          <FormField label="Password" required>
-            <PasswordInput
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Your password"
-              autoComplete="current-password"
-            />
-          </FormField>
+          <div>
+            <FormField label="Password" required>
+              <PasswordInput
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Your password"
+                autoComplete="current-password"
+              />
+            </FormField>
+            <div className="mt-2 flex justify-end">
+              <Link to="/forgot-password" className="text-xs text-blue hover:text-primary transition-colors">
+                Forgot password?
+              </Link>
+            </div>
+          </div>
 
           <Button type="submit" fullWidth className="mt-2" loading={submitting}>
             Sign in
           </Button>
         </form>
 
-        <div className="mt-8 text-center flex flex-col gap-2">
-          <Link to="/register" className="text-sm font-medium text-blue hover:text-primary transition-colors">No account yet? Create one</Link>
-          <Link to="/forgot-password" className="text-xs text-blue hover:text-primary transition-colors">Forgot password?</Link>
+        <div className="my-6 flex items-center gap-3" aria-hidden="true">
+          <span className="h-px flex-1 bg-primary/10" />
+          <span className="text-xs uppercase tracking-widest text-primary/50">or</span>
+          <span className="h-px flex-1 bg-primary/10" />
+        </div>
+
+        <GoogleSignInButton onCredential={handleGoogleCredential} disabled={submitting} />
+
+        <p className="mt-6 text-center text-xs text-primary/60">
+          By continuing, you agree to the{' '}
+          <Link to="/terms" className="text-blue hover:text-primary transition-colors underline underline-offset-2">Terms of Service</Link>{' '}
+          and acknowledge the{' '}
+          <Link to="/privacy" className="text-blue hover:text-primary transition-colors underline underline-offset-2">Privacy Policy</Link>.
+        </p>
+
+        <div className="mt-8 text-center">
+          <span className="text-sm text-primary">No account yet? </span>
+          <Link to="/register" className="text-sm font-medium text-blue hover:text-primary transition-colors">Create one</Link>
         </div>
       </Card>
     </AuthLayout>

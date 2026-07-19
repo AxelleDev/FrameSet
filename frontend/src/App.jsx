@@ -25,7 +25,38 @@ const ProjectPalette = lazy(() => import('./pages/ProjectPalette'));
 const ProjectExport = lazy(() => import('./pages/ProjectExport'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Verify = lazy(() => import('./pages/Verify'));
+const Terms = lazy(() => import('./pages/Terms'));
+const Privacy = lazy(() => import('./pages/Privacy'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+
+// Warm up the route chunks once the browser is idle after first paint, so
+// navigating (or clicking a link) doesn't hit a visible "loading" swap. Failures
+// are ignored — the chunk simply loads on demand as before.
+function prefetchRouteChunks() {
+  const prefetch = () => {
+    [
+      import('./pages/Landing'),
+      import('./pages/Login'),
+      import('./pages/Register'),
+      import('./pages/ForgotPassword'),
+      import('./pages/Dashboard'),
+      import('./pages/ProjectNorms'),
+      import('./pages/ProjectPalette'),
+      import('./pages/ProjectExport'),
+      import('./pages/Profile'),
+      import('./pages/Verify'),
+      import('./pages/Terms'),
+      import('./pages/Privacy'),
+      import('./pages/NotFound'),
+    ].forEach((chunkPromise) => chunkPromise.catch(() => {}));
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(prefetch, { timeout: 3000 });
+  } else {
+    setTimeout(prefetch, 1500);
+  }
+}
 
 /** Spinner shown while a lazily-loaded route chunk is being fetched. */
 function RouteFallback() {
@@ -98,6 +129,11 @@ function AppRoutes() {
     setGlobalError(null);
   }, [globalError, showToast, setGlobalError]);
 
+  // One-time chunk warm-up so later navigation feels instant.
+  useEffect(() => {
+    prefetchRouteChunks();
+  }, []);
+
   return (
     <>
       <BrowserRouter>
@@ -109,6 +145,8 @@ function AppRoutes() {
           <Route path="/register" element={<RedirectIfAuthenticated><Register /></RedirectIfAuthenticated>} />
           <Route path="/forgot-password" element={<RedirectIfAuthenticated><ForgotPassword /></RedirectIfAuthenticated>} />
           <Route path="/verify" element={<Verify />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/app" element={<MainLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="profile" element={<Profile />} />

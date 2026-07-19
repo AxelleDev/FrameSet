@@ -316,6 +316,44 @@ const openapiSpec = {
         },
       },
     },
+    '/api/auth/google': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Sign in with Google (sets auth cookies)',
+        description:
+          'Verifies a Google ID token (from Google Identity Services) and signs the user in, ' +
+          'creating or linking the account as needed. Returns 503 when Google sign-in is not configured.',
+        parameters: [CSRF_HEADER],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['credential'],
+                properties: {
+                  credential: {
+                    type: 'string',
+                    description: 'Google ID token issued by Google Identity Services.',
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description:
+              'Signed in; sets `frameset_access_token` and `frameset_refresh_token` cookies.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } },
+          },
+          400: { $ref: '#/components/responses/ValidationError' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          429: { $ref: '#/components/responses/RateLimited' },
+          503: { description: 'Google sign-in is not configured on this deployment.' },
+        },
+      },
+    },
     '/api/auth/verify': {
       post: {
         tags: ['Auth'],
@@ -504,6 +542,10 @@ const openapiSpec = {
       put: {
         tags: ['Users'],
         summary: 'Update name / email (email change staged as pendingEmail)',
+        description:
+          'Changing the email is a critical action and requires re-authentication: ' +
+          '`currentPassword` for accounts with a password, or a fresh Google ID token ' +
+          '(`googleCredential`) for Google-only accounts. A name-only change needs neither.',
         security: AUTH,
         parameters: [CSRF_HEADER],
         requestBody: {
@@ -515,6 +557,8 @@ const openapiSpec = {
                 properties: {
                   name: { type: 'string' },
                   email: { type: 'string', format: 'email' },
+                  currentPassword: { type: 'string', format: 'password' },
+                  googleCredential: { type: 'string' },
                 },
               },
             },
@@ -656,8 +700,26 @@ const openapiSpec = {
       delete: {
         tags: ['Users'],
         summary: 'Delete the account (cascades to its projects)',
+        description:
+          'Destructive and irreversible, so it requires re-authentication: `currentPassword` ' +
+          'for accounts with a password, or a fresh Google ID token (`googleCredential`) for ' +
+          'Google-only accounts.',
         security: AUTH,
         parameters: [CSRF_HEADER],
+        requestBody: {
+          required: false,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  currentPassword: { type: 'string', format: 'password' },
+                  googleCredential: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
         responses: {
           200: {
             description: 'Account deleted.',

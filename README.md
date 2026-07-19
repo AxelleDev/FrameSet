@@ -25,8 +25,9 @@ from one drawing to the next.
 
 ## ✧･ﾟ: ✧･ﾟ Features
 
-- **Accounts & authentication** — sign up, log in, e-mail verification and profile
-  management (JWT, hashed passwords, CSRF protection & rate-limiting).
+- **Accounts & authentication** — sign up, log in (email/password or "Continue
+  with Google"), e-mail verification and profile management (JWT, hashed
+  passwords, CSRF protection & rate-limiting).
 - **Projects** — a dashboard to create and manage multiple illustration projects.
 - **Palettes** — colour management with drag-and-drop reordering and quick code copy.
 - **Specs** — typographies (with Google Fonts loading) and brushes (size, opacity,
@@ -141,6 +142,11 @@ Production checklist:
 - Point the frontend CSP `connect-src` (in `vercel.json`) at the real API origin.
 - Restrict the `GOOGLE_FONTS_API_KEY` in the Google console; `/api-docs` stays
   hidden in production unless you opt in with `ENABLE_API_DOCS=true`.
+- **Google sign-in (optional)**: create an OAuth 2.0 **Web** client ID in the
+  Google Cloud console (APIs & Services → Credentials) with your frontend origin
+  under "Authorized JavaScript origins", then set the same value as
+  `GOOGLE_CLIENT_ID` (API) and `VITE_GOOGLE_CLIENT_ID` (frontend). Leave both
+  empty to disable the feature (the button is hidden and the endpoint answers 503).
 - Rate limiting is **in-memory (per instance)**: run a single API instance, or
   move to a shared store (e.g. Redis) before scaling horizontally.
 - Run `npm run migrate` against the production database.

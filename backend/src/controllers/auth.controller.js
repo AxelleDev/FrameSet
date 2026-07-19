@@ -6,7 +6,7 @@
 const jwt = require('jsonwebtoken');
 const authService = require('../services/auth.service');
 const { getIdentifierFingerprint, getBearerToken } = require('../utils/auth.utils');
-const { issueAuthCookies } = require('../utils/session.utils');
+const { issueAuthCookies, clearAuthCookies } = require('../utils/session.utils');
 const { createCsrfToken } = require('../middleware/csrfProtection');
 const { verifyRefreshToken, revokeToken, isTokenRevoked } = require('../services/token.service');
 const { JWT_SECRET } = require('../config/jwt.config');
@@ -15,17 +15,9 @@ const {
   REFRESH_TOKEN_COOKIE_NAME,
   CSRF_TOKEN_COOKIE_NAME,
   getCsrfTokenCookieOptions,
-  getCookieBaseOptions,
   getCookieValue,
 } = require('../utils/cookies.utils');
 const { logger } = require('../utils/logger');
-
-// Clear auth cookies with the same base options they were set with (path/flags must match to remove).
-const clearAuthCookies = (res) => {
-  const cookieOptions = getCookieBaseOptions();
-  res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, cookieOptions);
-  res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
-};
 
 /** Resolves the access token from the Authorization header or the cookie. */
 const getAccessTokenFromRequest = (req) =>
@@ -146,6 +138,19 @@ const login = async (req, res) => {
         .status(401)
         .json({ error: 'Please verify your email before signing in.', code: 'EMAIL_NOT_VERIFIED' });
     }
+    if (error.code === 'google_account') {
+      logger.info('auth.login.blocked', {
+        requestId: req.id,
+        userId: error.userId,
+        reason: 'google_only_account',
+      });
+
+      return res.status(401).json({
+        error:
+          'This account uses Google sign-in. Continue with Google, or use "Forgot password" to create a password.',
+        code: 'GOOGLE_ACCOUNT',
+      });
+    }
     if (error.code === 'invalid_credentials') {
       logger.warn('auth.login.failed', {
         requestId: req.id,
@@ -160,6 +165,62 @@ const login = async (req, res) => {
     logger.error('auth.login.error', {
       requestId: req.id,
       emailFingerprint,
+      error,
+    });
+
+    res.status(500).json({ error: 'Server error.' });
+  }
+};
+
+// Authenticate with a Google ID token: the service verifies it against Google's
+// keys and resolves/creates the account; on success the same session cookies as
+// a password login are issued. Failure reasons are surfaced without detail.
+const googleSignIn = async (req, res) => {
+  try {
+    const user = await authService.authenticateWithGoogle(req.body?.credential, {
+      onMailError: (mailError) => {
+        logger.error('auth.google.link_mail_failed', {
+          requestId: req.id,
+          error: mailError,
+        });
+      },
+    });
+
+    logger.info('auth.google.success', {
+      requestId: req.id,
+      userId: user.id,
+    });
+
+    issueAuthCookies(res, user);
+    res.json({ success: true, ...user });
+  } catch (error) {
+    if (error.code === 'google_not_configured') {
+      return res.status(503).json({ error: 'Google sign-in is not available.' });
+    }
+    if (error.code === 'validation') {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error.code === 'invalid_google_token') {
+      logger.warn('auth.google.failed', {
+        requestId: req.id,
+        reason: 'invalid_google_token',
+      });
+
+      return res.status(401).json({ error: 'Google sign-in failed. Please try again.' });
+    }
+    if (error.code === 'google_email_not_verified') {
+      logger.warn('auth.google.failed', {
+        requestId: req.id,
+        reason: 'google_email_not_verified',
+      });
+
+      return res
+        .status(401)
+        .json({ error: 'Your Google email address is not verified with Google.' });
+    }
+
+    logger.error('auth.google.error', {
+      requestId: req.id,
       error,
     });
 
@@ -383,7 +444,20 @@ const forgotPassword = async (req, res) => {
 const resetPassword = async (req, res) => {
   const { email, code, newPassword } = req.body || {};
   try {
-    res.json(await authService.completePasswordReset({ email, code, newPassword }));
+    res.json(
+      await authService.completePasswordReset(
+        { email, code, newPassword },
+        {
+          onMailError: (mailError) => {
+            logger.error('auth.reset_password.notice_mail_failed', {
+              requestId: req.id,
+              emailFingerprint: getIdentifierFingerprint(email),
+              error: mailError,
+            });
+          },
+        },
+      ),
+    );
   } catch (error) {
     if (error.code === 'validation') {
       return res.status(400).json({ error: error.message });
@@ -401,6 +475,7 @@ module.exports = {
   getCsrfToken,
   register,
   login,
+  googleSignIn,
   verify,
   resendCode,
   refresh,

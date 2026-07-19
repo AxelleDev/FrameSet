@@ -9,6 +9,7 @@ const {
   REFRESH_TOKEN_COOKIE_NAME,
   getAccessTokenCookieOptions,
   getRefreshTokenCookieOptions,
+  getCookieBaseOptions,
 } = require('./cookies.utils');
 
 // Signs a short-lived access token carrying minimal identity claims (id, email).
@@ -25,4 +26,12 @@ const issueAuthCookies = (res, user) => {
   );
 };
 
-module.exports = { createAccessToken, issueAuthCookies };
+// Clears the auth cookies with the same base options they were set with
+// (path/flags must match for the browser to actually remove them).
+const clearAuthCookies = (res) => {
+  const cookieOptions = getCookieBaseOptions();
+  res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, cookieOptions);
+  res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
+};
+
+module.exports = { createAccessToken, issueAuthCookies, clearAuthCookies };

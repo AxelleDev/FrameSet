@@ -137,6 +137,19 @@ export const AuthProvider = ({ children }) => {
     }
   }, [setAuthenticatedUser]);
 
+  // Authenticates with a Google ID token (from the GIS button): the backend
+  // verifies it, resolves/creates the account, and issues the session cookies.
+  const loginWithGoogle = useCallback(async (credential) => {
+    try {
+      const userData = await api.post('/auth/google', { credential }, { onGlobalError: setGlobalError });
+      setAuthenticatedUser(userData);
+      return { success: true, data: userData };
+    } catch (err) {
+      const { message } = handleApiError(err, setGlobalError, 'Google sign-in failed.');
+      return { success: false, message };
+    }
+  }, [setAuthenticatedUser]);
+
   // Registers a new account without logging in; caller redirects to verification.
   const register = useCallback(async (userData) => {
     try {
@@ -162,12 +175,14 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Updates name/email. A changed email becomes a pendingEmail that must be
-  // confirmed via the verification flow before it takes effect.
-  const updateUserProfile = useCallback(async (updates) => {
+  // confirmed via the verification flow before it takes effect. Changing the
+  // email is a critical action: pass `credentials` ({ currentPassword } or
+  // { googleCredential }) to re-authenticate.
+  const updateUserProfile = useCallback(async (updates, credentials) => {
     if (!user) return;
 
     try {
-      const data = await api.put('/users', { id: user.id, ...updates }, { onGlobalError: setGlobalError });
+      const data = await api.put('/users', { id: user.id, ...updates, ...(credentials || {}) }, { onGlobalError: setGlobalError });
       const updatedUser = {
         ...user,
         name: data.name ?? user.name,
@@ -186,9 +201,11 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   // Permanently deletes the account and logs the user out locally on success.
-  const deleteAccount = useCallback(async () => {
+  // Destructive, so it requires re-authentication credentials
+  // ({ currentPassword } or { googleCredential }).
+  const deleteAccount = useCallback(async (credentials) => {
     try {
-      await api.delete('/users/me', null, { onGlobalError: setGlobalError });
+      await api.delete('/users/me', credentials || null, { onGlobalError: setGlobalError });
       setUser(null);
       setGlobalError(null);
       return { success: true };
@@ -301,6 +318,7 @@ export const AuthProvider = ({ children }) => {
     globalError,
     setGlobalError,
     login,
+    loginWithGoogle,
     register,
     logout,
     refreshAccessToken,
@@ -319,6 +337,7 @@ export const AuthProvider = ({ children }) => {
     authLoading,
     globalError,
     login,
+    loginWithGoogle,
     register,
     logout,
     refreshAccessToken,

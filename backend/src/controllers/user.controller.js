@@ -6,9 +6,14 @@
 
 const userService = require('../services/user.service');
 const { getAuthenticatedUserId, createControllerLogger } = require('../utils/auth.utils');
-const { issueAuthCookies } = require('../utils/session.utils');
+const { issueAuthCookies, clearAuthCookies } = require('../utils/session.utils');
 
 const logUserControllerError = createControllerLogger('users');
+
+// Builds an onMailError callback for service calls whose email send must not fail
+// the request (staged codes, security alerts): the failure is only logged.
+const makeMailErrorLogger = (req, operation) => (mailError) =>
+  logUserControllerError(req, operation, mailError);
 
 // Maps a UserServiceError code to its HTTP status; the service message is surfaced as-is.
 const STATUS_BY_ERROR_CODE = {
@@ -19,6 +24,9 @@ const STATUS_BY_ERROR_CODE = {
   invalid_code: 400,
   code_expired: 400,
   invalid_current_password: 401,
+  no_password: 400,
+  reauth_required: 401,
+  reauth_failed: 401,
 };
 
 // Sends a business error as its mapped status, or logs and returns a generic 500.
@@ -67,7 +75,9 @@ const updateUser = async (req, res) => {
   }
 
   try {
-    const result = await userService.updateUserProfile(authenticatedUserId, req.body || {});
+    const result = await userService.updateUserProfile(authenticatedUserId, req.body || {}, {
+      onMailError: makeMailErrorLogger(req, 'update.pending_email_mail'),
+    });
     res.json({ success: true, ...result });
   } catch (error) {
     handleServiceError(req, res, 'update', error, { serverErrorMessage: 'Database error.' });
@@ -82,7 +92,9 @@ const verifyPendingEmail = async (req, res) => {
   }
 
   try {
-    const user = await userService.confirmPendingEmail(authenticatedUserId, req.body || {});
+    const user = await userService.confirmPendingEmail(authenticatedUserId, req.body || {}, {
+      onMailError: makeMailErrorLogger(req, 'verify_pending_email.notice_mail'),
+    });
     res.json({ success: true, user });
   } catch (error) {
     handleServiceError(req, res, 'verify_pending_email', error);
@@ -116,6 +128,7 @@ const changePassword = async (req, res) => {
     const { passwordUpdatedAt } = await userService.changeUserPassword(
       authenticatedUserId,
       req.body || {},
+      { onMailError: makeMailErrorLogger(req, 'change_password.notice_mail') },
     );
     issueAuthCookies(res, { id: authenticatedUserId, email: req.user?.email });
     res.json({ success: true, passwordUpdatedAt });
@@ -132,7 +145,10 @@ const deleteAccount = async (req, res) => {
   }
 
   try {
-    await userService.deleteUserAccount(authenticatedUserId);
+    await userService.deleteUserAccount(authenticatedUserId, req.body || {});
+    // The account is gone, so the session cookies are dead weight: clear them so
+    // the browser doesn't keep replaying now-invalid tokens.
+    clearAuthCookies(res);
     res.json({ success: true });
   } catch (error) {
     handleServiceError(req, res, 'delete_account', error);

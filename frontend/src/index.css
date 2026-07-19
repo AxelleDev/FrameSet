@@ -36,6 +36,13 @@
     --color-success: 110 200 165;   /* #6EC8A5 */
   }
 
+  /* Reserve the scrollbar gutter permanently: without it, pages whose content
+     height crosses the viewport threshold (route changes, async data arriving)
+     make the scrollbar pop in/out and the whole layout shift sideways. */
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-canvas text-primary font-sans antialiased;
   }

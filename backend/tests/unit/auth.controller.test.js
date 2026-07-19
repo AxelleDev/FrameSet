@@ -96,6 +96,32 @@ describe('authentication controller', () => {
       expect(payload.token).toBeUndefined();
       expect(payload.refreshToken).toBeUndefined();
     });
+
+    it('points a Google-only account to Google sign-in instead of a misleading error', async () => {
+      db.query.mockResolvedValueOnce([
+        [{ id: 3, email: 'g@example.com', is_verified: 1, password: null }],
+      ]);
+      const req = { body: { email: 'g@example.com', password: 'whatever' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      await authController.login(req, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'GOOGLE_ACCOUNT' }));
+      expect(res.cookie).not.toHaveBeenCalled();
+    });
+
+    it('runs the same bcrypt comparison for an unknown email (no timing oracle)', async () => {
+      db.query.mockResolvedValueOnce([[]]); // no account for this email
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('dummyHash');
+      const compareSpy = jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
+      const req = { body: { email: 'unknown@example.com', password: 'whatever' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      await authController.login(req, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Incorrect email or password.' });
+      // The dummy comparison equalizes response time with the known-email path,
+      // so response latency can't be used to enumerate registered emails.
+      expect(compareSpy).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('refresh', () => {
@@ -316,6 +342,13 @@ describe('authentication controller', () => {
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await authController.resetPassword(req, res);
       expect(res.json).toHaveBeenCalledWith({ success: true });
+      // The account holder is alerted about the change (fire-and-forget send).
+      expect(mailService.sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'a@b.com',
+          subject: 'Your password was changed',
+        }),
+      );
     });
 
     it('rejects a wrong reset code with a generic 400', async () => {

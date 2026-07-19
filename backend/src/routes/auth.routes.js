@@ -64,8 +64,17 @@ const refreshLimiter = rateLimit({
   message: 'Too many refresh requests, please try again in a minute.',
 });
 
+// Google sign-in: each call verifies a Google ID token and may create/link an
+// account, so it gets its own login-grade per-IP cap.
+const googleSignInLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: 'Too many attempts, please try again in a minute.',
+});
+
 router.post('/register', registerLimiter, authController.register);
 router.post('/login', loginLimiter, authController.login);
+router.post('/google', googleSignInLimiter, authController.googleSignIn);
 router.get('/csrf-token', authController.getCsrfToken);
 router.post('/verify', verifyCodeLimiter, authController.verify);
 router.post('/resend-code', resendCodeLimiter, authController.resendCode);
