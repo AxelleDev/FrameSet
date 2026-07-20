@@ -26,6 +26,10 @@ router.get('/trash', authenticateToken, projectsController.listTrashedProjects);
 router.post('/:id/restore', authenticateToken, projectsController.restoreProject);
 router.delete('/:id/permanent', authenticateToken, projectsController.deleteProjectPermanently);
 
+// Public sharing: enable mints/returns the share token, disable revokes the link.
+router.post('/:id/share', authenticateToken, projectsController.enableSharing);
+router.delete('/:id/share', authenticateToken, projectsController.disableSharing);
+
 router.patch('/:id', authenticateToken, projectsController.updateProjectName);
 router.delete('/:id', authenticateToken, projectsController.deleteProject);
 

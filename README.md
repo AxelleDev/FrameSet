@@ -34,7 +34,9 @@ from one drawing to the next.
 - **Palettes** — colour management with drag-and-drop reordering and quick code copy.
 - **Specs** — typographies (with Google Fonts loading) and brushes (size, opacity,
   usage…).
-- **Export** — generate a PDF of the project's complete reference sheet.
+- **Export & share** — generate a PDF of the project's complete reference sheet,
+  or share a public read-only link (revocable anytime) that anyone can open
+  without an account.
 
 ---
 

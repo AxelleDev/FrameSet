@@ -13,6 +13,7 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const projectsRoutes = require('./routes/projects.routes');
 const fontsRoutes = require('./routes/fonts.routes');
+const shareRoutes = require('./routes/share.routes');
 const db = require('./database');
 const openapiSpec = require('./docs/openapi');
 const { ensureCsrfCookie, csrfProtection } = require('./middleware/csrfProtection');
@@ -224,6 +225,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/fonts', fontsRoutes);
+// Public read-only share links (GET only, so the CSRF guard's safe-method
+// exemption applies; rate limited inside the router).
+app.use('/api/share', shareRoutes);
 
 // 404 handler.
 app.use((req, res, _next) => {

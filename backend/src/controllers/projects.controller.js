@@ -89,6 +89,44 @@ const duplicateProject = async (req, res) => {
   }
 };
 
+// Enable public sharing for an owned project; returns the (stable) share token.
+const enableSharing = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
+    res.json(await projectsService.enableProjectSharing(id));
+  } catch (error) {
+    logProjectsControllerError(req, 'enable_sharing', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Disable public sharing: the link dies immediately.
+const disableSharing = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
+    res.json(await projectsService.disableProjectSharing(id));
+  } catch (error) {
+    logProjectsControllerError(req, 'disable_sharing', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// PUBLIC (no auth): resolve a share token to its reference-sheet content. Any
+// invalid, revoked or trashed link is a plain 404 with no detail.
+const getSharedProject = async (req, res) => {
+  try {
+    res.json(await projectsService.getSharedProjectByToken(req.params.token));
+  } catch (error) {
+    if (error.code === 'not_found') {
+      return res.status(404).json({ error: 'This link is no longer active.' });
+    }
+    logProjectsControllerError(req, 'get_shared', error);
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
 // Rename a project owned by the user and refresh its last_edited timestamp.
 const updateProjectName = async (req, res) => {
   const { id } = req.params;
@@ -349,6 +387,9 @@ module.exports = {
   listTrashedProjects,
   restoreProject,
   deleteProjectPermanently,
+  enableSharing,
+  disableSharing,
+  getSharedProject,
   addBrushNorm,
   addTypographyNorm,
   updatePalette,

@@ -3,6 +3,7 @@
  * references (palettes, brush norms, typography norms). Never touches req/res.
  */
 
+const { randomBytes } = require('crypto');
 const db = require('../database');
 const validator = require('validator');
 const { logger } = require('../utils/logger');
@@ -274,7 +275,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
 
   const projectsQuery = await runTimedQuery({
     label: 'projects',
-    sql: 'SELECT id, name, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?',
+    sql: 'SELECT id, name, share_token, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?',
     params: [userId, pageSize, offset],
   });
 
@@ -350,6 +351,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
       id: project.id,
       name: project.name,
       lastEdited: project.lastEditedFormatted || 'Just now',
+      shareToken: project.share_token || null,
       brushNorms,
       typographyNorms,
       normsCount: brushNorms.length + typographyNorms.length,
@@ -549,6 +551,86 @@ const deleteProjectPermanently = async (userId, projectId) => {
     throw new ProjectServiceError('not_found');
   }
   return { success: true };
+};
+
+// Shape of a valid share token: 32 hex chars (128 random bits). Checked before
+// querying so junk input never reaches the database.
+const SHARE_TOKEN_PATTERN = /^[a-f0-9]{32}$/i;
+
+// Enables public sharing for a project: mints an unguessable token on first
+// call and keeps the existing one afterwards (idempotent — re-enabling never
+// silently changes a link that may already be in someone's hands).
+const enableProjectSharing = async (projectId) => {
+  const candidateToken = randomBytes(16).toString('hex');
+  await db.query('UPDATE projects SET share_token = COALESCE(share_token, ?) WHERE id = ?', [
+    candidateToken,
+    projectId,
+  ]);
+  const [rows] = await db.query('SELECT share_token FROM projects WHERE id = ?', [projectId]);
+  return { shareToken: rows[0]?.share_token || candidateToken };
+};
+
+// Disables public sharing: the link stops working immediately. Re-enabling
+// later mints a brand-new token, so an old revoked link never comes back.
+const disableProjectSharing = async (projectId) => {
+  await db.query('UPDATE projects SET share_token = NULL WHERE id = ?', [projectId]);
+  return { success: true };
+};
+
+// Public, unauthenticated read of a shared project: only the reference-sheet
+// content (name, norms, palette) — never the owner's identity or project id.
+// Trashed projects don't resolve. Throws 'not_found' for any invalid/unknown token.
+const getSharedProjectByToken = async (rawToken) => {
+  const token = typeof rawToken === 'string' ? rawToken.trim() : '';
+  if (!SHARE_TOKEN_PATTERN.test(token)) {
+    throw new ProjectServiceError('not_found');
+  }
+
+  const [rows] = await db.query(
+    'SELECT id, name FROM projects WHERE share_token = ? AND deleted_at IS NULL',
+    [token],
+  );
+  if (rows.length === 0) {
+    throw new ProjectServiceError('not_found');
+  }
+  const projectId = rows[0].id;
+
+  const [brushRows] = await db.query(
+    'SELECT id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ?',
+    [projectId],
+  );
+  const [typographyRows] = await db.query(
+    'SELECT id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ?',
+    [projectId],
+  );
+  const [paletteRows] = await db.query(
+    'SELECT id, name, hex FROM project_palette WHERE project_id = ? ORDER BY position ASC, id ASC',
+    [projectId],
+  );
+
+  return {
+    name: rows[0].name,
+    brushNorms: brushRows.map((norm) => ({
+      id: norm.id,
+      name: norm.name,
+      value: norm.value,
+      unit: norm.unit,
+      brushName: norm.brush_name,
+      opacity: norm.opacity,
+    })),
+    typographyNorms: typographyRows.map((norm) => ({
+      id: norm.id,
+      fontFamily: norm.font_family,
+      fontWeight: norm.font_weight,
+      fontUsage: norm.font_usage,
+      fontStyle: norm.font_style,
+    })),
+    palette: paletteRows.map((color) => ({
+      id: color.id,
+      name: color.name,
+      hex: color.hex,
+    })),
+  };
 };
 
 // Drops trashed projects past the retention window; children cascade. Run by
@@ -802,6 +884,9 @@ module.exports = {
   restoreProjectForUser,
   deleteProjectPermanently,
   purgeExpiredTrashedProjects,
+  enableProjectSharing,
+  disableProjectSharing,
+  getSharedProjectByToken,
   TRASH_RETENTION_DAYS,
   addBrushNormToProject,
   addTypographyNormToProject,

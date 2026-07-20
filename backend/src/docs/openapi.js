@@ -939,6 +939,76 @@ const openapiSpec = {
         },
       },
     },
+    '/api/projects/{id}/share': {
+      post: {
+        tags: ['Projects'],
+        summary: 'Enable public sharing (mints or returns the stable share token)',
+        security: AUTH,
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Sharing enabled; the public page lives at /s/<shareToken>.',
+            content: {
+              'application/json': {
+                schema: { type: 'object', properties: { shareToken: { type: 'string' } } },
+              },
+            },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+        },
+      },
+      delete: {
+        tags: ['Projects'],
+        summary: 'Disable public sharing (the link dies immediately)',
+        security: AUTH,
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Sharing disabled.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+        },
+      },
+    },
+    '/api/share/{token}': {
+      get: {
+        tags: ['Projects'],
+        summary: 'PUBLIC: read a shared reference sheet (no auth)',
+        description:
+          'Resolves a share token to the project name, brush/typography norms and palette. ' +
+          'Never exposes the owner. Rate limited per IP; revoked/trashed links answer 404.',
+        parameters: [{ name: 'token', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          200: {
+            description: 'The shared reference sheet.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' },
+                    brushNorms: { type: 'array', items: { type: 'object' } },
+                    typographyNorms: { type: 'array', items: { type: 'object' } },
+                    palette: { type: 'array', items: { type: 'object' } },
+                  },
+                },
+              },
+            },
+          },
+          404: { $ref: '#/components/responses/NotFound' },
+          429: { $ref: '#/components/responses/RateLimited' },
+        },
+      },
+    },
     '/api/projects/{id}/brush-norms': {
       post: {
         tags: ['Projects'],

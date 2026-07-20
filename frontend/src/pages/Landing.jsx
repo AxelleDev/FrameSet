@@ -176,7 +176,7 @@ const FEATURES = [
   },
   {
     title: 'Export & share',
-    text: 'Turn your standards and palette into a clean PDF or a JSON file, ready to hand off to a client or reuse in another tool.',
+    text: 'Turn your standards and palette into a clean PDF or a JSON file — or share a live read-only link that clients and collaborators can open without an account.',
     Mock: ExportMock,
   },
 ];

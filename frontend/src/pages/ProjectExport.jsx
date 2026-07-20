@@ -1,7 +1,9 @@
 // Project export page (/app/project/:id/export): download the style guide as a
-// jsPDF-built PDF or raw JSON, with a live JSON preview.
-import React, { useMemo } from 'react';
+// jsPDF-built PDF or raw JSON (with a live preview), or share a public
+// read-only link to the reference sheet.
+import React, { useMemo, useState } from 'react';
 import { useProjects } from '../context/ProjectContext';
+import { useToast } from '../context/ToastContext';
 import { useParams } from 'react-router-dom';
 import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
@@ -9,13 +11,50 @@ import Seo from '../components/Seo';
 import Button from '../components/Button';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useActiveProject from '../hooks/useActiveProject';
+import useClipboard from '../hooks/useClipboard';
 
 export default function ProjectExport() {
   const { id } = useParams();
-  const { activeProject, projectsLoading, activeProjectId } = useProjects();
+  const { activeProject, projectsLoading, activeProjectId, enableSharing, disableSharing } = useProjects();
+  const { showToast } = useToast();
+  const { copy, copiedValue } = useClipboard({ timeout: 1500 });
+  const [shareBusy, setShareBusy] = useState(false);
 
   // Sync the active project with the route id (shared hook).
   useActiveProject(id);
+
+  // Public read-only link for this project (null while sharing is disabled).
+  const shareUrl = activeProject?.shareToken
+    ? `${window.location.origin}/s/${activeProject.shareToken}`
+    : null;
+
+  const handleEnableSharing = async () => {
+    if (shareBusy || !activeProject) return;
+    setShareBusy(true);
+    try {
+      const token = await enableSharing(activeProject.id);
+      if (token) showToast('Share link created.');
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const handleDisableSharing = async () => {
+    if (shareBusy || !activeProject) return;
+    setShareBusy(true);
+    try {
+      const ok = await disableSharing(activeProject.id);
+      if (ok) showToast('Share link disabled.');
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const handleCopyShareUrl = async () => {
+    if (!shareUrl) return;
+    const ok = await copy(shareUrl);
+    if (!ok) showToast("Couldn't copy the link.", 'danger');
+  };
 
   // Pretty-printed JSON, used for both the preview and the download.
   const projectJson = useMemo(() => {
@@ -178,6 +217,41 @@ export default function ProjectExport() {
                 <Button onClick={downloadJson} variant="primary">
                   Download JSON
                 </Button>
+            </Card>
+
+            <Card className="p-8 flex flex-col items-start text-left md:col-span-2">
+              <div className="h-12 w-12 bg-blue/15 text-blue rounded-full flex items-center justify-center mb-6">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 010 5.656l-4 4a4 4 0 01-5.656-5.656l1.5-1.5m8.328-2.672a4 4 0 000-5.656l-4-4a4 4 0 00-5.656 5.656l1.5 1.5M10.172 13.828a4 4 0 010-5.656l4-4a4 4 0 015.656 5.656l-1.5 1.5" /></svg>
+              </div>
+              <h2 className="text-lg font-medium text-primary mb-2">Public share link</h2>
+              <p className="text-sm text-primary mb-6">
+                A read-only web page of this reference sheet — palette, typography and brush
+                standards. Anyone with the link can view it, no account needed. Disable it
+                anytime to revoke access.
+              </p>
+
+              {shareUrl ? (
+                <div className="w-full flex flex-col sm:flex-row gap-3">
+                  <code
+                    data-testid="share-url"
+                    className="flex-1 min-w-0 truncate rounded-xl bg-primary/5 px-4 py-3 text-sm text-primary font-mono"
+                  >
+                    {shareUrl}
+                  </code>
+                  <div className="flex gap-3 shrink-0">
+                    <Button onClick={handleCopyShareUrl} variant="primary">
+                      {copiedValue === shareUrl ? 'Copied!' : 'Copy link'}
+                    </Button>
+                    <Button onClick={handleDisableSharing} variant="ghost" loading={shareBusy}>
+                      Disable
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button onClick={handleEnableSharing} variant="primary" loading={shareBusy}>
+                  Create share link
+                </Button>
+              )}
             </Card>
           </div>
 

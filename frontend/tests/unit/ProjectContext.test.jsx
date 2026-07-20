@@ -127,6 +127,45 @@ describe('ProjectContext mutations return success signals', () => {
     ]);
   });
 
+  it('enableSharing stores the minted token on the project', async () => {
+    apiMock.get.mockResolvedValue({
+      projects: [{ id: 3, name: 'P', shareToken: null }],
+      pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+    });
+    const { result } = renderHook(() => useProjects(), { wrapper });
+    // Wait for the mount fetch to populate the list.
+    await act(async () => {});
+
+    apiMock.post.mockResolvedValueOnce({ shareToken: 'tok123' });
+    let token;
+    await act(async () => {
+      token = await result.current.enableSharing(3);
+    });
+
+    expect(apiMock.post).toHaveBeenCalledWith('/projects/3/share', {}, expect.any(Object));
+    expect(token).toBe('tok123');
+    expect(result.current.projects[0].shareToken).toBe('tok123');
+  });
+
+  it('disableSharing clears the token and returns a boolean', async () => {
+    apiMock.get.mockResolvedValue({
+      projects: [{ id: 3, name: 'P', shareToken: 'tok123' }],
+      pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+    });
+    const { result } = renderHook(() => useProjects(), { wrapper });
+    await act(async () => {});
+
+    apiMock.delete.mockResolvedValueOnce({ success: true });
+    let ok;
+    await act(async () => {
+      ok = await result.current.disableSharing(3);
+    });
+
+    expect(apiMock.delete).toHaveBeenCalledWith('/projects/3/share', null, expect.any(Object));
+    expect(ok).toBe(true);
+    expect(result.current.projects[0].shareToken).toBeNull();
+  });
+
   it('deleteProject returns true on success and false on failure', async () => {
     const { result } = renderHook(() => useProjects(), { wrapper });
 

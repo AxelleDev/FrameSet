@@ -168,6 +168,42 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
+  // Enables public sharing: the server mints (or returns) the project's stable
+  // share token, mirrored locally. Returns the token, or null on failure.
+  const enableSharing = useCallback(async (projectId) => {
+    try {
+      const data = await api.post(`/projects/${projectId}/share`, {}, { onGlobalError: setGlobalError });
+      const shareToken = data?.shareToken || null;
+      setProjects((prevProjects) => (
+        prevProjects.map((project) => (
+          String(project.id) === String(projectId) ? { ...project, shareToken } : project
+        ))
+      ));
+      return shareToken;
+    } catch (error) {
+      setGlobalError(error?.message || 'Failed to create the share link.');
+      logger.error('projects.enableSharing.error', error);
+      return null;
+    }
+  }, [setGlobalError]);
+
+  // Disables public sharing: the link dies immediately server-side.
+  const disableSharing = useCallback(async (projectId) => {
+    try {
+      await api.delete(`/projects/${projectId}/share`, null, { onGlobalError: setGlobalError });
+      setProjects((prevProjects) => (
+        prevProjects.map((project) => (
+          String(project.id) === String(projectId) ? { ...project, shareToken: null } : project
+        ))
+      ));
+      return true;
+    } catch (error) {
+      setGlobalError(error?.message || 'Failed to disable the share link.');
+      logger.error('projects.disableSharing.error', error);
+      return false;
+    }
+  }, [setGlobalError]);
+
   // Duplicates a project (norms + palette copied server-side) and prepends the
   // copy to the local list. Returns the new project on success, or null.
   const duplicateProject = useCallback(async (id) => {
@@ -409,6 +445,8 @@ export const ProjectProvider = ({ children }) => {
     deleteProject,
     restoreProject,
     deleteProjectPermanently,
+    enableSharing,
+    disableSharing,
     updateProjectName,
     updateProjectPalette,
     addBrushNorm,
@@ -432,6 +470,8 @@ export const ProjectProvider = ({ children }) => {
     deleteProject,
     restoreProject,
     deleteProjectPermanently,
+    enableSharing,
+    disableSharing,
     updateProjectName,
     updateProjectPalette,
     addBrushNorm,

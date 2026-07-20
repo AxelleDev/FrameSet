@@ -30,6 +30,8 @@ describe('ProjectExport', () => {
       activeProject: { id: 2, name: 'Mon Projet', brushNorms: [], typographyNorms: [], palette: [] },
       projectsLoading: false,
       activeProjectId: '2',
+      enableSharing: vi.fn(),
+      disableSharing: vi.fn(),
     });
   });
 
@@ -48,5 +50,29 @@ describe('ProjectExport', () => {
     await user.click(screen.getByRole('button', { name: /download json/i }));
     expect(clickSpy).toHaveBeenCalled();
     clickSpy.mockRestore();
+  });
+
+  it('creates a share link when sharing is disabled', async () => {
+    const user = userEvent.setup();
+    projectState.enableSharing = vi.fn().mockResolvedValue('a'.repeat(32));
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /create share link/i }));
+    expect(projectState.enableSharing).toHaveBeenCalledWith(2);
+  });
+
+  it('shows the public URL and can disable sharing when a token exists', async () => {
+    const user = userEvent.setup();
+    projectState.activeProject = {
+      ...projectState.activeProject,
+      shareToken: 'b'.repeat(32),
+    };
+    projectState.disableSharing = vi.fn().mockResolvedValue(true);
+    renderPage();
+
+    expect(screen.getByTestId('share-url')).toHaveTextContent(`/s/${'b'.repeat(32)}`);
+
+    await user.click(screen.getByRole('button', { name: /disable/i }));
+    expect(projectState.disableSharing).toHaveBeenCalledWith(2);
   });
 });

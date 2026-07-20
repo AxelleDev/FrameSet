@@ -100,6 +100,7 @@ describe('projects controller', () => {
             id: 1,
             name: 'Project1',
             lastEdited: '15/03 10:00',
+            shareToken: null,
             brushNorms: [
               {
                 id: 10,
@@ -611,6 +612,97 @@ describe('projects controller', () => {
       const req = { params: { id: '3' }, user: { id: 1 } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.deleteProjectPermanently(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  describe('public sharing', () => {
+    it('enables sharing and returns the stable token (idempotent COALESCE)', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 5 }]]) // ownership
+        .mockResolvedValueOnce([{}]) // COALESCE UPDATE
+        .mockResolvedValueOnce([[{ share_token: 'a'.repeat(32) }]]); // read back
+      const req = { params: { id: '5' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.enableSharing(req, res);
+      expect(db.query).toHaveBeenCalledWith(
+        'UPDATE projects SET share_token = COALESCE(share_token, ?) WHERE id = ?',
+        [expect.stringMatching(/^[a-f0-9]{32}$/), '5'],
+      );
+      expect(res.json).toHaveBeenCalledWith({ shareToken: 'a'.repeat(32) });
+    });
+
+    it('disables sharing (revokes the link)', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 5 }]]) // ownership
+        .mockResolvedValueOnce([{}]); // UPDATE NULL
+      const req = { params: { id: '5' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.disableSharing(req, res);
+      expect(db.query).toHaveBeenCalledWith('UPDATE projects SET share_token = NULL WHERE id = ?', [
+        '5',
+      ]);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('serves a shared reference sheet publicly, without owner data', async () => {
+      const token = 'b'.repeat(32);
+      db.query
+        .mockResolvedValueOnce([[{ id: 5, name: 'Neo-Tokyo' }]]) // token lookup
+        .mockResolvedValueOnce([
+          [{ id: 7, name: 'Outline', value: '8', unit: 'px', brush_name: 'Smooth', opacity: 80 }],
+        ])
+        .mockResolvedValueOnce([
+          [
+            {
+              id: 8,
+              font_family: 'Figtree',
+              font_weight: '600',
+              font_usage: 'Heading',
+              font_style: null,
+            },
+          ],
+        ])
+        .mockResolvedValueOnce([[{ id: 9, name: 'Ink', hex: '#112233' }]]);
+      const req = { params: { token } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.getSharedProject(req, res);
+      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('deleted_at IS NULL'), [token]);
+      const payload = res.json.mock.calls[0][0];
+      expect(payload).toEqual({
+        name: 'Neo-Tokyo',
+        brushNorms: [
+          { id: 7, name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 80 },
+        ],
+        typographyNorms: [
+          {
+            id: 8,
+            fontFamily: 'Figtree',
+            fontWeight: '600',
+            fontUsage: 'Heading',
+            fontStyle: null,
+          },
+        ],
+        palette: [{ id: 9, name: 'Ink', hex: '#112233' }],
+      });
+      // The public payload never leaks the owner or the project id.
+      expect(payload.id).toBeUndefined();
+      expect(payload.userId).toBeUndefined();
+    });
+
+    it('returns 404 for a malformed token without touching the database', async () => {
+      const req = { params: { token: 'not-a-token' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.getSharedProject(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(db.query).not.toHaveBeenCalled();
+    });
+
+    it('returns 404 for an unknown or revoked token', async () => {
+      db.query.mockResolvedValueOnce([[]]);
+      const req = { params: { token: 'c'.repeat(32) } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.getSharedProject(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
     });
   });
