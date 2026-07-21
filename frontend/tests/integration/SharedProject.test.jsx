@@ -33,7 +33,8 @@ describe('SharedProject (public page)', () => {
         { id: 2, fontFamily: 'Figtree', fontWeight: '600', fontUsage: 'Heading', fontStyle: null },
       ],
       brushNorms: [
-        { id: 3, name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 80 },
+        // opacity is stored as a 0-1 decimal (validated server-side), not a percentage.
+        { id: 3, name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 0.8 },
       ],
     });
 
@@ -52,6 +53,8 @@ describe('SharedProject (public page)', () => {
     // Brush standard with its value and details.
     expect(screen.getByText('Outline')).toBeInTheDocument();
     expect(screen.getByText(/brush: smooth/i)).toBeInTheDocument();
+    // Opacity shown as the raw 0-1 decimal, same as the internal editor — not "80%".
+    expect(screen.getByText(/opacity: 0\.8/i)).toBeInTheDocument();
     // Growth footer pointing back to FrameSet.
     expect(screen.getByRole('link', { name: /create your own/i })).toBeInTheDocument();
   });

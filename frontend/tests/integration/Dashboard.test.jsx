@@ -79,6 +79,31 @@ describe('Dashboard', () => {
     await waitFor(() => expect(projectState.duplicateProject).toHaveBeenCalledWith(3));
   });
 
+  it('disables every card\'s Duplicate button while one duplication is in flight', async () => {
+    projectState.projects = [
+      { id: 3, name: 'Neo-Tokyo', lastEdited: 'Just now', normsCount: 0, palette: [] },
+      { id: 4, name: 'Retro Wave', lastEdited: 'Just now', normsCount: 0, palette: [] },
+    ];
+    // Never resolves within the test, so both buttons stay in the "busy" state
+    // long enough to assert on it.
+    let releaseDuplicate;
+    projectState.duplicateProject = vi.fn(
+      () => new Promise((resolve) => { releaseDuplicate = resolve; })
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    const [firstCardButton, secondCardButton] = screen.getAllByRole('button', { name: 'Duplicate project' });
+    await user.click(firstCardButton);
+
+    // Not just the clicked card: the OTHER card's button must also go disabled,
+    // otherwise clicking it would silently no-op against the in-flight guard.
+    await waitFor(() => expect(secondCardButton).toBeDisabled());
+    expect(firstCardButton).toBeDisabled();
+
+    releaseDuplicate({ id: 5, name: 'Neo-Tokyo (copy)' });
+  });
+
   it('hides the trash section when the trash is empty', () => {
     renderPage();
     expect(screen.queryByText('Trash')).not.toBeInTheDocument();

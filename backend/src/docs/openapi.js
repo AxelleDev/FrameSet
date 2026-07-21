@@ -142,6 +142,12 @@ const openapiSpec = {
           id: { type: 'integer', example: 1 },
           name: { type: 'string', example: 'Neo-Tokyo Editorial' },
           lastEdited: { type: 'string', example: '30/06 15:16' },
+          shareToken: {
+            type: 'string',
+            nullable: true,
+            description:
+              'Set when public sharing is enabled; the public page lives at /s/<shareToken>.',
+          },
           brushNorms: { type: 'array', items: { $ref: '#/components/schemas/BrushNorm' } },
           typographyNorms: {
             type: 'array',
@@ -158,6 +164,7 @@ const openapiSpec = {
           id: { type: 'integer', example: 7 },
           name: { type: 'string', example: 'Neo-Tokyo Editorial' },
           lastEdited: { type: 'string', example: 'Just now' },
+          shareToken: { type: 'string', nullable: true, example: null },
           normsCount: { type: 'integer', example: 0 },
           norms: { type: 'array', items: {}, example: [] },
           palette: {

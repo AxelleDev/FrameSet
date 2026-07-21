@@ -202,7 +202,7 @@ export default function Dashboard() {
                 onClick={(e) => handleDuplicateProject(e, project.id)}
                 title="Duplicate project"
                 intent="edit"
-                disabled={duplicatingId === project.id}
+                disabled={duplicatingId !== null}
               >
                 <DuplicateIcon />
               </ActionIconButton>

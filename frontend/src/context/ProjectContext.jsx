@@ -82,6 +82,21 @@ export const ProjectProvider = ({ children }) => {
     fetchProjects({ page: page + 1 });
   }, [fetchProjects]);
 
+  // Re-fetches every currently-loaded page, in order. Used after a mutation
+  // whose result's position in the server-side order can't be predicted locally
+  // (e.g. restoring a trashed project: its created_at may place it anywhere,
+  // not necessarily at the top) — a plain "refetch page 1" would otherwise
+  // silently truncate an already-loaded multi-page grid back down to 12 items.
+  const refetchLoadedProjects = useCallback(async () => {
+    const pagesLoaded = Math.max(1, paginationRef.current.page);
+    await fetchProjects({ silent: true, page: 1 });
+    // Sequential by design: each page's de-dup in fetchProjects reads the list
+    // state left by the previous page's fetch.
+    for (let page = 2; page <= pagesLoaded; page += 1) {
+      await fetchProjects({ silent: true, page });
+    }
+  }, [fetchProjects]);
+
   // Load projects once auth has settled. Logging out (no user) clears state.
   useEffect(() => {
     if (authLoading) return;
@@ -141,19 +156,21 @@ export const ProjectProvider = ({ children }) => {
   }, [user?.id, setGlobalError]);
 
   // Restores a trashed project. The full project (norms + palette) comes back
-  // to the grid via a silent refetch. Returns true on success.
+  // to the grid via a refetch of every page already loaded (not just page 1),
+  // so a multi-page grid doesn't collapse back down to the first page.
+  // Returns true on success.
   const restoreProject = useCallback(async (id) => {
     try {
       await api.post(`/projects/${id}/restore`, {}, { onGlobalError: setGlobalError });
       setTrashedProjects((prev) => prev.filter((project) => String(project.id) !== String(id)));
-      await fetchProjects({ silent: true });
+      await refetchLoadedProjects();
       return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to restore the project.');
       logger.error('projects.restore.error', error);
       return false;
     }
-  }, [setGlobalError, fetchProjects]);
+  }, [setGlobalError, refetchLoadedProjects]);
 
   // Permanently deletes a TRASHED project (irreversible). Returns true on success.
   const deleteProjectPermanently = useCallback(async (id) => {

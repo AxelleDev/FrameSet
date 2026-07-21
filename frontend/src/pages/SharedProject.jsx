@@ -57,7 +57,11 @@ export default function SharedProject() {
   return (
     <div className="min-h-dvh bg-canvas text-primary">
       {/* Tokens are private links: keep them out of search engines. */}
-      <Seo title={sheet ? `${sheet.name} — shared reference` : 'Shared reference'} noindex />
+      <Seo
+        title={sheet ? `${sheet.name} — shared reference` : 'Shared reference'}
+        path={`/s/${token}`}
+        noindex
+      />
       <PublicTopBar />
 
       <main className="max-w-4xl mx-auto px-6 pb-16">
@@ -112,11 +116,12 @@ export default function SharedProject() {
                         title={`Copy ${color.hex}`}
                         className="group text-left rounded-2xl overflow-hidden bg-surface focus-ring"
                       >
-                        <div
-                          className="h-24 w-full flex items-end justify-end p-2"
-                          style={{ backgroundColor: color.hex }}
-                        >
-                          <CopyBadge isCopied={copiedValue === color.hex} />
+                        <div className="relative h-24 w-full" style={{ backgroundColor: color.hex }}>
+                          {/* Hover-reveal to match the internal palette editor's copy affordance;
+                              [@media(hover:none)] keeps it visible for touch users, who can't hover. */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+                            <CopyBadge isCopied={copiedValue === color.hex} />
+                          </div>
                         </div>
                         <div className="p-3">
                           <p className="text-sm font-medium truncate">{color.name}</p>
@@ -165,10 +170,12 @@ export default function SharedProject() {
                           <span className="text-sm font-normal text-primary/60 ml-1">{norm.unit}</span>
                         </p>
                         <p className="text-xs text-primary/60 mt-2">
+                          {/* opacity is a plain 0-1 decimal (not a percentage), same as the
+                              editor's own display — no "%" suffix, no ×100 conversion. */}
                           {[
                             norm.brushName ? `Brush: ${norm.brushName}` : null,
                             norm.opacity !== null && norm.opacity !== undefined
-                              ? `Opacity: ${norm.opacity}%`
+                              ? `Opacity: ${norm.opacity}`
                               : null,
                           ].filter(Boolean).join(' · ')}
                         </p>

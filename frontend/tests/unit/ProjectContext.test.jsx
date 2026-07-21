@@ -94,6 +94,52 @@ describe('ProjectContext mutations return success signals', () => {
     expect(result.current.projects).toEqual([{ id: 3, name: 'Restored' }]);
   });
 
+  it('restoreProject refetches every loaded page, not just the first', async () => {
+    // Two pages already loaded before the restore (e.g. the user clicked "Load
+    // more" once): page 1 has 2 of 3 items, page 2 has the 3rd.
+    apiMock.get
+      .mockResolvedValueOnce({
+        projects: [{ id: 1, name: 'P1' }, { id: 2, name: 'P2' }],
+        pagination: { page: 1, pageSize: 2, total: 3, totalPages: 2 },
+      }) // mount fetch (page 1)
+      .mockResolvedValueOnce({
+        projects: [{ id: 3, name: 'P3' }],
+        pagination: { page: 2, pageSize: 2, total: 3, totalPages: 2 },
+      }); // fetchProjects({ page: 2 })
+
+    const { result } = renderHook(() => useProjects(), { wrapper });
+    await act(async () => {}); // mount fetch settles
+
+    await act(async () => {
+      await result.current.fetchProjects({ page: 2 });
+    });
+    expect(result.current.projects).toHaveLength(3);
+    expect(result.current.projectsPagination.page).toBe(2);
+
+    // Restoring a trashed project: its position in server order isn't known
+    // locally, so both previously-loaded pages must be refetched — the server
+    // now reports 4 projects total, split differently across the same 2 pages.
+    apiMock.post.mockResolvedValueOnce({ success: true }); // POST .../restore
+    apiMock.get
+      .mockResolvedValueOnce({
+        projects: [{ id: 1, name: 'P1' }, { id: 99, name: 'Restored' }],
+        pagination: { page: 1, pageSize: 2, total: 4, totalPages: 2 },
+      }) // refetch page 1
+      .mockResolvedValueOnce({
+        projects: [{ id: 2, name: 'P2' }, { id: 3, name: 'P3' }],
+        pagination: { page: 2, pageSize: 2, total: 4, totalPages: 2 },
+      }); // refetch page 2
+
+    await act(async () => {
+      await result.current.restoreProject(99);
+    });
+
+    // The grid reflects BOTH refetched pages (4 items) — a naive "refetch page
+    // 1 only" would have collapsed it down to 2 and dropped id 3 entirely.
+    expect(result.current.projects.map((p) => p.id)).toEqual([1, 99, 2, 3]);
+    expect(result.current.projectsPagination.total).toBe(4);
+  });
+
   it('deleteProjectPermanently returns a boolean and prunes the trash list', async () => {
     const { result } = renderHook(() => useProjects(), { wrapper });
 

@@ -221,7 +221,7 @@ export default function ProjectExport() {
 
             <Card className="p-8 flex flex-col items-start text-left md:col-span-2">
               <div className="h-12 w-12 bg-blue/15 text-blue rounded-full flex items-center justify-center mb-6">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 010 5.656l-4 4a4 4 0 01-5.656-5.656l1.5-1.5m8.328-2.672a4 4 0 000-5.656l-4-4a4 4 0 00-5.656 5.656l1.5 1.5M10.172 13.828a4 4 0 010-5.656l4-4a4 4 0 015.656 5.656l-1.5 1.5" /></svg>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
               </div>
               <h2 className="text-lg font-medium text-primary mb-2">Public share link</h2>
               <p className="text-sm text-primary mb-6">
