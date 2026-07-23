@@ -5,12 +5,20 @@ import Modal from '../../src/components/Modal';
 
 describe('Modal', () => {
   it('renders nothing when isOpen is false', () => {
-    render(<Modal isOpen={false} onClose={() => {}}>Content</Modal>);
+    render(
+      <Modal isOpen={false} onClose={() => {}}>
+        Content
+      </Modal>,
+    );
     expect(screen.queryByText('Content')).not.toBeInTheDocument();
   });
 
   it('renders the content, the title and the dialog role when open', () => {
-    render(<Modal isOpen onClose={() => {}} title="My title">Content</Modal>);
+    render(
+      <Modal isOpen onClose={() => {}} title="My title">
+        Content
+      </Modal>,
+    );
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('My title')).toBeInTheDocument();
     expect(screen.getByText('Content')).toBeInTheDocument();
@@ -18,7 +26,11 @@ describe('Modal', () => {
 
   it('closes with the Escape key', () => {
     const onClose = vi.fn();
-    render(<Modal isOpen onClose={onClose}>X</Modal>);
+    render(
+      <Modal isOpen onClose={onClose}>
+        X
+      </Modal>,
+    );
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -26,7 +38,11 @@ describe('Modal', () => {
   it('closes via the Close button', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
-    render(<Modal isOpen onClose={onClose} showClose>X</Modal>);
+    render(
+      <Modal isOpen onClose={onClose} showClose>
+        X
+      </Modal>,
+    );
     await user.click(screen.getByRole('button', { name: /close/i }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });

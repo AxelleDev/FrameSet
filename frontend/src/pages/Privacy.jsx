@@ -14,11 +14,11 @@ export default function Privacy() {
       <section>
         <h2>1. What we collect</h2>
         <p>
-          To provide the service, FrameSet stores: your name, your email address, your password
-          (as a bcrypt hash — never in clear text), and the content you create (projects,
-          palettes, typography and brush specifications). If you sign in with Google, we store
-          your Google account identifier and the name and email address Google shares with us; we
-          never see your Google password.
+          To provide the service, FrameSet stores: your name, your email address, your password (as
+          a bcrypt hash — never in clear text), and the content you create (projects, palettes,
+          typography and brush specifications). If you sign in with Google, we store your Google
+          account identifier and the name and email address Google shares with us; we never see your
+          Google password.
         </p>
       </section>
 
@@ -27,8 +27,8 @@ export default function Privacy() {
         <p>
           Your data is used solely to operate FrameSet: authenticating you, displaying your
           projects, sending transactional emails (verification codes, password-reset codes and
-          security alerts), and generating your exports. We do not sell your data, and we do not
-          use it for advertising.
+          security alerts), and generating your exports. We do not sell your data, and we do not use
+          it for advertising.
         </p>
       </section>
 
@@ -45,9 +45,8 @@ export default function Privacy() {
       <section>
         <h2>4. Third-party services</h2>
         <p>
-          Two external services are involved: Google Fonts (to list and preview typefaces you
-          pick for your projects) and Google Sign-In (only if you choose to continue with
-          Google, under{' '}
+          Two external services are involved: Google Fonts (to list and preview typefaces you pick
+          for your projects) and Google Sign-In (only if you choose to continue with Google, under{' '}
           <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">
             Google&apos;s privacy policy
           </a>
@@ -58,10 +57,10 @@ export default function Privacy() {
       <section>
         <h2>5. How your data is protected</h2>
         <p>
-          Passwords are hashed with bcrypt, one-time codes are stored hashed, sessions use
-          HttpOnly cookies with short lifetimes and server-side revocation, and every sensitive
-          action (password or email change, new sign-in method) triggers a security alert email.
-          All traffic is encrypted in transit (HTTPS).
+          Passwords are hashed with bcrypt, one-time codes are stored hashed, sessions use HttpOnly
+          cookies with short lifetimes and server-side revocation, and every sensitive action
+          (password or email change, new sign-in method) triggers a security alert email. All
+          traffic is encrypted in transit (HTTPS).
         </p>
       </section>
 
@@ -79,8 +78,8 @@ export default function Privacy() {
         <p>
           Depending on where you live (e.g. under the GDPR), you may have rights of access,
           rectification, portability and erasure over your personal data. Most of these are
-          available directly in the app; for anything else, get in touch via the contact section
-          of the project.
+          available directly in the app; for anything else, get in touch via the contact section of
+          the project.
         </p>
       </section>
 

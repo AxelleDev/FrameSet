@@ -13,7 +13,7 @@ const renderPage = (user = null) => {
           <NotFound />
         </MemoryRouter>
       </AuthContext.Provider>
-    </HelmetProvider>
+    </HelmetProvider>,
   );
 };
 

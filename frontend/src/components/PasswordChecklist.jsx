@@ -14,13 +14,15 @@ export default function PasswordChecklist({ password }) {
         return (
           <li
             key={rule.id}
-            className={`flex items-center gap-2 text-xs transition-colors ${satisfied ? 'text-success' : 'text-blue/70'}`}
+            className={`flex items-center gap-2 text-xs transition-colors ${satisfied ? 'text-success' : 'text-secondary'}`}
           >
             <span aria-hidden="true" className="font-bold w-3 inline-block text-center">
               {satisfied ? '✓' : '○'}
             </span>
             {/* Convey the met/unmet state to assistive tech, not by color alone. */}
-            <span className="sr-only">{satisfied ? 'Requirement met:' : 'Requirement not met:'}</span>
+            <span className="sr-only">
+              {satisfied ? 'Requirement met:' : 'Requirement not met:'}
+            </span>
             {rule.label}
           </li>
         );

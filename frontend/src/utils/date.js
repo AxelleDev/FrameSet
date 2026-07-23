@@ -1,7 +1,20 @@
 // Date/time formatting helpers, shared across pages so the app has a single place
 // for these (and they can be unit-tested).
 
-const MONTH_ABBREVIATIONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_ABBREVIATIONS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 // Formats a project's `lastEdited` for the "Edited " prefix: the API sends
 // "DD/MM HH:MM" or a sentinel; renders an unambiguous "on 2 Jul at 14:30" (not

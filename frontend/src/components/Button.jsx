@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
+import Spinner from './Spinner';
 
 // Themed button with optional async loading state: an `onClick` returning a promise shows a
 // spinner until it settles (honoring `minLoadingMs`). With `to`/`href` it renders a Link/anchor instead.
@@ -44,16 +45,24 @@ export default function Button({
     outline: 'bg-blue/10 text-blue hover:bg-blue/20',
   };
 
-  const disabledClass = (disabled || isLoading) ? 'opacity-50 cursor-not-allowed' : '';
+  const disabledClass = disabled || isLoading ? 'opacity-50 cursor-not-allowed' : '';
 
   const classes = `${base} ${size} ${variants[variant] || ''} ${disabledClass} ${className}`.trim();
 
   // Render as a navigation link when `to`/`href` is provided (no async loading).
   if (to) {
-    return <Link to={to} className={classes} {...rest}>{children}</Link>;
+    return (
+      <Link to={to} className={classes} {...rest}>
+        {children}
+      </Link>
+    );
   }
   if (href) {
-    return <a href={href} className={classes} {...rest}>{children}</a>;
+    return (
+      <a href={href} className={classes} {...rest}>
+        {children}
+      </a>
+    );
   }
 
   const handleClick = async (e) => {
@@ -89,12 +98,7 @@ export default function Button({
       className={classes}
       {...rest}
     >
-      {isLoading ? (
-        <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
-          <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-        </svg>
-      ) : null}
+      {isLoading ? <Spinner size="sm" /> : null}
       <span>{children}</span>
     </button>
   );

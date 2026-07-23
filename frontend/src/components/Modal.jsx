@@ -13,10 +13,10 @@ export default function Modal({
   subtitle,
   children,
   overlayClassName = 'bg-black/40 backdrop-blur-sm',
-  panelClassName = 'bg-surface w-full max-w-lg rounded-3xl p-5 sm:p-8 max-h-[90dvh] overflow-y-auto',
+  panelClassName = 'bg-surface w-full max-w-lg rounded-3xl p-6 sm:p-8 max-h-[90dvh] overflow-y-auto',
   showClose = true,
   closeOnBackdrop = true,
-  ariaLabelledby
+  ariaLabelledby,
 }) {
   const panelRef = useRef(null);
   // Remembers the element focused before the modal opened, to restore it on close.
@@ -60,7 +60,7 @@ export default function Modal({
     // Exclude disabled controls: a .focus() on them no-ops and would break the
     // trap at its edges (Tab could escape the modal).
     const focusableEls = panelRef.current.querySelectorAll(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
     );
     const focusable = Array.prototype.slice.call(focusableEls);
     if (!focusable.length) return;
@@ -109,12 +109,30 @@ export default function Modal({
         {(title || subtitle || showClose) && (
           <div className="flex items-start justify-between mb-6">
             <div>
-              {title && <h4 id="modal-title" className="text-xl font-medium text-primary">{title}</h4>}
+              {title && (
+                <h4 id="modal-title" className="text-xl font-medium text-primary">
+                  {title}
+                </h4>
+              )}
               {subtitle && <p className="text-sm text-primary/60">{subtitle}</p>}
             </div>
             {showClose && (
-              <button onClick={onClose} className="-m-2 flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-blue hover:text-primary transition focus-ring" aria-label="Close">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+              <button
+                onClick={onClose}
+                className="-m-2 flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-blue hover:text-primary transition focus-ring"
+                aria-label="Close"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
                   <path d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -124,7 +142,7 @@ export default function Modal({
         {children}
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 

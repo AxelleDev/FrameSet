@@ -7,8 +7,8 @@
  *   3. Retrying transient failures (network, 5xx, timeouts) within a time budget.
  */
 const API_URL = import.meta.env.VITE_API_URL || '/api';
-const RETRY_WINDOW_MS = 5000;      // total budget for retrying a single request
-const RETRY_INTERVAL_MS = 500;     // delay between transient-failure retries
+const RETRY_WINDOW_MS = 5000; // total budget for retrying a single request
+const RETRY_INTERVAL_MS = 500; // delay between transient-failure retries
 const COOKIE_PROPAGATION_DELAY_MS = 100; // brief pause after a token refresh so the new auth cookie is applied before the replay
 const CSRF_HEADER_NAME = 'x-csrf-token';
 const METHODS_REQUIRING_CSRF = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -32,17 +32,16 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Needs a CSRF token: mutating methods only, and never the CSRF endpoint itself
 // (which would otherwise be a chicken-and-egg).
-const isCsrfProtectedRequest = (method, path) => (
-  METHODS_REQUIRING_CSRF.has(String(method || '').toUpperCase())
-  && path !== '/auth/csrf-token'
-);
+const isCsrfProtectedRequest = (method, path) =>
+  METHODS_REQUIRING_CSRF.has(String(method || '').toUpperCase()) && path !== '/auth/csrf-token';
 
 // Detects a 403 caused by an invalid/expired CSRF token (vs. an expired access
 // token), so we refresh the CSRF token and replay instead of a full auth refresh.
-const isInvalidCsrfError = (error) => (
-  error?.status === 403
-  && String(error?.data?.error || '').toLowerCase().includes('csrf')
-);
+const isInvalidCsrfError = (error) =>
+  error?.status === 403 &&
+  String(error?.data?.error || '')
+    .toLowerCase()
+    .includes('csrf');
 
 // Returns a valid CSRF token, fetching from the backend if needed. Cached and
 // reused across requests; a shared in-flight promise de-dupes concurrent callers.
@@ -59,7 +58,7 @@ const fetchCsrfToken = async ({ forceRefresh = false } = {}) => {
   csrfTokenPromise = (async () => {
     const res = await fetch(`${API_URL}/auth/csrf-token`, {
       method: 'GET',
-      credentials: 'include'
+      credentials: 'include',
     });
 
     if (!res.ok) {
@@ -102,14 +101,15 @@ const attemptTokenRefresh = async () => {
     return false;
   }
 
-  const sendRefreshRequest = async (csrfHeaderValue) => fetch(`${API_URL}/auth/refresh`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      [CSRF_HEADER_NAME]: csrfHeaderValue
-    },
-    credentials: 'include'
-  });
+  const sendRefreshRequest = async (csrfHeaderValue) =>
+    fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        [CSRF_HEADER_NAME]: csrfHeaderValue,
+      },
+      credentials: 'include',
+    });
 
   try {
     let res = await sendRefreshRequest(csrfToken);
@@ -149,14 +149,10 @@ const attemptTokenRefresh = async () => {
  * REQUEST_RETRY_TIMEOUT error when the budget is exhausted. Notable options:
  * signal (caller abort, e.g. unmount) and skipTokenRefresh (used during hydration).
  */
-const request = async (path, {
-  method = 'GET',
-  body,
-  headers,
-  signal,
-  onGlobalError,
-  skipTokenRefresh = false
-} = {}) => {
+const request = async (
+  path,
+  { method = 'GET', body, headers, signal, onGlobalError, skipTokenRefresh = false } = {},
+) => {
   const normalizedMethod = String(method || 'GET').toUpperCase();
   const requiresCsrf = isCsrfProtectedRequest(normalizedMethod, path);
 
@@ -170,7 +166,7 @@ const request = async (path, {
 
     const nextOptions = {
       method: normalizedMethod,
-      headers: buildHeaders(body != null, nextHeaders)
+      headers: buildHeaders(body != null, nextHeaders),
     };
 
     if (body != null) {
@@ -194,7 +190,9 @@ const request = async (path, {
     const remainingBeforeAttempt = RETRY_WINDOW_MS - elapsedBeforeAttempt;
 
     if (remainingBeforeAttempt <= 0) {
-      const timeoutErr = new Error("Couldn't reach the server. Check your connection or try again later.");
+      const timeoutErr = new Error(
+        "Couldn't reach the server. Check your connection or try again later.",
+      );
       timeoutErr.code = 'REQUEST_RETRY_TIMEOUT';
       if (typeof onGlobalError === 'function') {
         onGlobalError(timeoutErr.message);
@@ -221,7 +219,7 @@ const request = async (path, {
       const res = await fetch(`${API_URL}${path}`, {
         ...opts,
         credentials: 'include',
-        signal: attemptController.signal
+        signal: attemptController.signal,
       });
       const contentType = res.headers.get('content-type') || '';
       const isJson = contentType.includes('application/json');
@@ -263,7 +261,12 @@ const request = async (path, {
 
       // Expired access token (generic 403): attempt a silent refresh, then
       // replay once. Skipped for the refresh endpoint itself to avoid recursion.
-      if (e?.status === 403 && !skipTokenRefresh && !hasAttemptedTokenRefresh && path !== '/auth/refresh') {
+      if (
+        e?.status === 403 &&
+        !skipTokenRefresh &&
+        !hasAttemptedTokenRefresh &&
+        path !== '/auth/refresh'
+      ) {
         hasAttemptedTokenRefresh = true;
         const refreshSuccess = await attemptTokenRefresh();
         if (refreshSuccess) {
@@ -339,5 +342,5 @@ export default {
   post: (p, b, opts) => request(p, { method: 'POST', body: b, ...opts }),
   put: (p, b, opts) => request(p, { method: 'PUT', body: b, ...opts }),
   patch: (p, b, opts) => request(p, { method: 'PATCH', body: b, ...opts }),
-  delete: (p, b, opts) => request(p, { method: 'DELETE', body: b, ...opts })
+  delete: (p, b, opts) => request(p, { method: 'DELETE', body: b, ...opts }),
 };

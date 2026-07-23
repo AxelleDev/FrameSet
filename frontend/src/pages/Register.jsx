@@ -4,14 +4,16 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
-import Logo from '../components/Logo';
+import AuthLogoLink from '../components/AuthLogoLink';
+import AuthCard from '../components/AuthCard';
 import FormField from '../components/FormField';
 import Button from '../components/Button';
-import Card from '../components/Card';
 import Seo from '../components/Seo';
 import PasswordInput from '../components/PasswordInput';
 import TextInput from '../components/TextInput';
 import Alert from '../components/Alert';
+import Divider from '../components/Divider';
+import TermsNotice from '../components/TermsNotice';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 import PasswordChecklist from '../components/PasswordChecklist';
 import useUserCount from '../hooks/useUserCount';
@@ -39,8 +41,7 @@ export default function Register() {
   const emailValid = isValidEmail(formData.email);
   const passwordValid = isPasswordValid(formData.password);
   const passwordsMatch = formData.password === formData.confirmPassword;
-  const canSubmit =
-    formData.name.trim() !== '' && emailValid && passwordValid && passwordsMatch;
+  const canSubmit = formData.name.trim() !== '' && emailValid && passwordValid && passwordsMatch;
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -85,38 +86,43 @@ export default function Register() {
 
   return (
     <AuthLayout
-     
       swapOnMobile
       hero={
         <>
-          <div className="flex items-center mb-2">
-            <Link to="/" aria-label="Go to homepage" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring w-24 sm:w-20">
-              <Logo className="object-contain w-full h-auto" />
-            </Link>
-          </div>
+          <AuthLogoLink />
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-primary leading-tight">
             Build your <br />
             <span className="font-bold text-primary">reference.</span>
           </h1>
 
           <p className="text-lg text-primary max-w-md leading-relaxed">
-            Start structuring the graphic foundations of your projects and give your creative world a clear, consistent direction.
+            Start structuring the graphic foundations of your projects and give your creative world
+            a clear, consistent direction.
           </p>
 
           <div className="space-y-4 pt-2">
             <div className="border-l-2 border-blue/40 pl-5 space-y-1.5">
-              <p className="text-sm font-medium text-primary">"An essential tool for picking a project back up without losing my graphic settings."</p>
+              <p className="text-sm font-medium text-primary">
+                "An essential tool for picking a project back up without losing my graphic
+                settings."
+              </p>
               <p className="text-xs text-blue uppercase tracking-widest">Alyse C., Illustrator</p>
             </div>
             <p className="text-sm text-blue">
-              {userCount !== null ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}` : ' '}
+              {userCount !== null
+                ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}`
+                : ' '}
             </p>
           </div>
         </>
       }
     >
-      <Card className="w-full max-w-md p-6 sm:p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
-        <Seo title="Create account" path="/register" description="Create your FrameSet account and start structuring the graphic foundations of your projects." />
+      <AuthCard>
+        <Seo
+          title="Create account"
+          path="/register"
+          description="Create your FrameSet account and start structuring the graphic foundations of your projects."
+        />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Create your account</h2>
           <p className="text-primary text-sm mt-2">Your graphic reference starts here.</p>
@@ -171,7 +177,11 @@ export default function Register() {
           <FormField
             label="Confirm password"
             required
-            error={formData.confirmPassword !== '' && !passwordsMatch ? "Passwords don't match." : undefined}
+            error={
+              formData.confirmPassword !== '' && !passwordsMatch
+                ? "Passwords don't match."
+                : undefined
+            }
           >
             <PasswordInput
               name="confirmPassword"
@@ -182,31 +192,33 @@ export default function Register() {
             />
           </FormField>
 
-          <Button type="submit" fullWidth className="mt-2" disabled={!canSubmit} loading={submitting}>
+          <Button
+            type="submit"
+            fullWidth
+            className="mt-2"
+            disabled={!canSubmit}
+            loading={submitting}
+          >
             Create account
           </Button>
         </form>
 
-        <div className="my-6 flex items-center gap-3" aria-hidden="true">
-          <span className="h-px flex-1 bg-primary/10" />
-          <span className="text-xs uppercase tracking-widest text-primary/50">or</span>
-          <span className="h-px flex-1 bg-primary/10" />
-        </div>
+        <Divider className="my-6" />
 
         <GoogleSignInButton onCredential={handleGoogleCredential} disabled={submitting} />
 
-        <p className="mt-6 text-center text-xs text-primary/60">
-          By continuing, you agree to the{' '}
-          <Link to="/terms" className="text-blue hover:text-primary transition-colors underline underline-offset-2">Terms of Service</Link>{' '}
-          and acknowledge the{' '}
-          <Link to="/privacy" className="text-blue hover:text-primary transition-colors underline underline-offset-2">Privacy Policy</Link>.
-        </p>
+        <TermsNotice />
 
         <div className="mt-8 text-center">
           <span className="text-sm text-primary">Already have an account? </span>
-          <Link to="/login" className="text-sm font-medium text-blue hover:text-primary transition-colors">Sign in</Link>
+          <Link
+            to="/login"
+            className="text-sm font-medium text-blue hover:text-primary transition-colors"
+          >
+            Sign in
+          </Link>
         </div>
-      </Card>
+      </AuthCard>
     </AuthLayout>
   );
 }

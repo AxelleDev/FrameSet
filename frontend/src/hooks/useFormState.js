@@ -6,7 +6,7 @@ export const useFormState = (initial = {}) => {
   // Capture the very first `initial` so `reset` stays stable even when callers
   // pass an inline object literal (a new identity on every render).
   const initialRef = useRef(initial);
-  const setField = useCallback((key, val) => setValues(v => ({ ...v, [key]: val })), []);
+  const setField = useCallback((key, val) => setValues((v) => ({ ...v, [key]: val })), []);
   const reset = useCallback(() => setValues(initialRef.current), []);
   return { values, setValues, setField, reset };
 };

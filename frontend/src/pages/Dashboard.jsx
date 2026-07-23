@@ -16,21 +16,38 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
 import Seo from '../components/Seo';
+import TrashSection from '../components/TrashSection';
+import TrashRow from '../components/TrashRow';
+import EmptyState from '../components/EmptyState';
 import { EditIcon, DuplicateIcon, DeleteIcon } from '../components/icons';
 import { formatModified } from '../utils/date';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { projects, projectsPagination, projectsLoading, trashedProjects, loadMoreProjects, setActiveProjectId, addProject, duplicateProject, deleteProject, updateProjectName, fetchTrashedProjects, restoreProject, deleteProjectPermanently } = useProjects();
+  const {
+    projects,
+    projectsPagination,
+    projectsLoading,
+    trashedProjects,
+    loadMoreProjects,
+    setActiveProjectId,
+    addProject,
+    duplicateProject,
+    deleteProject,
+    updateProjectName,
+    fetchTrashedProjects,
+    restoreProject,
+    deleteProjectPermanently,
+  } = useProjects();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [isCreatingProject, setIsCreatingProject] = useState(false);
-  const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectName, setNewProjectName] = useState('');
   const [isEditingProject, setIsEditingProject] = useState(false);
   const [editProjectId, setEditProjectId] = useState(null);
-  const [editProjectName, setEditProjectName] = useState("");
+  const [editProjectName, setEditProjectName] = useState('');
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(null);
-  const [editProjectError, setEditProjectError] = useState("");
+  const [editProjectError, setEditProjectError] = useState('');
 
   // Clear any active project when landing on the dashboard (we are not in a project).
   useEffect(() => {
@@ -79,10 +96,10 @@ export default function Dashboard() {
   };
 
   const handleEditProject = async () => {
-    setEditProjectError("");
+    setEditProjectError('');
     if (isSubmittingProject) return;
     if (!editProjectId || !editProjectName || !editProjectName.trim()) {
-      setEditProjectError("Give your project a name.");
+      setEditProjectError('Give your project a name.');
       return;
     }
     setIsSubmittingProject(true);
@@ -91,12 +108,12 @@ export default function Dashboard() {
       // error banner already surfaced the reason).
       const ok = await updateProjectName(editProjectId, { name: editProjectName.trim() });
       if (!ok) {
-        setEditProjectError("Something went wrong updating the project.");
+        setEditProjectError('Something went wrong updating the project.');
         return;
       }
       setIsEditingProject(false);
       setEditProjectId(null);
-      setEditProjectName("");
+      setEditProjectName('');
       showToast('Project updated.');
     } finally {
       setIsSubmittingProject(false);
@@ -156,38 +173,55 @@ export default function Dashboard() {
       <Card className="overflow-hidden mb-12 animate-fade-in">
         <div className="relative z-10 p-6 sm:p-10 md:p-14 flex flex-col md:flex-row items-start justify-between gap-6 md:gap-8">
           <div>
-            <h1 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">Hi, {user.name.split(' ')[0]}.</h1>
+            <h1 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">
+              Hi, {user.name.split(' ')[0]}.
+            </h1>
             <p className="text-primary max-w-lg leading-relaxed font-medium">
-              You currently have <strong className="text-blue">{totalProjects} project{totalProjects === 1 ? '' : 's'}</strong>.
+              You currently have{' '}
+              <strong className="text-blue">
+                {totalProjects} project{totalProjects === 1 ? '' : 's'}
+              </strong>
+              .
             </p>
             <div className="mt-8 flex space-x-4">
-               <Button onClick={() => setIsCreatingProject(true)} variant="primary" className="px-6 py-3">
-                 + Create project
-               </Button>
+              <Button
+                onClick={() => setIsCreatingProject(true)}
+                variant="primary"
+                className="px-6 py-3"
+              >
+                + Create project
+              </Button>
             </div>
           </div>
-          
+
           <div className="flex flex-wrap gap-4 shrink-0 md:mt-0">
-             <div className="p-4 rounded-2xl flex-1 sm:flex-none sm:w-32 text-center stat-bg">
-                <div className="text-2xl font-bold text-primary">{totalNorms}</div>
-                   <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{totalNorms === 1 ? 'Standard' : 'Standards'}</div>
-             </div>
-             <div className="p-4 rounded-2xl flex-1 sm:flex-none sm:w-32 text-center stat-bg">
-               <div className="text-2xl font-bold text-primary">{totalProjects}</div>
-               <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">{totalProjects === 1 ? 'Project' : 'Projects'}</div>
-             </div>
+            <div className="p-4 rounded-2xl flex-1 sm:flex-none sm:w-32 text-center stat-bg">
+              <div className="text-2xl font-bold text-primary">{totalNorms}</div>
+              <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">
+                {totalNorms === 1 ? 'Standard' : 'Standards'}
+              </div>
+            </div>
+            <div className="p-4 rounded-2xl flex-1 sm:flex-none sm:w-32 text-center stat-bg">
+              <div className="text-2xl font-bold text-primary">{totalProjects}</div>
+              <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">
+                {totalProjects === 1 ? 'Project' : 'Projects'}
+              </div>
+            </div>
           </div>
         </div>
       </Card>
 
       {totalProjects === 0 ? (
-        <div className="text-center mb-6">
-          <h2 className="text-lg font-medium text-primary mb-1">Create your first project</h2>
-          <p className="text-sm text-primary/60 max-w-md mx-auto">Each project keeps its graphic standards and color palette in one place.</p>
-        </div>
+        <EmptyState
+          className="mb-6"
+          title="Create your first project"
+          description="Each project keeps its graphic standards and color palette in one place."
+        />
       ) : (
         <div className="flex items-end justify-between mb-6">
-          <h2 className="text-xl font-medium text-primary">{totalProjects === 1 ? 'Your project' : 'Your projects'}</h2>
+          <h2 className="text-xl font-medium text-primary">
+            {totalProjects === 1 ? 'Your project' : 'Your projects'}
+          </h2>
         </div>
       )}
 
@@ -232,12 +266,17 @@ export default function Dashboard() {
                   {project.name}
                 </button>
               </h3>
-              <p className="text-sm text-primary mb-auto">Edited {formatModified(project.lastEdited)}</p>
+              <p className="text-sm text-primary mb-auto">
+                Edited {formatModified(project.lastEdited)}
+              </p>
               <div className="mt-8 pt-4 flex -space-x-2 min-h-[40px] items-center">
                 {project.palette.map((color, i) => (
-                  <div key={color.id ?? `${color.hex}-${i}`} className="w-6 h-6 rounded-full ring-2 ring-surface"
-                       style={{ backgroundColor: color.hex }}
-                       title={color.name}></div>
+                  <div
+                    key={color.id ?? `${color.hex}-${i}`}
+                    className="w-6 h-6 rounded-full ring-2 ring-surface"
+                    style={{ backgroundColor: color.hex }}
+                    title={color.name}
+                  ></div>
                 ))}
                 {project.palette.length === 0 && (
                   <div className="text-xs text-blue italic flex items-center">
@@ -246,7 +285,6 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-
             </div>
           </Card>
         ))}
@@ -267,49 +305,25 @@ export default function Dashboard() {
       )}
 
       {trashedProjects.length > 0 && (
-        <section className="mt-14" aria-labelledby="trash-title">
-          <h2 id="trash-title" className="text-lg font-medium text-primary flex items-center">
-            <DeleteIcon className="w-5 h-5 mr-2 text-blue shrink-0" />
-            Trash
-            <span className="ml-2 text-sm font-normal text-primary/50">({trashedProjects.length})</span>
-          </h2>
-          <p className="text-xs text-primary/60 mt-1 mb-4">
-            Trashed projects are kept for 30 days, then deleted forever.
-          </p>
-          <div className="space-y-3">
-            {trashedProjects.map((project) => (
-              <Card key={project.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-primary truncate">{project.name}</p>
-                  <p className="text-xs text-primary/60">
-                    {project.daysLeft <= 0
-                      ? 'Will be deleted with the next cleanup'
-                      : `${project.daysLeft} day${project.daysLeft === 1 ? '' : 's'} left before permanent deletion`}
-                  </p>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <Button
-                    variant="ghost"
-                    className="text-sm"
-                    onClick={() => handleRestoreProject(project.id)}
-                    loading={restoringId === project.id}
-                    disabled={trashBusy}
-                  >
-                    Restore
-                  </Button>
-                  <Button
-                    variant="danger"
-                    className="text-sm"
-                    disabled={trashBusy}
-                    onClick={() => setConfirmPermanentDelete({ id: project.id, name: project.name })}
-                  >
-                    Delete forever
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </section>
+        <TrashSection
+          id="trash-title"
+          count={trashedProjects.length}
+          note="Trashed projects are kept for 30 days, then deleted forever."
+        >
+          {trashedProjects.map((project) => (
+            <TrashRow
+              key={project.id}
+              title={project.name}
+              daysLeft={project.daysLeft}
+              onRestore={() => handleRestoreProject(project.id)}
+              restoring={restoringId === project.id}
+              busy={trashBusy}
+              onDeleteForever={() =>
+                setConfirmPermanentDelete({ id: project.id, name: project.name })
+              }
+            />
+          ))}
+        </TrashSection>
       )}
 
       <FormModal
@@ -320,8 +334,15 @@ export default function Dashboard() {
         <div className="space-y-4">
           <FormField label="Project name">
             {/* autoFocus is intentional: focus the field when the modal opens. */}
-            {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
-            <TextInput type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()} placeholder="Neo-Tokyo Editorial" autoFocus />
+            <TextInput
+              type="text"
+              value={newProjectName}
+              onChange={(e) => setNewProjectName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()}
+              placeholder="Neo-Tokyo Editorial"
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
+            />
           </FormField>
         </div>
 
@@ -336,22 +357,41 @@ export default function Dashboard() {
 
       <FormModal
         isOpen={isEditingProject}
-        onClose={() => { setIsEditingProject(false); setEditProjectId(null); setEditProjectError(""); }}
+        onClose={() => {
+          setIsEditingProject(false);
+          setEditProjectId(null);
+          setEditProjectError('');
+        }}
         title="Edit project"
       >
         <div className="space-y-4">
           <FormField label="Project name">
             {/* autoFocus is intentional: focus the field when the modal opens. */}
-            {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
-            <TextInput type="text" value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleEditProject()} placeholder="Neo-Tokyo Editorial" autoFocus />
+            <TextInput
+              type="text"
+              value={editProjectName}
+              onChange={(e) => setEditProjectName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleEditProject()}
+              placeholder="Neo-Tokyo Editorial"
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
+            />
           </FormField>
-          {editProjectError && <Alert variant="danger" className="mt-2">{editProjectError}</Alert>}
+          {editProjectError && (
+            <Alert variant="danger" className="mt-2">
+              {editProjectError}
+            </Alert>
+          )}
         </div>
 
         <ModalActions
           secondaryLabel="Cancel"
           primaryLabel="Save"
-          onSecondary={() => { setIsEditingProject(false); setEditProjectId(null); setEditProjectError(""); }}
+          onSecondary={() => {
+            setIsEditingProject(false);
+            setEditProjectId(null);
+            setEditProjectError('');
+          }}
           onPrimary={handleEditProject}
           primaryDisabled={!editProjectName}
         />

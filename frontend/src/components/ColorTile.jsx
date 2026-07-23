@@ -11,7 +11,7 @@ import CopyBadge from './CopyBadge';
  */
 const ColorTile = React.forwardRef(function ColorTile(
   { hex, name, onCopy, copied = false, overlay, className = '', ...rest },
-  ref
+  ref,
 ) {
   return (
     <div
@@ -39,8 +39,12 @@ const ColorTile = React.forwardRef(function ColorTile(
         )}
       </div>
       <div className="mt-4 text-center">
-        <p className="text-sm font-semibold text-primary truncate" title={name}>{name}</p>
-        <p className="text-xs text-primary font-mono mt-0.5 uppercase tracking-wide opacity-70 group-hover:opacity-100 transition-opacity">{hex}</p>
+        <p className="text-sm font-semibold text-primary truncate" title={name}>
+          {name}
+        </p>
+        <p className="text-xs text-primary font-mono mt-0.5 uppercase tracking-wide opacity-70 group-hover:opacity-100 transition-opacity">
+          {hex}
+        </p>
       </div>
     </div>
   );

@@ -18,17 +18,20 @@ export const AuthProvider = ({ children }) => {
 
   // Requests a new access token via the refresh cookie. silent suppresses the
   // global error banner (used during hydration). Returns whether a token issued.
-  const refreshAccessToken = useCallback(async ({ silent = false } = {}) => {
-    try {
-      // Silent refresh (during hydration) must not flash a global error.
-      const refreshOptions = silent ? undefined : { onGlobalError: setGlobalError };
-      const data = await api.post('/auth/refresh', {}, refreshOptions);
-      return Boolean(data?.success);
-    } catch (error) {
-      logger.error('auth.refreshAccessToken.error', error);
-      return false;
-    }
-  }, [setGlobalError]);
+  const refreshAccessToken = useCallback(
+    async ({ silent = false } = {}) => {
+      try {
+        // Silent refresh (during hydration) must not flash a global error.
+        const refreshOptions = silent ? undefined : { onGlobalError: setGlobalError };
+        const data = await api.post('/auth/refresh', {}, refreshOptions);
+        return Boolean(data?.success);
+      } catch (error) {
+        logger.error('auth.refreshAccessToken.error', error);
+        return false;
+      }
+    },
+    [setGlobalError],
+  );
 
   // On mount, restore the session from the auth cookies by fetching the profile.
   // Handles three cases: valid session, no session (401), and expired access
@@ -118,48 +121,67 @@ export const AuthProvider = ({ children }) => {
     setUser((currentUser) => {
       return {
         ...(currentUser || {}),
-        ...userData
+        ...userData,
       };
     });
   }, []);
 
   // Authenticates with email/password and stores the returned user.
-  const login = useCallback(async (email, password) => {
-    try {
-      const userData = await api.post('/auth/login', { email, password }, { onGlobalError: setGlobalError });
-      setAuthenticatedUser(userData);
-      return { success: true, data: userData };
-    } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, 'Something went wrong.');
-      // Surface the server error code (e.g. EMAIL_NOT_VERIFIED) so callers branch on
-      // a stable identifier instead of matching the human-readable message text.
-      return { success: false, message, code: err?.data?.code };
-    }
-  }, [setAuthenticatedUser]);
+  const login = useCallback(
+    async (email, password) => {
+      try {
+        const userData = await api.post(
+          '/auth/login',
+          { email, password },
+          { onGlobalError: setGlobalError },
+        );
+        setAuthenticatedUser(userData);
+        return { success: true, data: userData };
+      } catch (err) {
+        const { message } = handleApiError(err, setGlobalError, 'Something went wrong.');
+        // Surface the server error code (e.g. EMAIL_NOT_VERIFIED) so callers branch on
+        // a stable identifier instead of matching the human-readable message text.
+        return { success: false, message, code: err?.data?.code };
+      }
+    },
+    [setAuthenticatedUser],
+  );
 
   // Authenticates with a Google ID token (from the GIS button): the backend
   // verifies it, resolves/creates the account, and issues the session cookies.
-  const loginWithGoogle = useCallback(async (credential) => {
-    try {
-      const userData = await api.post('/auth/google', { credential }, { onGlobalError: setGlobalError });
-      setAuthenticatedUser(userData);
-      return { success: true, data: userData };
-    } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, 'Google sign-in failed.');
-      return { success: false, message };
-    }
-  }, [setAuthenticatedUser]);
+  const loginWithGoogle = useCallback(
+    async (credential) => {
+      try {
+        const userData = await api.post(
+          '/auth/google',
+          { credential },
+          { onGlobalError: setGlobalError },
+        );
+        setAuthenticatedUser(userData);
+        return { success: true, data: userData };
+      } catch (err) {
+        const { message } = handleApiError(err, setGlobalError, 'Google sign-in failed.');
+        return { success: false, message };
+      }
+    },
+    [setAuthenticatedUser],
+  );
 
   // Registers a new account without logging in; caller redirects to verification.
-  const register = useCallback(async (userData) => {
-    try {
-      const registrationData = await api.post('/auth/register', userData, { onGlobalError: setGlobalError });
-      return { success: true, data: registrationData };
-    } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, 'Something went wrong.');
-      return { success: false, message };
-    }
-  }, [setGlobalError]);
+  const register = useCallback(
+    async (userData) => {
+      try {
+        const registrationData = await api.post('/auth/register', userData, {
+          onGlobalError: setGlobalError,
+        });
+        return { success: true, data: registrationData };
+      } catch (err) {
+        const { message } = handleApiError(err, setGlobalError, 'Something went wrong.');
+        return { success: false, message };
+      }
+    },
+    [setGlobalError],
+  );
 
   // Logs out. Clears the local user even if server-side revocation fails, so the
   // UI always ends up logged out.
@@ -178,27 +200,37 @@ export const AuthProvider = ({ children }) => {
   // confirmed via the verification flow before it takes effect. Changing the
   // email is a critical action: pass `credentials` ({ currentPassword } or
   // { googleCredential }) to re-authenticate.
-  const updateUserProfile = useCallback(async (updates, credentials) => {
-    if (!user) return;
+  const updateUserProfile = useCallback(
+    async (updates, credentials) => {
+      if (!user) return;
 
-    try {
-      const data = await api.put('/users', { id: user.id, ...updates, ...(credentials || {}) }, { onGlobalError: setGlobalError });
-      const updatedUser = {
-        ...user,
-        name: data.name ?? user.name,
-        email: data.email ?? user.email,
-        pendingEmail: data.pendingEmail ?? user.pendingEmail
-      };
-      setUser(updatedUser);
-      return { success: true };
-    } catch (error) {
-      logger.error('auth.updateUserProfile.error', error);
-      // Business errors (4xx) are returned for an inline toast; server errors
-      // (5xx) already surfaced on the global banner via onGlobalError.
-      const isBusinessError = error.status && error.status < 500;
-      return { success: false, message: isBusinessError ? (error.data?.error || error.message) : undefined };
-    }
-  }, [user]);
+      try {
+        const data = await api.put(
+          '/users',
+          { id: user.id, ...updates, ...(credentials || {}) },
+          { onGlobalError: setGlobalError },
+        );
+        const updatedUser = {
+          ...user,
+          name: data.name ?? user.name,
+          email: data.email ?? user.email,
+          pendingEmail: data.pendingEmail ?? user.pendingEmail,
+        };
+        setUser(updatedUser);
+        return { success: true };
+      } catch (error) {
+        logger.error('auth.updateUserProfile.error', error);
+        // Business errors (4xx) are returned for an inline toast; server errors
+        // (5xx) already surfaced on the global banner via onGlobalError.
+        const isBusinessError = error.status && error.status < 500;
+        return {
+          success: false,
+          message: isBusinessError ? error.data?.error || error.message : undefined,
+        };
+      }
+    },
+    [user],
+  );
 
   // Permanently deletes the account and logs the user out locally on success.
   // Destructive, so it requires re-authentication credentials
@@ -218,146 +250,197 @@ export const AuthProvider = ({ children }) => {
   // Changes the password after verifying the current one; records the
   // passwordUpdatedAt timestamp on success. `message` is set only for 4xx
   // (business) errors, shown inline in the form.
-  const changePassword = useCallback(async ({ currentPassword, newPassword }) => {
-    if (!user) {
-      return { success: false, message: 'You are not signed in.' };
-    }
+  const changePassword = useCallback(
+    async ({ currentPassword, newPassword }) => {
+      if (!user) {
+        return { success: false, message: 'You are not signed in.' };
+      }
 
-    try {
-      const data = await api.post('/users/password', { id: user.id, currentPassword, newPassword }, { onGlobalError: setGlobalError });
-      const updatedUser = {
-        ...user,
-        passwordUpdatedAt: data.passwordUpdatedAt || new Date().toISOString()
-      };
-      setUser(updatedUser);
-      return { success: true };
-    } catch (error) {
-      logger.error('auth.changePassword.error', error);
-      // Surface 4xx messages inline; leave message undefined for server errors
-      // (those already went to the global banner via onGlobalError).
-      const isBusinessError = error.status && error.status < 500;
-      return { success: false, message: isBusinessError ? (error.data?.error || error.message) : undefined };
-    }
-  }, [user]);
+      try {
+        const data = await api.post(
+          '/users/password',
+          { id: user.id, currentPassword, newPassword },
+          { onGlobalError: setGlobalError },
+        );
+        const updatedUser = {
+          ...user,
+          passwordUpdatedAt: data.passwordUpdatedAt || new Date().toISOString(),
+        };
+        setUser(updatedUser);
+        return { success: true };
+      } catch (error) {
+        logger.error('auth.changePassword.error', error);
+        // Surface 4xx messages inline; leave message undefined for server errors
+        // (those already went to the global banner via onGlobalError).
+        const isBusinessError = error.status && error.status < 500;
+        return {
+          success: false,
+          message: isBusinessError ? error.data?.error || error.message : undefined,
+        };
+      }
+    },
+    [user],
+  );
 
   // Confirms a new account's email with the code emailed at signup.
-  const verifyEmail = useCallback(async (email, code) => {
-    try {
-      const data = await api.post('/auth/verify', { email, code }, { onGlobalError: setGlobalError });
-      return { success: Boolean(data?.success) };
-    } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, 'Code incorrect.');
-      return { success: false, message };
-    }
-  }, [setGlobalError]);
+  const verifyEmail = useCallback(
+    async (email, code) => {
+      try {
+        const data = await api.post(
+          '/auth/verify',
+          { email, code },
+          { onGlobalError: setGlobalError },
+        );
+        return { success: Boolean(data?.success) };
+      } catch (err) {
+        const { message } = handleApiError(err, setGlobalError, 'Code incorrect.');
+        return { success: false, message };
+      }
+    },
+    [setGlobalError],
+  );
 
   /** Re-sends the account email-verification code. */
-  const resendVerificationCode = useCallback(async (email) => {
-    try {
-      const data = await api.post('/auth/resend-code', { email }, { onGlobalError: setGlobalError });
-      return { success: Boolean(data?.success) };
-    } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, "Failed to send the code.");
-      return { success: false, message };
-    }
-  }, [setGlobalError]);
+  const resendVerificationCode = useCallback(
+    async (email) => {
+      try {
+        const data = await api.post(
+          '/auth/resend-code',
+          { email },
+          { onGlobalError: setGlobalError },
+        );
+        return { success: Boolean(data?.success) };
+      } catch (err) {
+        const { message } = handleApiError(err, setGlobalError, 'Failed to send the code.');
+        return { success: false, message };
+      }
+    },
+    [setGlobalError],
+  );
 
   // Starts the forgot-password flow (backend emails a reset code). The backend
   // responds identically whether or not the email exists (avoids user enumeration).
-  const requestPasswordReset = useCallback(async (email) => {
-    try {
-      const data = await api.post('/auth/forgot-password', { email }, { onGlobalError: setGlobalError });
-      return { success: Boolean(data?.success) };
-    } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, "Failed to send the code.");
-      return { success: false, message };
-    }
-  }, [setGlobalError]);
+  const requestPasswordReset = useCallback(
+    async (email) => {
+      try {
+        const data = await api.post(
+          '/auth/forgot-password',
+          { email },
+          { onGlobalError: setGlobalError },
+        );
+        return { success: Boolean(data?.success) };
+      } catch (err) {
+        const { message } = handleApiError(err, setGlobalError, 'Failed to send the code.');
+        return { success: false, message };
+      }
+    },
+    [setGlobalError],
+  );
 
   // Completes the forgot-password flow: submits the reset code and new password.
-  const resetPassword = useCallback(async (email, code, newPassword) => {
-    try {
-      const data = await api.post('/auth/reset-password', { email, code, newPassword }, { onGlobalError: setGlobalError });
-      return { success: Boolean(data?.success) };
-    } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, 'Password reset failed.');
-      return { success: false, message };
-    }
-  }, [setGlobalError]);
+  const resetPassword = useCallback(
+    async (email, code, newPassword) => {
+      try {
+        const data = await api.post(
+          '/auth/reset-password',
+          { email, code, newPassword },
+          { onGlobalError: setGlobalError },
+        );
+        return { success: Boolean(data?.success) };
+      } catch (err) {
+        const { message } = handleApiError(err, setGlobalError, 'Password reset failed.');
+        return { success: false, message };
+      }
+    },
+    [setGlobalError],
+  );
 
   // Confirms a pending email change with its code and merges the updated user.
-  const verifyPendingEmail = useCallback(async (email, code) => {
-    try {
-      const data = await api.post('/users/email/verify', { email, code }, { onGlobalError: setGlobalError });
-      // Server returns the updated user (email now applied); merge it locally.
-      if (data?.success && data.user) {
-        applyUserUpdate(data.user);
+  const verifyPendingEmail = useCallback(
+    async (email, code) => {
+      try {
+        const data = await api.post(
+          '/users/email/verify',
+          { email, code },
+          { onGlobalError: setGlobalError },
+        );
+        // Server returns the updated user (email now applied); merge it locally.
+        if (data?.success && data.user) {
+          applyUserUpdate(data.user);
+        }
+        return { success: Boolean(data?.success) };
+      } catch (err) {
+        const { message } = handleApiError(err, setGlobalError, 'Code incorrect.');
+        return { success: false, message };
       }
-      return { success: Boolean(data?.success) };
-    } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, 'Code incorrect.');
-      return { success: false, message };
-    }
-  }, [applyUserUpdate, setGlobalError]);
+    },
+    [applyUserUpdate, setGlobalError],
+  );
 
   /** Re-sends the verification code for a pending email change. */
-  const resendPendingEmailCode = useCallback(async (email) => {
-    try {
-      const data = await api.post('/users/email/resend', { email }, { onGlobalError: setGlobalError });
-      return { success: Boolean(data?.success) };
-    } catch (err) {
-      const { message } = handleApiError(err, setGlobalError, "Failed to send the code.");
-      return { success: false, message };
-    }
-  }, [setGlobalError]);
+  const resendPendingEmailCode = useCallback(
+    async (email) => {
+      try {
+        const data = await api.post(
+          '/users/email/resend',
+          { email },
+          { onGlobalError: setGlobalError },
+        );
+        return { success: Boolean(data?.success) };
+      } catch (err) {
+        const { message } = handleApiError(err, setGlobalError, 'Failed to send the code.');
+        return { success: false, message };
+      }
+    },
+    [setGlobalError],
+  );
 
   // Memoized context value so consumers only re-render when state/actions change.
-  const value = useMemo(() => ({
-    user,
-    authLoading,
-    globalError,
-    setGlobalError,
-    login,
-    loginWithGoogle,
-    register,
-    logout,
-    refreshAccessToken,
-    applyUserUpdate,
-    updateUserProfile,
-    changePassword,
-    deleteAccount,
-    verifyEmail,
-    resendVerificationCode,
-    requestPasswordReset,
-    resetPassword,
-    verifyPendingEmail,
-    resendPendingEmailCode
-  }), [
-    user,
-    authLoading,
-    globalError,
-    login,
-    loginWithGoogle,
-    register,
-    logout,
-    refreshAccessToken,
-    applyUserUpdate,
-    updateUserProfile,
-    changePassword,
-    deleteAccount,
-    verifyEmail,
-    resendVerificationCode,
-    requestPasswordReset,
-    resetPassword,
-    verifyPendingEmail,
-    resendPendingEmailCode
-  ]);
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      authLoading,
+      globalError,
+      setGlobalError,
+      login,
+      loginWithGoogle,
+      register,
+      logout,
+      refreshAccessToken,
+      applyUserUpdate,
+      updateUserProfile,
+      changePassword,
+      deleteAccount,
+      verifyEmail,
+      resendVerificationCode,
+      requestPasswordReset,
+      resetPassword,
+      verifyPendingEmail,
+      resendPendingEmailCode,
+    }),
+    [
+      user,
+      authLoading,
+      globalError,
+      login,
+      loginWithGoogle,
+      register,
+      logout,
+      refreshAccessToken,
+      applyUserUpdate,
+      updateUserProfile,
+      changePassword,
+      deleteAccount,
+      verifyEmail,
+      resendVerificationCode,
+      requestPasswordReset,
+      resetPassword,
+      verifyPendingEmail,
+      resendPendingEmailCode,
+    ],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 // Accessor hook for the auth context. Throws if used outside an AuthProvider.

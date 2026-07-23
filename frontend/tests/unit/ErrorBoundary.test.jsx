@@ -13,7 +13,7 @@ describe('ErrorBoundary', () => {
     render(
       <ErrorBoundary>
         <CrashOnRender />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(screen.getByRole('alert')).toHaveTextContent(FALLBACK_MESSAGE);

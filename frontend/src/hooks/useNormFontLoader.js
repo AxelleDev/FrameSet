@@ -66,7 +66,9 @@ export default function useNormFontLoader(typographyNorms, googleFonts) {
       }
 
       if (!cancelled) {
-        setLoadedFonts((prev) => (prev.includes(norm.fontFamily) ? prev : [...prev, norm.fontFamily]));
+        setLoadedFonts((prev) =>
+          prev.includes(norm.fontFamily) ? prev : [...prev, norm.fontFamily],
+        );
       }
     });
 

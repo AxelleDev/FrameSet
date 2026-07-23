@@ -17,3 +17,6 @@ npm-debug.log*
 
 # Test coverage reports
 coverage/
+
+# Local AI tooling config: developer-machine-specific, not part of the app.
+.claude/

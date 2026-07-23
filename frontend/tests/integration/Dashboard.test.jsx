@@ -25,9 +25,11 @@ vi.mock('../../src/context/ProjectContext', () => ({
 
 const renderPage = () =>
   render(
-    <HelmetProvider><MemoryRouter>
-      <Dashboard />
-    </MemoryRouter></HelmetProvider>
+    <HelmetProvider>
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    </HelmetProvider>,
   );
 
 describe('Dashboard', () => {
@@ -68,9 +70,7 @@ describe('Dashboard', () => {
     projectState.projects = [
       { id: 3, name: 'Neo-Tokyo', lastEdited: 'Just now', normsCount: 0, palette: [] },
     ];
-    projectState.duplicateProject = vi
-      .fn()
-      .mockResolvedValue({ id: 4, name: 'Neo-Tokyo (copy)' });
+    projectState.duplicateProject = vi.fn().mockResolvedValue({ id: 4, name: 'Neo-Tokyo (copy)' });
     const user = userEvent.setup();
     renderPage();
 
@@ -79,7 +79,7 @@ describe('Dashboard', () => {
     await waitFor(() => expect(projectState.duplicateProject).toHaveBeenCalledWith(3));
   });
 
-  it('disables every card\'s Duplicate button while one duplication is in flight', async () => {
+  it("disables every card's Duplicate button while one duplication is in flight", async () => {
     projectState.projects = [
       { id: 3, name: 'Neo-Tokyo', lastEdited: 'Just now', normsCount: 0, palette: [] },
       { id: 4, name: 'Retro Wave', lastEdited: 'Just now', normsCount: 0, palette: [] },
@@ -88,12 +88,17 @@ describe('Dashboard', () => {
     // long enough to assert on it.
     let releaseDuplicate;
     projectState.duplicateProject = vi.fn(
-      () => new Promise((resolve) => { releaseDuplicate = resolve; })
+      () =>
+        new Promise((resolve) => {
+          releaseDuplicate = resolve;
+        }),
     );
     const user = userEvent.setup();
     renderPage();
 
-    const [firstCardButton, secondCardButton] = screen.getAllByRole('button', { name: 'Duplicate project' });
+    const [firstCardButton, secondCardButton] = screen.getAllByRole('button', {
+      name: 'Duplicate project',
+    });
     await user.click(firstCardButton);
 
     // Not just the clicked card: the OTHER card's button must also go disabled,
@@ -150,13 +155,18 @@ describe('Dashboard', () => {
     // long enough to assert on it.
     let releaseRestore;
     projectState.restoreProject = vi.fn(
-      () => new Promise((resolve) => { releaseRestore = resolve; })
+      () =>
+        new Promise((resolve) => {
+          releaseRestore = resolve;
+        }),
     );
     const user = userEvent.setup();
     renderPage();
 
     const [firstRestore, secondRestore] = screen.getAllByRole('button', { name: 'Restore' });
-    const [firstDeleteForever, secondDeleteForever] = screen.getAllByRole('button', { name: 'Delete forever' });
+    const [firstDeleteForever, secondDeleteForever] = screen.getAllByRole('button', {
+      name: 'Delete forever',
+    });
     await user.click(firstRestore);
 
     // A restore in flight must block every trash action (both rows, both

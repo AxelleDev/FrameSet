@@ -14,10 +14,10 @@ export default function Terms() {
       <section>
         <h2>1. About FrameSet</h2>
         <p>
-          FrameSet is a web application that lets illustrators and creatives centralize the
-          graphic references of their projects — color palettes, typography and brush
-          specifications — and export them as reference sheets. By creating an account or using
-          FrameSet, you agree to these terms.
+          FrameSet is a web application that lets illustrators and creatives centralize the graphic
+          references of their projects — color palettes, typography and brush specifications — and
+          export them as reference sheets. By creating an account or using FrameSet, you agree to
+          these terms.
         </p>
       </section>
 
@@ -25,9 +25,9 @@ export default function Terms() {
         <h2>2. Your account</h2>
         <p>
           You can create an account with an email address and password, or by continuing with
-          Google. You are responsible for keeping your credentials confidential and for the
-          activity that happens under your account. You must provide accurate information and be
-          legally able to enter into this agreement.
+          Google. You are responsible for keeping your credentials confidential and for the activity
+          that happens under your account. You must provide accurate information and be legally able
+          to enter into this agreement.
         </p>
       </section>
 
@@ -35,17 +35,17 @@ export default function Terms() {
         <h2>3. Your content</h2>
         <p>
           The projects, palettes and specifications you create remain yours. FrameSet claims no
-          ownership over your content and only stores and processes it to provide the service —
-          for example to display your projects and generate your PDF exports.
+          ownership over your content and only stores and processes it to provide the service — for
+          example to display your projects and generate your PDF exports.
         </p>
       </section>
 
       <section>
         <h2>4. Acceptable use</h2>
         <p>
-          You agree not to misuse the service: no attempts to breach security, disrupt the
-          service, access other users&apos; data, or use FrameSet for unlawful purposes. We may
-          suspend or terminate accounts that violate these rules.
+          You agree not to misuse the service: no attempts to breach security, disrupt the service,
+          access other users&apos; data, or use FrameSet for unlawful purposes. We may suspend or
+          terminate accounts that violate these rules.
         </p>
       </section>
 
@@ -61,8 +61,8 @@ export default function Terms() {
       <section>
         <h2>6. Account deletion</h2>
         <p>
-          You can delete your account at any time from your profile page. Deletion is immediate
-          and irreversible: your account and all associated projects are permanently removed.
+          You can delete your account at any time from your profile page. Deletion is immediate and
+          irreversible: your account and all associated projects are permanently removed.
         </p>
       </section>
 

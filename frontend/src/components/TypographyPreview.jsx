@@ -9,7 +9,8 @@ export default function TypographyPreview({ fontFamily, fontStyle, loaded }) {
   if (!loaded) {
     return (
       <span className="text-xs text-secondary">
-        Loading… <span style={{ fontFamily: `'${fontFamily}', Arial, sans-serif` }}>{fontFamily}</span>
+        Loading…{' '}
+        <span style={{ fontFamily: `'${fontFamily}', Arial, sans-serif` }}>{fontFamily}</span>
       </span>
     );
   }
@@ -17,7 +18,10 @@ export default function TypographyPreview({ fontFamily, fontStyle, loaded }) {
   return (
     <span
       className="text-primary text-xl font-medium tracking-tight"
-      style={{ fontFamily: `'${fontFamily}', Arial, sans-serif`, fontStyle: fontStyle ? fontStyle.toLowerCase() : undefined }}
+      style={{
+        fontFamily: `'${fontFamily}', Arial, sans-serif`,
+        fontStyle: fontStyle ? fontStyle.toLowerCase() : undefined,
+      }}
       title={fontFamily}
     >
       AaBbCc

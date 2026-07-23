@@ -14,7 +14,7 @@ export default function FormField({
   error,
   required = false,
   className = '',
-  labelClassName = 'block text-sm font-medium text-primary mb-2'
+  labelClassName = 'block text-sm font-medium text-primary mb-2',
 }) {
   // Always call useId (hooks must run unconditionally), then prefer an
   // explicit caller-provided id over the generated fallback.
@@ -39,9 +39,17 @@ export default function FormField({
 
   return (
     <div className={className}>
-      {label ? <label htmlFor={generatedId} className={labelClassName}>{label}</label> : null}
+      {label ? (
+        <label htmlFor={generatedId} className={labelClassName}>
+          {label}
+        </label>
+      ) : null}
       {childWithProps}
-      {error ? <p id={errorId} className="text-xs text-danger mt-1">{error}</p> : null}
+      {error ? (
+        <p id={errorId} className="text-xs text-danger mt-1">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

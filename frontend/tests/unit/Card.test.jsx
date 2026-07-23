@@ -14,7 +14,11 @@ describe('Card', () => {
   it('calls onClick when clickable', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
-    render(<Card clickable onClick={onClick}>Card</Card>);
+    render(
+      <Card clickable onClick={onClick}>
+        Card
+      </Card>,
+    );
     await user.click(screen.getByText('Card'));
     expect(onClick).toHaveBeenCalledTimes(1);
   });

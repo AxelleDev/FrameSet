@@ -20,7 +20,7 @@ describe('ToastContext', () => {
     render(
       <ToastProvider>
         <Harness />
-      </ToastProvider>
+      </ToastProvider>,
     );
 
     fireEvent.click(screen.getByText('go'));
@@ -35,7 +35,7 @@ describe('ToastContext', () => {
     render(
       <ToastProvider>
         <Harness />
-      </ToastProvider>
+      </ToastProvider>,
     );
 
     fireEvent.click(screen.getByText('go'));
@@ -51,7 +51,7 @@ describe('ToastContext', () => {
     render(
       <ToastProvider>
         <Harness message="Oops" variant="danger" />
-      </ToastProvider>
+      </ToastProvider>,
     );
     fireEvent.click(screen.getByText('go'));
     expect(screen.getByRole('alert')).toHaveTextContent('Oops');

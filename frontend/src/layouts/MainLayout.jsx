@@ -7,6 +7,7 @@ import Avatar from '../components/Avatar';
 import ThemeToggle from '../components/ThemeToggle';
 import Logo from '../components/Logo';
 import Seo from '../components/Seo';
+import Spinner from '../components/Spinner';
 
 /**
  * Authenticated application shell: collapsible sidebar navigation, top header
@@ -47,8 +48,8 @@ export default function MainLayout() {
       if (e.key !== 'Tab' || !asideRef.current) return;
       const focusable = Array.from(
         asideRef.current.querySelectorAll(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        )
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
       );
       if (!focusable.length) return;
       const first = focusable[0];
@@ -79,8 +80,12 @@ export default function MainLayout() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-dvh bg-canvas" role="status" aria-live="polite">
-        <div className="border-4 border-blue/20 border-t-blue rounded-full w-10 h-10 animate-spin"></div>
+      <div
+        className="flex flex-col items-center justify-center h-dvh bg-canvas"
+        role="status"
+        aria-live="polite"
+      >
+        <Spinner size="lg" className="text-blue" />
         <p className="mt-4 text-primary/60">Loading…</p>
       </div>
     );
@@ -114,19 +119,32 @@ export default function MainLayout() {
         fixed inset-y-0 left-0 z-drawer flex flex-col w-[min(18rem,calc(100vw-3rem))] md:w-72 m-4 rounded-3xl bg-surface overflow-hidden transition-transform duration-slow ease-in-out
         md:relative md:translate-x-0
         ${isMobileMenuOpen ? 'visible translate-x-0' : 'invisible md:visible -translate-x-[calc(100%+2rem)]'}
-      `}>
+      `}
+      >
         {/* No close (×) button: the menu closes on backdrop tap or nav-item tap,
             staying consistent with the site's modals (none use a × either). */}
         <div className="p-8 flex justify-center">
-            <Logo className="w-[65%] max-w-[260px] h-auto object-contain" />
+          <Logo className="w-[65%] max-w-[260px] h-auto object-contain" />
         </div>
 
         <nav aria-label="Main navigation" className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
           <div className="mb-8">
-            <p className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4">Workspace</p>
+            <p className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4">
+              Workspace
+            </p>
             <NavLink to="/app/dashboard" className={navLinkClass} onClick={closeMobileMenu}>
-              <svg className="mr-3 h-5 w-5 text-blue group-hover:text-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              <svg
+                className="mr-3 h-5 w-5 text-blue group-hover:text-blue transition-colors"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                />
               </svg>
               Dashboard
             </NavLink>
@@ -134,22 +152,73 @@ export default function MainLayout() {
 
           {activeProject && (
             <div className="animate-fade-in">
-              <p className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4 truncate" title={activeProject.name}>
+              <p
+                className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4 truncate"
+                title={activeProject.name}
+              >
                 Active project
               </p>
-              
+
               <div className="space-y-1">
-                <NavLink to={`/app/project/${activeProject.id}/norms`} className={navLinkClass} onClick={closeMobileMenu}>
-                   <svg className="mr-3 h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                   Graphic standards
+                <NavLink
+                  to={`/app/project/${activeProject.id}/norms`}
+                  className={navLinkClass}
+                  onClick={closeMobileMenu}
+                >
+                  <svg
+                    className="mr-3 h-4 w-4 opacity-50"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  Graphic standards
                 </NavLink>
-                <NavLink to={`/app/project/${activeProject.id}/palette`} className={navLinkClass} onClick={closeMobileMenu}>
-                   <svg className="mr-3 h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
-                   Palette
+                <NavLink
+                  to={`/app/project/${activeProject.id}/palette`}
+                  className={navLinkClass}
+                  onClick={closeMobileMenu}
+                >
+                  <svg
+                    className="mr-3 h-4 w-4 opacity-50"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                    />
+                  </svg>
+                  Palette
                 </NavLink>
-                <NavLink to={`/app/project/${activeProject.id}/export`} className={navLinkClass} onClick={closeMobileMenu}>
-                   <svg className="mr-3 h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                   Export
+                <NavLink
+                  to={`/app/project/${activeProject.id}/export`}
+                  className={navLinkClass}
+                  onClick={closeMobileMenu}
+                >
+                  <svg
+                    className="mr-3 h-4 w-4 opacity-50"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                    />
+                  </svg>
+                  Export
                 </NavLink>
               </div>
             </div>
@@ -166,17 +235,38 @@ export default function MainLayout() {
         <NavLink
           to="/app/profile"
           onClick={closeMobileMenu}
-          className={({ isActive }) => `p-4 transition cursor-pointer group ${isActive ? 'bg-blue/15' : 'hover:bg-blue/10'}`}
+          className={({ isActive }) =>
+            `p-4 transition cursor-pointer group ${isActive ? 'bg-blue/15' : 'hover:bg-blue/10'}`
+          }
         >
           {({ isActive }) => (
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <Avatar initials={user.avatarInitials} className="h-9 w-9 text-xs group-hover:scale-105 transition-transform" />
+                <Avatar
+                  initials={user.avatarInitials}
+                  className="h-9 w-9 text-xs group-hover:scale-105 transition-transform"
+                />
                 <div className="ml-3">
-                  <p className={`text-xs font-bold transition-colors ${isActive ? 'text-blue' : 'text-primary group-hover:text-blue'}`}>{user.name}</p>
+                  <p
+                    className={`text-xs font-bold transition-colors ${isActive ? 'text-blue' : 'text-primary group-hover:text-blue'}`}
+                  >
+                    {user.name}
+                  </p>
                 </div>
               </div>
-              <svg className={`w-4 h-4 text-blue transition-all ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+              <svg
+                className={`w-4 h-4 text-blue transition-all ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
             </div>
           )}
         </NavLink>
@@ -184,17 +274,50 @@ export default function MainLayout() {
 
       <main className="flex-1 overflow-auto focus:outline-none relative">
         <header className="h-20 flex items-center gap-3 px-4 md:px-8 sticky top-0 z-sticky bg-canvas/90 backdrop-blur-md md:bg-transparent md:backdrop-blur-0 transition-all duration-slow">
-          <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Open menu" className="md:hidden -ml-1 shrink-0 text-primary hover:text-blue transition-colors p-2 rounded-lg hover:bg-blue/10 focus-ring">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            aria-label="Open menu"
+            className="md:hidden -ml-1 shrink-0 text-primary hover:text-blue transition-colors p-2 rounded-xl hover:bg-blue/10 focus-ring"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
           </button>
 
           {activeProject ? (
             // The "Workspace" crumb is dropped on phones (the burger menu
             // already links there); only the project chip remains, truncating to fit.
-            <nav aria-label="Breadcrumb" className="flex items-center text-sm font-medium min-w-0 animate-fade-in">
-              <Link className="hidden sm:inline whitespace-nowrap text-blue hover:text-primary transition cursor-pointer" to="/app/dashboard">Workspace</Link>
-              <svg className="hidden sm:block w-4 h-4 mx-2 shrink-0 text-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-              <span className="min-w-0 truncate text-primary bg-blue/15 px-2.5 py-1 rounded-lg">{activeProject.name}</span>
+            <nav
+              aria-label="Breadcrumb"
+              className="flex items-center text-sm font-medium min-w-0 animate-fade-in"
+            >
+              <Link
+                className="hidden sm:inline whitespace-nowrap text-blue hover:text-primary transition cursor-pointer"
+                to="/app/dashboard"
+              >
+                Workspace
+              </Link>
+              <svg
+                className="hidden sm:block w-4 h-4 mx-2 shrink-0 text-blue"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+              <span className="min-w-0 truncate text-primary bg-blue/15 px-2.5 py-1 rounded-full">
+                {activeProject.name}
+              </span>
             </nav>
           ) : (
             <span className="min-w-0 truncate text-xl font-light text-primary">

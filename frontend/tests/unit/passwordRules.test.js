@@ -30,23 +30,19 @@ describe('passwordRules', () => {
   });
 
   describe('isValidEmail', () => {
-    it.each([
-      'axelle@example.com',
-      'a.b+tag@sub.domain.fr',
-    ])('accepts a valid email: %s', (email) => {
-      expect(isValidEmail(email)).toBe(true);
-    });
+    it.each(['axelle@example.com', 'a.b+tag@sub.domain.fr'])(
+      'accepts a valid email: %s',
+      (email) => {
+        expect(isValidEmail(email)).toBe(true);
+      },
+    );
 
-    it.each([
-      'no-at',
-      'missing@domain',
-      'spaces in@mail.com',
-      '@nolocal.com',
-      '',
-      null,
-    ])('rejects an invalid email: %s', (email) => {
-      expect(isValidEmail(email)).toBe(false);
-    });
+    it.each(['no-at', 'missing@domain', 'spaces in@mail.com', '@nolocal.com', '', null])(
+      'rejects an invalid email: %s',
+      (email) => {
+        expect(isValidEmail(email)).toBe(false);
+      },
+    );
 
     it('ignores surrounding whitespace', () => {
       expect(isValidEmail('  axelle@example.com  ')).toBe(true);
@@ -55,7 +51,12 @@ describe('passwordRules', () => {
 
   describe('PASSWORD_RULES', () => {
     it('exposes the four expected rules', () => {
-      expect(PASSWORD_RULES.map((r) => r.id)).toEqual(['length', 'lowercase', 'uppercase', 'digit']);
+      expect(PASSWORD_RULES.map((r) => r.id)).toEqual([
+        'length',
+        'lowercase',
+        'uppercase',
+        'digit',
+      ]);
     });
 
     it('each rule correctly validates a compliant case', () => {

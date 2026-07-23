@@ -21,9 +21,11 @@ vi.mock('../../src/context/AuthContext', () => ({
 
 const renderPage = () =>
   render(
-    <HelmetProvider><MemoryRouter>
-      <Profile />
-    </MemoryRouter></HelmetProvider>
+    <HelmetProvider>
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    </HelmetProvider>,
   );
 
 describe('Profile', () => {

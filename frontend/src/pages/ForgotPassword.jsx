@@ -6,10 +6,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import AuthLayout from '../components/AuthLayout';
-import Logo from '../components/Logo';
+import AuthLogoLink from '../components/AuthLogoLink';
+import AuthCard from '../components/AuthCard';
 import FormField from '../components/FormField';
 import Button from '../components/Button';
-import Card from '../components/Card';
 import Seo from '../components/Seo';
 import PasswordInput from '../components/PasswordInput';
 import TextInput from '../components/TextInput';
@@ -82,14 +82,9 @@ export default function ForgotPassword() {
   return (
     <AuthLayout
       swapOnMobile
-     
       hero={
         <>
-          <div className="flex items-center mb-2">
-            <Link to="/" aria-label="Go to homepage" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring w-24 sm:w-20">
-              <Logo className="object-contain w-full h-auto" />
-            </Link>
-          </div>
+          <AuthLogoLink />
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-primary leading-tight">
             Forgot your <br />
             <span className="font-bold text-primary">password?</span>
@@ -100,8 +95,13 @@ export default function ForgotPassword() {
         </>
       }
     >
-      <Card className="w-full max-w-md p-6 sm:p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
-        <Seo title="Forgot password" path="/forgot-password" description="Reset your FrameSet account password." noindex />
+      <AuthCard>
+        <Seo
+          title="Forgot password"
+          path="/forgot-password"
+          description="Reset your FrameSet account password."
+          noindex
+        />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Reset password</h2>
           <p className="text-primary text-sm mt-2">
@@ -112,14 +112,18 @@ export default function ForgotPassword() {
         </div>
 
         {info && (
-          <Alert variant="info" className="mb-4">{info}</Alert>
+          <Alert variant="info" className="mb-4">
+            {info}
+          </Alert>
         )}
         {error && (
-          <Alert variant="danger" className="mb-4">{error}</Alert>
+          <Alert variant="danger" className="mb-4">
+            {error}
+          </Alert>
         )}
 
         {step === 'request' ? (
-          <form className="space-y-5" onSubmit={handleRequest} noValidate>
+          <form className="space-y-4" onSubmit={handleRequest} noValidate>
             <FormField
               label="Email"
               required
@@ -135,7 +139,13 @@ export default function ForgotPassword() {
               />
             </FormField>
 
-            <Button type="submit" fullWidth className="mt-2" disabled={!canRequest} loading={submitting}>
+            <Button
+              type="submit"
+              fullWidth
+              className="mt-2"
+              disabled={!canRequest}
+              loading={submitting}
+            >
               Send code
             </Button>
           </form>
@@ -170,7 +180,11 @@ export default function ForgotPassword() {
             <FormField
               label="Confirm password"
               required
-              error={form.confirmPassword !== '' && !passwordsMatch ? "Passwords don't match." : undefined}
+              error={
+                form.confirmPassword !== '' && !passwordsMatch
+                  ? "Passwords don't match."
+                  : undefined
+              }
             >
               <PasswordInput
                 name="confirmPassword"
@@ -181,16 +195,27 @@ export default function ForgotPassword() {
               />
             </FormField>
 
-            <Button type="submit" fullWidth className="mt-2" disabled={!canReset} loading={submitting}>
+            <Button
+              type="submit"
+              fullWidth
+              className="mt-2"
+              disabled={!canReset}
+              loading={submitting}
+            >
               Reset password
             </Button>
           </form>
         )}
 
         <div className="mt-8 text-center">
-          <Link to="/login" className="text-sm font-medium text-blue hover:text-primary transition-colors">Back to sign in</Link>
+          <Link
+            to="/login"
+            className="text-sm font-medium text-blue hover:text-primary transition-colors"
+          >
+            Back to sign in
+          </Link>
         </div>
-      </Card>
+      </AuthCard>
     </AuthLayout>
   );
 }

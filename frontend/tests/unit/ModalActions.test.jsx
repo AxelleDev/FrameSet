@@ -22,7 +22,14 @@ describe('ModalActions', () => {
   });
 
   it('disables the primary with primaryDisabled', () => {
-    render(<ModalActions primaryLabel="Create" onPrimary={() => {}} onSecondary={() => {}} primaryDisabled />);
+    render(
+      <ModalActions
+        primaryLabel="Create"
+        onPrimary={() => {}}
+        onSecondary={() => {}}
+        primaryDisabled
+      />,
+    );
     expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
   });
 });

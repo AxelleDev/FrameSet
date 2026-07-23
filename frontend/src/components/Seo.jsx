@@ -11,7 +11,7 @@ import { Helmet } from 'react-helmet-async';
 const SITE_NAME = 'FrameSet';
 const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://frameset.app').replace(/\/$/, '');
 const DEFAULT_DESCRIPTION =
-  'FrameSet keeps every project\'s graphic standards and color palette in one place.';
+  "FrameSet keeps every project's graphic standards and color palette in one place.";
 // Brand logo as a safe default that always exists; swap for a dedicated
 // 1200×630 `og-cover.png` for richer link previews.
 const DEFAULT_IMAGE = `${SITE_URL}/FrameSet_Logo.png`;
@@ -25,7 +25,9 @@ export default function Seo({
   type = 'website',
   jsonLd,
 }) {
-  const fullTitle = title ? `${title} — ${SITE_NAME}` : `${SITE_NAME} — The graphic reference for your projects`;
+  const fullTitle = title
+    ? `${title} — ${SITE_NAME}`
+    : `${SITE_NAME} — The graphic reference for your projects`;
   const canonical = `${SITE_URL}${path}`;
 
   return (
@@ -52,7 +54,11 @@ export default function Seo({
 
       {/* Escape '<' so a value containing "</script>" can never break out of the
           script context (defense in depth — current JSON-LD is static). */}
-      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>}
+      {jsonLd && (
+        <script type="application/ld+json">
+          {JSON.stringify(jsonLd).replace(/</g, '\\u003c')}
+        </script>
+      )}
     </Helmet>
   );
 }

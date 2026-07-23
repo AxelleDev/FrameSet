@@ -20,11 +20,13 @@ vi.mock('../../src/hooks/useUserCount', () => ({ default: () => 12 }));
 
 const renderPage = () =>
   render(
-    <HelmetProvider><AuthContext.Provider value={{ login: mockLogin }}>
-      <MemoryRouter>
-        <Login />
-      </MemoryRouter>
-    </AuthContext.Provider></HelmetProvider>
+    <HelmetProvider>
+      <AuthContext.Provider value={{ login: mockLogin }}>
+        <MemoryRouter>
+          <Login />
+        </MemoryRouter>
+      </AuthContext.Provider>
+    </HelmetProvider>,
   );
 
 describe('Login', () => {

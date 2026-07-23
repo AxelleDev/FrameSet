@@ -6,7 +6,9 @@ describe('getFriendlyMessage', () => {
   });
 
   it('maps a CSRF error to the connectivity message', () => {
-    expect(getFriendlyMessage('Failed to retrieve the CSRF token.')).toMatch(/couldn't reach the server/i);
+    expect(getFriendlyMessage('Failed to retrieve the CSRF token.')).toMatch(
+      /couldn't reach the server/i,
+    );
   });
 
   it('maps a 500 to a friendly message', () => {
@@ -19,6 +21,8 @@ describe('getFriendlyMessage', () => {
   });
 
   it('returns a generic message for an unmapped (technical) error, never the raw text', () => {
-    expect(getFriendlyMessage('ER_DUP_ENTRY: duplicate key at users.email line 42')).toMatch(/something went wrong/i);
+    expect(getFriendlyMessage('ER_DUP_ENTRY: duplicate key at users.email line 42')).toMatch(
+      /something went wrong/i,
+    );
   });
 });

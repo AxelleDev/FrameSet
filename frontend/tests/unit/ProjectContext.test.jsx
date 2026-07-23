@@ -99,7 +99,10 @@ describe('ProjectContext mutations return success signals', () => {
     // more" once): page 1 has 2 of 3 items, page 2 has the 3rd.
     apiMock.get
       .mockResolvedValueOnce({
-        projects: [{ id: 1, name: 'P1' }, { id: 2, name: 'P2' }],
+        projects: [
+          { id: 1, name: 'P1' },
+          { id: 2, name: 'P2' },
+        ],
         pagination: { page: 1, pageSize: 2, total: 3, totalPages: 2 },
       }) // mount fetch (page 1)
       .mockResolvedValueOnce({
@@ -122,11 +125,17 @@ describe('ProjectContext mutations return success signals', () => {
     apiMock.post.mockResolvedValueOnce({ success: true }); // POST .../restore
     apiMock.get
       .mockResolvedValueOnce({
-        projects: [{ id: 1, name: 'P1' }, { id: 99, name: 'Restored' }],
+        projects: [
+          { id: 1, name: 'P1' },
+          { id: 99, name: 'Restored' },
+        ],
         pagination: { page: 1, pageSize: 2, total: 4, totalPages: 2 },
       }) // refetch page 1
       .mockResolvedValueOnce({
-        projects: [{ id: 2, name: 'P2' }, { id: 3, name: 'P3' }],
+        projects: [
+          { id: 2, name: 'P2' },
+          { id: 3, name: 'P3' },
+        ],
         pagination: { page: 2, pageSize: 2, total: 4, totalPages: 2 },
       }); // refetch page 2
 
@@ -264,7 +273,11 @@ describe('ProjectContext mutations return success signals', () => {
       });
 
       expect(ok).toBe(true);
-      expect(apiMock.delete).toHaveBeenCalledWith('/projects/3/palette/10', null, expect.any(Object));
+      expect(apiMock.delete).toHaveBeenCalledWith(
+        '/projects/3/palette/10',
+        null,
+        expect.any(Object),
+      );
       expect(result.current.projects[0].palette).toEqual([]);
     });
 
@@ -272,7 +285,9 @@ describe('ProjectContext mutations return success signals', () => {
       const { result } = renderHook(() => useProjects(), { wrapper });
 
       apiMock.get.mockResolvedValueOnce({
-        colors: [{ id: 9, name: 'Old blush', hex: '#FCBFC4', deletedAt: '2026-07-10', daysLeft: 21 }],
+        colors: [
+          { id: 9, name: 'Old blush', hex: '#FCBFC4', deletedAt: '2026-07-10', daysLeft: 21 },
+        ],
       });
       await act(async () => {
         await result.current.fetchTrashedColors(3);
@@ -292,7 +307,9 @@ describe('ProjectContext mutations return success signals', () => {
       await act(async () => {});
 
       apiMock.get.mockResolvedValueOnce({
-        colors: [{ id: 9, name: 'Old blush', hex: '#FCBFC4', deletedAt: '2026-07-10', daysLeft: 21 }],
+        colors: [
+          { id: 9, name: 'Old blush', hex: '#FCBFC4', deletedAt: '2026-07-10', daysLeft: 21 },
+        ],
       });
       await act(async () => {
         await result.current.fetchTrashedColors(3);
@@ -305,7 +322,11 @@ describe('ProjectContext mutations return success signals', () => {
       });
 
       expect(ok).toBe(true);
-      expect(apiMock.post).toHaveBeenCalledWith('/projects/3/palette/9/restore', {}, expect.any(Object));
+      expect(apiMock.post).toHaveBeenCalledWith(
+        '/projects/3/palette/9/restore',
+        {},
+        expect.any(Object),
+      );
       expect(result.current.trashedPaletteColors).toEqual([]);
       expect(result.current.projects[0].palette).toEqual([
         { id: 9, name: 'Old blush', hex: '#FCBFC4' },
@@ -321,7 +342,11 @@ describe('ProjectContext mutations return success signals', () => {
         ok = await result.current.deleteColorPermanently(3, 9);
       });
       expect(ok).toBe(true);
-      expect(apiMock.delete).toHaveBeenCalledWith('/projects/3/palette/9/permanent', null, expect.any(Object));
+      expect(apiMock.delete).toHaveBeenCalledWith(
+        '/projects/3/palette/9/permanent',
+        null,
+        expect.any(Object),
+      );
 
       apiMock.delete.mockRejectedValueOnce(new Error('no'));
       await act(async () => {
@@ -336,7 +361,18 @@ describe('ProjectContext mutations return success signals', () => {
       const { result } = renderHook(() => useProjects(), { wrapper });
 
       apiMock.get.mockResolvedValueOnce({
-        norms: [{ id: 9, name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 0.5, deletedAt: 'x', daysLeft: 5 }],
+        norms: [
+          {
+            id: 9,
+            name: 'Outline',
+            value: '8',
+            unit: 'px',
+            brushName: 'Smooth',
+            opacity: 0.5,
+            deletedAt: 'x',
+            daysLeft: 5,
+          },
+        ],
       });
       await act(async () => {
         await result.current.fetchTrashedBrushNorms(3);
@@ -344,7 +380,9 @@ describe('ProjectContext mutations return success signals', () => {
       expect(result.current.trashedBrushNorms).toHaveLength(1);
 
       apiMock.get.mockResolvedValueOnce({
-        norms: [{ id: 4, fontFamily: 'Figtree', fontUsage: 'Heading', deletedAt: 'x', daysLeft: 5 }],
+        norms: [
+          { id: 4, fontFamily: 'Figtree', fontUsage: 'Heading', deletedAt: 'x', daysLeft: 5 },
+        ],
       });
       await act(async () => {
         await result.current.fetchTrashedTypographyNorms(3);
@@ -361,7 +399,18 @@ describe('ProjectContext mutations return success signals', () => {
       await act(async () => {});
 
       apiMock.get.mockResolvedValueOnce({
-        norms: [{ id: 9, name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 0.5, deletedAt: 'x', daysLeft: 5 }],
+        norms: [
+          {
+            id: 9,
+            name: 'Outline',
+            value: '8',
+            unit: 'px',
+            brushName: 'Smooth',
+            opacity: 0.5,
+            deletedAt: 'x',
+            daysLeft: 5,
+          },
+        ],
       });
       await act(async () => {
         await result.current.fetchTrashedBrushNorms(3);
@@ -374,7 +423,11 @@ describe('ProjectContext mutations return success signals', () => {
       });
 
       expect(ok).toBe(true);
-      expect(apiMock.post).toHaveBeenCalledWith('/projects/3/brush-norms/9/restore', {}, expect.any(Object));
+      expect(apiMock.post).toHaveBeenCalledWith(
+        '/projects/3/brush-norms/9/restore',
+        {},
+        expect.any(Object),
+      );
       expect(result.current.trashedBrushNorms).toEqual([]);
       expect(result.current.projects[0].brushNorms).toHaveLength(1);
       expect(result.current.projects[0].normsCount).toBe(1);
@@ -389,7 +442,9 @@ describe('ProjectContext mutations return success signals', () => {
       await act(async () => {});
 
       apiMock.get.mockResolvedValueOnce({
-        norms: [{ id: 4, fontFamily: 'Figtree', fontUsage: 'Heading', deletedAt: 'x', daysLeft: 5 }],
+        norms: [
+          { id: 4, fontFamily: 'Figtree', fontUsage: 'Heading', deletedAt: 'x', daysLeft: 5 },
+        ],
       });
       await act(async () => {
         await result.current.fetchTrashedTypographyNorms(3);
@@ -402,7 +457,11 @@ describe('ProjectContext mutations return success signals', () => {
       });
 
       expect(ok).toBe(true);
-      expect(apiMock.post).toHaveBeenCalledWith('/projects/3/typography-norms/4/restore', {}, expect.any(Object));
+      expect(apiMock.post).toHaveBeenCalledWith(
+        '/projects/3/typography-norms/4/restore',
+        {},
+        expect.any(Object),
+      );
       expect(result.current.trashedTypographyNorms).toEqual([]);
       expect(result.current.projects[0].typographyNorms).toHaveLength(1);
       expect(result.current.projects[0].normsCount).toBe(1);
@@ -417,7 +476,11 @@ describe('ProjectContext mutations return success signals', () => {
         brushOk = await result.current.deleteBrushNormPermanently(3, 9);
       });
       expect(brushOk).toBe(true);
-      expect(apiMock.delete).toHaveBeenCalledWith('/projects/3/brush-norms/9/permanent', null, expect.any(Object));
+      expect(apiMock.delete).toHaveBeenCalledWith(
+        '/projects/3/brush-norms/9/permanent',
+        null,
+        expect.any(Object),
+      );
 
       apiMock.delete.mockResolvedValueOnce({ success: true });
       let typoOk;
@@ -425,7 +488,11 @@ describe('ProjectContext mutations return success signals', () => {
         typoOk = await result.current.deleteTypographyNormPermanently(3, 4);
       });
       expect(typoOk).toBe(true);
-      expect(apiMock.delete).toHaveBeenCalledWith('/projects/3/typography-norms/4/permanent', null, expect.any(Object));
+      expect(apiMock.delete).toHaveBeenCalledWith(
+        '/projects/3/typography-norms/4/permanent',
+        null,
+        expect.any(Object),
+      );
     });
   });
 });

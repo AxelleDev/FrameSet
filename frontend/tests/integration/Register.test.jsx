@@ -8,28 +8,30 @@ import Register from '../../src/pages/Register';
 
 const { mockNavigate, mockRegister } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
-  mockRegister: vi.fn()
+  mockRegister: vi.fn(),
 }));
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
     ...actual,
-    useNavigate: () => mockNavigate
+    useNavigate: () => mockNavigate,
   };
 });
 
 vi.mock('../../src/hooks/useUserCount', () => ({
-  default: () => 12
+  default: () => 12,
 }));
 
 const renderPage = () => {
   render(
-    <HelmetProvider><AuthContext.Provider value={{ register: mockRegister }}>
-      <MemoryRouter>
-        <Register />
-      </MemoryRouter>
-    </AuthContext.Provider></HelmetProvider>
+    <HelmetProvider>
+      <AuthContext.Provider value={{ register: mockRegister }}>
+        <MemoryRouter>
+          <Register />
+        </MemoryRouter>
+      </AuthContext.Provider>
+    </HelmetProvider>,
   );
 };
 
@@ -46,8 +48,8 @@ describe('Register', () => {
       data: {
         id: 1,
         email: 'axelle@example.com',
-        is_verified: false
-      }
+        is_verified: false,
+      },
     });
 
     renderPage();
@@ -61,8 +63,10 @@ describe('Register', () => {
     expect(mockRegister).toHaveBeenCalledWith({
       name: 'Jane Doe',
       email: 'axelle@example.com',
-      password: 'Pass1234'
+      password: 'Pass1234',
     });
-    expect(mockNavigate).toHaveBeenCalledWith('/verify', { state: { email: 'axelle@example.com' } });
+    expect(mockNavigate).toHaveBeenCalledWith('/verify', {
+      state: { email: 'axelle@example.com' },
+    });
   });
 });

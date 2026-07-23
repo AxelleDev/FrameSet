@@ -30,7 +30,7 @@ describe('TextInput', () => {
       <TextInput as="select" aria-label="type">
         <option value="a">A</option>
         <option value="b">B</option>
-      </TextInput>
+      </TextInput>,
     );
     const select = screen.getByRole('combobox', { name: 'type' });
     expect(select.tagName).toBe('SELECT');

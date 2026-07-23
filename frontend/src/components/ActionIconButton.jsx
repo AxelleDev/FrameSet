@@ -5,13 +5,13 @@ import PropTypes from 'prop-types';
 // Hover color mapping by semantic intent (e.g. edit vs delete).
 const INTENT_CLASSES = {
   edit: 'hover:bg-blue',
-  delete: 'hover:bg-danger'
+  delete: 'hover:bg-danger',
 };
 
 // Base background mapping for use on dark or light surfaces.
 const VARIANT_CLASSES = {
   dark: 'bg-black/20',
-  light: 'bg-white/20'
+  light: 'bg-white/20',
 };
 
 // Small circular icon button for row/card actions; stays hidden until the parent `group` is hovered.
@@ -23,7 +23,7 @@ export default function ActionIconButton({
   variant = 'dark',
   disabled = false,
   srOnly = false,
-  className = ''
+  className = '',
 }) {
   const intentClass = INTENT_CLASSES[intent] || INTENT_CLASSES.edit;
   const variantClass = VARIANT_CLASSES[variant] || VARIANT_CLASSES.dark;

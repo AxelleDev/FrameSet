@@ -7,7 +7,7 @@ describe('FormField', () => {
     render(
       <FormField label="Email Address">
         <input type="email" />
-      </FormField>
+      </FormField>,
     );
     // getByLabelText only works if htmlFor/id are wired up correctly.
     expect(screen.getByLabelText('Email Address')).toBeInTheDocument();
@@ -17,7 +17,7 @@ describe('FormField', () => {
     render(
       <FormField label="Name" id="custom-id">
         <input />
-      </FormField>
+      </FormField>,
     );
     expect(screen.getByLabelText('Name')).toHaveAttribute('id', 'custom-id');
   });
@@ -26,7 +26,7 @@ describe('FormField', () => {
     render(
       <FormField>
         <input placeholder="no-label" />
-      </FormField>
+      </FormField>,
     );
     expect(screen.getByPlaceholderText('no-label')).toBeInTheDocument();
   });

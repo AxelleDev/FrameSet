@@ -17,7 +17,7 @@ const renderPage = (token = 'a'.repeat(32)) =>
           <Route path="/s/:token" element={<SharedProject />} />
         </Routes>
       </MemoryRouter>
-    </HelmetProvider>
+    </HelmetProvider>,
   );
 
 describe('SharedProject (public page)', () => {

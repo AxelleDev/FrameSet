@@ -992,7 +992,7 @@ const openapiSpec = {
         summary: 'PUBLIC: read a shared reference sheet (no auth)',
         description:
           'Resolves a share token to the project name, brush/typography norms and palette. ' +
-          "Also includes the owner's display name (a \"Made by\" credit) — never their id, " +
+          'Also includes the owner\'s display name (a "Made by" credit) — never their id, ' +
           'email or the project id. Rate limited per IP; revoked/trashed links answer 404.',
         parameters: [{ name: 'token', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
@@ -1113,7 +1113,9 @@ const openapiSpec = {
         tags: ['Projects'],
         summary: "List a project's trashed brush standards (with days left before purge)",
         security: AUTH,
-        parameters: [{ name: 'projectId', in: 'path', required: true, schema: { type: 'integer' } }],
+        parameters: [
+          { name: 'projectId', in: 'path', required: true, schema: { type: 'integer' } },
+        ],
         responses: {
           200: { description: 'Trashed brush standards.' },
           401: { $ref: '#/components/responses/Unauthorized' },
@@ -1259,7 +1261,9 @@ const openapiSpec = {
         tags: ['Projects'],
         summary: "List a project's trashed typography standards (with days left before purge)",
         security: AUTH,
-        parameters: [{ name: 'projectId', in: 'path', required: true, schema: { type: 'integer' } }],
+        parameters: [
+          { name: 'projectId', in: 'path', required: true, schema: { type: 'integer' } },
+        ],
         responses: {
           200: { description: 'Trashed typography standards.' },
           401: { $ref: '#/components/responses/Unauthorized' },
