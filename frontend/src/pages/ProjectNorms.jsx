@@ -359,11 +359,11 @@ export default function ProjectNorms() {
                 <div
                   key={norm.id}
                   ref={brushDrag.registerItemRef(norm.id)}
-                  className={
+                  className={`transition-transform duration-slow hover:-translate-y-1 ${
                     brushDrag.isDragging(norm.id)
                       ? 'opacity-30 z-40 cursor-grabbing'
                       : 'cursor-grab'
-                  }
+                  }`}
                   {...brushDrag.getDragHandlers(norm, idx)}
                 >
                   <StandardCard
@@ -415,11 +415,11 @@ export default function ProjectNorms() {
                 <div
                   key={norm.id}
                   ref={typographyDrag.registerItemRef(norm.id)}
-                  className={
+                  className={`transition-transform duration-slow hover:-translate-y-1 ${
                     typographyDrag.isDragging(norm.id)
                       ? 'opacity-30 z-40 cursor-grabbing'
                       : 'cursor-grab'
-                  }
+                  }`}
                   {...typographyDrag.getDragHandlers(norm, idx)}
                 >
                   <StandardCard

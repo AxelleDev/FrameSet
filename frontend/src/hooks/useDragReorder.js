@@ -148,6 +148,12 @@ export default function useDragReorder({
       setDraggedId(getId(item));
       setDragOverIndex(idx);
       e.dataTransfer.effectAllowed = 'move';
+      // Firefox refuses to start a drag at all unless data is set on dragstart
+      // (Chrome/Safari don't strictly require it, but this keeps the drag
+      // working consistently across browsers). The payload itself is unused.
+      if (typeof e.dataTransfer.setData === 'function') {
+        e.dataTransfer.setData('text/plain', String(getId(item)));
+      }
     },
     onDragOver: (e) => {
       e.preventDefault();
