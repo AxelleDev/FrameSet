@@ -28,14 +28,14 @@ export default function Profile() {
   const [editError, setEditError] = useState('');
   const [editForm, setEditForm] = useState({
     name: '',
-    email: ''
+    email: '',
   });
 
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
   const [passwordError, setPasswordError] = useState('');
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
@@ -53,7 +53,7 @@ export default function Profile() {
     if (user) {
       setEditForm({
         name: user.name,
-        email: user.email
+        email: user.email,
       });
     }
   }, [user]);
@@ -126,7 +126,7 @@ export default function Profile() {
       if (result?.success === false) {
         return {
           success: false,
-          message: result.message || 'Something went wrong updating your profile.'
+          message: result.message || 'Something went wrong updating your profile.',
         };
       }
       setReauthAction(null);
@@ -181,7 +181,11 @@ export default function Profile() {
     setPasswordError('');
 
     // Client-side validation stays inline (a hint inside the modal).
-    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+    if (
+      !passwordForm.currentPassword ||
+      !passwordForm.newPassword ||
+      !passwordForm.confirmPassword
+    ) {
       setPasswordError('Fill in all fields.');
       return;
     }
@@ -194,7 +198,7 @@ export default function Profile() {
     try {
       const result = await changePassword({
         currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword
+        newPassword: passwordForm.newPassword,
       });
 
       // Surface success/business error as a toast, like every in-app action.
@@ -217,16 +221,37 @@ export default function Profile() {
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">
       <Seo title="Profile" noindex />
       <Card className="p-6 sm:p-8 mb-8 flex flex-col sm:flex-row items-center gap-5 sm:gap-8">
-        <Avatar initials={user.avatarInitials} className="w-24 h-24 text-3xl sm:w-28 sm:h-28 sm:text-4xl shrink-0" />
+        <Avatar
+          initials={user.avatarInitials}
+          className="w-24 h-24 text-3xl sm:w-28 sm:h-28 sm:text-4xl shrink-0"
+        />
 
         <div className="flex flex-col items-center sm:items-start text-center sm:text-left flex-1 min-w-0 w-full">
-          <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-primary break-words max-w-full">{user.name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-primary break-words max-w-full">
+            {user.name}
+          </h1>
           <p className="text-sm text-primary/60 mt-1 break-all max-w-full">{user.email}</p>
         </div>
 
-        <Button onClick={handleLogout} variant="ghost" className="text-sm font-medium whitespace-nowrap shrink-0">
-          <svg className="inline-block w-4 h-4 mr-2 align-middle" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true" focusable="false">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        <Button
+          onClick={handleLogout}
+          variant="ghost"
+          className="text-sm font-medium whitespace-nowrap shrink-0"
+        >
+          <svg
+            className="inline-block w-4 h-4 mr-2 align-middle"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
           </svg>
           Sign out
         </Button>
@@ -236,69 +261,118 @@ export default function Profile() {
         <Card className="p-6 sm:p-8">
           <div className="flex items-center justify-between gap-3 mb-6 min-h-10">
             <h2 className="text-lg font-medium text-primary flex items-center min-w-0">
-              <svg className="w-5 h-5 mr-2 text-blue shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              <svg
+                className="w-5 h-5 mr-2 text-blue shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
               <span className="truncate">Personal information</span>
             </h2>
             {!isEditing && (
-              <Button onClick={startEdit} variant="ghost" className="text-sm font-medium whitespace-nowrap shrink-0">
+              <Button
+                onClick={startEdit}
+                variant="ghost"
+                className="text-sm font-medium whitespace-nowrap shrink-0"
+              >
                 Edit
               </Button>
             )}
           </div>
 
           <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Full name">
-                  <TextInput
-                    type="text"
-                    value={editForm.name}
-                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                    disabled={!isEditing}
-                    autoComplete="name"
-                  />
-                </FormField>
-                <FormField label="Email address">
-                  <TextInput
-                    type="email"
-                    value={editForm.email}
-                    onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-                    disabled={!isEditing}
-                    autoComplete="email"
-                  />
-                  {user.pendingEmail && user.pendingEmail !== user.email && (
-                    <p className="text-xs text-primary/60 mt-2">
-                      Email pending verification: {user.pendingEmail}
-                      {' '}·{' '}
-                      <Link to="/verify" state={{ email: user.pendingEmail, type: 'pending-email' }} className="underline hover:text-primary">
-                        Verify
-                      </Link>
-                    </p>
-                  )}
-                </FormField>
-              </div>
-
-              {isEditing && (
-                <div className="space-y-4 animate-fade-in">
-                  {editError && <Alert variant="danger">{editError}</Alert>}
-                  <p className="text-xs text-primary/60">
-                    Changing your email sends a confirmation code to the new address; it takes effect once verified.
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField label="Full name">
+                <TextInput
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  disabled={!isEditing}
+                  autoComplete="name"
+                />
+              </FormField>
+              <FormField label="Email address">
+                <TextInput
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  disabled={!isEditing}
+                  autoComplete="email"
+                />
+                {user.pendingEmail && user.pendingEmail !== user.email && (
+                  <p className="text-xs text-primary/60 mt-2">
+                    Email pending verification: {user.pendingEmail} ·{' '}
+                    <Link
+                      to="/verify"
+                      state={{ email: user.pendingEmail, type: 'pending-email' }}
+                      className="underline hover:text-primary"
+                    >
+                      Verify
+                    </Link>
                   </p>
-                  <div className="flex items-center justify-end gap-3 pt-2">
-                    <Button type="button" onClick={cancelEdit} variant="ghost" className="text-sm" disabled={isSaving}>
-                      Cancel
-                    </Button>
-                    <Button type="button" onClick={saveProfile} variant="primary" className="text-sm" disabled={isSaving || !hasChanges} loading={isSaving}>
-                      Save changes
-                    </Button>
-                  </div>
+                )}
+              </FormField>
+            </div>
+
+            {isEditing && (
+              <div className="space-y-4 animate-fade-in">
+                {editError && <Alert variant="danger">{editError}</Alert>}
+                <p className="text-xs text-primary/60">
+                  Changing your email sends a confirmation code to the new address; it takes effect
+                  once verified.
+                </p>
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <Button
+                    type="button"
+                    onClick={cancelEdit}
+                    variant="ghost"
+                    className="text-sm"
+                    disabled={isSaving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={saveProfile}
+                    variant="primary"
+                    className="text-sm"
+                    disabled={isSaving || !hasChanges}
+                    loading={isSaving}
+                  >
+                    Save changes
+                  </Button>
                 </div>
-              )}
+              </div>
+            )}
           </div>
         </Card>
 
         <Card className="p-6 sm:p-8">
           <h2 className="text-lg font-medium text-primary mb-6 flex items-center">
-            <svg className="w-5 h-5 mr-2 text-blue shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            <svg
+              className="w-5 h-5 mr-2 text-blue shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
             Security &amp; sign-in
           </h2>
           {user.hasPassword === false ? (
@@ -311,22 +385,36 @@ export default function Profile() {
             </div>
           ) : (
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-primary">Password</p>
-                  <p className="text-xs text-primary/60">Last changed: {formatRelativeTime(user.passwordUpdatedAt)}</p>
-                </div>
-                <Button onClick={openPasswordModal} variant="ghost" className="text-sm font-medium whitespace-nowrap shrink-0">Change password</Button>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-primary">Password</p>
+                <p className="text-xs text-primary/60">
+                  Last changed: {formatRelativeTime(user.passwordUpdatedAt)}
+                </p>
+              </div>
+              <Button
+                onClick={openPasswordModal}
+                variant="ghost"
+                className="text-sm font-medium whitespace-nowrap shrink-0"
+              >
+                Change password
+              </Button>
             </div>
           )}
         </Card>
 
-          <Card className="p-6 sm:p-8">
-            <h2 className="text-lg font-medium text-primary mb-2">Danger zone</h2>
-            <p className="text-sm text-primary mb-6">Deleting your account is irreversible. All your data will be lost.</p>
+        <Card className="p-6 sm:p-8">
+          <h2 className="text-lg font-medium text-primary mb-2">Danger zone</h2>
+          <p className="text-sm text-primary mb-6">
+            Deleting your account is irreversible. All your data will be lost.
+          </p>
 
-            <Button onClick={() => setIsDeleteAccountOpen(true)} variant="danger" className="text-sm w-full sm:w-auto">
-              Delete my account
-            </Button>
+          <Button
+            onClick={() => setIsDeleteAccountOpen(true)}
+            variant="danger"
+            className="text-sm w-full sm:w-auto"
+          >
+            Delete my account
+          </Button>
         </Card>
       </div>
 
@@ -353,21 +441,25 @@ export default function Profile() {
           <FormField label="Current password">
             <PasswordInput
               value={passwordForm.currentPassword}
-              onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+              onChange={(e) =>
+                setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
+              }
               autoComplete="current-password"
             />
           </FormField>
           <FormField label="New password">
             <PasswordInput
               value={passwordForm.newPassword}
-              onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+              onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
               autoComplete="new-password"
             />
           </FormField>
           <FormField label="Confirm new password">
             <PasswordInput
               value={passwordForm.confirmPassword}
-              onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+              onChange={(e) =>
+                setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+              }
               autoComplete="new-password"
             />
           </FormField>
@@ -378,7 +470,13 @@ export default function Profile() {
             <Button type="button" onClick={closePasswordModal} variant="ghost" className="text-sm">
               Cancel
             </Button>
-            <Button type="submit" disabled={isPasswordSaving} loading={isPasswordSaving} variant="primary" className="text-sm">
+            <Button
+              type="submit"
+              disabled={isPasswordSaving}
+              loading={isPasswordSaving}
+              variant="primary"
+              className="text-sm"
+            >
               {isPasswordSaving ? 'Saving…' : 'Save'}
             </Button>
           </div>
@@ -388,7 +486,9 @@ export default function Profile() {
       <ConfirmDialog
         isOpen={isDeleteAccountOpen}
         title="Delete your account?"
-        message={'All your data will be permanently lost. This action is irreversible. To confirm, type "DELETE" below.'}
+        message={
+          'All your data will be permanently lost. This action is irreversible. To confirm, type "DELETE" below.'
+        }
         confirmLabel="Delete"
         cancelLabel="Cancel"
 
@@ -418,7 +518,6 @@ export default function Profile() {
         danger={reauthAction === 'delete'}
         onConfirm={handleReauthConfirm}
       />
-
     </div>
   );
 }

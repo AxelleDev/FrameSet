@@ -8,7 +8,7 @@ const renderModal = (user, props = {}) =>
   render(
     <AuthContext.Provider value={{ user }}>
       <ReauthModal isOpen onClose={() => {}} onConfirm={vi.fn()} {...props} />
-    </AuthContext.Provider>
+    </AuthContext.Provider>,
   );
 
 describe('ReauthModal', () => {
@@ -34,7 +34,7 @@ describe('ReauthModal', () => {
     await user.click(screen.getByRole('button', { name: /confirm/i }));
 
     await waitFor(() =>
-      expect(screen.getByText('Current password is incorrect.')).toBeInTheDocument()
+      expect(screen.getByText('Current password is incorrect.')).toBeInTheDocument(),
     );
   });
 

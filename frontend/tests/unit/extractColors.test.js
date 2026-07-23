@@ -14,7 +14,7 @@ describe('extractColorsFromImage', () => {
     };
     const realCreateElement = document.createElement.bind(document);
     vi.spyOn(document, 'createElement').mockImplementation((tag) =>
-      tag === 'canvas' ? { width: 0, height: 0, getContext: () => ctx } : realCreateElement(tag)
+      tag === 'canvas' ? { width: 0, height: 0, getContext: () => ctx } : realCreateElement(tag),
     );
 
     global.Image = class {

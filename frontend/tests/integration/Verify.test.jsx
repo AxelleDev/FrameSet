@@ -19,18 +19,20 @@ vi.mock('react-router-dom', async () => {
 
 const renderPage = () =>
   render(
-    <HelmetProvider><AuthContext.Provider
-      value={{
-        verifyEmail: mockVerify,
-        resendVerificationCode: mockResend,
-        verifyPendingEmail: vi.fn(),
-        resendPendingEmailCode: vi.fn(),
-      }}
-    >
-      <MemoryRouter initialEntries={['/verify?email=axelle%40example.com']}>
-        <Verify />
-      </MemoryRouter>
-    </AuthContext.Provider></HelmetProvider>
+    <HelmetProvider>
+      <AuthContext.Provider
+        value={{
+          verifyEmail: mockVerify,
+          resendVerificationCode: mockResend,
+          verifyPendingEmail: vi.fn(),
+          resendPendingEmailCode: vi.fn(),
+        }}
+      >
+        <MemoryRouter initialEntries={['/verify?email=axelle%40example.com']}>
+          <Verify />
+        </MemoryRouter>
+      </AuthContext.Provider>
+    </HelmetProvider>,
   );
 
 describe('Verify', () => {

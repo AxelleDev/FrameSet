@@ -21,7 +21,11 @@ describe('Button', () => {
   it('does not call onClick when disabled', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
-    render(<Button onClick={onClick} disabled>Submit</Button>);
+    render(
+      <Button onClick={onClick} disabled>
+        Submit
+      </Button>,
+    );
     await user.click(screen.getByRole('button', { name: 'Submit' }));
     expect(onClick).not.toHaveBeenCalled();
   });
@@ -47,7 +51,7 @@ describe('Button', () => {
     render(
       <MemoryRouter>
         <Button to="/app/dashboard">Back</Button>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     const link = screen.getByRole('link', { name: 'Back' });
     expect(link).toHaveAttribute('href', '/app/dashboard');

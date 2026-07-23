@@ -14,6 +14,9 @@ describe('ProjectStatePlaceholder', () => {
   it('shows "project not found" + a link to the dashboard', () => {
     renderIn(<ProjectStatePlaceholder loading={false} />);
     expect(screen.getByText(/project not found/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/app/dashboard');
+    expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute(
+      'href',
+      '/app/dashboard',
+    );
   });
 });

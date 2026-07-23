@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 /**
@@ -43,7 +51,7 @@ export function ToastProvider({ children }) {
       timers.current[id] = setTimeout(() => dismiss(id), duration);
       return id;
     },
-    [dismiss]
+    [dismiss],
   );
 
   // Clear any pending auto-dismiss timers if the provider unmounts.
@@ -75,7 +83,14 @@ export function ToastProvider({ children }) {
                 role={toast.variant === 'danger' ? 'alert' : 'status'}
                 className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 text-sm font-medium text-primary ring-1 ring-primary/10 animate-fade-in"
               >
-                <svg className={`h-5 w-5 flex-shrink-0 ${icon.className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <svg
+                  className={`h-5 w-5 flex-shrink-0 ${icon.className}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden="true"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d={icon.path} />
                 </svg>
                 <span className="flex-1">{toast.message}</span>
@@ -85,7 +100,14 @@ export function ToastProvider({ children }) {
                   aria-label="Close notification"
                   className="-mr-1 flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center rounded-lg text-primary/40 transition-colors hover:text-primary focus-ring"
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -93,7 +115,7 @@ export function ToastProvider({ children }) {
             );
           })}
         </div>,
-        document.body
+        document.body,
       )}
     </ToastContext.Provider>
   );

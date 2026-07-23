@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useParams } from 'react-router-dom';
 import Card from '../components/Card';
+import IconCircle from '../components/IconCircle';
 import PageHeader from '../components/PageHeader';
 import Seo from '../components/Seo';
 import Button from '../components/Button';
@@ -17,26 +18,28 @@ import useClipboard from '../hooks/useClipboard';
 // Loads an image (same-origin, e.g. the public logo) as a PNG data URL via an
 // offscreen canvas, so it can be embedded in the jsPDF document. Resolves null
 // on failure so a broken/slow logo load never blocks the PDF download.
-const loadImageDataUrl = (src) => new Promise((resolve) => {
-  const img = new Image();
-  img.onload = () => {
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      canvas.getContext('2d').drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
-    } catch {
-      resolve(null);
-    }
-  };
-  img.onerror = () => resolve(null);
-  img.src = src;
-});
+const loadImageDataUrl = (src) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
 
 export default function ProjectExport() {
   const { id } = useParams();
-  const { activeProject, projectsLoading, activeProjectId, enableSharing, disableSharing } = useProjects();
+  const { activeProject, projectsLoading, activeProjectId, enableSharing, disableSharing } =
+    useProjects();
   const { user } = useAuth();
   const { showToast } = useToast();
   const { copy, copiedValue } = useClipboard({ timeout: 1500 });
@@ -86,10 +89,13 @@ export default function ProjectExport() {
   // Trigger a JSON file download via a transient data-URI anchor.
   const downloadJson = () => {
     if (!activeProject) return;
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(projectJson);
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(projectJson);
     const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `${activeProject.name.replace(/\s+/g, '_').toLowerCase()}_standards.json`);
+    downloadAnchorNode.setAttribute('href', dataStr);
+    downloadAnchorNode.setAttribute(
+      'download',
+      `${activeProject.name.replace(/\s+/g, '_').toLowerCase()}_standards.json`,
+    );
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -138,7 +144,7 @@ export default function ProjectExport() {
 
     // Header: project name + generation date, then a divider rule.
     doc.setFontSize(24);
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(...PDF_PRIMARY);
     doc.text(activeProject.name, 20, y);
     y += 8;
@@ -146,7 +152,7 @@ export default function ProjectExport() {
     // Same "Made by <name>" credit as the Shared reference sheet, then the
     // generation date.
     doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
     doc.setTextColor(...PDF_SECONDARY);
     if (user?.name) {
       doc.text(`Made by ${user.name}`, 20, y);
@@ -163,9 +169,12 @@ export default function ProjectExport() {
     // centered below), matching the ColorTile component used everywhere else
     // a palette shows up (Landing, ProjectPalette, the Shared reference sheet).
     if (activeProject.palette.length > 0) {
-      if (y > 250) { doc.addPage(); y = 20; }
+      if (y > 250) {
+        doc.addPage();
+        y = 20;
+      }
       doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
+      doc.setFont('helvetica', 'bold');
       doc.setTextColor(...PDF_PRIMARY);
       doc.text('Color palette', 20, y);
       y += 12;
@@ -180,14 +189,17 @@ export default function ProjectExport() {
       activeProject.palette.forEach((color, i) => {
         const col = i % cols;
         if (col === 0 && i > 0) y += rowH;
-        if (y + rowH > 280) { doc.addPage(); y = 20; }
+        if (y + rowH > 280) {
+          doc.addPage();
+          y = 20;
+        }
         const x = 20 + col * cellW;
 
         doc.setFillColor(color.hex);
         doc.roundedRect(x, y, squareSize, squareSize, 3, 3, 'F');
 
         doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
+        doc.setFont('helvetica', 'bold');
         doc.setTextColor(...PDF_PRIMARY);
         let nameLines = doc.splitTextToSize(color.name, squareSize);
         if (nameLines.length > 2) {
@@ -200,11 +212,13 @@ export default function ProjectExport() {
           nameLines = [nameLines[0], `${secondLine}…`];
         }
         nameLines.forEach((line, li) => {
-          doc.text(line, x + squareSize / 2, y + squareSize + 6 + li * nameLineH, { align: 'center' });
+          doc.text(line, x + squareSize / 2, y + squareSize + 6 + li * nameLineH, {
+            align: 'center',
+          });
         });
 
         doc.setFontSize(8);
-        doc.setFont("courier", "normal");
+        doc.setFont('courier', 'normal');
         doc.setTextColor(...PDF_SECONDARY);
         doc.text(
           color.hex.toUpperCase(),
@@ -220,14 +234,14 @@ export default function ProjectExport() {
     // order as the Shared reference sheet), each as a bordered card with a
     // category label, a big value/unit line and a detail line.
     const standardCards = [
-      ...(activeProject.brushNorms || []).map(n => ({
+      ...(activeProject.brushNorms || []).map((n) => ({
         category: 'Brush',
         name: n.name,
         value: `${n.value}`,
         unit: n.unit || '',
         detail: n.opacity !== undefined && n.opacity !== null ? `Opacity: ${n.opacity}` : null,
       })),
-      ...(activeProject.typographyNorms || []).map(n => ({
+      ...(activeProject.typographyNorms || []).map((n) => ({
         category: 'Typography',
         name: n.fontUsage || n.fontFamily,
         value: n.fontFamily,
@@ -237,9 +251,12 @@ export default function ProjectExport() {
     ];
 
     if (standardCards.length > 0) {
-      if (y > 250) { doc.addPage(); y = 20; }
+      if (y > 250) {
+        doc.addPage();
+        y = 20;
+      }
       doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
+      doc.setFont('helvetica', 'bold');
       doc.setTextColor(...PDF_PRIMARY);
       doc.text('Graphic standards', 20, y);
       y += 12;
@@ -252,19 +269,22 @@ export default function ProjectExport() {
       standardCards.forEach((card, i) => {
         const col = i % cols;
         if (col === 0 && i > 0) y += cardH + gap;
-        if (y + cardH > 280) { doc.addPage(); y = 20; }
+        if (y + cardH > 280) {
+          doc.addPage();
+          y = 20;
+        }
         const x = 20 + col * (cellW + gap);
 
         doc.setDrawColor(...PDF_LIGHT_RULE);
         doc.roundedRect(x, y, cellW, cardH, 3, 3, 'S');
 
         doc.setFontSize(7);
-        doc.setFont("helvetica", "bold");
+        doc.setFont('helvetica', 'bold');
         doc.setTextColor(...PDF_BLUE);
         doc.text(card.category.toUpperCase(), x + 5, y + 7);
 
         doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
+        doc.setFont('helvetica', 'normal');
         doc.setTextColor(...PDF_PRIMARY);
         doc.text(truncateToWidth(card.name, textMaxWidth), x + 5, y + 13);
 
@@ -274,12 +294,12 @@ export default function ProjectExport() {
         let unitWidth = 0;
         if (card.unit) {
           doc.setFontSize(9);
-          doc.setFont("helvetica", "normal");
+          doc.setFont('helvetica', 'normal');
           unitWidth = doc.getTextWidth(card.unit);
         }
 
         doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
+        doc.setFont('helvetica', 'bold');
         doc.setTextColor(...PDF_PRIMARY);
         const valueMaxWidth = textMaxWidth - (card.unit ? unitWidth + 2 : 0);
         const valueText = truncateToWidth(`${card.value}`, valueMaxWidth);
@@ -288,14 +308,14 @@ export default function ProjectExport() {
 
         if (card.unit) {
           doc.setFontSize(9);
-          doc.setFont("helvetica", "normal");
+          doc.setFont('helvetica', 'normal');
           doc.setTextColor(...PDF_BLUE);
           doc.text(card.unit, x + 5 + valueWidth + 2, y + 21);
         }
 
         if (card.detail) {
           doc.setFontSize(8);
-          doc.setFont("helvetica", "normal");
+          doc.setFont('helvetica', 'normal');
           doc.setTextColor(...PDF_SECONDARY);
           doc.text(truncateToWidth(card.detail, textMaxWidth), x + 5, y + 27);
         }
@@ -306,7 +326,10 @@ export default function ProjectExport() {
     // Footer: same "Made with FrameSet" credit (logo + line) as the Shared
     // reference sheet's footer — no CTA button here, this is the owner's own copy.
     const footerH = 16;
-    if (y + footerH > 285) { doc.addPage(); y = 20; }
+    if (y + footerH > 285) {
+      doc.addPage();
+      y = 20;
+    }
     doc.setDrawColor(...PDF_LIGHT_RULE);
     doc.line(20, y, 190, y);
     y += 10;
@@ -319,9 +342,11 @@ export default function ProjectExport() {
     // Right-aligned against the page's right margin, same side as the
     // "Create your own" button on the Shared reference sheet's footer.
     doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
     doc.setTextColor(...PDF_SECONDARY);
-    doc.text('Made with FrameSet — the graphic reference for your projects.', 190, y, { align: 'right' });
+    doc.text('Made with FrameSet — the graphic reference for your projects.', 190, y, {
+      align: 'right',
+    });
 
     // Save with a filesystem-safe filename derived from the project name.
     doc.save(`${activeProject.name.replace(/\s+/g, '_')}_style_guide.pdf`);
@@ -339,36 +364,84 @@ export default function ProjectExport() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Card className="p-8 flex flex-col items-start text-left">
-                <div className="h-12 w-12 bg-blue/15 text-blue rounded-full flex items-center justify-center mb-6">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                </div>
+              <IconCircle>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                  />
+                </svg>
+              </IconCircle>
               <h2 className="text-lg font-medium text-primary mb-2">PDF style guide</h2>
-              <p className="text-sm text-primary mb-6">A structured PDF document bringing together all of the project's active standards and palettes. Ideal for printing or sharing.</p>
-                <Button onClick={downloadPdf} variant="primary">
-                  Download PDF
-                </Button>
+              <p className="text-sm text-primary mb-6">
+                A structured PDF document bringing together all of the project's active standards
+                and palettes. Ideal for printing or sharing.
+              </p>
+              <Button onClick={downloadPdf} variant="primary">
+                Download PDF
+              </Button>
             </Card>
 
             <Card className="p-8 flex flex-col items-start text-left">
-                <div className="h-12 w-12 bg-blue/15 text-blue rounded-full flex items-center justify-center mb-6">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
-                </div>
+              <IconCircle>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                  />
+                </svg>
+              </IconCircle>
               <h2 className="text-lg font-medium text-primary mb-2">JSON data</h2>
-              <p className="text-sm text-primary mb-6">Raw data structure covering the entire project: standards, palettes, identifiers and settings. Ready to plug into your own tools.</p>
-                <Button onClick={downloadJson} variant="primary">
-                  Download JSON
-                </Button>
+              <p className="text-sm text-primary mb-6">
+                Raw data structure covering the entire project: standards, palettes, identifiers and
+                settings. Ready to plug into your own tools.
+              </p>
+              <Button onClick={downloadJson} variant="primary">
+                Download JSON
+              </Button>
             </Card>
 
             <Card className="p-8 flex flex-col items-start text-left md:col-span-2">
-              <div className="h-12 w-12 bg-blue/15 text-blue rounded-full flex items-center justify-center mb-6">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
-              </div>
+              <IconCircle>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
+                  />
+                </svg>
+              </IconCircle>
               <h2 className="text-lg font-medium text-primary mb-2">Public share link</h2>
               <p className="text-sm text-primary mb-6">
                 A read-only web page of this reference sheet — palette, typography and brush
-                standards. Anyone with the link can view it, no account needed. Disable it
-                anytime to revoke access.
+                standards. Anyone with the link can view it, no account needed. Disable it anytime
+                to revoke access.
               </p>
 
               {shareUrl ? (
@@ -397,14 +470,20 @@ export default function ProjectExport() {
           </div>
 
           <div className="mt-12">
-            <h2 className="text-sm font-bold text-primary uppercase tracking-wider mb-4">JSON output preview</h2>
+            <h2 className="text-sm font-bold text-primary uppercase tracking-wider mb-4">
+              JSON output preview
+            </h2>
             <div className="bg-primary/5 rounded-2xl p-6 overflow-x-auto">
-              <pre className="text-xs text-primary font-mono leading-relaxed whitespace-pre-wrap break-words">{projectJson}</pre>
+              <pre className="text-xs text-primary font-mono leading-relaxed whitespace-pre-wrap break-words">
+                {projectJson}
+              </pre>
             </div>
           </div>
         </>
       ) : (
-        <ProjectStatePlaceholder loading={projectsLoading || String(activeProjectId) !== String(id)} />
+        <ProjectStatePlaceholder
+          loading={projectsLoading || String(activeProjectId) !== String(id)}
+        />
       )}
     </>
   );

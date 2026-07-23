@@ -6,7 +6,12 @@ export function normalizeHexInput(val) {
   if (val == null) return '#';
   let v = String(val).trim();
   if (!v.startsWith('#')) v = '#' + v;
-  v = '#' + v.slice(1).replace(/[^0-9a-fA-F]/g, '').toUpperCase();
+  v =
+    '#' +
+    v
+      .slice(1)
+      .replace(/[^0-9a-fA-F]/g, '')
+      .toUpperCase();
   return v;
 }
 
@@ -21,7 +26,10 @@ export function handleHexKeyDown(e) {
   const el = e.target;
   const selStart = el.selectionStart || 0;
   const selEnd = el.selectionEnd || 0;
-  if ((e.key === 'Backspace' && selStart <= 1 && selEnd <= 1) || (e.key === 'Delete' && selStart === 0)) {
+  if (
+    (e.key === 'Backspace' && selStart <= 1 && selEnd <= 1) ||
+    (e.key === 'Delete' && selStart === 0)
+  ) {
     e.preventDefault();
   }
 }

@@ -21,7 +21,7 @@ export default function ConfirmDialog({
   decorationClassName = 'absolute top-0 right-0 w-32 h-32 bg-blue/10 rounded-full -mr-16 -mt-16 opacity-50',
   confirmationWord = '',
   confirmationInputLabel = 'Confirmation word',
-  confirmationInputPlaceholder = ''
+  confirmationInputPlaceholder = '',
 }) {
   const [confirmationValue, setConfirmationValue] = useState('');
   const confirmationInputId = useId();
@@ -35,10 +35,10 @@ export default function ConfirmDialog({
 
   const requiresConfirmationWord = Boolean(confirmationWord);
   const normalizedConfirmationValue = confirmationValue.trim();
-  const isConfirmationValid = !requiresConfirmationWord || normalizedConfirmationValue === confirmationWord;
-  const showConfirmationError = requiresConfirmationWord
-    && normalizedConfirmationValue.length > 0
-    && !isConfirmationValid;
+  const isConfirmationValid =
+    !requiresConfirmationWord || normalizedConfirmationValue === confirmationWord;
+  const showConfirmationError =
+    requiresConfirmationWord && normalizedConfirmationValue.length > 0 && !isConfirmationValid;
 
   // Block confirmation while the required word does not match.
   const handleConfirm = () => {
@@ -61,7 +61,10 @@ export default function ConfirmDialog({
 
       {requiresConfirmationWord ? (
         <div className="mb-4">
-          <label htmlFor={confirmationInputId} className="block text-sm font-medium text-primary mb-2">
+          <label
+            htmlFor={confirmationInputId}
+            className="block text-sm font-medium text-primary mb-2"
+          >
             {confirmationInputLabel}
           </label>
           <TextInput

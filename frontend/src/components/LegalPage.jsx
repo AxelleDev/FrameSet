@@ -26,7 +26,10 @@ export default function LegalPage({ title, path, description, lastUpdated, child
         </div>
 
         <div className="mt-12 border-t border-primary/10 pt-6">
-          <Link to="/" className="text-sm font-medium text-blue hover:text-primary transition-colors">
+          <Link
+            to="/"
+            className="text-sm font-medium text-blue hover:text-primary transition-colors"
+          >
             ← Back to FrameSet
           </Link>
         </div>

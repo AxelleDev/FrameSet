@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
     its brush name — the exact same rendering used by ProjectNorms, the
     Shared reference sheet and Landing's mockup (via StandardCard). */
 export default function BrushPreview({ value, opacity, brushName }) {
-  const numericOpacity = typeof opacity === 'number' ? opacity : (opacity ? parseFloat(opacity) : 1);
+  const numericOpacity = typeof opacity === 'number' ? opacity : opacity ? parseFloat(opacity) : 1;
   return (
     <div className="flex flex-col items-center justify-center w-full px-4">
       <div
@@ -17,7 +17,9 @@ export default function BrushPreview({ value, opacity, brushName }) {
           opacity: numericOpacity,
         }}
       ></div>
-      <span className="text-[10px] text-blue font-bold uppercase tracking-wider">{brushName || 'Brush'}</span>
+      <span className="text-[10px] text-blue font-bold uppercase tracking-wider">
+        {brushName || 'Brush'}
+      </span>
     </div>
   );
 }

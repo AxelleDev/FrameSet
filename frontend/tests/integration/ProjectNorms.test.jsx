@@ -23,9 +23,11 @@ vi.mock('../../src/hooks/useGoogleFonts', () => ({
 
 const renderPage = () =>
   render(
-    <HelmetProvider><MemoryRouter>
-      <ProjectNorms />
-    </MemoryRouter></HelmetProvider>
+    <HelmetProvider>
+      <MemoryRouter>
+        <ProjectNorms />
+      </MemoryRouter>
+    </HelmetProvider>,
   );
 
 describe('ProjectNorms', () => {
@@ -82,10 +84,24 @@ describe('ProjectNorms', () => {
 
   it('shows the trash section (brush + typography together, newest first) and restores an item', async () => {
     projectState.trashedBrushNorms = [
-      { id: 9, name: 'Old outline', value: '8', unit: 'px', opacity: 0.9, deletedAt: '2026-07-10T00:00:00Z', daysLeft: 21 },
+      {
+        id: 9,
+        name: 'Old outline',
+        value: '8',
+        unit: 'px',
+        opacity: 0.9,
+        deletedAt: '2026-07-10T00:00:00Z',
+        daysLeft: 21,
+      },
     ];
     projectState.trashedTypographyNorms = [
-      { id: 4, fontFamily: 'Figtree', fontUsage: 'Heading', deletedAt: '2026-07-05T00:00:00Z', daysLeft: 16 },
+      {
+        id: 4,
+        fontFamily: 'Figtree',
+        fontUsage: 'Heading',
+        deletedAt: '2026-07-05T00:00:00Z',
+        daysLeft: 16,
+      },
     ];
     projectState.restoreBrushNorm = vi.fn().mockResolvedValue(true);
     const user = userEvent.setup();
@@ -103,7 +119,15 @@ describe('ProjectNorms', () => {
 
   it('permanently deletes a trashed standard after its own confirmation', async () => {
     projectState.trashedBrushNorms = [
-      { id: 9, name: 'Old outline', value: '8', unit: 'px', opacity: 0.9, deletedAt: '2026-07-10', daysLeft: 3 },
+      {
+        id: 9,
+        name: 'Old outline',
+        value: '8',
+        unit: 'px',
+        opacity: 0.9,
+        deletedAt: '2026-07-10',
+        daysLeft: 3,
+      },
     ];
     projectState.deleteBrushNormPermanently = vi.fn().mockResolvedValue(true);
     const user = userEvent.setup();

@@ -10,7 +10,9 @@ export const PASSWORD_RULES = [
 ];
 
 /** Whether a password satisfies every rule of the policy. */
-export const isPasswordValid = (password) => PASSWORD_RULES.every((rule) => rule.test(password || ''));
+export const isPasswordValid = (password) =>
+  PASSWORD_RULES.every((rule) => rule.test(password || ''));
 
 /** Basic email format check for client-side validation. */
-export const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+export const isValidEmail = (email) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());

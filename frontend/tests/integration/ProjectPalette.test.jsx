@@ -20,9 +20,11 @@ vi.mock('../../src/hooks/useActiveProject', () => ({ default: () => {} }));
 
 const renderPage = () =>
   render(
-    <HelmetProvider><MemoryRouter>
-      <ProjectPalette />
-    </MemoryRouter></HelmetProvider>
+    <HelmetProvider>
+      <MemoryRouter>
+        <ProjectPalette />
+      </MemoryRouter>
+    </HelmetProvider>,
   );
 
 describe('ProjectPalette', () => {

@@ -88,7 +88,13 @@ export default function ReauthModal({
           {error && <Alert variant="danger">{error}</Alert>}
 
           <div className="flex items-center justify-end gap-3 pt-2">
-            <Button type="button" onClick={handleClose} variant="ghost" className="text-sm" disabled={busy}>
+            <Button
+              type="button"
+              onClick={handleClose}
+              variant="ghost"
+              className="text-sm"
+              disabled={busy}
+            >
               Cancel
             </Button>
             <Button
@@ -104,7 +110,7 @@ export default function ReauthModal({
         </form>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm text-primary/70">
+          <p className="text-sm text-primary/60">
             You sign in with Google — confirm with your Google account to continue.
           </p>
 
@@ -116,7 +122,13 @@ export default function ReauthModal({
           {error && <Alert variant="danger">{error}</Alert>}
 
           <div className="flex items-center justify-end pt-2">
-            <Button type="button" onClick={handleClose} variant="ghost" className="text-sm" disabled={busy}>
+            <Button
+              type="button"
+              onClick={handleClose}
+              variant="ghost"
+              className="text-sm"
+              disabled={busy}
+            >
               Cancel
             </Button>
           </div>

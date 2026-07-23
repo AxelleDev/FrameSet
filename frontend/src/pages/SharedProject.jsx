@@ -19,6 +19,8 @@ import ColorTile from '../components/ColorTile';
 import StandardCard from '../components/StandardCard';
 import BrushPreview from '../components/BrushPreview';
 import TypographyPreview from '../components/TypographyPreview';
+import Spinner from '../components/Spinner';
+import EmptyState from '../components/EmptyState';
 import useClipboard from '../hooks/useClipboard';
 import useNormFontLoader from '../hooks/useNormFontLoader';
 
@@ -70,8 +72,12 @@ export default function SharedProject() {
 
       <main className="max-w-5xl mx-auto px-6 pb-16">
         {status === 'loading' && (
-          <div className="min-h-[50vh] flex items-center justify-center" role="status" aria-live="polite">
-            <div className="border-4 border-blue/20 border-t-blue rounded-full w-10 h-10 animate-spin"></div>
+          <div
+            className="min-h-[50vh] flex items-center justify-center"
+            role="status"
+            aria-live="polite"
+          >
+            <Spinner size="lg" className="text-blue" />
           </div>
         )}
 
@@ -105,8 +111,8 @@ export default function SharedProject() {
             </header>
 
             {isEmpty && (
-              <Card className="p-8 text-center">
-                <p className="text-sm text-primary/60">This reference sheet is empty for now.</p>
+              <Card className="p-8">
+                <EmptyState description="This reference sheet is empty for now." />
               </Card>
             )}
 
@@ -115,7 +121,9 @@ export default function SharedProject() {
                   swatches (square, rounded-3xl, name/hex centered below). */}
               {palette.length > 0 && (
                 <section aria-labelledby="shared-palette-title">
-                  <h2 id="shared-palette-title" className="text-xl font-medium text-primary mb-6">Color palette</h2>
+                  <h2 id="shared-palette-title" className="text-xl font-medium text-primary mb-6">
+                    Color palette
+                  </h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
                     {palette.map((color) => (
                       <ColorTile
@@ -134,7 +142,9 @@ export default function SharedProject() {
                   ProjectNorms, so a shared link reads like the editor. */}
               {(typographyNorms.length > 0 || brushNorms.length > 0) && (
                 <section aria-labelledby="shared-standards-title">
-                  <h2 id="shared-standards-title" className="text-xl font-medium text-primary mb-6">Graphic standards</h2>
+                  <h2 id="shared-standards-title" className="text-xl font-medium text-primary mb-6">
+                    Graphic standards
+                  </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {brushNorms.map((norm) => (
                       <StandardCard
@@ -147,10 +157,19 @@ export default function SharedProject() {
                         detail={
                           <div className="text-xs text-secondary mb-2">
                             {/* opacity is a plain 0-1 decimal (not a percentage), same as the editor's own display. */}
-                            Opacity: {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}
+                            Opacity:{' '}
+                            {typeof norm.opacity === 'number'
+                              ? norm.opacity
+                              : (norm.opacity ?? '—')}
                           </div>
                         }
-                        preview={<BrushPreview value={norm.value} opacity={norm.opacity} brushName={norm.brushName} />}
+                        preview={
+                          <BrushPreview
+                            value={norm.value}
+                            opacity={norm.opacity}
+                            brushName={norm.brushName}
+                          />
+                        }
                       />
                     ))}
 
@@ -164,11 +183,13 @@ export default function SharedProject() {
                         valueTitle={norm.fontFamily}
                         valueTruncate
                         unit={norm.fontWeight}
-                        detail={norm.fontStyle && (
-                          <div className="mb-2">
-                            <span className="text-xs text-primary italic">{norm.fontStyle}</span>
-                          </div>
-                        )}
+                        detail={
+                          norm.fontStyle && (
+                            <div className="mb-2">
+                              <span className="text-xs text-primary italic">{norm.fontStyle}</span>
+                            </div>
+                          )
+                        }
                         preview={
                           <TypographyPreview
                             fontFamily={norm.fontFamily}
@@ -184,11 +205,17 @@ export default function SharedProject() {
             </div>
 
             <footer className="mt-16 pt-8 border-t border-primary/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <Link to="/" aria-label="Discover FrameSet" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring w-16">
+              <Link
+                to="/"
+                aria-label="Discover FrameSet"
+                className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring w-16"
+              >
                 <Logo className="object-contain w-full h-auto" />
               </Link>
               <div className="flex items-center gap-3">
-                <p className="text-xs text-primary/60">Made with FrameSet — the graphic reference for your projects.</p>
+                <p className="text-xs text-primary/60">
+                  Made with FrameSet — the graphic reference for your projects.
+                </p>
                 <Button to="/register" variant="primary" className="text-sm">
                   Create your own
                 </Button>

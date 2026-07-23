@@ -36,6 +36,9 @@ jobs:
       - name: Lint backend
         run: npm run lint
 
+      - name: Check backend formatting
+        run: npm run format:check
+
       - name: Run backend tests
         run: npm test
 
@@ -64,6 +67,9 @@ jobs:
 
       - name: Lint frontend
         run: npm run lint
+
+      - name: Check frontend formatting
+        run: npm run format:check
 
       - name: Run frontend tests
         run: npm test

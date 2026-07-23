@@ -7,7 +7,7 @@ const { mockApiGet, mockApiPost, mockApiPut, mockApiPatch, mockApiDelete } = vi.
   mockApiPost: vi.fn(),
   mockApiPut: vi.fn(),
   mockApiPatch: vi.fn(),
-  mockApiDelete: vi.fn()
+  mockApiDelete: vi.fn(),
 }));
 
 vi.mock('../../src/services/api', () => ({
@@ -16,9 +16,9 @@ vi.mock('../../src/services/api', () => ({
     post: mockApiPost,
     put: mockApiPut,
     patch: mockApiPatch,
-    delete: mockApiDelete
+    delete: mockApiDelete,
   },
-  setSessionExpiredHandler: () => {}
+  setSessionExpiredHandler: () => {},
 }));
 
 vi.mock('../../src/utils/logger', () => ({
@@ -26,8 +26,8 @@ vi.mock('../../src/utils/logger', () => ({
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-    error: vi.fn()
-  }
+    error: vi.fn(),
+  },
 }));
 
 const AuthProbe = () => {
@@ -45,7 +45,7 @@ const renderProvider = () => {
   render(
     <AuthProvider>
       <AuthProbe />
-    </AuthProvider>
+    </AuthProvider>,
   );
 };
 

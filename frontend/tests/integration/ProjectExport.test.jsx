@@ -22,16 +22,24 @@ vi.mock('../../src/context/AuthContext', () => ({
 
 const renderPage = () =>
   render(
-    <HelmetProvider><MemoryRouter>
-      <ProjectExport />
-    </MemoryRouter></HelmetProvider>
+    <HelmetProvider>
+      <MemoryRouter>
+        <ProjectExport />
+      </MemoryRouter>
+    </HelmetProvider>,
   );
 
 describe('ProjectExport', () => {
   beforeEach(() => {
     Object.assign(projectState, {
       setActiveProjectId: vi.fn(),
-      activeProject: { id: 2, name: 'Mon Projet', brushNorms: [], typographyNorms: [], palette: [] },
+      activeProject: {
+        id: 2,
+        name: 'Mon Projet',
+        brushNorms: [],
+        typographyNorms: [],
+        palette: [],
+      },
       projectsLoading: false,
       activeProjectId: '2',
       enableSharing: vi.fn(),

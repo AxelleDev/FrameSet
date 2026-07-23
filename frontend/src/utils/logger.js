@@ -18,7 +18,7 @@ const logger = {
   debug: (...args) => write('debug', ...args),
   info: (...args) => write('info', ...args),
   warn: (...args) => write('warn', ...args),
-  error: (...args) => write('error', ...args)
+  error: (...args) => write('error', ...args),
 };
 
 export default logger;

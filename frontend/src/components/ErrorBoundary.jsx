@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import Card from './Card';
 
 // User-facing fallback text shown when a render error is caught.
 const FALLBACK_MESSAGE = 'Something went wrong. Please reload the page.';
@@ -10,7 +11,7 @@ export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      hasError: false
+      hasError: false,
     };
   }
 
@@ -29,12 +30,9 @@ export default class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          role="alert"
-          className="rounded-2xl bg-surface px-6 py-8 text-center text-primary "
-        >
+        <Card role="alert" className="px-6 py-8 text-center text-primary">
           {FALLBACK_MESSAGE}
-        </div>
+        </Card>
       );
     }
 

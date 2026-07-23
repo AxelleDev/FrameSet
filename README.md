@@ -114,6 +114,7 @@ and frontend:
 
 - a production dependency audit (`npm audit`, high severity)
 - linting (ESLint)
+- formatting (Prettier, check-only)
 - the test suites (Jest + Supertest / Vitest)
 - the frontend build
 

@@ -70,9 +70,7 @@ export function extractColorsFromImage(file, maxColors = 8) {
         }
 
         const toHex = (n) => n.toString(16).padStart(2, '0');
-        const hexes = picked.map(
-          (c) => `#${toHex(c.r)}${toHex(c.g)}${toHex(c.b)}`.toUpperCase()
-        );
+        const hexes = picked.map((c) => `#${toHex(c.r)}${toHex(c.g)}${toHex(c.b)}`.toUpperCase());
         resolve(hexes);
       } catch (error) {
         reject(error);

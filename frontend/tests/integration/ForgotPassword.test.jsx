@@ -19,11 +19,13 @@ vi.mock('react-router-dom', async () => {
 
 const renderPage = () =>
   render(
-    <HelmetProvider><AuthContext.Provider value={{ requestPasswordReset: mockRequest, resetPassword: mockReset }}>
-      <MemoryRouter>
-        <ForgotPassword />
-      </MemoryRouter>
-    </AuthContext.Provider></HelmetProvider>
+    <HelmetProvider>
+      <AuthContext.Provider value={{ requestPasswordReset: mockRequest, resetPassword: mockReset }}>
+        <MemoryRouter>
+          <ForgotPassword />
+        </MemoryRouter>
+      </AuthContext.Provider>
+    </HelmetProvider>,
   );
 
 describe('ForgotPassword', () => {

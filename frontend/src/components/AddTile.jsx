@@ -7,7 +7,7 @@ export default function AddTile({
   onClick,
   label = 'Add',
   className = '',
-  labelClassName = 'text-sm font-medium text-primary'
+  labelClassName = 'text-sm font-medium text-primary',
 }) {
   return (
     <button

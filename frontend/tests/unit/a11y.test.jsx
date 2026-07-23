@@ -24,7 +24,7 @@ describe('accessibility (axe-core)', () => {
         <Alert variant="danger">Something went wrong.</Alert>
         <Alert variant="success">Action succeeded.</Alert>
         <Alert variant="info">Information.</Alert>
-      </>
+      </>,
     );
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -35,7 +35,7 @@ describe('accessibility (axe-core)', () => {
         <Button>Submit</Button>
         <Avatar initials="JD" />
         <Badge color="blue">Active</Badge>
-      </>
+      </>,
     );
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -44,7 +44,7 @@ describe('accessibility (axe-core)', () => {
     const { container } = render(
       <FormField label="Email" required error="Invalid email format.">
         <TextInput type="email" value="" onChange={() => {}} />
-      </FormField>
+      </FormField>,
     );
     expect(await axe(container)).toHaveNoViolations();
   });

@@ -19,7 +19,7 @@ describe('ConfirmDialog', () => {
         onCancel={() => {}}
         confirmationWord="DELETE"
         confirmationInputLabel="Type the confirmation word"
-      />
+      />,
     );
 
     const confirmButton = screen.getByRole('button', { name: 'Delete' });
@@ -48,7 +48,7 @@ describe('ConfirmDialog', () => {
         confirmLabel="Confirm"
         onConfirm={() => {}}
         onCancel={() => {}}
-      />
+      />,
     );
 
     expect(screen.getByRole('button', { name: 'Confirm' })).toBeEnabled();

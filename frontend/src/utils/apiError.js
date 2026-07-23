@@ -4,7 +4,11 @@
  * to the form; unexpected errors (5xx, network) go to the global banner.
  * Returns { isBusinessError, message }; message is set only for business errors.
  */
-export const handleApiError = (error, setGlobalError, fallbackGlobalMessage = 'Something went wrong.') => {
+export const handleApiError = (
+  error,
+  setGlobalError,
+  fallbackGlobalMessage = 'Something went wrong.',
+) => {
   const isBusinessError = Boolean(error?.status) && error.status < 500;
 
   // Only surface unexpected (non-business) errors in the global banner.
@@ -14,7 +18,7 @@ export const handleApiError = (error, setGlobalError, fallbackGlobalMessage = 'S
 
   return {
     isBusinessError,
-    message: isBusinessError ? (error?.data?.error || error?.message) : undefined
+    message: isBusinessError ? error?.data?.error || error?.message : undefined,
   };
 };
 

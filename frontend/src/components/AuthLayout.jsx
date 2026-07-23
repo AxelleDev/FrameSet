@@ -14,10 +14,14 @@ export default function AuthLayout({ hero, children, swapOnMobile = false }) {
       <PublicTopBar />
       <main className="relative z-10 flex-1 w-full flex items-center justify-center px-4 sm:px-8 pb-8">
         <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-          <div className={`flex flex-col justify-center space-y-6 animate-fade-in min-w-0 ${heroOrderClass}`}>
+          <div
+            className={`flex flex-col justify-center space-y-6 animate-fade-in min-w-0 ${heroOrderClass}`}
+          >
             {hero}
           </div>
-          <div className={`flex items-center justify-center md:justify-end min-w-0 ${formOrderClass}`}>
+          <div
+            className={`flex items-center justify-center md:justify-end min-w-0 ${formOrderClass}`}
+          >
             {children}
           </div>
         </div>

@@ -29,7 +29,9 @@ export default function StandardCard({
     <Card className={`p-6 relative group flex flex-col justify-between h-full ${className}`.trim()}>
       {actions}
       <div className="mb-4">
-        <Badge color={badgeColor} className="mb-2">{category}</Badge>
+        <Badge color={badgeColor} className="mb-2">
+          {category}
+        </Badge>
         <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{title}</h3>
         <div className={`flex items-baseline mb-2 ${valueTruncate ? 'min-w-0' : ''}`.trim()}>
           <span

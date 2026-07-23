@@ -4,14 +4,16 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
-import Logo from '../components/Logo';
+import AuthLogoLink from '../components/AuthLogoLink';
+import AuthCard from '../components/AuthCard';
 import FormField from '../components/FormField';
 import Button from '../components/Button';
-import Card from '../components/Card';
 import Seo from '../components/Seo';
 import PasswordInput from '../components/PasswordInput';
 import TextInput from '../components/TextInput';
 import Alert from '../components/Alert';
+import Divider from '../components/Divider';
+import TermsNotice from '../components/TermsNotice';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 import useUserCount from '../hooks/useUserCount';
 import useFormState from '../hooks/useFormState';
@@ -81,14 +83,9 @@ export default function Login() {
   return (
     <AuthLayout
       swapOnMobile
-     
       hero={
         <>
-          <div className="flex items-center mb-2">
-            <Link to="/" aria-label="Go to homepage" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring w-24 sm:w-20">
-              <Logo className="object-contain w-full h-auto" />
-            </Link>
-          </div>
+          <AuthLogoLink />
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-primary leading-tight">
             Define your <br />
@@ -96,19 +93,26 @@ export default function Login() {
           </h1>
 
           <p className="text-lg text-primary max-w-md leading-relaxed">
-            FrameSet centralizes the graphic foundations of your creative projects, for a clear and confident art direction.
+            FrameSet centralizes the graphic foundations of your creative projects, for a clear and
+            confident art direction.
           </p>
 
           <div className="flex items-center space-x-4 pt-4">
             <span className="text-sm text-blue">
-              {userCount !== null ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}` : ' '}
+              {userCount !== null
+                ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}`
+                : ' '}
             </span>
           </div>
         </>
       }
     >
-      <Card className="w-full max-w-md p-6 sm:p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
-        <Seo title="Sign in" path="/login" description="Sign in to your FrameSet workspace to manage your projects' standards and palettes." />
+      <AuthCard>
+        <Seo
+          title="Sign in"
+          path="/login"
+          description="Sign in to your FrameSet workspace to manage your projects' standards and palettes."
+        />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Welcome back</h2>
           <p className="text-primary text-sm mt-2">Pick up right where you left off.</p>
@@ -153,7 +157,10 @@ export default function Login() {
               />
             </FormField>
             <div className="mt-2 flex justify-end">
-              <Link to="/forgot-password" className="text-xs text-blue hover:text-primary transition-colors">
+              <Link
+                to="/forgot-password"
+                className="text-xs text-blue hover:text-primary transition-colors"
+              >
                 Forgot password?
               </Link>
             </div>
@@ -164,26 +171,22 @@ export default function Login() {
           </Button>
         </form>
 
-        <div className="my-6 flex items-center gap-3" aria-hidden="true">
-          <span className="h-px flex-1 bg-primary/10" />
-          <span className="text-xs uppercase tracking-widest text-primary/50">or</span>
-          <span className="h-px flex-1 bg-primary/10" />
-        </div>
+        <Divider className="my-6" />
 
         <GoogleSignInButton onCredential={handleGoogleCredential} disabled={submitting} />
 
-        <p className="mt-6 text-center text-xs text-primary/60">
-          By continuing, you agree to the{' '}
-          <Link to="/terms" className="text-blue hover:text-primary transition-colors underline underline-offset-2">Terms of Service</Link>{' '}
-          and acknowledge the{' '}
-          <Link to="/privacy" className="text-blue hover:text-primary transition-colors underline underline-offset-2">Privacy Policy</Link>.
-        </p>
+        <TermsNotice />
 
         <div className="mt-8 text-center">
           <span className="text-sm text-primary">No account yet? </span>
-          <Link to="/register" className="text-sm font-medium text-blue hover:text-primary transition-colors">Create one</Link>
+          <Link
+            to="/register"
+            className="text-sm font-medium text-blue hover:text-primary transition-colors"
+          >
+            Create one
+          </Link>
         </div>
-      </Card>
+      </AuthCard>
     </AuthLayout>
   );
 }

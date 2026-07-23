@@ -142,32 +142,53 @@ function AppRoutes() {
         <RouteFocus />
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>} />
-          <Route path="/register" element={<RedirectIfAuthenticated><Register /></RedirectIfAuthenticated>} />
-          <Route path="/forgot-password" element={<RedirectIfAuthenticated><ForgotPassword /></RedirectIfAuthenticated>} />
-          <Route path="/verify" element={<Verify />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/s/:token" element={<SharedProject />} />
-          <Route path="/app" element={<MainLayout />}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="profile" element={<Profile />} />
+            <Route path="/" element={<Landing />} />
             <Route
-              path="project/:id"
-              element={(
-                <ErrorBoundary>
-                  <Outlet />
-                </ErrorBoundary>
-              )}
-            >
-               <Route index element={<Navigate to="norms" replace />} />
-               <Route path="norms" element={<ProjectNorms />} />
-               <Route path="palette" element={<ProjectPalette />} />
-               <Route path="export" element={<ProjectExport />} />
+              path="/login"
+              element={
+                <RedirectIfAuthenticated>
+                  <Login />
+                </RedirectIfAuthenticated>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <RedirectIfAuthenticated>
+                  <Register />
+                </RedirectIfAuthenticated>
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                <RedirectIfAuthenticated>
+                  <ForgotPassword />
+                </RedirectIfAuthenticated>
+              }
+            />
+            <Route path="/verify" element={<Verify />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/s/:token" element={<SharedProject />} />
+            <Route path="/app" element={<MainLayout />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="profile" element={<Profile />} />
+              <Route
+                path="project/:id"
+                element={
+                  <ErrorBoundary>
+                    <Outlet />
+                  </ErrorBoundary>
+                }
+              >
+                <Route index element={<Navigate to="norms" replace />} />
+                <Route path="norms" element={<ProjectNorms />} />
+                <Route path="palette" element={<ProjectPalette />} />
+                <Route path="export" element={<ProjectExport />} />
+              </Route>
             </Route>
-          </Route>
-          <Route path="*" element={<NotFound />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

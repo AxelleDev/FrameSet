@@ -15,10 +15,11 @@ import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
-import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
 import Seo from '../components/Seo';
 import ColorTile from '../components/ColorTile';
+import TrashSection from '../components/TrashSection';
+import TrashRow from '../components/TrashRow';
 import { normalizeHexInput, isValidHexValue, handleHexKeyDown } from '../utils/hex';
 import { EditIcon, DeleteIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
@@ -122,8 +123,11 @@ export default function ProjectPalette() {
     // Cancelled drag: clear any inline styles and skip animating this pass.
     if (skipFlip.current) {
       skipFlip.current = false;
-      Object.values(itemRefs.current).forEach(el => {
-        if (el) { el.style.transition = ''; el.style.transform = ''; }
+      Object.values(itemRefs.current).forEach((el) => {
+        if (el) {
+          el.style.transition = '';
+          el.style.transform = '';
+        }
       });
       return;
     }
@@ -131,7 +135,7 @@ export default function ProjectPalette() {
     if (draggedId === null) return;
     if (!flipPending.current) return;
     flipPending.current = false;
-    previewPalette.forEach(color => {
+    previewPalette.forEach((color) => {
       // The dragged swatch is shown semi-transparent and is not FLIP-animated.
       if (color.id === draggedId) return;
       const el = itemRefs.current[color.id];
@@ -224,9 +228,9 @@ export default function ProjectPalette() {
     let newHex = editColorHex.trim();
     if (!newHex.startsWith('#')) newHex = '#' + newHex;
 
-    const nextPalette = palette.map((color, idx) => (
-      idx === editIdx ? { ...color, name: normalizedName, hex: newHex } : color
-    ));
+    const nextPalette = palette.map((color, idx) =>
+      idx === editIdx ? { ...color, name: normalizedName, hex: newHex } : color,
+    );
 
     const saved = await persistPalette(nextPalette);
     if (saved) {
@@ -285,7 +289,9 @@ export default function ProjectPalette() {
 
   // Toggle whether an extracted color will be added to the palette.
   const toggleImageColor = (hex) => {
-    setImageColors((prev) => prev.map((c) => (c.hex === hex ? { ...c, selected: !c.selected } : c)));
+    setImageColors((prev) =>
+      prev.map((c) => (c.hex === hex ? { ...c, selected: !c.selected } : c)),
+    );
   };
 
   // Append the selected extracted colors (capped at MAX_PALETTE_SIZE) and persist.
@@ -351,25 +357,27 @@ export default function ProjectPalette() {
       <PageHeader
         title="Color palette"
         subtitle="This project's reference colors."
-        actions={activeProject ? (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelected}
-              className="hidden"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={openImagePicker}
-              disabled={extracting}
-            >
-              {extracting ? 'Analyzing…' : 'Palette from an image'}
-            </Button>
-          </>
-        ) : null}
+        actions={
+          activeProject ? (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelected}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={openImagePicker}
+                disabled={extracting}
+              >
+                {extracting ? 'Analyzing…' : 'Palette from an image'}
+              </Button>
+            </>
+          ) : null
+        }
       />
 
       {activeProject ? (
@@ -379,236 +387,241 @@ export default function ProjectPalette() {
           )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
-           <AddTile
-            onClick={openAddModal}
-            label="New color"
-            className="aspect-square"
-           />
+            <AddTile onClick={openAddModal} label="New color" className="aspect-square" />
 
-          {/* Live (preview) order; each node is registered in itemRefs (by id)
+            {/* Live (preview) order; each node is registered in itemRefs (by id)
               for FLIP measurement, and the dragged swatch is dimmed. */}
-          {previewPalette.map((color, idx) => (
-            <ColorTile
-              key={color.id}
-              ref={el => { itemRefs.current[color.id] = el; }}
-              tabIndex={-1}
-              aria-label={`Color ${color.name}, ${color.hex}`}
-              hex={color.hex}
-              name={color.name}
-              onCopy={(e) => handleCopyHex(e, color.hex)}
-              copied={copiedValue === color.hex}
-              className={color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}
-              draggable
-              onDragStart={e => {
-                // Begin a drag: reset FLIP bookkeeping and record the source swatch.
-                didDrop.current = false;
-                flipPending.current = false;
-                prevPositions.current = {};
-                setDraggedIndex(idx);
-                setDraggedId(color.id);
-                setDragOverIndex(idx);
-                e.dataTransfer.effectAllowed = 'move';
-              }}
-              onDragOver={e => {
-                e.preventDefault();
-                // When hovering a new target slot, snapshot current positions
-                // (the FLIP "First") and compute the previewed reorder so the
-                // layout effect can animate the displaced swatches.
-                if (draggedId !== null && color.id !== draggedId) {
-                  if (idx === dragOverIndex) return;
-                  const snapshots = {};
-                  Object.keys(itemRefs.current).forEach(key => {
-                    const el = itemRefs.current[key];
-                    if (el) snapshots[key] = el.getBoundingClientRect();
-                  });
-                  prevPositions.current = snapshots;
-                  flipPending.current = true;
-                  setDragOverIndex(idx);
-                  const tempPalette = [...palette];
-                  const [moved] = tempPalette.splice(draggedIndex, 1);
-                  tempPalette.splice(idx, 0, moved);
-                  setPreviewPalette(tempPalette);
+            {previewPalette.map((color, idx) => (
+              <ColorTile
+                key={color.id}
+                ref={(el) => {
+                  itemRefs.current[color.id] = el;
+                }}
+                tabIndex={-1}
+                aria-label={`Color ${color.name}, ${color.hex}`}
+                hex={color.hex}
+                name={color.name}
+                onCopy={(e) => handleCopyHex(e, color.hex)}
+                copied={copiedValue === color.hex}
+                className={
+                  color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'
                 }
-              }}
-              onDrop={e => {
-                e.preventDefault();
-                // Commit the reorder: mark didDrop so onDragEnd does not revert,
-                // update the committed palette, and persist after a short delay
-                // so the drop animation can settle first.
-                didDrop.current = true;
-                flipPending.current = false;
-                if (draggedId !== null && draggedIndex !== dragOverIndex) {
-                  const newPalette = [...palette];
-                  const [moved] = newPalette.splice(draggedIndex, 1);
-                  newPalette.splice(dragOverIndex, 0, moved);
-                  setPalette(newPalette);
-                  clearTimeout(dropPersistTimer.current);
-                  dropPersistTimer.current = setTimeout(() => {
-                    persistPalette(newPalette);
-                  }, 200);
-                }
-                setDraggedIndex(null);
-                setDraggedId(null);
-                setDragOverIndex(null);
-              }}
-              onDragEnd={() => {
-                // Fires after every drag. If a drop already committed, just reset.
-                if (didDrop.current) {
+                draggable
+                onDragStart={(e) => {
+                  // Begin a drag: reset FLIP bookkeeping and record the source swatch.
                   didDrop.current = false;
+                  flipPending.current = false;
+                  prevPositions.current = {};
+                  setDraggedIndex(idx);
+                  setDraggedId(color.id);
+                  setDragOverIndex(idx);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  // When hovering a new target slot, snapshot current positions
+                  // (the FLIP "First") and compute the previewed reorder so the
+                  // layout effect can animate the displaced swatches.
+                  if (draggedId !== null && color.id !== draggedId) {
+                    if (idx === dragOverIndex) return;
+                    const snapshots = {};
+                    Object.keys(itemRefs.current).forEach((key) => {
+                      const el = itemRefs.current[key];
+                      if (el) snapshots[key] = el.getBoundingClientRect();
+                    });
+                    prevPositions.current = snapshots;
+                    flipPending.current = true;
+                    setDragOverIndex(idx);
+                    const tempPalette = [...palette];
+                    const [moved] = tempPalette.splice(draggedIndex, 1);
+                    tempPalette.splice(idx, 0, moved);
+                    setPreviewPalette(tempPalette);
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  // Commit the reorder: mark didDrop so onDragEnd does not revert,
+                  // update the committed palette, and persist after a short delay
+                  // so the drop animation can settle first.
+                  didDrop.current = true;
+                  flipPending.current = false;
+                  if (draggedId !== null && draggedIndex !== dragOverIndex) {
+                    const newPalette = [...palette];
+                    const [moved] = newPalette.splice(draggedIndex, 1);
+                    newPalette.splice(dragOverIndex, 0, moved);
+                    setPalette(newPalette);
+                    clearTimeout(dropPersistTimer.current);
+                    dropPersistTimer.current = setTimeout(() => {
+                      persistPalette(newPalette);
+                    }, 200);
+                  }
+                  setDraggedIndex(null);
+                  setDraggedId(null);
+                  setDragOverIndex(null);
+                }}
+                onDragEnd={() => {
+                  // Fires after every drag. If a drop already committed, just reset.
+                  if (didDrop.current) {
+                    didDrop.current = false;
+                    flipPending.current = false;
+                    setDraggedIndex(null);
+                    setDraggedId(null);
+                    setDragOverIndex(null);
+                    return;
+                  }
+                  // Otherwise the drag was cancelled (dropped outside): revert the
+                  // preview to the committed order and skip the FLIP animation.
+                  skipFlip.current = true;
                   flipPending.current = false;
                   setDraggedIndex(null);
                   setDraggedId(null);
                   setDragOverIndex(null);
-                  return;
-                }
-                // Otherwise the drag was cancelled (dropped outside): revert the
-                // preview to the committed order and skip the FLIP animation.
-                skipFlip.current = true;
-                flipPending.current = false;
-                setDraggedIndex(null);
-                setDraggedId(null);
-                setDragOverIndex(null);
-                setPreviewPalette(palette);
-              }}
-              overlay={
-                <>
-                  <ActionIconButton
-                    onClick={(e) => handleDeleteColor(e, color.id)}
-                    title="Delete color"
-                    intent="delete"
-                    variant="light"
-                    className="absolute top-3 right-3 z-30"
-                  >
-                    <DeleteIcon />
-                  </ActionIconButton>
+                  setPreviewPalette(palette);
+                }}
+                overlay={
+                  <>
+                    <ActionIconButton
+                      onClick={(e) => handleDeleteColor(e, color.id)}
+                      title="Delete color"
+                      intent="delete"
+                      variant="light"
+                      className="absolute top-3 right-3 z-30"
+                    >
+                      <DeleteIcon />
+                    </ActionIconButton>
 
-                  <ActionIconButton
-                    onClick={() => openEditModal(idx)}
-                    title="Edit color"
-                    intent="edit"
-                    variant="light"
-                    className="absolute top-3 left-3 z-30"
-                  >
-                    <EditIcon />
-                  </ActionIconButton>
+                    <ActionIconButton
+                      onClick={() => openEditModal(idx)}
+                      title="Edit color"
+                      intent="edit"
+                      variant="light"
+                      className="absolute top-3 left-3 z-30"
+                    >
+                      <EditIcon />
+                    </ActionIconButton>
 
-                  {/* Reorder controls: keyboard-operable, non-drag alternative
+                    {/* Reorder controls: keyboard-operable, non-drag alternative
                       (WCAG 2.5.7). Visually hidden (srOnly) so sighted users
                       drag while assistive-tech users get "move left/right". */}
-                  <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
-                    <ActionIconButton
-                      onClick={(e) => { e.stopPropagation(); moveColor(idx, idx - 1); }}
-                      title="Move color left"
-                      variant="light"
-                      srOnly
-                      disabled={idx === 0}
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </ActionIconButton>
-                    <ActionIconButton
-                      onClick={(e) => { e.stopPropagation(); moveColor(idx, idx + 1); }}
-                      title="Move color right"
-                      variant="light"
-                      srOnly
-                      disabled={idx === previewPalette.length - 1}
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </ActionIconButton>
-                  </div>
-                </>
-              }
-            />
-          ))}
+                    <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
+                      <ActionIconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveColor(idx, idx - 1);
+                        }}
+                        title="Move color left"
+                        variant="light"
+                        srOnly
+                        disabled={idx === 0}
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M15 19l-7-7 7-7"
+                          />
+                        </svg>
+                      </ActionIconButton>
+                      <ActionIconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveColor(idx, idx + 1);
+                        }}
+                        title="Move color right"
+                        variant="light"
+                        srOnly
+                        disabled={idx === previewPalette.length - 1}
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </ActionIconButton>
+                    </div>
+                  </>
+                }
+              />
+            ))}
           </div>
 
           {trashedPaletteColors.length > 0 && (
-            <section className="mt-14" aria-labelledby="palette-trash-title">
-              <h2 id="palette-trash-title" className="text-lg font-medium text-primary flex items-center">
-                <DeleteIcon className="w-5 h-5 mr-2 text-blue shrink-0" />
-                Trash
-                <span className="ml-2 text-sm font-normal text-primary/50">({trashedPaletteColors.length})</span>
-              </h2>
-              <p className="text-xs text-primary/60 mt-1 mb-4">
-                Deleted colors are kept for 30 days, then deleted forever.
-              </p>
-              <div className="space-y-3">
-                {trashedPaletteColors.map((color) => (
-                  <Card key={color.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="min-w-0 flex items-center gap-3">
-                      <div
-                        className="w-8 h-8 rounded-full ring-2 ring-surface shrink-0"
-                        style={{ backgroundColor: color.hex }}
-                      ></div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-primary truncate">{color.name}</p>
-                        <p className="text-xs text-primary/60">
-                          {color.daysLeft <= 0
-                            ? 'Will be deleted with the next cleanup'
-                            : `${color.daysLeft} day${color.daysLeft === 1 ? '' : 's'} left before permanent deletion`}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 shrink-0">
-                      <Button
-                        variant="ghost"
-                        className="text-sm"
-                        onClick={() => handleRestoreColor(color.id)}
-                        loading={restoringColorId === color.id}
-                        disabled={trashBusy}
-                      >
-                        Restore
-                      </Button>
-                      <Button
-                        variant="danger"
-                        className="text-sm"
-                        disabled={trashBusy}
-                        onClick={() => setConfirmPermanentDeleteColor({ id: color.id, name: color.name })}
-                      >
-                        Delete forever
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </section>
+            <TrashSection
+              id="palette-trash-title"
+              count={trashedPaletteColors.length}
+              note="Deleted colors are kept for 30 days, then deleted forever."
+            >
+              {trashedPaletteColors.map((color) => (
+                <TrashRow
+                  key={color.id}
+                  leading={
+                    <div
+                      className="w-8 h-8 rounded-full ring-2 ring-surface shrink-0"
+                      style={{ backgroundColor: color.hex }}
+                    ></div>
+                  }
+                  title={color.name}
+                  daysLeft={color.daysLeft}
+                  onRestore={() => handleRestoreColor(color.id)}
+                  restoring={restoringColorId === color.id}
+                  busy={trashBusy}
+                  onDeleteForever={() =>
+                    setConfirmPermanentDeleteColor({ id: color.id, name: color.name })
+                  }
+                />
+              ))}
+            </TrashSection>
           )}
         </>
       ) : (
-        <ProjectStatePlaceholder loading={projectsLoading || String(activeProjectId) !== String(id)} />
+        <ProjectStatePlaceholder
+          loading={projectsLoading || String(activeProjectId) !== String(id)}
+        />
       )}
 
-      <FormModal
-        isOpen={editIdx !== null}
-        onClose={() => setEditIdx(null)}
-        title="Edit color"
-      >
+      <FormModal isOpen={editIdx !== null} onClose={() => setEditIdx(null)} title="Edit color">
         <div className="space-y-4">
           <FormField label="Color name">
-            <TextInput type="text" value={editColorName} onChange={e => setEditColorName(e.target.value)} placeholder="Hair highlight" />
+            <TextInput
+              type="text"
+              value={editColorName}
+              onChange={(e) => setEditColorName(e.target.value)}
+              placeholder="Hair highlight"
+            />
           </FormField>
           <FormField label="Hex code">
             <div className="flex gap-3">
-               <input
-                 type="color"
-                 value={isValidEditHex() ? editColorHex : '#ffffff'}
-                 onChange={(e) => setEditColorHex(e.target.value.toUpperCase())}
-                 aria-label="Pick a color"
-                 className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0"
-               />
-               <TextInput
-                 type="text"
-                 value={editColorHex}
-                 onChange={handleEditHexChange}
-                 onKeyDown={handleHexKeyDown}
-                 onPaste={handleHexPaste(setEditColorHex)}
-                 placeholder="#FF5500"
-                 mono
-                 className="flex-1"
-               />
+              <input
+                type="color"
+                value={isValidEditHex() ? editColorHex : '#ffffff'}
+                onChange={(e) => setEditColorHex(e.target.value.toUpperCase())}
+                aria-label="Pick a color"
+                className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0"
+              />
+              <TextInput
+                type="text"
+                value={editColorHex}
+                onChange={handleEditHexChange}
+                onKeyDown={handleHexKeyDown}
+                onPaste={handleHexPaste(setEditColorHex)}
+                placeholder="#FF5500"
+                mono
+                className="flex-1"
+              />
             </div>
           </FormField>
         </div>
@@ -621,35 +634,36 @@ export default function ProjectPalette() {
         />
       </FormModal>
 
-      <FormModal
-        isOpen={isAddingColor}
-        onClose={() => setIsAddingColor(false)}
-        title="New color"
-      >
+      <FormModal isOpen={isAddingColor} onClose={() => setIsAddingColor(false)} title="New color">
         <div className="space-y-4">
           <FormField label="Color name">
-            <TextInput type="text" value={newColorName} onChange={e => setNewColorName(e.target.value)} placeholder="Hair highlight" />
+            <TextInput
+              type="text"
+              value={newColorName}
+              onChange={(e) => setNewColorName(e.target.value)}
+              placeholder="Hair highlight"
+            />
           </FormField>
 
           <FormField label="Hex code">
             <div className="flex gap-3">
-               <input
-                 type="color"
-                 value={isValidHex() ? newColorHex : '#ffffff'}
-                 onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
-                 aria-label="Pick a color"
-                 className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0"
-               />
-               <TextInput
-                 type="text"
-                 value={newColorHex}
-                 onChange={handleNewHexChange}
-                 onKeyDown={handleHexKeyDown}
-                 onPaste={handleHexPaste(setNewColorHex)}
-                 placeholder="#FF5500"
-                 mono
-                 className="flex-1"
-               />
+              <input
+                type="color"
+                value={isValidHex() ? newColorHex : '#ffffff'}
+                onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
+                aria-label="Pick a color"
+                className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0"
+              />
+              <TextInput
+                type="text"
+                value={newColorHex}
+                onChange={handleNewHexChange}
+                onKeyDown={handleHexKeyDown}
+                onPaste={handleHexPaste(setNewColorHex)}
+                placeholder="#FF5500"
+                mono
+                className="flex-1"
+              />
             </div>
           </FormField>
         </div>
@@ -665,7 +679,10 @@ export default function ProjectPalette() {
 
       <FormModal
         isOpen={isImageModalOpen}
-        onClose={() => { setIsImageModalOpen(false); setImageColors([]); }}
+        onClose={() => {
+          setIsImageModalOpen(false);
+          setImageColors([]);
+        }}
         title="Palette from an image"
       >
         <div className="space-y-4">
@@ -691,7 +708,10 @@ export default function ProjectPalette() {
         <ModalActions
           secondaryLabel="Cancel"
           primaryLabel={`Add (${imageColors.filter((c) => c.selected).length})`}
-          onSecondary={() => { setIsImageModalOpen(false); setImageColors([]); }}
+          onSecondary={() => {
+            setIsImageModalOpen(false);
+            setImageColors([]);
+          }}
           onPrimary={confirmAddImageColors}
           primaryDisabled={imageColors.filter((c) => c.selected).length === 0}
         />

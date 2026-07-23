@@ -11,11 +11,14 @@ export default function useClipboard({ timeout = 1200 } = {}) {
 
   // Clear the pending "copied" timer if the component unmounts, so we never call
   // setState on an unmounted component.
-  useEffect(() => () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-  }, []);
+  useEffect(
+    () => () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    },
+    [],
+  );
 
   // Falls back to a hidden <textarea> + execCommand where the async Clipboard
   // API is unavailable (e.g. non-secure contexts). Returns whether it succeeded.

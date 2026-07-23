@@ -319,7 +319,9 @@ describe('projects controller', () => {
       // The only kept id is 10, so every other color of the project is soft-deleted (trashed).
       expect(connection.query).toHaveBeenNthCalledWith(
         2,
-        expect.stringContaining('UPDATE project_palette SET deleted_at = NOW() WHERE project_id = ? AND deleted_at IS NULL AND id NOT IN'),
+        expect.stringContaining(
+          'UPDATE project_palette SET deleted_at = NOW() WHERE project_id = ? AND deleted_at IS NULL AND id NOT IN',
+        ),
         ['1', 10],
       );
       // The existing color keeps its id and is written at position 0.
@@ -744,20 +746,39 @@ describe('projects controller', () => {
   });
 
   describe('norms trash', () => {
-    it('lists a project\'s trashed brush norms with days left', async () => {
+    it("lists a project's trashed brush norms with days left", async () => {
       db.query
         .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
         .mockResolvedValueOnce([
-          [{ id: 9, name: 'Outline', value: '8', unit: 'px', brush_name: 'Smooth', opacity: 0.5, deleted_at: '2026-07-01', days_left: '20' }],
+          [
+            {
+              id: 9,
+              name: 'Outline',
+              value: '8',
+              unit: 'px',
+              brush_name: 'Smooth',
+              opacity: 0.5,
+              deleted_at: '2026-07-01',
+              days_left: '20',
+            },
+          ],
         ]);
       const req = { params: { projectId: '1' }, user: { id: 1 } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.listTrashedBrushNorms(req, res);
       expect(res.json).toHaveBeenCalledWith({
-        norms: [{
-          id: 9, name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 0.5,
-          deletedAt: '2026-07-01', daysLeft: 20,
-        }],
+        norms: [
+          {
+            id: 9,
+            name: 'Outline',
+            value: '8',
+            unit: 'px',
+            brushName: 'Smooth',
+            opacity: 0.5,
+            deletedAt: '2026-07-01',
+            daysLeft: 20,
+          },
+        ],
       });
     });
 
@@ -799,20 +820,37 @@ describe('projects controller', () => {
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
 
-    it('lists a project\'s trashed typography norms with days left', async () => {
+    it("lists a project's trashed typography norms with days left", async () => {
       db.query
         .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
         .mockResolvedValueOnce([
-          [{ id: 4, font_family: 'Figtree', font_weight: '600', font_usage: 'Heading', font_style: null, deleted_at: '2026-07-01', days_left: '5' }],
+          [
+            {
+              id: 4,
+              font_family: 'Figtree',
+              font_weight: '600',
+              font_usage: 'Heading',
+              font_style: null,
+              deleted_at: '2026-07-01',
+              days_left: '5',
+            },
+          ],
         ]);
       const req = { params: { projectId: '1' }, user: { id: 1 } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.listTrashedTypographyNorms(req, res);
       expect(res.json).toHaveBeenCalledWith({
-        norms: [{
-          id: 4, fontFamily: 'Figtree', fontWeight: '600', fontUsage: 'Heading', fontStyle: null,
-          deletedAt: '2026-07-01', daysLeft: 5,
-        }],
+        norms: [
+          {
+            id: 4,
+            fontFamily: 'Figtree',
+            fontWeight: '600',
+            fontUsage: 'Heading',
+            fontStyle: null,
+            deletedAt: '2026-07-01',
+            daysLeft: 5,
+          },
+        ],
       });
     });
 
@@ -862,7 +900,7 @@ describe('projects controller', () => {
       expect(res.status).toHaveBeenCalledWith(404);
     });
 
-    it('lists a project\'s trashed colors with days left', async () => {
+    it("lists a project's trashed colors with days left", async () => {
       db.query
         .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
         .mockResolvedValueOnce([

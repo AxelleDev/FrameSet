@@ -6,8 +6,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
-import Logo from '../components/Logo';
-import Card from '../components/Card';
+import AuthLogoLink from '../components/AuthLogoLink';
+import AuthCard from '../components/AuthCard';
 import Seo from '../components/Seo';
 import FormField from '../components/FormField';
 import TextInput from '../components/TextInput';
@@ -17,7 +17,8 @@ import Button from '../components/Button';
 export default function Verify() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyEmail, resendVerificationCode, verifyPendingEmail, resendPendingEmailCode } = useAuth();
+  const { verifyEmail, resendVerificationCode, verifyPendingEmail, resendPendingEmailCode } =
+    useAuth();
   // Prefer router state (keeps the email out of the URL); fall back to the query
   // string for older links, then to manual entry when nothing was provided.
   const routeState = location.state || {};
@@ -45,9 +46,10 @@ export default function Verify() {
     }
     setSubmitting(true);
     try {
-      const result = type === 'pending-email'
-        ? await verifyPendingEmail(email, code)
-        : await verifyEmail(email, code);
+      const result =
+        type === 'pending-email'
+          ? await verifyPendingEmail(email, code)
+          : await verifyEmail(email, code);
 
       if (result.success) {
         setSuccess(true);
@@ -72,9 +74,10 @@ export default function Verify() {
     }
     setSubmitting(true);
     try {
-      const result = type === 'pending-email'
-        ? await resendPendingEmailCode(email)
-        : await resendVerificationCode(email);
+      const result =
+        type === 'pending-email'
+          ? await resendPendingEmailCode(email)
+          : await resendVerificationCode(email);
 
       if (result.success) {
         setResendMsg('Code resent! Check your email.');
@@ -89,14 +92,9 @@ export default function Verify() {
   return (
     <AuthLayout
       swapOnMobile
-     
       hero={
         <>
-          <div className="flex items-center mb-2">
-            <Link to="/" aria-label="Go to homepage" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring w-24 sm:w-20">
-              <Logo className="object-contain w-full h-auto" />
-            </Link>
-          </div>
+          <AuthLogoLink />
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-primary leading-tight">
             Confirm <br />
             <span className="font-bold text-primary">your email.</span>
@@ -107,23 +105,46 @@ export default function Verify() {
         </>
       }
     >
-      <Card className="w-full max-w-md p-6 sm:p-10 rounded-3xl  animate-fade-in" style={{ animationDelay: '150ms' }}>
+      <AuthCard>
         <Seo title="Email verification" path="/verify" noindex />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Email verification</h2>
           <p className="text-primary text-sm mt-2">
-            {emailWasProvided
-              ? <>Enter the code sent to <strong className="break-all">{email}</strong>.</>
-              : 'Enter your email and the verification code you received.'}
+            {emailWasProvided ? (
+              <>
+                Enter the code sent to <strong className="break-all">{email}</strong>.
+              </>
+            ) : (
+              'Enter your email and the verification code you received.'
+            )}
           </p>
         </div>
 
-        {error && <Alert variant="danger" className="mb-4">{error}</Alert>}
-        {resendMsg && <Alert variant="info" className="mb-4">{resendMsg}</Alert>}
-        {success && <Alert variant="success" className="mb-4">Verified! Redirecting…</Alert>}
+        {error && (
+          <Alert variant="danger" className="mb-4">
+            {error}
+          </Alert>
+        )}
+        {resendMsg && (
+          <Alert variant="info" className="mb-4">
+            {resendMsg}
+          </Alert>
+        )}
+        {success && (
+          <Alert variant="success" className="mb-4">
+            Verified! Redirecting…
+          </Alert>
+        )}
 
         {!success && (
-          <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleVerify(); }} noValidate>
+          <form
+            className="space-y-5"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleVerify();
+            }}
+            noValidate
+          >
             {!emailWasProvided && (
               <FormField label="Email">
                 <TextInput
@@ -149,14 +170,22 @@ export default function Verify() {
             </FormField>
 
             <div className="flex flex-col gap-3">
-              <Button type="submit" fullWidth loading={submitting} disabled={submitting}>Verify</Button>
-              <Button type="button" onClick={handleResend} variant="ghost" className="w-full" disabled={submitting}>
+              <Button type="submit" fullWidth loading={submitting} disabled={submitting}>
+                Verify
+              </Button>
+              <Button
+                type="button"
+                onClick={handleResend}
+                variant="ghost"
+                className="w-full"
+                disabled={submitting}
+              >
                 Resend code
               </Button>
             </div>
           </form>
         )}
-      </Card>
+      </AuthCard>
     </AuthLayout>
   );
 }

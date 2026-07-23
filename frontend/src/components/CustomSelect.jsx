@@ -27,19 +27,27 @@ CappedMenuList.propTypes = { children: PropTypes.node };
 
 // Themed wrapper around react-select matching the app's TextInput. Accepts plain string or
 // `{ value, label }` options and exposes a controlled string `value`/`onChange` API ('' when cleared).
-export default function CustomSelect({ options, value, onChange, placeholder, isClearable = false, components, ...props }) {
+export default function CustomSelect({
+  options,
+  value,
+  onChange,
+  placeholder,
+  isClearable = false,
+  components,
+  ...props
+}) {
   // Normalize string options into the { value, label } shape react-select expects.
-  const selectOptions = options.map(opt =>
-    typeof opt === 'string' ? { value: opt, label: opt } : opt
+  const selectOptions = options.map((opt) =>
+    typeof opt === 'string' ? { value: opt, label: opt } : opt,
   );
   // Derive the selected option object from the controlled string value.
-  const selected = selectOptions.find(opt => opt.value === value) || null;
+  const selected = selectOptions.find((opt) => opt.value === value) || null;
 
   return (
     <Select
       options={selectOptions}
       value={selected}
-      onChange={opt => onChange(opt ? opt.value : '')}
+      onChange={(opt) => onChange(opt ? opt.value : '')}
       placeholder={placeholder}
       isClearable={isClearable}
       menuPlacement="auto"
@@ -51,7 +59,9 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
       styles={{
         control: (provided, state) => ({
           ...provided,
-          backgroundColor: state.isFocused ? 'rgb(var(--color-surface))' : 'rgb(var(--color-blue) / 0.1)',
+          backgroundColor: state.isFocused
+            ? 'rgb(var(--color-surface))'
+            : 'rgb(var(--color-blue) / 0.1)',
           border: 'none',
           borderRadius: '0.75rem',
           minHeight: '3rem',
@@ -59,10 +69,18 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
           boxShadow: state.isFocused ? '0 0 0 2px rgb(var(--color-blue) / 0.5)' : 'none',
           transition: 'all 0.15s ease',
         }),
-        valueContainer: provided => ({ ...provided, padding: '0.15rem 0.75rem' }),
-        placeholder: provided => ({ ...provided, color: 'rgb(var(--color-secondary))' }),
-        singleValue: provided => ({ ...provided, color: 'rgb(var(--color-primary))', fontWeight: 500 }),
-        input: provided => ({ ...provided, color: 'rgb(var(--color-primary))', fontSize: '1rem' }),
+        valueContainer: (provided) => ({ ...provided, padding: '0.15rem 0.75rem' }),
+        placeholder: (provided) => ({ ...provided, color: 'rgb(var(--color-secondary))' }),
+        singleValue: (provided) => ({
+          ...provided,
+          color: 'rgb(var(--color-primary))',
+          fontWeight: 500,
+        }),
+        input: (provided) => ({
+          ...provided,
+          color: 'rgb(var(--color-primary))',
+          fontSize: '1rem',
+        }),
         indicatorSeparator: () => ({ display: 'none' }),
         dropdownIndicator: (provided, state) => ({
           ...provided,
@@ -70,8 +88,8 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
           transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'none',
           transition: 'transform 0.15s ease',
         }),
-        clearIndicator: provided => ({ ...provided, color: 'rgb(var(--color-secondary))' }),
-        menu: provided => ({
+        clearIndicator: (provided) => ({ ...provided, color: 'rgb(var(--color-secondary))' }),
+        menu: (provided) => ({
           ...provided,
           backgroundColor: 'rgb(var(--color-surface))',
           borderRadius: '0.75rem',
@@ -84,8 +102,8 @@ export default function CustomSelect({ options, value, onChange, placeholder, is
         // `popover` tier (tailwind.config.js): above the modal tier (1050) so the
         // menu shows when the select is inside a FormModal (e.g. the font picker),
         // but below the toast tier (1060) so an open menu never hides a toast.
-        menuPortal: provided => ({ ...provided, zIndex: 1055 }),
-        menuList: provided => ({
+        menuPortal: (provided) => ({ ...provided, zIndex: 1055 }),
+        menuList: (provided) => ({
           ...provided,
           display: 'flex',
           flexDirection: 'column',
@@ -118,7 +136,7 @@ CustomSelect.propTypes = {
     PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.shape({ value: PropTypes.string, label: PropTypes.string }),
-    ])
+    ]),
   ),
   value: PropTypes.string,
   onChange: PropTypes.func,
