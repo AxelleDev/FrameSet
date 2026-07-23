@@ -579,17 +579,24 @@ const disableProjectSharing = async (projectId) => {
   return { success: true };
 };
 
-// Public, unauthenticated read of a shared project: only the reference-sheet
-// content (name, norms, palette) — never the owner's identity or project id.
-// Trashed projects don't resolve. Throws 'not_found' for any invalid/unknown token.
+// Public, unauthenticated read of a shared project: the reference-sheet
+// content (name, norms, palette) plus the owner's display name for a "Made by"
+// credit — never their id, email, or the project's own id. Trashed projects
+// don't resolve. Throws 'not_found' for any invalid/unknown token.
 const getSharedProjectByToken = async (rawToken) => {
   const token = typeof rawToken === 'string' ? rawToken.trim() : '';
   if (!SHARE_TOKEN_PATTERN.test(token)) {
     throw new ProjectServiceError('not_found');
   }
 
+  // Joins the owner's display name only (never their email or id) — a small,
+  // deliberate exception to "never expose the owner": a "Made by <name>" credit
+  // on a public reference sheet, nothing that could be used to contact them.
   const [rows] = await db.query(
-    'SELECT id, name FROM projects WHERE share_token = ? AND deleted_at IS NULL',
+    `SELECT projects.id, projects.name, users.name AS owner_name
+     FROM projects
+     JOIN users ON users.id = projects.user_id
+     WHERE projects.share_token = ? AND projects.deleted_at IS NULL`,
     [token],
   );
   if (rows.length === 0) {
@@ -612,6 +619,7 @@ const getSharedProjectByToken = async (rawToken) => {
 
   return {
     name: rows[0].name,
+    ownerName: rows[0].owner_name,
     brushNorms: brushRows.map((norm) => ({
       id: norm.id,
       name: norm.name,

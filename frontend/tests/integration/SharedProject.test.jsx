@@ -28,6 +28,7 @@ describe('SharedProject (public page)', () => {
   it('renders the shared reference sheet: palette, typography and brushes', async () => {
     apiMock.get.mockResolvedValueOnce({
       name: 'Neo-Tokyo Editorial',
+      ownerName: 'Axelle',
       palette: [{ id: 1, name: 'Ink', hex: '#112233' }],
       typographyNorms: [
         { id: 2, fontFamily: 'Figtree', fontWeight: '600', fontUsage: 'Heading', fontStyle: null },
@@ -43,16 +44,21 @@ describe('SharedProject (public page)', () => {
     expect(await screen.findByText('Neo-Tokyo Editorial')).toBeInTheDocument();
     expect(apiMock.get).toHaveBeenCalledWith(`/share/${'a'.repeat(32)}`, expect.any(Object));
 
-    // Palette with copyable hex.
+    // Owner credit — the only personal info the public payload carries.
+    expect(screen.getByText('Made by Axelle')).toBeInTheDocument();
+
+    // Palette with copyable hex — same swatch layout as ProjectPalette.
     expect(screen.getByText('Ink')).toBeInTheDocument();
     expect(screen.getByText('#112233')).toBeInTheDocument();
-    // Typography with its usage badge and details.
-    expect(screen.getByText('Figtree')).toBeInTheDocument();
+    // Typography card: same Badge/value-line/preview-strip layout as ProjectNorms.
+    // getByTitle (not getByText) for the family name: it also appears inside the
+    // "Loading…" fallback text of the preview strip while the font hasn't loaded.
+    expect(screen.getByTitle('Figtree')).toBeInTheDocument();
     expect(screen.getByText('Heading')).toBeInTheDocument();
-    expect(screen.getByText(/weight 600/i)).toBeInTheDocument();
-    // Brush standard with its value and details.
+    expect(screen.getByText('600')).toBeInTheDocument();
+    // Brush standard: same Badge/value-line/preview-strip layout as ProjectNorms.
     expect(screen.getByText('Outline')).toBeInTheDocument();
-    expect(screen.getByText(/brush: smooth/i)).toBeInTheDocument();
+    expect(screen.getByText('Smooth')).toBeInTheDocument();
     // Opacity shown as the raw 0-1 decimal, same as the internal editor — not "80%".
     expect(screen.getByText(/opacity: 0\.8/i)).toBeInTheDocument();
     // Growth footer pointing back to FrameSet.

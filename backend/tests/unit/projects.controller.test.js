@@ -645,10 +645,10 @@ describe('projects controller', () => {
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
 
-    it('serves a shared reference sheet publicly, without owner data', async () => {
+    it('serves a shared reference sheet publicly, with only the owner display name', async () => {
       const token = 'b'.repeat(32);
       db.query
-        .mockResolvedValueOnce([[{ id: 5, name: 'Neo-Tokyo' }]]) // token lookup
+        .mockResolvedValueOnce([[{ id: 5, name: 'Neo-Tokyo', owner_name: 'Axelle' }]]) // token lookup
         .mockResolvedValueOnce([
           [{ id: 7, name: 'Outline', value: '8', unit: 'px', brush_name: 'Smooth', opacity: 80 }],
         ])
@@ -671,6 +671,7 @@ describe('projects controller', () => {
       const payload = res.json.mock.calls[0][0];
       expect(payload).toEqual({
         name: 'Neo-Tokyo',
+        ownerName: 'Axelle',
         brushNorms: [
           { id: 7, name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 80 },
         ],
@@ -685,9 +686,11 @@ describe('projects controller', () => {
         ],
         palette: [{ id: 9, name: 'Ink', hex: '#112233' }],
       });
-      // The public payload never leaks the owner or the project id.
+      // The public payload leaks only the owner's display name (a "Made by"
+      // credit) — never their id, email or the project's id.
       expect(payload.id).toBeUndefined();
       expect(payload.userId).toBeUndefined();
+      expect(payload.email).toBeUndefined();
     });
 
     it('returns 404 for a malformed token without touching the database', async () => {

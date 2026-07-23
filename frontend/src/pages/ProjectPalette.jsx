@@ -14,10 +14,10 @@ import Button from '../components/Button';
 import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
-import CopyBadge from '../components/CopyBadge';
 import AddTile from '../components/AddTile';
 import PageHeader from '../components/PageHeader';
 import Seo from '../components/Seo';
+import ColorTile from '../components/ColorTile';
 import { normalizeHexInput, isValidHexValue, handleHexKeyDown } from '../utils/hex';
 import { EditIcon, DeleteIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
@@ -348,18 +348,22 @@ export default function ProjectPalette() {
            <AddTile
             onClick={openAddModal}
             label="New color"
-            className="aspect-[4/5]"
+            className="aspect-square"
            />
 
           {/* Live (preview) order; each node is registered in itemRefs (by id)
               for FLIP measurement, and the dragged swatch is dimmed. */}
           {previewPalette.map((color, idx) => (
-            <div
+            <ColorTile
               key={color.id}
               ref={el => { itemRefs.current[color.id] = el; }}
               tabIndex={-1}
               aria-label={`Color ${color.name}, ${color.hex}`}
-              className={`group relative flex flex-col aspect-[4/5] rounded-3xl outline-none ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
+              hex={color.hex}
+              name={color.name}
+              onCopy={(e) => handleCopyHex(e, color.hex)}
+              copied={copiedValue === color.hex}
+              className={color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}
               draggable
               onDragStart={e => {
                 // Begin a drag: reset FLIP bookkeeping and record the source swatch.
@@ -432,78 +436,58 @@ export default function ProjectPalette() {
                 setDragOverIndex(null);
                 setPreviewPalette(palette);
               }}
-            >
-              {/* No `overflow-hidden` on purpose: with `rounded-3xl` and the
-                  hover transform, Chrome drops the rounded clip mid-animation and
-                  the overlay flashes square corners. The swatch and its only
-                  full-bleed child (the copy overlay) are rounded to match. */}
-              <div className="flex-1 w-full rounded-3xl relative transition-transform duration-slow group-hover:-translate-y-2"
-                   style={{ backgroundColor: color.hex }}>
+              overlay={
+                <>
+                  <ActionIconButton
+                    onClick={(e) => handleDeleteColor(e, color.id)}
+                    title="Delete color"
+                    intent="delete"
+                    variant="light"
+                    className="absolute top-3 right-3 z-30"
+                  >
+                    <DeleteIcon />
+                  </ActionIconButton>
 
-                   <ActionIconButton
-                      onClick={(e) => handleDeleteColor(e, color.id)}
-                      title="Delete color"
-                      intent="delete"
-                      variant="light"
-                      className="absolute top-3 right-3 z-30"
-                   >
-                      <DeleteIcon />
-                   </ActionIconButton>
+                  <ActionIconButton
+                    onClick={() => openEditModal(idx)}
+                    title="Edit color"
+                    intent="edit"
+                    variant="light"
+                    className="absolute top-3 left-3 z-30"
+                  >
+                    <EditIcon />
+                  </ActionIconButton>
 
+                  {/* Reorder controls: keyboard-operable, non-drag alternative
+                      (WCAG 2.5.7). Visually hidden (srOnly) so sighted users
+                      drag while assistive-tech users get "move left/right". */}
+                  <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
                     <ActionIconButton
-                      onClick={() => openEditModal(idx)}
-                      title="Edit color"
-                      intent="edit"
+                      onClick={(e) => { e.stopPropagation(); moveColor(idx, idx - 1); }}
+                      title="Move color left"
                       variant="light"
-                      className="absolute top-3 left-3 z-30"
+                      srOnly
+                      disabled={idx === 0}
                     >
-                      <EditIcon />
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                      </svg>
                     </ActionIconButton>
-
-                   {/* Reorder controls: keyboard-operable, non-drag alternative
-                       (WCAG 2.5.7). Visually hidden (srOnly) so sighted users
-                       drag while assistive-tech users get "move left/right". */}
-                   <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
-                     <ActionIconButton
-                       onClick={(e) => { e.stopPropagation(); moveColor(idx, idx - 1); }}
-                       title="Move color left"
-                       variant="light"
-                       srOnly
-                       disabled={idx === 0}
-                     >
-                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                       </svg>
-                     </ActionIconButton>
-                     <ActionIconButton
-                       onClick={(e) => { e.stopPropagation(); moveColor(idx, idx + 1); }}
-                       title="Move color right"
-                       variant="light"
-                       srOnly
-                       disabled={idx === previewPalette.length - 1}
-                     >
-                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                       </svg>
-                     </ActionIconButton>
-                   </div>
-
-                   {/* Copy-to-clipboard: a real button so it is keyboard-operable
-                       (WCAG 2.1.1), revealed on hover or keyboard focus. */}
-                   <button
-                     type="button"
-                     onClick={e => handleCopyHex(e, color.hex)}
-                     aria-label={`Copy ${color.hex}`}
-                     className="absolute inset-0 flex items-center justify-center rounded-3xl opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
-                   >
-                      <CopyBadge isCopied={copiedValue === color.hex} />
-                   </button>
-              </div>
-              <div className="mt-4 text-center">
-                 <p className="text-sm font-semibold text-primary truncate" title={color.name}>{color.name}</p>
-                 <p className="text-xs text-primary font-mono mt-0.5 uppercase tracking-wide opacity-70 group-hover:opacity-100 transition-opacity">{color.hex}</p>
-              </div>
-            </div>
+                    <ActionIconButton
+                      onClick={(e) => { e.stopPropagation(); moveColor(idx, idx + 1); }}
+                      title="Move color right"
+                      variant="light"
+                      srOnly
+                      disabled={idx === previewPalette.length - 1}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </ActionIconButton>
+                  </div>
+                </>
+              }
+            />
           ))}
           </div>
         </>

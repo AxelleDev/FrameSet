@@ -13,12 +13,13 @@ import { useParams } from 'react-router-dom';
 import FormModal from '../components/FormModal';
 import FormField from '../components/FormField';
 import TextInput from '../components/TextInput';
-import Badge from '../components/Badge';
 import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
-import Card from '../components/Card';
+import StandardCard from '../components/StandardCard';
+import BrushPreview from '../components/BrushPreview';
+import TypographyPreview from '../components/TypographyPreview';
 import PageHeader from '../components/PageHeader';
 import Seo from '../components/Seo';
 import { EditIcon, DeleteIcon } from '../components/icons';
@@ -205,111 +206,93 @@ export default function ProjectNorms() {
             />
             {/* Brush norm cards (hidden when filtering to typography only) */}
             {filterType !== 'typography' && activeProject.brushNorms && activeProject.brushNorms.map((norm) => (
-              <Card key={norm.id} className="p-6 relative group flex flex-col justify-between h-full">
-                <div className="absolute top-3 right-3 flex gap-2 z-30">
-                  <ActionIconButton
-                    onClick={() => openEditNorm(norm, 'brush')}
-                    title="Edit standard"
-                    intent="edit"
-                  >
-                    <EditIcon />
-                  </ActionIconButton>
-                  <ActionIconButton
-                    onClick={(e) => handleDeleteNorm(e, norm.id, 'brush')}
-                    title="Delete standard"
-                    intent="delete"
-                  >
-                    {loadingDelete === norm.id ? (
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      </svg>
-                    ) : (
-                      <DeleteIcon />
-                    )}
-                  </ActionIconButton>
-                </div>
-                <div className="mb-4">
-                  <Badge color="primary" className="mb-2">Brush</Badge>
-                  <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.name}</h3>
-                  <div className="flex items-baseline mb-2">
-                    <span className="text-2xl font-light text-primary mr-1">{norm.value}</span>
-                    <span className="text-base text-blue font-medium">{norm.unit}</span>
+              <StandardCard
+                key={norm.id}
+                category="Brush"
+                badgeColor="primary"
+                title={norm.name}
+                value={norm.value}
+                unit={norm.unit}
+                detail={
+                  <div className="text-xs text-secondary mb-2">
+                    Opacity: {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}
                   </div>
-                  <div className="text-xs text-secondary mb-2">Opacity: {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}</div>
-                </div>
-                <div className="flex-1 flex flex-col justify-end">
-                  <div className="h-16 bg-blue/5 rounded-xl flex items-center justify-center relative overflow-hidden">
-                    <div className="flex flex-col items-center justify-center w-full px-4">
-                      <div
-                        className="w-16 rounded-full mb-1 bg-primary"
-                        style={{
-                          height: `${norm.value}px`,
-                          minHeight: '1px',
-                          backgroundColor: 'rgb(var(--color-primary))',
-                          opacity: typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ? parseFloat(norm.opacity) : 1)
-                        }}
-                      ></div>
-                      <span className="text-[10px] text-blue font-bold uppercase tracking-wider">{norm.brushName || 'Brush'}</span>
-                    </div>
+                }
+                preview={<BrushPreview value={norm.value} opacity={norm.opacity} brushName={norm.brushName} />}
+                actions={
+                  <div className="absolute top-3 right-3 flex gap-2 z-30">
+                    <ActionIconButton
+                      onClick={() => openEditNorm(norm, 'brush')}
+                      title="Edit standard"
+                      intent="edit"
+                    >
+                      <EditIcon />
+                    </ActionIconButton>
+                    <ActionIconButton
+                      onClick={(e) => handleDeleteNorm(e, norm.id, 'brush')}
+                      title="Delete standard"
+                      intent="delete"
+                    >
+                      {loadingDelete === norm.id ? (
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        </svg>
+                      ) : (
+                        <DeleteIcon />
+                      )}
+                    </ActionIconButton>
                   </div>
-                </div>
-              </Card>
+                }
+              />
             ))}
             {/* Typography norm cards (hidden when filtering to brush only) */}
             {filterType !== 'brush' && activeProject.typographyNorms && activeProject.typographyNorms.map((norm) => (
-              <Card key={norm.id} className="p-6 relative group flex flex-col justify-between h-full">
-                <div className="absolute top-3 right-3 flex gap-2 z-30">
-                  <ActionIconButton
-                    onClick={() => openEditNorm(norm, 'typography')}
-                    title="Edit standard"
-                    intent="edit"
-                  >
-                    <EditIcon />
-                  </ActionIconButton>
-                  <ActionIconButton
-                    onClick={(e) => handleDeleteNorm(e, norm.id, 'typography')}
-                    title="Delete standard"
-                    intent="delete"
-                  >
-                    {loadingDelete === norm.id ? (
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      </svg>
-                    ) : (
-                      <DeleteIcon />
-                    )}
-                  </ActionIconButton>
-                </div>
-                <div className="mb-4">
-                  <Badge color="blue" className="mb-2">Typography</Badge>
-                  <h3 className="text-sm font-medium text-primary uppercase tracking-widest mb-1">{norm.fontUsage || norm.fontFamily}</h3>
-                  <div className="flex items-baseline mb-2 min-w-0">
-                    <span className="text-2xl font-light text-primary mr-1 truncate min-w-0" title={norm.fontFamily}>{norm.fontFamily}</span>
-                    <span className="text-base text-blue font-medium shrink-0">{norm.fontWeight}</span>
+              <StandardCard
+                key={norm.id}
+                category="Typography"
+                badgeColor="blue"
+                title={norm.fontUsage || norm.fontFamily}
+                value={norm.fontFamily}
+                valueTitle={norm.fontFamily}
+                valueTruncate
+                unit={norm.fontWeight}
+                detail={norm.fontStyle && (
+                  <div className="mb-2">
+                    <span className="text-xs text-primary italic">{norm.fontStyle}</span>
                   </div>
-                  {norm.fontStyle && (
-                    <div className="mb-2">
-                      <span className="text-xs text-primary italic">{norm.fontStyle}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 flex flex-col justify-end">
-                  <div className="h-16 bg-blue/5 rounded-xl flex items-center justify-center relative overflow-hidden">
-                    {/* Show the live font sample only once the font has loaded */}
-                    {loadedFonts.includes(norm.fontFamily) ? (
-                      <span
-                        className="text-primary text-xl font-medium tracking-tight"
-                        style={{ fontFamily: `'${norm.fontFamily}', Arial, sans-serif`, fontStyle: norm.fontStyle ? norm.fontStyle.toLowerCase() : undefined }}
-                        title={norm.fontFamily}
-                      >
-                        AaBbCc
-                      </span>
-                    ) : (
-                      <span className="text-xs text-secondary">Loading… <span style={{fontFamily: `'${norm.fontFamily}', Arial, sans-serif`}}>{norm.fontFamily}</span></span>
-                    )}
+                )}
+                preview={
+                  <TypographyPreview
+                    fontFamily={norm.fontFamily}
+                    fontStyle={norm.fontStyle}
+                    loaded={loadedFonts.includes(norm.fontFamily)}
+                  />
+                }
+                actions={
+                  <div className="absolute top-3 right-3 flex gap-2 z-30">
+                    <ActionIconButton
+                      onClick={() => openEditNorm(norm, 'typography')}
+                      title="Edit standard"
+                      intent="edit"
+                    >
+                      <EditIcon />
+                    </ActionIconButton>
+                    <ActionIconButton
+                      onClick={(e) => handleDeleteNorm(e, norm.id, 'typography')}
+                      title="Delete standard"
+                      intent="delete"
+                    >
+                      {loadingDelete === norm.id ? (
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        </svg>
+                      ) : (
+                        <DeleteIcon />
+                      )}
+                    </ActionIconButton>
                   </div>
-                </div>
-              </Card>
+                }
+              />
             ))}
           </div>
 

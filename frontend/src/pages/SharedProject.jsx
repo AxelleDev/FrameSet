@@ -2,18 +2,25 @@
 // palette, typography and brush standards for anyone holding the link — no
 // account needed. Fetched from the public share endpoint; a revoked or unknown
 // token shows a friendly "link inactive" state.
+//
+// Visual parity: every section below reuses the exact swatch/card look of the
+// authenticated ProjectPalette and ProjectNorms pages (same shapes, radii,
+// badges and typography), so a shared link and the in-app editor never look
+// like two different products.
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import Card from '../components/Card';
-import Badge from '../components/Badge';
 import Seo from '../components/Seo';
 import Logo from '../components/Logo';
 import PublicTopBar from '../components/PublicTopBar';
 import Button from '../components/Button';
-import CopyBadge from '../components/CopyBadge';
+import ColorTile from '../components/ColorTile';
+import StandardCard from '../components/StandardCard';
+import BrushPreview from '../components/BrushPreview';
+import TypographyPreview from '../components/TypographyPreview';
 import useClipboard from '../hooks/useClipboard';
-import { loadGoogleFont } from '../utils/loadGoogleFont';
+import useNormFontLoader from '../hooks/useNormFontLoader';
 
 export default function SharedProject() {
   const { token } = useParams();
@@ -42,17 +49,14 @@ export default function SharedProject() {
     };
   }, [token]);
 
-  // Load each typography family so names render in their own typeface.
-  useEffect(() => {
-    (sheet?.typographyNorms || []).forEach((norm) => {
-      loadGoogleFont(norm.fontFamily, norm.fontWeight || '400');
-    });
-  }, [sheet]);
-
   const palette = sheet?.palette || [];
   const typographyNorms = sheet?.typographyNorms || [];
   const brushNorms = sheet?.brushNorms || [];
   const isEmpty = palette.length === 0 && typographyNorms.length === 0 && brushNorms.length === 0;
+
+  // Same font-loading dance as the in-app norms editor: the "AaBbCc" specimen
+  // only swaps in once the family has actually finished loading.
+  const loadedFonts = useNormFontLoader(typographyNorms);
 
   return (
     <div className="min-h-dvh bg-canvas text-primary">
@@ -64,7 +68,7 @@ export default function SharedProject() {
       />
       <PublicTopBar />
 
-      <main className="max-w-4xl mx-auto px-6 pb-16">
+      <main className="max-w-5xl mx-auto px-6 pb-16">
         {status === 'loading' && (
           <div className="min-h-[50vh] flex items-center justify-center" role="status" aria-live="polite">
             <div className="border-4 border-blue/20 border-t-blue rounded-full w-10 h-10 animate-spin"></div>
@@ -95,6 +99,9 @@ export default function SharedProject() {
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight break-words">
                 {sheet.name}
               </h1>
+              {sheet.ownerName && (
+                <p className="mt-3 text-sm text-primary/60">Made by {sheet.ownerName}</p>
+              )}
             </header>
 
             {isEmpty && (
@@ -103,83 +110,73 @@ export default function SharedProject() {
               </Card>
             )}
 
-            <div className="space-y-12">
+            <div className="space-y-14">
+              {/* Color palette: the exact same ColorTile as ProjectPalette's own
+                  swatches (square, rounded-3xl, name/hex centered below). */}
               {palette.length > 0 && (
                 <section aria-labelledby="shared-palette-title">
-                  <h2 id="shared-palette-title" className="text-lg font-medium mb-4">Color palette</h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  <h2 id="shared-palette-title" className="text-xl font-medium text-primary mb-6">Color palette</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
                     {palette.map((color) => (
-                      <button
+                      <ColorTile
                         key={color.id}
-                        type="button"
-                        onClick={() => copy(color.hex)}
-                        title={`Copy ${color.hex}`}
-                        className="group text-left rounded-2xl overflow-hidden bg-surface focus-ring"
-                      >
-                        <div className="relative h-24 w-full" style={{ backgroundColor: color.hex }}>
-                          {/* Hover-reveal to match the internal palette editor's copy affordance;
-                              [@media(hover:none)] keeps it visible for touch users, who can't hover. */}
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
-                            <CopyBadge isCopied={copiedValue === color.hex} />
-                          </div>
-                        </div>
-                        <div className="p-3">
-                          <p className="text-sm font-medium truncate">{color.name}</p>
-                          <p className="text-xs text-primary/60 font-mono uppercase">{color.hex}</p>
-                        </div>
-                      </button>
+                        hex={color.hex}
+                        name={color.name}
+                        onCopy={() => copy(color.hex)}
+                        copied={copiedValue === color.hex}
+                      />
                     ))}
                   </div>
                 </section>
               )}
 
-              {typographyNorms.length > 0 && (
-                <section aria-labelledby="shared-typography-title">
-                  <h2 id="shared-typography-title" className="text-lg font-medium mb-4">Typography</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {typographyNorms.map((norm) => (
-                      <Card key={norm.id} className="p-6">
-                        {norm.fontUsage && <Badge color="blue" className="mb-3">{norm.fontUsage}</Badge>}
-                        <p
-                          className="text-2xl text-primary break-words"
-                          style={{ fontFamily: `'${norm.fontFamily}', sans-serif` }}
-                        >
-                          {norm.fontFamily}
-                        </p>
-                        <p className="text-xs text-primary/60 mt-2">
-                          {[
-                            norm.fontWeight ? `Weight ${norm.fontWeight}` : null,
-                            norm.fontStyle || null,
-                          ].filter(Boolean).join(' · ')}
-                        </p>
-                      </Card>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {brushNorms.length > 0 && (
-                <section aria-labelledby="shared-brushes-title">
-                  <h2 id="shared-brushes-title" className="text-lg font-medium mb-4">Brush standards</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {/* Typography + brush standards: the exact same StandardCard as
+                  ProjectNorms, so a shared link reads like the editor. */}
+              {(typographyNorms.length > 0 || brushNorms.length > 0) && (
+                <section aria-labelledby="shared-standards-title">
+                  <h2 id="shared-standards-title" className="text-xl font-medium text-primary mb-6">Graphic standards</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {brushNorms.map((norm) => (
-                      <Card key={norm.id} className="p-6">
-                        <p className="text-sm font-medium text-primary mb-1 break-words">{norm.name}</p>
-                        <p className="text-2xl font-semibold text-blue">
-                          {norm.value}
-                          <span className="text-sm font-normal text-primary/60 ml-1">{norm.unit}</span>
-                        </p>
-                        <p className="text-xs text-primary/60 mt-2">
-                          {/* opacity is a plain 0-1 decimal (not a percentage), same as the
-                              editor's own display — no "%" suffix, no ×100 conversion. */}
-                          {[
-                            norm.brushName ? `Brush: ${norm.brushName}` : null,
-                            norm.opacity !== null && norm.opacity !== undefined
-                              ? `Opacity: ${norm.opacity}`
-                              : null,
-                          ].filter(Boolean).join(' · ')}
-                        </p>
-                      </Card>
+                      <StandardCard
+                        key={`brush-${norm.id}`}
+                        category="Brush"
+                        badgeColor="primary"
+                        title={norm.name}
+                        value={norm.value}
+                        unit={norm.unit}
+                        detail={
+                          <div className="text-xs text-secondary mb-2">
+                            {/* opacity is a plain 0-1 decimal (not a percentage), same as the editor's own display. */}
+                            Opacity: {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}
+                          </div>
+                        }
+                        preview={<BrushPreview value={norm.value} opacity={norm.opacity} brushName={norm.brushName} />}
+                      />
+                    ))}
+
+                    {typographyNorms.map((norm) => (
+                      <StandardCard
+                        key={`typo-${norm.id}`}
+                        category="Typography"
+                        badgeColor="blue"
+                        title={norm.fontUsage || norm.fontFamily}
+                        value={norm.fontFamily}
+                        valueTitle={norm.fontFamily}
+                        valueTruncate
+                        unit={norm.fontWeight}
+                        detail={norm.fontStyle && (
+                          <div className="mb-2">
+                            <span className="text-xs text-primary italic">{norm.fontStyle}</span>
+                          </div>
+                        )}
+                        preview={
+                          <TypographyPreview
+                            fontFamily={norm.fontFamily}
+                            fontStyle={norm.fontStyle}
+                            loaded={loadedFonts.includes(norm.fontFamily)}
+                          />
+                        }
+                      />
                     ))}
                   </div>
                 </section>

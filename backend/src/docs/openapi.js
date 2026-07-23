@@ -992,7 +992,8 @@ const openapiSpec = {
         summary: 'PUBLIC: read a shared reference sheet (no auth)',
         description:
           'Resolves a share token to the project name, brush/typography norms and palette. ' +
-          'Never exposes the owner. Rate limited per IP; revoked/trashed links answer 404.',
+          "Also includes the owner's display name (a \"Made by\" credit) — never their id, " +
+          'email or the project id. Rate limited per IP; revoked/trashed links answer 404.',
         parameters: [{ name: 'token', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
           200: {
@@ -1003,6 +1004,7 @@ const openapiSpec = {
                   type: 'object',
                   properties: {
                     name: { type: 'string' },
+                    ownerName: { type: 'string' },
                     brushNorms: { type: 'array', items: { type: 'object' } },
                     typographyNorms: { type: 'array', items: { type: 'object' } },
                     palette: { type: 'array', items: { type: 'object' } },

@@ -16,6 +16,10 @@ vi.mock('../../src/context/ProjectContext', () => ({
   useProjects: () => projectState,
 }));
 
+vi.mock('../../src/context/AuthContext', () => ({
+  useAuth: () => ({ user: { name: 'Jane Doe' } }),
+}));
+
 const renderPage = () =>
   render(
     <HelmetProvider><MemoryRouter>

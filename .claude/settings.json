@@ -13,7 +13,16 @@
       "Bash(\"/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe\" -u root frameset_db -e \"SHOW TABLES; SELECT id,name,email FROM users; SELECT id,user_id,name FROM projects;\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/health)",
       "Bash(powershell -Command \"Get-Process -Name node -ErrorAction SilentlyContinue | Select-Object Id,StartTime\")",
-      "Bash(git -C \"c:\\\\Users\\\\atempier\\\\Documents\\\\FrameSet\" diff main -- backend/migrations backend/src backend/tests frontend/src frontend/tests)"
+      "Bash(git -C \"c:\\\\Users\\\\atempier\\\\Documents\\\\FrameSet\" diff main -- backend/migrations backend/src backend/tests frontend/src frontend/tests)",
+      "Bash(sed -i \"s|'./node_modules/jspdf/dist/jspdf.es.min.js'|'C:/Users/atempier/Documents/FrameSet/frontend/node_modules/jspdf/dist/jspdf.es.min.js'|\" /tmp/test_pdf.mjs)",
+      "Bash(node /tmp/test_pdf.mjs)",
+      "Bash(cp /tmp/test_pdf.mjs \"c:/Users/atempier/Documents/FrameSet/frontend/test_pdf.mjs\")",
+      "Bash(sed -i \"s|'C:/Users/atempier/Documents/FrameSet/frontend/node_modules/jspdf/dist/jspdf.es.min.js'|'./node_modules/jspdf/dist/jspdf.es.min.js'|\" \"c:/Users/atempier/Documents/FrameSet/frontend/test_pdf.mjs\")",
+      "Bash(sed -i \"s|doc.save\\('/tmp/test_output.pdf'\\);|doc.save\\('./test_output.pdf'\\);|\" \"c:/Users/atempier/Documents/FrameSet/frontend/test_pdf.mjs\")",
+      "Bash(node test_pdf.mjs)",
+      "Bash(sed -i \"s|doc.save\\('./test_output.pdf'\\);|fs.writeFileSync\\('./test_output.pdf', Buffer.from\\(doc.output\\('arraybuffer'\\)\\)\\);|\" test_pdf.mjs)",
+      "Bash(sed -i \"1i import fs from 'fs';\" test_pdf.mjs)",
+      "Bash(node -e ' *)"
     ]
   }
 }
