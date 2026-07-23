@@ -53,3 +53,18 @@ export function DeleteIcon({ className = 'w-4 h-4' }) {
   );
 }
 DeleteIcon.propTypes = { className: PropTypes.string };
+
+// filled fills the pin head when the project is pinned; unpinned uses the plain outline.
+export function PinIcon({ className = 'w-4 h-4', filled = false }) {
+  return (
+    <svg className={className} {...iconProps} fill={filled ? 'currentColor' : 'none'}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M9 4.5h6l-.75 6L18 13.5v1.5h-5.25V21l-.75 1.5-.75-1.5v-6H6v-1.5l3.75-3z"
+      />
+    </svg>
+  );
+}
+PinIcon.propTypes = { className: PropTypes.string, filled: PropTypes.bool };

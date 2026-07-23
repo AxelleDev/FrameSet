@@ -1,6 +1,6 @@
 // Dashboard page (route: /app/dashboard): post-login landing with project totals
 // and a grid of cards to create, rename, delete and open projects.
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectContext';
 import { useToast } from '../context/ToastContext';
@@ -19,8 +19,13 @@ import Seo from '../components/Seo';
 import TrashSection from '../components/TrashSection';
 import TrashRow from '../components/TrashRow';
 import EmptyState from '../components/EmptyState';
-import { EditIcon, DuplicateIcon, DeleteIcon } from '../components/icons';
+import { EditIcon, DuplicateIcon, DeleteIcon, PinIcon } from '../components/icons';
 import { formatModified } from '../utils/date';
+import useDragReorder from '../hooks/useDragReorder';
+
+// The search bar only earns its place once there's enough to actually filter.
+const SEARCH_VISIBILITY_THRESHOLD = 6;
+const SEARCH_DEBOUNCE_MS = 300;
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -38,6 +43,10 @@ export default function Dashboard() {
     fetchTrashedProjects,
     restoreProject,
     deleteProjectPermanently,
+    fetchProjects,
+    pinProject,
+    unpinProject,
+    reorderPinnedProjects,
   } = useProjects();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -67,6 +76,48 @@ export default function Dashboard() {
   const paginationTotal = projectsPagination?.total ?? projects.length;
   const totalProjects = Math.max(paginationTotal, projects.length);
   const hasMoreProjects = projects.length < paginationTotal;
+
+  // Pinned projects stay at the top, own their own drag-and-drop reorder
+  // (same behavior as the palette's colors and the norms' standards).
+  // Memoized on `projects` so the drag hook doesn't see a "new" array (and
+  // reset any in-flight preview) on every unrelated re-render.
+  const pinnedProjects = useMemo(() => projects.filter((p) => p.pinned), [projects]);
+  const unpinnedProjects = useMemo(() => projects.filter((p) => !p.pinned), [projects]);
+  const pinnedDrag = useDragReorder({
+    items: pinnedProjects,
+    getId: (project) => project.id,
+    onPersist: (next) => reorderPinnedProjects(next.map((project) => project.id)),
+  });
+
+  // Toggling is disabled mid-flight so a fast double-click can't fire pin then
+  // unpin (or vice versa) before the first request settles.
+  const [pinningId, setPinningId] = useState(null);
+  const handlePinToggle = async (e, project) => {
+    e.stopPropagation();
+    if (pinningId) return;
+    setPinningId(project.id);
+    try {
+      const ok = project.pinned ? await unpinProject(project.id) : await pinProject(project.id);
+      if (ok) showToast(project.pinned ? 'Project unpinned.' : 'Project pinned.');
+    } finally {
+      setPinningId(null);
+    }
+  };
+
+  // Search/filter by project name, shown once there's enough projects to
+  // justify it. Debounced so typing doesn't fire a request per keystroke.
+  const [searchInput, setSearchInput] = useState('');
+  const searchDebounceRef = useRef(null);
+  useEffect(() => () => clearTimeout(searchDebounceRef.current), []);
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchInput(value);
+    clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      fetchProjects({ search: value });
+    }, SEARCH_DEBOUNCE_MS);
+  };
+  const showSearch = totalProjects >= SEARCH_VISIBILITY_THRESHOLD || searchInput !== '';
 
   // Create a project from the modal, ignoring blank names, then reset the form.
   // submitting guards against a double submit (Enter key + button click).
@@ -167,6 +218,78 @@ export default function Dashboard() {
     }
   };
 
+  // Shared card body for both the pinned and regular sections. moveButtons is
+  // only passed for the pinned section (its keyboard-operable drag-alternative).
+  const renderProjectCard = (project, moveButtons) => (
+    <Card key={project.id} clickable className="group p-6 overflow-hidden">
+      <div className="absolute top-4 right-4 flex gap-2 z-30">
+        <ActionIconButton
+          onClick={(e) => handlePinToggle(e, project)}
+          title={project.pinned ? 'Unpin project' : 'Pin project'}
+          intent="edit"
+          disabled={pinningId !== null}
+        >
+          <PinIcon filled={project.pinned} />
+        </ActionIconButton>
+        <ActionIconButton
+          onClick={(e) => openEditProject(e, project)}
+          title="Edit project"
+          intent="edit"
+        >
+          <EditIcon />
+        </ActionIconButton>
+        <ActionIconButton
+          onClick={(e) => handleDuplicateProject(e, project.id)}
+          title="Duplicate project"
+          intent="edit"
+          disabled={duplicatingId !== null}
+        >
+          <DuplicateIcon />
+        </ActionIconButton>
+        <ActionIconButton
+          onClick={(e) => handleDeleteProject(e, project.id)}
+          title="Delete project"
+          intent="delete"
+        >
+          <DeleteIcon />
+        </ActionIconButton>
+      </div>
+      <div className="relative z-10 flex flex-col h-full min-h-[160px]">
+        {/* Stretched-link: the title is the only "open project" control, and its
+            ::after overlay makes the whole card body clickable — without making the
+            container itself a button (which would nest the edit/delete buttons and
+            break ARIA). The action buttons sit above the overlay (z-30). */}
+        <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">
+          <button
+            type="button"
+            onClick={() => openProject(project.id)}
+            className="text-left rounded focus-ring after:absolute after:inset-0 after:content-['']"
+          >
+            {project.name}
+          </button>
+        </h3>
+        <p className="text-sm text-primary mb-auto">Edited {formatModified(project.lastEdited)}</p>
+        <div className="mt-8 pt-4 flex -space-x-2 min-h-[40px] items-center">
+          {project.palette.map((color, i) => (
+            <div
+              key={color.id ?? `${color.hex}-${i}`}
+              className="w-6 h-6 rounded-full ring-2 ring-surface"
+              style={{ backgroundColor: color.hex }}
+              title={color.name}
+            ></div>
+          ))}
+          {project.palette.length === 0 && (
+            <div className="text-xs text-blue italic flex items-center">
+              <div className="w-6 h-6 rounded-full bg-blue/10 ring-2 ring-surface mr-1"></div>
+              <div className="w-6 h-6 rounded-full bg-blue/5 ring-2 ring-surface"></div>
+            </div>
+          )}
+        </div>
+      </div>
+      {moveButtons}
+    </Card>
+  );
+
   return (
     <>
       <Seo title="Dashboard" noindex />
@@ -218,76 +341,105 @@ export default function Dashboard() {
           description="Each project keeps its graphic standards and color palette in one place."
         />
       ) : (
+        showSearch && (
+          <div className="mb-6 max-w-xs">
+            <TextInput
+              type="search"
+              value={searchInput}
+              onChange={handleSearchChange}
+              placeholder="Search projects…"
+              aria-label="Search projects by name"
+            />
+          </div>
+        )
+      )}
+
+      {pinnedDrag.previewItems.length > 0 && (
+        <>
+          <div className="flex items-end justify-between mb-6">
+            <h2 className="text-xl font-medium text-primary">Pinned</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {pinnedDrag.previewItems.map((project, idx) => (
+              <div
+                key={project.id}
+                ref={pinnedDrag.registerItemRef(project.id)}
+                className={pinnedDrag.isDragging(project.id) ? 'opacity-30 z-40' : ''}
+                {...pinnedDrag.getDragHandlers(project, idx)}
+              >
+                {renderProjectCard(
+                  project,
+                  <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
+                    <ActionIconButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        pinnedDrag.moveItem(idx, idx - 1);
+                      }}
+                      title="Move project left"
+                      variant="light"
+                      srOnly
+                      disabled={idx === 0}
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15 19l-7-7 7-7"
+                        />
+                      </svg>
+                    </ActionIconButton>
+                    <ActionIconButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        pinnedDrag.moveItem(idx, idx + 1);
+                      }}
+                      title="Move project right"
+                      variant="light"
+                      srOnly
+                      disabled={idx === pinnedDrag.previewItems.length - 1}
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </ActionIconButton>
+                  </div>,
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {totalProjects > 0 && (
         <div className="flex items-end justify-between mb-6">
           <h2 className="text-xl font-medium text-primary">
-            {totalProjects === 1 ? 'Your project' : 'Your projects'}
+            {pinnedDrag.previewItems.length > 0
+              ? 'Your projects'
+              : totalProjects === 1
+                ? 'Your project'
+                : 'Your projects'}
           </h2>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project) => (
-          <Card key={project.id} clickable className="group p-6 overflow-hidden">
-            <div className="absolute top-4 right-4 flex gap-2 z-30">
-              <ActionIconButton
-                onClick={(e) => openEditProject(e, project)}
-                title="Edit project"
-                intent="edit"
-              >
-                <EditIcon />
-              </ActionIconButton>
-              <ActionIconButton
-                onClick={(e) => handleDuplicateProject(e, project.id)}
-                title="Duplicate project"
-                intent="edit"
-                disabled={duplicatingId !== null}
-              >
-                <DuplicateIcon />
-              </ActionIconButton>
-              <ActionIconButton
-                onClick={(e) => handleDeleteProject(e, project.id)}
-                title="Delete project"
-                intent="delete"
-              >
-                <DeleteIcon />
-              </ActionIconButton>
-            </div>
-            <div className="relative z-10 flex flex-col h-full min-h-[160px]">
-              {/* Stretched-link: the title is the only "open project" control, and its
-                  ::after overlay makes the whole card body clickable — without making the
-                  container itself a button (which would nest the edit/delete buttons and
-                  break ARIA). The action buttons sit above the overlay (z-30). */}
-              <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">
-                <button
-                  type="button"
-                  onClick={() => openProject(project.id)}
-                  className="text-left rounded focus-ring after:absolute after:inset-0 after:content-['']"
-                >
-                  {project.name}
-                </button>
-              </h3>
-              <p className="text-sm text-primary mb-auto">
-                Edited {formatModified(project.lastEdited)}
-              </p>
-              <div className="mt-8 pt-4 flex -space-x-2 min-h-[40px] items-center">
-                {project.palette.map((color, i) => (
-                  <div
-                    key={color.id ?? `${color.hex}-${i}`}
-                    className="w-6 h-6 rounded-full ring-2 ring-surface"
-                    style={{ backgroundColor: color.hex }}
-                    title={color.name}
-                  ></div>
-                ))}
-                {project.palette.length === 0 && (
-                  <div className="text-xs text-blue italic flex items-center">
-                    <div className="w-6 h-6 rounded-full bg-blue/10 ring-2 ring-surface mr-1"></div>
-                    <div className="w-6 h-6 rounded-full bg-blue/5 ring-2 ring-surface"></div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        ))}
+        {unpinnedProjects.map((project) => renderProjectCard(project))}
         <AddTile
           onClick={() => setIsCreatingProject(true)}
           label="New project"

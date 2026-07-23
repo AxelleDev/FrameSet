@@ -50,6 +50,8 @@ describe('ProjectNorms', () => {
       restoreTypographyNorm: vi.fn(),
       deleteBrushNormPermanently: vi.fn(),
       deleteTypographyNormPermanently: vi.fn(),
+      reorderBrushNorms: vi.fn().mockResolvedValue(true),
+      reorderTypographyNorms: vi.fn().mockResolvedValue(true),
     });
   });
 
@@ -139,5 +141,63 @@ describe('ProjectNorms', () => {
     await user.click(dialogButtons[dialogButtons.length - 1]);
 
     expect(projectState.deleteBrushNormPermanently).toHaveBeenCalledWith('2', 9);
+  });
+
+  it('reorders brush standards via the move-right button', async () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [
+        { id: 5, name: 'Hair outline', value: '8', unit: 'px', opacity: 0.9 },
+        { id: 6, name: 'Shadow', value: '4', unit: 'px', opacity: 0.5 },
+      ],
+      typographyNorms: [],
+    };
+    const user = userEvent.setup();
+    renderPage();
+
+    const [moveRight] = screen.getAllByRole('button', { name: 'Move standard right' });
+    await user.click(moveRight);
+
+    expect(projectState.reorderBrushNorms).toHaveBeenCalledWith('2', [6, 5]);
+  });
+
+  it('reorders typography standards independently from brush standards', async () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [],
+      typographyNorms: [
+        { id: 11, fontFamily: 'Inter', fontUsage: 'Body' },
+        { id: 12, fontFamily: 'Figtree', fontUsage: 'Heading' },
+      ],
+    };
+    const user = userEvent.setup();
+    renderPage();
+
+    const [moveRight] = screen.getAllByRole('button', { name: 'Move standard right' });
+    await user.click(moveRight);
+
+    expect(projectState.reorderTypographyNorms).toHaveBeenCalledWith('2', [12, 11]);
+    expect(projectState.reorderBrushNorms).not.toHaveBeenCalled();
+  });
+
+  it('disables the move-left button on the first standard and move-right on the last', () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [
+        { id: 5, name: 'Hair outline', value: '8', unit: 'px', opacity: 0.9 },
+        { id: 6, name: 'Shadow', value: '4', unit: 'px', opacity: 0.5 },
+      ],
+      typographyNorms: [],
+    };
+    renderPage();
+
+    const [firstLeft, secondLeft] = screen.getAllByRole('button', { name: 'Move standard left' });
+    const [firstRight, secondRight] = screen.getAllByRole('button', {
+      name: 'Move standard right',
+    });
+    expect(firstLeft).toBeDisabled();
+    expect(secondLeft).not.toBeDisabled();
+    expect(firstRight).not.toBeDisabled();
+    expect(secondRight).toBeDisabled();
   });
 });

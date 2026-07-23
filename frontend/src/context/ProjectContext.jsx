@@ -47,12 +47,16 @@ export const ProjectProvider = ({ children }) => {
   // (silent page-1 on login + a "load more", or a StrictMode double-mount) must
   // not let a stale response overwrite the newer list/pagination.
   const fetchSeq = useRef(0);
+  // Mirrors the current search term so loadMoreProjects/refetchLoadedProjects
+  // can keep paginating within it without the caller having to repeat it.
+  const searchRef = useRef('');
 
   // Fetches a page of projects. Page 1 replaces the list; later pages are
   // appended and de-duplicated by id (so an insertion between fetches can't
   // produce duplicate React keys). silent suppresses the global error banner.
+  // search filters by name server-side; omitting it keeps the current term.
   const fetchProjects = useCallback(
-    async ({ silent = false, page = 1 } = {}) => {
+    async ({ silent = false, page = 1, search } = {}) => {
       if (!user?.id) {
         setProjects([]);
         updatePagination(DEFAULT_PAGINATION);
@@ -60,12 +64,17 @@ export const ProjectProvider = ({ children }) => {
         return [];
       }
 
+      if (search !== undefined) searchRef.current = search;
+      const searchParam = searchRef.current
+        ? `&search=${encodeURIComponent(searchRef.current)}`
+        : '';
+
       const seq = (fetchSeq.current += 1);
       setProjectsLoading(true);
 
       try {
         const options = silent ? undefined : { onGlobalError: setGlobalError };
-        const data = await api.get(`/projects?page=${page}`, options);
+        const data = await api.get(`/projects?page=${page}${searchParam}`, options);
         // A newer fetch started while this one was in flight: drop this response.
         if (seq !== fetchSeq.current) {
           return data?.projects || [];
@@ -280,6 +289,70 @@ export const ProjectProvider = ({ children }) => {
       }
     },
     [setGlobalError, updatePagination],
+  );
+
+  // Pins a project to the top of the dashboard. Moves it locally to just after
+  // the other pinned projects, mirroring the server's append-to-end-of-pin-order
+  // behavior, so the dashboard's pinned section doesn't jump around on refetch.
+  const pinProject = useCallback(
+    async (projectId) => {
+      try {
+        await api.post(`/projects/${projectId}/pin`, {}, { onGlobalError: setGlobalError });
+        setProjects((prev) => {
+          const target = prev.find((project) => String(project.id) === String(projectId));
+          if (!target) return prev;
+          const rest = prev.filter((project) => String(project.id) !== String(projectId));
+          const firstUnpinnedIndex = rest.findIndex((project) => !project.pinned);
+          const insertAt = firstUnpinnedIndex === -1 ? rest.length : firstUnpinnedIndex;
+          const next = [...rest];
+          next.splice(insertAt, 0, { ...target, pinned: true });
+          return next;
+        });
+        return true;
+      } catch (error) {
+        setGlobalError(error?.message || 'Failed to pin the project.');
+        logger.error('projects.pin.error', error);
+        return false;
+      }
+    },
+    [setGlobalError],
+  );
+
+  // Unpins a project; it naturally falls back into the "Your projects" section
+  // wherever it lands next time the grid is refetched.
+  const unpinProject = useCallback(
+    async (projectId) => {
+      try {
+        await api.delete(`/projects/${projectId}/pin`, null, { onGlobalError: setGlobalError });
+        setProjects((prev) =>
+          prev.map((project) =>
+            String(project.id) === String(projectId) ? { ...project, pinned: false } : project,
+          ),
+        );
+        return true;
+      } catch (error) {
+        setGlobalError(error?.message || 'Failed to unpin the project.');
+        logger.error('projects.unpin.error', error);
+        return false;
+      }
+    },
+    [setGlobalError],
+  );
+
+  // Reorders the user's pinned projects. Only bumps the request server-side;
+  // the caller (the dashboard's drag hook) owns the optimistic local order.
+  const reorderPinnedProjects = useCallback(
+    async (orderedIds) => {
+      try {
+        await api.post('/projects/pinned/reorder', orderedIds, { onGlobalError: setGlobalError });
+        return true;
+      } catch (error) {
+        setGlobalError(error?.message || 'Failed to reorder the pinned projects.');
+        logger.error('projects.reorderPinned.error', error);
+        return false;
+      }
+    },
+    [setGlobalError],
   );
 
   // Moves a project to the trash (soft delete server-side) and removes it from
@@ -806,6 +879,41 @@ export const ProjectProvider = ({ children }) => {
     [setGlobalError],
   );
 
+  // Reorders a project's brush standards. Only bumps the request server-side;
+  // the caller (the drag hook) owns the optimistic local order.
+  const reorderBrushNorms = useCallback(
+    async (projectId, orderedIds) => {
+      try {
+        await api.post(`/projects/${projectId}/brush-norms/reorder`, orderedIds, {
+          onGlobalError: setGlobalError,
+        });
+        return true;
+      } catch (error) {
+        setGlobalError(error?.message || 'Failed to reorder the standards.');
+        logger.error('projects.reorderBrushNorms.error', error);
+        return false;
+      }
+    },
+    [setGlobalError],
+  );
+
+  // Reorders a project's typography standards, same contract as reorderBrushNorms.
+  const reorderTypographyNorms = useCallback(
+    async (projectId, orderedIds) => {
+      try {
+        await api.post(`/projects/${projectId}/typography-norms/reorder`, orderedIds, {
+          onGlobalError: setGlobalError,
+        });
+        return true;
+      } catch (error) {
+        setGlobalError(error?.message || 'Failed to reorder the standards.');
+        logger.error('projects.reorderTypographyNorms.error', error);
+        return false;
+      }
+    },
+    [setGlobalError],
+  );
+
   // Memoized context value so consumers only re-render when state/actions change.
   const value = useMemo(
     () => ({
@@ -827,6 +935,9 @@ export const ProjectProvider = ({ children }) => {
       deleteProject,
       restoreProject,
       deleteProjectPermanently,
+      pinProject,
+      unpinProject,
+      reorderPinnedProjects,
       enableSharing,
       disableSharing,
       updateProjectName,
@@ -847,6 +958,8 @@ export const ProjectProvider = ({ children }) => {
       deleteTypographyNormPermanently,
       updateBrushNorm,
       updateTypographyNorm,
+      reorderBrushNorms,
+      reorderTypographyNorms,
     }),
     [
       projects,
@@ -866,6 +979,9 @@ export const ProjectProvider = ({ children }) => {
       deleteProject,
       restoreProject,
       deleteProjectPermanently,
+      pinProject,
+      unpinProject,
+      reorderPinnedProjects,
       enableSharing,
       disableSharing,
       updateProjectName,
@@ -886,6 +1002,8 @@ export const ProjectProvider = ({ children }) => {
       deleteTypographyNormPermanently,
       updateBrushNorm,
       updateTypographyNorm,
+      reorderBrushNorms,
+      reorderTypographyNorms,
     ],
   );
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 
 const { apiMock, authState } = vi.hoisted(() => ({
   apiMock: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
@@ -491,6 +491,136 @@ describe('ProjectContext mutations return success signals', () => {
       expect(apiMock.delete).toHaveBeenCalledWith(
         '/projects/3/typography-norms/4/permanent',
         null,
+        expect.any(Object),
+      );
+    });
+  });
+
+  describe('pinning, reordering and search', () => {
+    it('pinProject marks the project pinned and moves it after other pinned projects', async () => {
+      apiMock.get.mockResolvedValueOnce({
+        projects: [
+          { id: 1, name: 'Already pinned', pinned: true },
+          { id: 2, name: 'Not pinned', pinned: false },
+        ],
+        pagination: { page: 1, pageSize: 12, total: 2, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(2));
+
+      apiMock.post.mockResolvedValueOnce({ success: true });
+      let ok;
+      await act(async () => {
+        ok = await result.current.pinProject(2);
+      });
+
+      expect(ok).toBe(true);
+      expect(apiMock.post).toHaveBeenCalledWith('/projects/2/pin', {}, expect.any(Object));
+      expect(result.current.projects.map((p) => p.id)).toEqual([1, 2]);
+      expect(result.current.projects.find((p) => p.id === 2).pinned).toBe(true);
+    });
+
+    it('unpinProject clears the pinned flag', async () => {
+      apiMock.get.mockResolvedValueOnce({
+        projects: [{ id: 1, name: 'Pinned', pinned: true }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      apiMock.delete.mockResolvedValueOnce({ success: true });
+      let ok;
+      await act(async () => {
+        ok = await result.current.unpinProject(1);
+      });
+
+      expect(ok).toBe(true);
+      expect(apiMock.delete).toHaveBeenCalledWith('/projects/1/pin', null, expect.any(Object));
+      expect(result.current.projects[0].pinned).toBe(false);
+    });
+
+    it('reorderPinnedProjects posts the ordered id list', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      apiMock.post.mockResolvedValueOnce({ success: true });
+
+      let ok;
+      await act(async () => {
+        ok = await result.current.reorderPinnedProjects([4, 2]);
+      });
+
+      expect(ok).toBe(true);
+      expect(apiMock.post).toHaveBeenCalledWith(
+        '/projects/pinned/reorder',
+        [4, 2],
+        expect.any(Object),
+      );
+    });
+
+    it('reorderPinnedProjects returns false when the request fails', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      apiMock.post.mockRejectedValueOnce(new Error('boom'));
+
+      let ok;
+      await act(async () => {
+        ok = await result.current.reorderPinnedProjects([4, 2]);
+      });
+
+      expect(ok).toBe(false);
+    });
+
+    it('reorderBrushNorms and reorderTypographyNorms post to their own endpoints', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+
+      apiMock.post.mockResolvedValueOnce({ success: true });
+      let brushOk;
+      await act(async () => {
+        brushOk = await result.current.reorderBrushNorms(3, [9, 8]);
+      });
+      expect(brushOk).toBe(true);
+      expect(apiMock.post).toHaveBeenCalledWith(
+        '/projects/3/brush-norms/reorder',
+        [9, 8],
+        expect.any(Object),
+      );
+
+      apiMock.post.mockResolvedValueOnce({ success: true });
+      let typoOk;
+      await act(async () => {
+        typoOk = await result.current.reorderTypographyNorms(3, [5, 6]);
+      });
+      expect(typoOk).toBe(true);
+      expect(apiMock.post).toHaveBeenCalledWith(
+        '/projects/3/typography-norms/reorder',
+        [5, 6],
+        expect.any(Object),
+      );
+    });
+
+    it('fetchProjects includes the search term in the request and remembers it for later pages', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+
+      apiMock.get.mockResolvedValueOnce({
+        projects: [{ id: 5, name: 'Neo-Tokyo' }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      await act(async () => {
+        await result.current.fetchProjects({ search: 'Neo' });
+      });
+      expect(apiMock.get).toHaveBeenLastCalledWith(
+        '/projects?page=1&search=Neo',
+        expect.any(Object),
+      );
+
+      // Omitting search on the next call keeps the remembered term.
+      apiMock.get.mockResolvedValueOnce({
+        projects: [],
+        pagination: { page: 2, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      await act(async () => {
+        await result.current.fetchProjects({ page: 2 });
+      });
+      expect(apiMock.get).toHaveBeenLastCalledWith(
+        '/projects?page=2&search=Neo',
         expect.any(Object),
       );
     });

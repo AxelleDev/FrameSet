@@ -305,8 +305,10 @@ const logListProjectsPerformance = ({ requestId, userId, projectCount, queryTimi
 
 // Lists a page of the user's projects, each enriched with its brush norms,
 // typography norms and palette. Children are fetched in three parallel batched
-// IN-list queries and grouped in memory, avoiding N+1. Returns { projects,
-// pagination: { page, pageSize, total, totalPages } }.
+// IN-list queries and grouped in memory, avoiding N+1. Pinned projects always
+// sort first (by their manual pin order), then the rest by recency. An
+// optional `search` filters by name (case-insensitive substring). Returns
+// { projects, pagination: { page, pageSize, total, totalPages } }.
 const listProjectsForUser = async (userId, requestId, options = {}) => {
   const queryTimings = [];
 
@@ -316,12 +318,15 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
     ? Math.min(MAX_PROJECTS_PAGE_SIZE, Math.max(1, Math.floor(options.pageSize)))
     : DEFAULT_PROJECTS_PAGE_SIZE;
   const offset = (page - 1) * pageSize;
+  const search = typeof options.search === 'string' ? options.search.trim() : '';
+  const searchClause = search ? 'AND name LIKE ?' : '';
+  const searchParam = search ? [`%${search}%`] : [];
 
   // Total count drives the pagination metadata (and the dashboard's "N projects").
   const countQuery = await runTimedQuery({
     label: 'projects_count',
-    sql: 'SELECT COUNT(*) AS total FROM projects WHERE user_id = ? AND deleted_at IS NULL',
-    params: [userId],
+    sql: `SELECT COUNT(*) AS total FROM projects WHERE user_id = ? AND deleted_at IS NULL ${searchClause}`,
+    params: [userId, ...searchParam],
   });
   queryTimings.push(countQuery.timing);
   const total = Number(countQuery.rows[0]?.total || 0);
@@ -334,8 +339,8 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
 
   const projectsQuery = await runTimedQuery({
     label: 'projects',
-    sql: 'SELECT id, name, share_token, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?',
-    params: [userId, pageSize, offset],
+    sql: `SELECT id, name, share_token, pin_position, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? AND deleted_at IS NULL ${searchClause} ORDER BY (pin_position IS NULL) ASC, pin_position ASC, created_at DESC LIMIT ? OFFSET ?`,
+    params: [userId, ...searchParam, pageSize, offset],
   });
 
   queryTimings.push(projectsQuery.timing);
@@ -360,12 +365,12 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
   const [brushNormsQuery, typographyNormsQuery, paletteQuery] = await Promise.all([
     runTimedQuery({
       label: 'project_brush_norms',
-      sql: `SELECT id, project_id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id IN (${placeholders}) AND deleted_at IS NULL`,
+      sql: `SELECT id, project_id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id IN (${placeholders}) AND deleted_at IS NULL ORDER BY project_id ASC, position ASC, id ASC`,
       params: projectIds,
     }),
     runTimedQuery({
       label: 'project_typography_norms',
-      sql: `SELECT id, project_id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id IN (${placeholders}) AND deleted_at IS NULL`,
+      sql: `SELECT id, project_id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id IN (${placeholders}) AND deleted_at IS NULL ORDER BY project_id ASC, position ASC, id ASC`,
       params: projectIds,
     }),
     runTimedQuery({
@@ -411,6 +416,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
       name: project.name,
       lastEdited: project.lastEditedFormatted || 'Just now',
       shareToken: project.share_token || null,
+      pinned: project.pin_position !== null,
       brushNorms,
       typographyNorms,
       normsCount: brushNorms.length + typographyNorms.length,
@@ -450,6 +456,7 @@ const createProjectForUser = async (userId, rawName) => {
     name,
     lastEdited: 'Just now',
     shareToken: null,
+    pinned: false,
     normsCount: 0,
     norms: [],
     palette: [],
@@ -485,13 +492,14 @@ const duplicateProjectForUser = async (userId, projectId) => {
     newProjectId = insertResult.insertId;
 
     // Trashed colors/standards are excluded: duplicating a project should not
-    // resurrect something its owner already threw away.
+    // resurrect something its owner already threw away. Their manual order
+    // (position) carries over so the copy looks identical to the source.
     await connection.query(
-      'INSERT INTO project_brush_norms (project_id, name, value, unit, brush_name, opacity) SELECT ?, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ? AND deleted_at IS NULL',
+      'INSERT INTO project_brush_norms (project_id, name, value, unit, brush_name, opacity, position) SELECT ?, name, value, unit, brush_name, opacity, position FROM project_brush_norms WHERE project_id = ? AND deleted_at IS NULL',
       [newProjectId, projectId],
     );
     await connection.query(
-      'INSERT INTO project_typography_norms (project_id, font_family, font_weight, font_usage, font_style) SELECT ?, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ? AND deleted_at IS NULL',
+      'INSERT INTO project_typography_norms (project_id, font_family, font_weight, font_usage, font_style, position) SELECT ?, font_family, font_weight, font_usage, font_style, position FROM project_typography_norms WHERE project_id = ? AND deleted_at IS NULL',
       [newProjectId, projectId],
     );
     await connection.query(
@@ -510,11 +518,11 @@ const duplicateProjectForUser = async (userId, projectId) => {
   // Read the copies back so the response carries the new server-assigned ids,
   // in the same shape as a listProjectsForUser item.
   const [brushRows] = await db.query(
-    'SELECT id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ?',
+    'SELECT id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ? ORDER BY position ASC, id ASC',
     [newProjectId],
   );
   const [typographyRows] = await db.query(
-    'SELECT id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ?',
+    'SELECT id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ? ORDER BY position ASC, id ASC',
     [newProjectId],
   );
   const [paletteRows] = await db.query(
@@ -548,6 +556,7 @@ const duplicateProjectForUser = async (userId, projectId) => {
     name,
     lastEdited: 'Just now',
     shareToken: null,
+    pinned: false,
     brushNorms,
     typographyNorms,
     normsCount: brushNorms.length + typographyNorms.length,
@@ -666,11 +675,11 @@ const getSharedProjectByToken = async (rawToken) => {
   const projectId = rows[0].id;
 
   const [brushRows] = await db.query(
-    'SELECT id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ? AND deleted_at IS NULL',
+    'SELECT id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ? AND deleted_at IS NULL ORDER BY position ASC, id ASC',
     [projectId],
   );
   const [typographyRows] = await db.query(
-    'SELECT id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ? AND deleted_at IS NULL',
+    'SELECT id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ? AND deleted_at IS NULL ORDER BY position ASC, id ASC',
     [projectId],
   );
   const [paletteRows] = await db.query(
@@ -732,8 +741,9 @@ const purgeExpiredTrashedProjectItems = async () => {
   return results.every(Boolean);
 };
 
-// Adds a brush norm after validation, then touches last_edited. Throws
-// 'validation' (with the user-facing message) on an invalid payload.
+// Adds a brush norm after validation, appended after the project's current
+// last-position norm, then touches last_edited. Throws 'validation' (with the
+// user-facing message) on an invalid payload.
 const addBrushNormToProject = async (projectId, payload) => {
   const validatedBrushNorm = validateBrushNormPayload(payload);
   if (validatedBrushNorm.error) {
@@ -741,7 +751,9 @@ const addBrushNormToProject = async (projectId, payload) => {
   }
 
   const [result] = await db.query(
-    'INSERT INTO project_brush_norms (project_id, name, value, unit, brush_name, opacity) VALUES (?, ?, ?, ?, ?, ?)',
+    `INSERT INTO project_brush_norms (project_id, name, value, unit, brush_name, opacity, position)
+     SELECT ?, ?, ?, ?, ?, ?, COALESCE(MAX(position), -1) + 1
+     FROM project_brush_norms WHERE project_id = ? AND deleted_at IS NULL`,
     [
       projectId,
       validatedBrushNorm.value.name,
@@ -749,14 +761,16 @@ const addBrushNormToProject = async (projectId, payload) => {
       validatedBrushNorm.value.unit,
       validatedBrushNorm.value.brushName,
       validatedBrushNorm.value.opacity,
+      projectId,
     ],
   );
   await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [projectId]);
   return { success: true, id: result.insertId };
 };
 
-// Adds a typography norm after validation, then touches last_edited. Throws
-// 'validation' on an invalid payload.
+// Adds a typography norm after validation, appended after the project's
+// current last-position norm, then touches last_edited. Throws 'validation'
+// on an invalid payload.
 const addTypographyNormToProject = async (projectId, payload) => {
   const validatedTypographyNorm = validateTypographyNormPayload(payload);
   if (validatedTypographyNorm.error) {
@@ -764,13 +778,16 @@ const addTypographyNormToProject = async (projectId, payload) => {
   }
 
   const [result] = await db.query(
-    'INSERT INTO project_typography_norms (project_id, font_family, font_weight, font_usage, font_style) VALUES (?, ?, ?, ?, ?)',
+    `INSERT INTO project_typography_norms (project_id, font_family, font_weight, font_usage, font_style, position)
+     SELECT ?, ?, ?, ?, ?, COALESCE(MAX(position), -1) + 1
+     FROM project_typography_norms WHERE project_id = ? AND deleted_at IS NULL`,
     [
       projectId,
       validatedTypographyNorm.value.fontFamily,
       validatedTypographyNorm.value.fontWeight,
       validatedTypographyNorm.value.fontUsage,
       validatedTypographyNorm.value.fontStyle,
+      projectId,
     ],
   );
   await db.query('UPDATE projects SET last_edited = NOW() WHERE id = ?', [projectId]);
@@ -813,6 +830,107 @@ const validatePalettePayload = (colors) => {
   }
 
   return validatedColors;
+};
+
+// Validates a reorder payload: a non-empty array of positive integer ids
+// (capped generously — no real list ever gets close to this). Returns the
+// parsed ids or throws 'validation'.
+const validateOrderedIds = (ids) => {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw new ProjectServiceError('validation', 'A non-empty list of ids is required.');
+  }
+  if (ids.length > 500) {
+    throw new ProjectServiceError('validation', 'Too many ids in the reorder list.');
+  }
+  const parsedIds = ids.map((id) => Number(id));
+  if (parsedIds.some((id) => !Number.isInteger(id) || id <= 0)) {
+    throw new ProjectServiceError('validation', 'Invalid id in the reorder list.');
+  }
+  return parsedIds;
+};
+
+// Reorders a project's child rows (brush norms or typography norms) to match
+// the given id sequence — the same "array order becomes persisted position"
+// contract as replaceProjectPalette, but reorder-only (no add/edit/remove).
+// Ids that don't belong to this project (or are trashed) are silently
+// skipped, so a stale client array can't corrupt another project's ordering.
+const reorderChildRows = async (table, projectId, orderedIds) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    for (let position = 0; position < orderedIds.length; position += 1) {
+      await connection.query(
+        `UPDATE ${table} SET position = ? WHERE id = ? AND project_id = ? AND deleted_at IS NULL`,
+        [position, orderedIds[position], projectId],
+      );
+    }
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+  return { success: true };
+};
+
+// Reorders a project's brush standards. Throws 'validation' on a bad payload.
+const reorderBrushNormsForProject = (projectId, ids) =>
+  reorderChildRows(TRASHABLE_CHILD_TABLES.brushNorm, projectId, validateOrderedIds(ids));
+
+// Reorders a project's typography standards. Throws 'validation' on a bad payload.
+const reorderTypographyNormsForProject = (projectId, ids) =>
+  reorderChildRows(TRASHABLE_CHILD_TABLES.typographyNorm, projectId, validateOrderedIds(ids));
+
+// Pins a project to the top of the dashboard, appended after the user's
+// current last-pinned project. Idempotent: re-pinning an already-pinned
+// project leaves its position untouched (COALESCE). Scoped to the owner and
+// to live projects, which doubles as the ownership check.
+const pinProjectForUser = async (userId, projectId) => {
+  const [rankRows] = await db.query(
+    'SELECT COALESCE(MAX(pin_position), -1) + 1 AS next_position FROM projects WHERE user_id = ? AND pin_position IS NOT NULL',
+    [userId],
+  );
+  const nextPosition = rankRows[0]?.next_position ?? 0;
+  const [result] = await db.query(
+    'UPDATE projects SET pin_position = COALESCE(pin_position, ?) WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+    [nextPosition, projectId, userId],
+  );
+  return result.affectedRows > 0;
+};
+
+// Unpins a project. Returns false when nothing matched (wrong owner, trashed,
+// or doesn't exist) so the controller can 404.
+const unpinProjectForUser = async (userId, projectId) => {
+  const [result] = await db.query(
+    'UPDATE projects SET pin_position = NULL WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+    [projectId, userId],
+  );
+  return result.affectedRows > 0;
+};
+
+// Reorders the user's pinned projects to match the given id sequence. Ids
+// that aren't currently pinned by this user are silently skipped. Throws
+// 'validation' on a bad payload.
+const reorderPinnedProjectsForUser = async (userId, ids) => {
+  const orderedIds = validateOrderedIds(ids);
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    for (let position = 0; position < orderedIds.length; position += 1) {
+      await connection.query(
+        'UPDATE projects SET pin_position = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL AND pin_position IS NOT NULL',
+        [position, orderedIds[position], userId],
+      );
+    }
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+  return { success: true };
 };
 
 // Atomically replaces a project's palette (single transaction, rolled back on
@@ -1073,4 +1191,9 @@ module.exports = {
   listTrashedPaletteColorsForProject,
   updateBrushNormInProject,
   updateTypographyNormInProject,
+  reorderBrushNormsForProject,
+  reorderTypographyNormsForProject,
+  pinProjectForUser,
+  unpinProjectForUser,
+  reorderPinnedProjectsForUser,
 };

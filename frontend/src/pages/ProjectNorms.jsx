@@ -7,6 +7,7 @@ import useNormFontLoader from '../hooks/useNormFontLoader';
 import { loadGoogleFont } from '../utils/loadGoogleFont';
 import useFormState from '../hooks/useFormState';
 import useActiveProject from '../hooks/useActiveProject';
+import useDragReorder from '../hooks/useDragReorder';
 import { useProjects } from '../context/ProjectContext';
 import { useToast } from '../context/ToastContext';
 import { useParams } from 'react-router-dom';
@@ -48,8 +49,31 @@ export default function ProjectNorms() {
     restoreTypographyNorm,
     deleteBrushNormPermanently,
     deleteTypographyNormPermanently,
+    reorderBrushNorms,
+    reorderTypographyNorms,
   } = useProjects();
   const { showToast } = useToast();
+
+  // Drag-and-drop reorder for each standard type, independently ordered (same
+  // FLIP + keyboard-move behavior as the palette's colors).
+  const brushDrag = useDragReorder({
+    items: activeProject?.brushNorms,
+    getId: (norm) => norm.id,
+    onPersist: (nextNorms) =>
+      reorderBrushNorms(
+        id,
+        nextNorms.map((norm) => norm.id),
+      ),
+  });
+  const typographyDrag = useDragReorder({
+    items: activeProject?.typographyNorms,
+    getId: (norm) => norm.id,
+    onPersist: (nextNorms) =>
+      reorderTypographyNorms(
+        id,
+        nextNorms.map((norm) => norm.id),
+      ),
+  });
 
   // Load this project's trashed standards so its trash section can appear
   // (hidden when empty).
@@ -256,6 +280,42 @@ export default function ProjectNorms() {
   // Display filter: 'all', 'brush', or 'typography'.
   const [filterType, setFilterType] = useState('all');
 
+  // Reorder controls: keyboard-operable, non-drag alternative (WCAG 2.5.7).
+  // Visually hidden (srOnly) so sighted users drag while assistive-tech users
+  // get "move left/right", same pattern as the palette's color tiles.
+  const renderMoveButtons = (idx, length, moveItem) => (
+    <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
+      <ActionIconButton
+        onClick={(e) => {
+          e.stopPropagation();
+          moveItem(idx, idx - 1);
+        }}
+        title="Move standard left"
+        variant="light"
+        srOnly
+        disabled={idx === 0}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </ActionIconButton>
+      <ActionIconButton
+        onClick={(e) => {
+          e.stopPropagation();
+          moveItem(idx, idx + 1);
+        }}
+        title="Move standard right"
+        variant="light"
+        srOnly
+        disabled={idx === length - 1}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </ActionIconButton>
+    </div>
+  );
+
   return (
     <>
       <Seo title="Graphic standards" noindex />
@@ -291,96 +351,126 @@ export default function ProjectNorms() {
               }}
               className="min-h-[260px]"
             />
-            {/* Brush norm cards (hidden when filtering to typography only) */}
+            {/* Brush norm cards (hidden when filtering to typography only).
+              Live (preview) order; each wrapper is registered by id for FLIP
+              measurement, and the dragged card is dimmed. */}
             {filterType !== 'typography' &&
-              activeProject.brushNorms &&
-              activeProject.brushNorms.map((norm) => (
-                <StandardCard
+              brushDrag.previewItems.map((norm, idx) => (
+                <div
                   key={norm.id}
-                  category="Brush"
-                  badgeColor="primary"
-                  title={norm.name}
-                  value={norm.value}
-                  unit={norm.unit}
-                  detail={
-                    <div className="text-xs text-secondary mb-2">
-                      Opacity:{' '}
-                      {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}
-                    </div>
+                  ref={brushDrag.registerItemRef(norm.id)}
+                  className={
+                    brushDrag.isDragging(norm.id)
+                      ? 'opacity-30 z-40 cursor-grabbing'
+                      : 'cursor-grab'
                   }
-                  preview={
-                    <BrushPreview
-                      value={norm.value}
-                      opacity={norm.opacity}
-                      brushName={norm.brushName}
-                    />
-                  }
-                  actions={
-                    <div className="absolute top-3 right-3 flex gap-2 z-30">
-                      <ActionIconButton
-                        onClick={() => openEditNorm(norm, 'brush')}
-                        title="Edit standard"
-                        intent="edit"
-                      >
-                        <EditIcon />
-                      </ActionIconButton>
-                      <ActionIconButton
-                        onClick={(e) => handleDeleteNorm(e, norm.id, 'brush')}
-                        title="Delete standard"
-                        intent="delete"
-                      >
-                        {loadingDelete === norm.id ? <Spinner size="sm" /> : <DeleteIcon />}
-                      </ActionIconButton>
-                    </div>
-                  }
-                />
+                  {...brushDrag.getDragHandlers(norm, idx)}
+                >
+                  <StandardCard
+                    category="Brush"
+                    badgeColor="primary"
+                    title={norm.name}
+                    value={norm.value}
+                    unit={norm.unit}
+                    detail={
+                      <div className="text-xs text-secondary mb-2">
+                        Opacity:{' '}
+                        {typeof norm.opacity === 'number' ? norm.opacity : (norm.opacity ?? '—')}
+                      </div>
+                    }
+                    preview={
+                      <BrushPreview
+                        value={norm.value}
+                        opacity={norm.opacity}
+                        brushName={norm.brushName}
+                      />
+                    }
+                    actions={
+                      <>
+                        <div className="absolute top-3 right-3 flex gap-2 z-30">
+                          <ActionIconButton
+                            onClick={() => openEditNorm(norm, 'brush')}
+                            title="Edit standard"
+                            intent="edit"
+                          >
+                            <EditIcon />
+                          </ActionIconButton>
+                          <ActionIconButton
+                            onClick={(e) => handleDeleteNorm(e, norm.id, 'brush')}
+                            title="Delete standard"
+                            intent="delete"
+                          >
+                            {loadingDelete === norm.id ? <Spinner size="sm" /> : <DeleteIcon />}
+                          </ActionIconButton>
+                        </div>
+                        {renderMoveButtons(idx, brushDrag.previewItems.length, brushDrag.moveItem)}
+                      </>
+                    }
+                  />
+                </div>
               ))}
             {/* Typography norm cards (hidden when filtering to brush only) */}
             {filterType !== 'brush' &&
-              activeProject.typographyNorms &&
-              activeProject.typographyNorms.map((norm) => (
-                <StandardCard
+              typographyDrag.previewItems.map((norm, idx) => (
+                <div
                   key={norm.id}
-                  category="Typography"
-                  badgeColor="blue"
-                  title={norm.fontUsage || norm.fontFamily}
-                  value={norm.fontFamily}
-                  valueTitle={norm.fontFamily}
-                  valueTruncate
-                  unit={norm.fontWeight}
-                  detail={
-                    norm.fontStyle && (
-                      <div className="mb-2">
-                        <span className="text-xs text-primary italic">{norm.fontStyle}</span>
-                      </div>
-                    )
+                  ref={typographyDrag.registerItemRef(norm.id)}
+                  className={
+                    typographyDrag.isDragging(norm.id)
+                      ? 'opacity-30 z-40 cursor-grabbing'
+                      : 'cursor-grab'
                   }
-                  preview={
-                    <TypographyPreview
-                      fontFamily={norm.fontFamily}
-                      fontStyle={norm.fontStyle}
-                      loaded={loadedFonts.includes(norm.fontFamily)}
-                    />
-                  }
-                  actions={
-                    <div className="absolute top-3 right-3 flex gap-2 z-30">
-                      <ActionIconButton
-                        onClick={() => openEditNorm(norm, 'typography')}
-                        title="Edit standard"
-                        intent="edit"
-                      >
-                        <EditIcon />
-                      </ActionIconButton>
-                      <ActionIconButton
-                        onClick={(e) => handleDeleteNorm(e, norm.id, 'typography')}
-                        title="Delete standard"
-                        intent="delete"
-                      >
-                        {loadingDelete === norm.id ? <Spinner size="sm" /> : <DeleteIcon />}
-                      </ActionIconButton>
-                    </div>
-                  }
-                />
+                  {...typographyDrag.getDragHandlers(norm, idx)}
+                >
+                  <StandardCard
+                    category="Typography"
+                    badgeColor="blue"
+                    title={norm.fontUsage || norm.fontFamily}
+                    value={norm.fontFamily}
+                    valueTitle={norm.fontFamily}
+                    valueTruncate
+                    unit={norm.fontWeight}
+                    detail={
+                      norm.fontStyle && (
+                        <div className="mb-2">
+                          <span className="text-xs text-primary italic">{norm.fontStyle}</span>
+                        </div>
+                      )
+                    }
+                    preview={
+                      <TypographyPreview
+                        fontFamily={norm.fontFamily}
+                        fontStyle={norm.fontStyle}
+                        loaded={loadedFonts.includes(norm.fontFamily)}
+                      />
+                    }
+                    actions={
+                      <>
+                        <div className="absolute top-3 right-3 flex gap-2 z-30">
+                          <ActionIconButton
+                            onClick={() => openEditNorm(norm, 'typography')}
+                            title="Edit standard"
+                            intent="edit"
+                          >
+                            <EditIcon />
+                          </ActionIconButton>
+                          <ActionIconButton
+                            onClick={(e) => handleDeleteNorm(e, norm.id, 'typography')}
+                            title="Delete standard"
+                            intent="delete"
+                          >
+                            {loadingDelete === norm.id ? <Spinner size="sm" /> : <DeleteIcon />}
+                          </ActionIconButton>
+                        </div>
+                        {renderMoveButtons(
+                          idx,
+                          typographyDrag.previewItems.length,
+                          typographyDrag.moveItem,
+                        )}
+                      </>
+                    }
+                  />
+                </div>
               ))}
           </div>
 

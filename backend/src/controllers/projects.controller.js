@@ -39,6 +39,7 @@ const listProjects = async (req, res) => {
     const result = await projectsService.listProjectsForUser(userId, req.id, {
       page: Number.isNaN(parsedPage) ? undefined : parsedPage,
       pageSize: Number.isNaN(parsedPageSize) ? undefined : parsedPageSize,
+      search: typeof query.search === 'string' ? query.search : undefined,
     });
     res.json(result);
   } catch (error) {
@@ -85,6 +86,59 @@ const duplicateProject = async (req, res) => {
       return res.status(404).json({ error: 'Project not found.' });
     }
     logProjectsControllerError(req, 'duplicate', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Pin a project to the top of the dashboard; idempotent.
+const pinProject = async (req, res) => {
+  const userId = getAuthenticatedUserId(req);
+  const { id } = req.params;
+  if (!userId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+  try {
+    if (!(await projectsService.pinProjectForUser(userId, id))) {
+      return res.status(404).json({ error: 'Project not found.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    logProjectsControllerError(req, 'pin', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Unpin a project.
+const unpinProject = async (req, res) => {
+  const userId = getAuthenticatedUserId(req);
+  const { id } = req.params;
+  if (!userId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+  try {
+    if (!(await projectsService.unpinProjectForUser(userId, id))) {
+      return res.status(404).json({ error: 'Project not found.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    logProjectsControllerError(req, 'unpin', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Reorder the user's pinned projects to match the given id array.
+const reorderPinnedProjects = async (req, res) => {
+  const userId = getAuthenticatedUserId(req);
+  if (!userId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+  try {
+    res.json(await projectsService.reorderPinnedProjectsForUser(userId, req.body));
+  } catch (error) {
+    if (error.code === 'validation') {
+      return res.status(400).json({ error: error.message });
+    }
+    logProjectsControllerError(req, 'reorder_pinned', error);
     res.status(500).json({ error: 'Database error.' });
   }
 };
@@ -279,6 +333,36 @@ const updatePalette = async (req, res) => {
     res.json(result);
   } catch (error) {
     logProjectsControllerError(req, 'update_palette', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Reorder a project's brush standards to match the given id array (drag-and-drop).
+const reorderBrushNorms = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
+    res.json(await projectsService.reorderBrushNormsForProject(id, req.body));
+  } catch (error) {
+    if (error.code === 'validation') {
+      return res.status(400).json({ error: error.message });
+    }
+    logProjectsControllerError(req, 'reorder_brush_norms', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Reorder a project's typography standards to match the given id array (drag-and-drop).
+const reorderTypographyNorms = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
+    res.json(await projectsService.reorderTypographyNormsForProject(id, req.body));
+  } catch (error) {
+    if (error.code === 'validation') {
+      return res.status(400).json({ error: error.message });
+    }
+    logProjectsControllerError(req, 'reorder_typography_norms', error, { projectId: id });
     res.status(500).json({ error: 'Database error.' });
   }
 };
@@ -539,12 +623,17 @@ module.exports = {
   listTrashedProjects,
   restoreProject,
   deleteProjectPermanently,
+  pinProject,
+  unpinProject,
+  reorderPinnedProjects,
   enableSharing,
   disableSharing,
   getSharedProject,
   addBrushNorm,
   addTypographyNorm,
   updatePalette,
+  reorderBrushNorms,
+  reorderTypographyNorms,
   deleteBrushNorm,
   listTrashedBrushNorms,
   restoreBrushNorm,

@@ -3,7 +3,7 @@
 // Every change persists the whole ordered palette via updateProjectPalette and
 // adopts the server's canonical result. Colors are keyed by stable `id`, never
 // hex, so two colors may share a hex without colliding.
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useToast } from '../context/ToastContext';
 import { useParams } from 'react-router-dom';
@@ -25,6 +25,7 @@ import { EditIcon, DeleteIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useClipboard from '../hooks/useClipboard';
 import useActiveProject from '../hooks/useActiveProject';
+import useDragReorder from '../hooks/useDragReorder';
 import { extractColorsFromImage } from '../utils/extractColors';
 
 // Keep in sync with the backend cap (MAX_PALETTE_SIZE in projects.controller.js).
@@ -49,29 +50,21 @@ export default function ProjectPalette() {
   const [editColorName, setEditColorName] = useState('');
   const [editColorHex, setEditColorHex] = useState('');
 
-  // Drag-and-drop state. draggedIndex/draggedId: the swatch being dragged.
-  // dragOverIndex: the slot it would land in. palette: committed order;
-  // previewPalette: live reorder shown during a drag (committed only on drop).
-  const [draggedIndex, setDraggedIndex] = useState(null);
-  const [draggedId, setDraggedId] = useState(null);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
-  const [palette, setPalette] = useState([]);
-  const [previewPalette, setPreviewPalette] = useState([]);
-  // Refs for the FLIP animation. itemRefs: id -> DOM node (to measure).
-  // prevPositions: id -> rect captured before a reorder (the "First").
-  // skipFlip: suppress the animation next layout pass (e.g. on cancel).
-  // didDrop: real drop vs. cancelled drag in onDragEnd.
-  // flipPending: a reorder happened and the FLIP should run next.
-  const itemRefs = useRef({});
-  const prevPositions = useRef({});
-  const skipFlip = useRef(false);
-  const didDrop = useRef(false);
-  const flipPending = useRef(false);
-  // Holds the post-drop persistence timeout so it can be cancelled on unmount.
-  const dropPersistTimer = useRef(null);
-
-  // Cancel any pending post-drop persistence timer if we unmount before it fires.
-  useEffect(() => () => clearTimeout(dropPersistTimer.current), []);
+  // Drag-and-drop reorder (FLIP animation + keyboard move + optimistic
+  // persistence), shared with ProjectNorms and the dashboard's pinned section.
+  const {
+    items: palette,
+    previewItems: previewPalette,
+    draggedId,
+    registerItemRef,
+    getDragHandlers,
+    moveItem: moveColor,
+    replaceItems: persistPalette,
+  } = useDragReorder({
+    items: activeProject?.palette,
+    getId: (color) => color.id,
+    onPersist: (nextPalette) => updateProjectPalette(id, nextPalette),
+  });
 
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null);
   const { copy, copiedValue } = useClipboard({ timeout: 1200 });
@@ -106,57 +99,6 @@ export default function ProjectPalette() {
     await copy(hex);
   };
 
-  // Mirror the project's palette into local state whenever it loads/changes.
-  useEffect(() => {
-    if (activeProject && Array.isArray(activeProject.palette)) {
-      setPalette(activeProject.palette);
-      setPreviewPalette(activeProject.palette);
-    }
-  }, [activeProject]);
-
-  // FLIP animation (First-Last-Invert-Play). After previewPalette re-renders
-  // swatches into their new (Last) spots, this runs before paint: measure each
-  // node, compute the delta from its pre-reorder (First) rect in prevPositions,
-  // translate it back (Invert), then clear the transform with a transition so it
-  // slides to the new spot (Play).
-  useLayoutEffect(() => {
-    // Cancelled drag: clear any inline styles and skip animating this pass.
-    if (skipFlip.current) {
-      skipFlip.current = false;
-      Object.values(itemRefs.current).forEach((el) => {
-        if (el) {
-          el.style.transition = '';
-          el.style.transform = '';
-        }
-      });
-      return;
-    }
-    // Only animate while dragging and only when a reorder just occurred.
-    if (draggedId === null) return;
-    if (!flipPending.current) return;
-    flipPending.current = false;
-    previewPalette.forEach((color) => {
-      // The dragged swatch is shown semi-transparent and is not FLIP-animated.
-      if (color.id === draggedId) return;
-      const el = itemRefs.current[color.id];
-      const prev = prevPositions.current[color.id];
-      if (!el || !prev) return;
-      const curr = el.getBoundingClientRect();
-      const dx = Math.round(prev.left - curr.left);
-      const dy = Math.round(prev.top - curr.top);
-      if (dx !== 0 || dy !== 0) {
-        // Invert: jump back to the old position with no transition.
-        el.style.transition = 'none';
-        el.style.transform = `translate(${dx}px, ${dy}px)`;
-        // Force a reflow so the inverted transform is applied before we animate.
-        el.getBoundingClientRect();
-        // Play: transition the transform away, sliding into the new position.
-        el.style.transition = 'transform 280ms cubic-bezier(0.2, 0, 0, 1)';
-        el.style.transform = '';
-      }
-    });
-  }, [previewPalette, draggedId]);
-
   const [isAddingColor, setIsAddingColor] = useState(false);
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('');
@@ -169,17 +111,6 @@ export default function ProjectPalette() {
   const [imageError, setImageError] = useState('');
   const [extracting, setExtracting] = useState(false);
   const fileInputRef = useRef(null);
-
-  // Persist the ordered palette and adopt the server's canonical result (stable
-  // ids, saved order). Returns the saved palette, or null on failure.
-  const persistPalette = async (nextPalette) => {
-    const saved = await updateProjectPalette(id, nextPalette);
-    if (saved) {
-      setPalette(saved);
-      setPreviewPalette(saved);
-    }
-    return saved;
-  };
 
   const handleEditHexChange = (e) => {
     setEditColorHex(normalizeHexInput(e.target.value));
@@ -326,31 +257,6 @@ export default function ProjectPalette() {
     setConfirmDeleteColor(colorId);
   };
 
-  // Move the swatch at `idx` to `target`, persist, and keep focus on it. Called
-  // by the on-tile reorder buttons, so reordering works by a single click (and by
-  // keyboard, since the buttons are focusable), not only by drag.
-  const moveColor = async (idx, target) => {
-    if (target < 0 || target >= palette.length) return;
-    const previous = palette;
-    const next = [...palette];
-    const [moved] = next.splice(idx, 1);
-    next.splice(target, 0, moved);
-    setPalette(next);
-    setPreviewPalette(next);
-    // Keep focus on the moved swatch after it re-renders into its new slot.
-    requestAnimationFrame(() => {
-      const el = itemRefs.current[moved.id];
-      if (el) el.focus();
-    });
-    // Roll back the optimistic reorder if persistence failed, so local state
-    // doesn't silently diverge from the server.
-    const saved = await persistPalette(next);
-    if (!saved) {
-      setPalette(previous);
-      setPreviewPalette(previous);
-    }
-  };
-
   return (
     <>
       <Seo title="Color palette" noindex />
@@ -389,14 +295,12 @@ export default function ProjectPalette() {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
             <AddTile onClick={openAddModal} label="New color" className="aspect-square" />
 
-            {/* Live (preview) order; each node is registered in itemRefs (by id)
-              for FLIP measurement, and the dragged swatch is dimmed. */}
+            {/* Live (preview) order; each node is registered by id for FLIP
+              measurement, and the dragged swatch is dimmed. */}
             {previewPalette.map((color, idx) => (
               <ColorTile
                 key={color.id}
-                ref={(el) => {
-                  itemRefs.current[color.id] = el;
-                }}
+                ref={registerItemRef(color.id)}
                 tabIndex={-1}
                 aria-label={`Color ${color.name}, ${color.hex}`}
                 hex={color.hex}
@@ -406,78 +310,7 @@ export default function ProjectPalette() {
                 className={
                   color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'
                 }
-                draggable
-                onDragStart={(e) => {
-                  // Begin a drag: reset FLIP bookkeeping and record the source swatch.
-                  didDrop.current = false;
-                  flipPending.current = false;
-                  prevPositions.current = {};
-                  setDraggedIndex(idx);
-                  setDraggedId(color.id);
-                  setDragOverIndex(idx);
-                  e.dataTransfer.effectAllowed = 'move';
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  // When hovering a new target slot, snapshot current positions
-                  // (the FLIP "First") and compute the previewed reorder so the
-                  // layout effect can animate the displaced swatches.
-                  if (draggedId !== null && color.id !== draggedId) {
-                    if (idx === dragOverIndex) return;
-                    const snapshots = {};
-                    Object.keys(itemRefs.current).forEach((key) => {
-                      const el = itemRefs.current[key];
-                      if (el) snapshots[key] = el.getBoundingClientRect();
-                    });
-                    prevPositions.current = snapshots;
-                    flipPending.current = true;
-                    setDragOverIndex(idx);
-                    const tempPalette = [...palette];
-                    const [moved] = tempPalette.splice(draggedIndex, 1);
-                    tempPalette.splice(idx, 0, moved);
-                    setPreviewPalette(tempPalette);
-                  }
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  // Commit the reorder: mark didDrop so onDragEnd does not revert,
-                  // update the committed palette, and persist after a short delay
-                  // so the drop animation can settle first.
-                  didDrop.current = true;
-                  flipPending.current = false;
-                  if (draggedId !== null && draggedIndex !== dragOverIndex) {
-                    const newPalette = [...palette];
-                    const [moved] = newPalette.splice(draggedIndex, 1);
-                    newPalette.splice(dragOverIndex, 0, moved);
-                    setPalette(newPalette);
-                    clearTimeout(dropPersistTimer.current);
-                    dropPersistTimer.current = setTimeout(() => {
-                      persistPalette(newPalette);
-                    }, 200);
-                  }
-                  setDraggedIndex(null);
-                  setDraggedId(null);
-                  setDragOverIndex(null);
-                }}
-                onDragEnd={() => {
-                  // Fires after every drag. If a drop already committed, just reset.
-                  if (didDrop.current) {
-                    didDrop.current = false;
-                    flipPending.current = false;
-                    setDraggedIndex(null);
-                    setDraggedId(null);
-                    setDragOverIndex(null);
-                    return;
-                  }
-                  // Otherwise the drag was cancelled (dropped outside): revert the
-                  // preview to the committed order and skip the FLIP animation.
-                  skipFlip.current = true;
-                  flipPending.current = false;
-                  setDraggedIndex(null);
-                  setDraggedId(null);
-                  setDragOverIndex(null);
-                  setPreviewPalette(palette);
-                }}
+                {...getDragHandlers(color, idx)}
                 overlay={
                   <>
                     <ActionIconButton

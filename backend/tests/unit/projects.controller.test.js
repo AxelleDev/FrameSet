@@ -20,7 +20,7 @@ describe('projects controller', () => {
     it('returns the projects for the user', async () => {
       db.query.mockResolvedValueOnce([[{ total: 1 }]]); // COUNT(*) for pagination
       db.query.mockResolvedValueOnce([
-        [{ id: 1, name: 'Project1', lastEditedFormatted: '15/03 10:00' }],
+        [{ id: 1, name: 'Project1', lastEditedFormatted: '15/03 10:00', pin_position: null }],
       ]);
       db.query.mockResolvedValueOnce([
         [
@@ -31,6 +31,7 @@ describe('projects controller', () => {
             value: '8',
             unit: 'px',
             brush_name: 'Smooth',
+            opacity: null,
           },
         ],
       ]);
@@ -101,6 +102,7 @@ describe('projects controller', () => {
             name: 'Project1',
             lastEdited: '15/03 10:00',
             shareToken: null,
+            pinned: false,
             brushNorms: [
               {
                 id: 10,
@@ -108,6 +110,7 @@ describe('projects controller', () => {
                 value: '8',
                 unit: 'px',
                 brushName: 'Smooth',
+                opacity: null,
               },
             ],
             typographyNorms: [
@@ -130,6 +133,31 @@ describe('projects controller', () => {
           },
         ],
         pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+    });
+
+    it('passes the search term through to the count and list queries', async () => {
+      db.query.mockResolvedValueOnce([[{ total: 0 }]]); // COUNT(*) for pagination
+      db.query.mockResolvedValueOnce([[]]); // no matching projects
+
+      const req = { query: { search: 'Neo-Tokyo' }, user: { id: 1 } };
+      const res = { json: jest.fn() };
+
+      await projectsController.listProjects(req, res);
+
+      expect(db.query).toHaveBeenNthCalledWith(1, expect.stringContaining('AND name LIKE ?'), [
+        1,
+        '%Neo-Tokyo%',
+      ]);
+      expect(db.query).toHaveBeenNthCalledWith(2, expect.stringContaining('AND name LIKE ?'), [
+        1,
+        '%Neo-Tokyo%',
+        12,
+        0,
+      ]);
+      expect(res.json).toHaveBeenCalledWith({
+        projects: [],
+        pagination: { page: 1, pageSize: 12, total: 0, totalPages: 1 },
       });
     });
 
@@ -244,7 +272,7 @@ describe('projects controller', () => {
       expect(db.query).toHaveBeenNthCalledWith(
         2,
         expect.stringContaining('INSERT INTO project_brush_norms'),
-        ['1', 'Hair outline', '8', 'px', 'Smooth', null],
+        ['1', 'Hair outline', '8', 'px', 'Smooth', null, '1'],
       );
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({ success: true, id: 9 });
@@ -1008,6 +1036,131 @@ describe('projects controller', () => {
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.updateTypographyNorm(req, res);
       expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+  });
+
+  describe('reorder norms', () => {
+    const makeConnection = () => ({
+      query: jest.fn().mockResolvedValue([{}]),
+      beginTransaction: jest.fn(),
+      commit: jest.fn(),
+      rollback: jest.fn(),
+      release: jest.fn(),
+    });
+
+    it('reorders brush norms when owned', async () => {
+      db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ownership
+      const connection = makeConnection();
+      db.getConnection.mockResolvedValueOnce(connection);
+      const req = { params: { id: '1' }, user: { id: 1 }, body: [3, 1, 2] };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.reorderBrushNorms(req, res);
+      expect(connection.beginTransaction).toHaveBeenCalled();
+      expect(connection.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE project_brush_norms'),
+        [0, 3, '1'],
+      );
+      expect(connection.commit).toHaveBeenCalled();
+      expect(connection.release).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('reorders typography norms when owned', async () => {
+      db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ownership
+      const connection = makeConnection();
+      db.getConnection.mockResolvedValueOnce(connection);
+      const req = { params: { id: '1' }, user: { id: 1 }, body: [5, 6] };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.reorderTypographyNorms(req, res);
+      expect(connection.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE project_typography_norms'),
+        [0, 5, '1'],
+      );
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it("forbids reordering another user's project norms", async () => {
+      db.query.mockResolvedValueOnce([[]]); // ownership check fails
+      const req = { params: { id: '1' }, user: { id: 1 }, body: [1, 2] };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.reorderBrushNorms(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(db.getConnection).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 for an empty reorder list', async () => {
+      db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ownership
+      const req = { params: { id: '1' }, user: { id: 1 }, body: [] };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.reorderBrushNorms(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(db.getConnection).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('pin/unpin projects', () => {
+    it('pins a project when owned', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ next_position: 0 }]]) // rank lookup
+        .mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE pin_position
+      const req = { params: { id: '1' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.pinProject(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('returns 404 pinning a project that does not exist or is not owned', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ next_position: 0 }]]) // rank lookup
+        .mockResolvedValueOnce([{ affectedRows: 0 }]); // UPDATE matches nothing
+      const req = { params: { id: '99' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.pinProject(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it('unpins a project when owned', async () => {
+      db.query.mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE pin_position
+      const req = { params: { id: '1' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.unpinProject(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('returns 404 unpinning a project that does not exist or is not owned', async () => {
+      db.query.mockResolvedValueOnce([{ affectedRows: 0 }]);
+      const req = { params: { id: '99' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.unpinProject(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it('reorders pinned projects', async () => {
+      const connection = {
+        query: jest.fn().mockResolvedValue([{}]),
+        beginTransaction: jest.fn(),
+        commit: jest.fn(),
+        rollback: jest.fn(),
+        release: jest.fn(),
+      };
+      db.getConnection.mockResolvedValueOnce(connection);
+      const req = { user: { id: 1 }, body: [4, 2] };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.reorderPinnedProjects(req, res);
+      expect(connection.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE projects'),
+        [0, 4, 1],
+      );
+      expect(connection.commit).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('returns 400 for an invalid reorder list of pinned projects', async () => {
+      const req = { user: { id: 1 }, body: ['not-an-id'] };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.reorderPinnedProjects(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(db.getConnection).not.toHaveBeenCalled();
     });
   });
 });

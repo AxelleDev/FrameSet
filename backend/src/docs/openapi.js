@@ -148,6 +148,10 @@ const openapiSpec = {
             description:
               'Set when public sharing is enabled; the public page lives at /s/<shareToken>.',
           },
+          pinned: {
+            type: 'boolean',
+            description: 'Pinned projects always sort before unpinned ones on the dashboard.',
+          },
           brushNorms: { type: 'array', items: { $ref: '#/components/schemas/BrushNorm' } },
           typographyNorms: {
             type: 'array',
@@ -749,6 +753,12 @@ const openapiSpec = {
             in: 'query',
             schema: { type: 'integer', minimum: 1, maximum: 50, default: 12 },
           },
+          {
+            name: 'search',
+            in: 'query',
+            description: 'Case-insensitive substring match on the project name.',
+            schema: { type: 'string' },
+          },
         ],
         responses: {
           200: {
@@ -946,6 +956,67 @@ const openapiSpec = {
         },
       },
     },
+    '/api/projects/pinned/reorder': {
+      post: {
+        tags: ['Projects'],
+        summary: "Reorder the user's pinned projects (drag-and-drop)",
+        security: AUTH,
+        parameters: [CSRF_HEADER],
+        requestBody: {
+          required: true,
+          description: 'Ordered array of pinned project ids.',
+          content: {
+            'application/json': {
+              schema: { type: 'array', items: { type: 'integer' } },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Reordered.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          400: { $ref: '#/components/responses/ValidationError' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+        },
+      },
+    },
+    '/api/projects/{id}/pin': {
+      post: {
+        tags: ['Projects'],
+        summary: 'Pin a project to the top of the dashboard (idempotent)',
+        security: AUTH,
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Pinned.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          404: { $ref: '#/components/responses/NotFound' },
+        },
+      },
+      delete: {
+        tags: ['Projects'],
+        summary: 'Unpin a project',
+        security: AUTH,
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Unpinned.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          404: { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
     '/api/projects/{id}/share': {
       post: {
         tags: ['Projects'],
@@ -1056,6 +1127,35 @@ const openapiSpec = {
                 },
               },
             },
+          },
+          400: { $ref: '#/components/responses/ValidationError' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+        },
+      },
+    },
+    '/api/projects/{id}/brush-norms/reorder': {
+      post: {
+        tags: ['Projects'],
+        summary: 'Reorder brush standards (drag-and-drop)',
+        security: AUTH,
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        requestBody: {
+          required: true,
+          description: "Ordered array of the project's brush-standard ids.",
+          content: {
+            'application/json': {
+              schema: { type: 'array', items: { type: 'integer' } },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Reordered.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
           },
           400: { $ref: '#/components/responses/ValidationError' },
           401: { $ref: '#/components/responses/Unauthorized' },
@@ -1202,6 +1302,35 @@ const openapiSpec = {
                 },
               },
             },
+          },
+          400: { $ref: '#/components/responses/ValidationError' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+        },
+      },
+    },
+    '/api/projects/{id}/typography-norms/reorder': {
+      post: {
+        tags: ['Projects'],
+        summary: 'Reorder typography standards (drag-and-drop)',
+        security: AUTH,
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        requestBody: {
+          required: true,
+          description: "Ordered array of the project's typography-standard ids.",
+          content: {
+            'application/json': {
+              schema: { type: 'array', items: { type: 'integer' } },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Reordered.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
           },
           400: { $ref: '#/components/responses/ValidationError' },
           401: { $ref: '#/components/responses/Unauthorized' },
