@@ -123,7 +123,7 @@ export default function ForgotPassword() {
         )}
 
         {step === 'request' ? (
-          <form className="space-y-5" onSubmit={handleRequest} noValidate>
+          <form className="space-y-4" onSubmit={handleRequest} noValidate>
             <FormField
               label="Email"
               required

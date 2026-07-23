@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import Seo from '../components/Seo';
 import Logo from '../components/Logo';
 import Button from '../components/Button';
+import Badge from '../components/Badge';
+import Card from '../components/Card';
 import PublicTopBar from '../components/PublicTopBar';
 import ColorTile from '../components/ColorTile';
 import IconCircle from '../components/IconCircle';
@@ -116,13 +118,13 @@ function StandardsMock() {
 /** Mockup for the "Color palette" feature — the real square swatch grid. */
 function PaletteMock() {
   return (
-    <div className="bg-surface rounded-3xl ring-1 ring-primary/5 p-4 sm:p-6">
+    <Card className="p-4 sm:p-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         {PALETTE.map((c) => (
           <ColorTile key={c.hex} hex={c.hex} name={c.name} />
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -139,7 +141,7 @@ function ExportMock() {
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {cards.map((c) => (
-          <div key={c.title} className="bg-surface rounded-3xl ring-1 ring-primary/5 p-5">
+          <Card key={c.title} className="p-5">
             <IconCircle>
               <svg
                 className="w-5 h-5"
@@ -153,10 +155,10 @@ function ExportMock() {
               </svg>
             </IconCircle>
             <h3 className="text-sm font-medium text-primary">{c.title}</h3>
-          </div>
+          </Card>
         ))}
       </div>
-      <div className="bg-surface rounded-3xl ring-1 ring-primary/5 p-5">
+      <Card className="p-5">
         <h4 className="text-[10px] font-bold text-primary uppercase tracking-wider mb-3">
           JSON output preview
         </h4>
@@ -167,7 +169,7 @@ function ExportMock() {
   "brushNorms": [{ "name": "Hair outline" }]
 }`}</pre>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -213,9 +215,7 @@ export default function Landing() {
       <main className="relative flex-1">
         <section className="relative min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col items-center justify-center text-center px-6 pt-8 pb-20 animate-fade-in">
           <div className="max-w-3xl">
-            <span className="inline-block text-[11px] sm:text-xs font-bold uppercase tracking-widest text-blue bg-blue/15 px-3 py-1 rounded-full">
-              For illustrators &amp; studios
-            </span>
+            <Badge color="blue">For illustrators &amp; studios</Badge>
             <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-light tracking-tight leading-[1.12] md:leading-[1.05]">
               The graphic reference <br className="hidden sm:block" />
               <span className="font-bold">for your projects.</span>
@@ -297,7 +297,7 @@ export default function Landing() {
         </section>
 
         <section className="max-w-6xl mx-auto px-6 py-16 md:py-24">
-          <Reveal className="bg-surface ring-1 ring-primary/5 rounded-[1.75rem] md:rounded-[2rem] px-6 py-12 md:px-10 md:py-16 text-center">
+          <Reveal className="bg-surface rounded-3xl px-6 py-12 md:px-10 md:py-16 text-center">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tight">
               Start your <span className="font-bold">reference</span> today.
             </h2>

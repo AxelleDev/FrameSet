@@ -134,7 +134,7 @@ export default function Login() {
           </div>
         )}
 
-        <form className="space-y-5" onSubmit={handleLogin} noValidate>
+        <form className="space-y-4" onSubmit={handleLogin} noValidate>
           <FormField label="Email" required>
             <TextInput
               type="email"

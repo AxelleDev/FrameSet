@@ -362,7 +362,7 @@ export default function ProjectExport() {
 
       {activeProject ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-8 flex flex-col items-start text-left">
               <IconCircle>
                 <svg
@@ -448,7 +448,7 @@ export default function ProjectExport() {
                 <div className="w-full flex flex-col sm:flex-row gap-3">
                   <code
                     data-testid="share-url"
-                    className="flex-1 min-w-0 truncate rounded-xl bg-primary/5 px-4 py-3 text-sm text-primary font-mono"
+                    className="flex-1 min-w-0 truncate rounded-2xl bg-primary/5 px-4 py-3 text-sm text-primary font-mono"
                   >
                     {shareUrl}
                   </code>

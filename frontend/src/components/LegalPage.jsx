@@ -18,10 +18,10 @@ export default function LegalPage({ title, path, description, lastUpdated, child
           <Logo className="object-contain w-full h-auto" />
         </Link>
 
-        <h1 className="mt-8 text-3xl sm:text-4xl font-medium tracking-tight">{title}</h1>
+        <h1 className="mt-8 text-3xl sm:text-4xl font-light tracking-tight">{title}</h1>
         <p className="mt-2 text-xs text-primary/60">Last updated: {lastUpdated}</p>
 
-        <div className="mt-8 space-y-8 text-sm leading-relaxed text-primary/80 [&_h2]:text-lg [&_h2]:font-medium [&_h2]:text-primary [&_h2]:mb-2 [&_a]:text-blue [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-primary">
+        <div className="mt-8 space-y-8 text-sm leading-relaxed text-primary [&_h2]:text-lg [&_h2]:font-medium [&_h2]:text-primary [&_h2]:mb-2 [&_a]:text-blue [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-primary">
           {children}
         </div>
 
