@@ -116,11 +116,15 @@ export default function Dashboard() {
   };
 
   // Trash actions: restore puts the project back in the grid; permanent delete
-  // is staged behind its own confirmation dialog.
+  // is staged behind its own confirmation dialog. The two are mutually
+  // exclusive (trashBusy) so a restore in flight and a "delete forever" can
+  // never race on the same soft-deleted row (which would otherwise surface a
+  // confusing 404 when the loser's request lands after the row's state changed).
   const [confirmPermanentDelete, setConfirmPermanentDelete] = useState(null);
   const [restoringId, setRestoringId] = useState(null);
+  const trashBusy = restoringId !== null || confirmPermanentDelete !== null;
   const handleRestoreProject = async (id) => {
-    if (restoringId) return;
+    if (trashBusy) return;
     setRestoringId(id);
     try {
       const ok = await restoreProject(id);
@@ -289,13 +293,14 @@ export default function Dashboard() {
                     className="text-sm"
                     onClick={() => handleRestoreProject(project.id)}
                     loading={restoringId === project.id}
-                    disabled={restoringId !== null}
+                    disabled={trashBusy}
                   >
                     Restore
                   </Button>
                   <Button
                     variant="danger"
                     className="text-sm"
+                    disabled={trashBusy}
                     onClick={() => setConfirmPermanentDelete({ id: project.id, name: project.name })}
                   >
                     Delete forever

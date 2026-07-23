@@ -140,4 +140,33 @@ describe('Dashboard', () => {
 
     await waitFor(() => expect(projectState.deleteProjectPermanently).toHaveBeenCalledWith(9));
   });
+
+  it('disables Restore and Delete forever on every trashed item while a restore is in flight', async () => {
+    projectState.trashedProjects = [
+      { id: 9, name: 'Old poster', deletedAt: '2026-07-10 10:00:00', daysLeft: 21 },
+      { id: 10, name: 'Old flyer', deletedAt: '2026-07-11 10:00:00', daysLeft: 20 },
+    ];
+    // Never resolves within the test, so both rows stay in the "busy" state
+    // long enough to assert on it.
+    let releaseRestore;
+    projectState.restoreProject = vi.fn(
+      () => new Promise((resolve) => { releaseRestore = resolve; })
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    const [firstRestore, secondRestore] = screen.getAllByRole('button', { name: 'Restore' });
+    const [firstDeleteForever, secondDeleteForever] = screen.getAllByRole('button', { name: 'Delete forever' });
+    await user.click(firstRestore);
+
+    // A restore in flight must block every trash action (both rows, both
+    // buttons) so a concurrent "delete forever" can never race the row whose
+    // deleted_at is about to flip back to NULL server-side.
+    await waitFor(() => expect(secondRestore).toBeDisabled());
+    expect(firstRestore).toBeDisabled();
+    expect(firstDeleteForever).toBeDisabled();
+    expect(secondDeleteForever).toBeDisabled();
+
+    releaseRestore(true);
+  });
 });
