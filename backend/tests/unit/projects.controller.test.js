@@ -316,10 +316,10 @@ describe('projects controller', () => {
 
       await projectsController.updatePalette(req, res);
 
-      // The only kept id is 10, so every other color of the project is removed.
+      // The only kept id is 10, so every other color of the project is soft-deleted (trashed).
       expect(connection.query).toHaveBeenNthCalledWith(
         2,
-        expect.stringContaining('DELETE FROM project_palette WHERE project_id = ? AND id NOT IN'),
+        expect.stringContaining('UPDATE project_palette SET deleted_at = NOW() WHERE project_id = ? AND deleted_at IS NULL AND id NOT IN'),
         ['1', 10],
       );
       // The existing color keeps its id and is written at position 0.
@@ -374,7 +374,7 @@ describe('projects controller', () => {
 
       expect(connection.query).toHaveBeenNthCalledWith(
         2,
-        'DELETE FROM project_palette WHERE project_id = ?',
+        'UPDATE project_palette SET deleted_at = NOW() WHERE project_id = ? AND deleted_at IS NULL',
         ['1'],
       );
       expect(connection.commit).toHaveBeenCalled();
@@ -739,6 +739,178 @@ describe('projects controller', () => {
       const req = { params: { projectId: '1', normId: '9' }, user: { id: 1 } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.deleteTypographyNorm(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+  });
+
+  describe('norms trash', () => {
+    it('lists a project\'s trashed brush norms with days left', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([
+          [{ id: 9, name: 'Outline', value: '8', unit: 'px', brush_name: 'Smooth', opacity: 0.5, deleted_at: '2026-07-01', days_left: '20' }],
+        ]);
+      const req = { params: { projectId: '1' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.listTrashedBrushNorms(req, res);
+      expect(res.json).toHaveBeenCalledWith({
+        norms: [{
+          id: 9, name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 0.5,
+          deletedAt: '2026-07-01', daysLeft: 20,
+        }],
+      });
+    });
+
+    it('restores a trashed brush norm scoped to its project', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+      const req = { params: { projectId: '1', normId: '9' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.restoreBrushNorm(req, res);
+      expect(db.query).toHaveBeenLastCalledWith(
+        'UPDATE project_brush_norms SET deleted_at = NULL WHERE id = ? AND project_id = ? AND deleted_at IS NOT NULL',
+        ['9', '1'],
+      );
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('returns 404 when restoring a brush norm that is not in the trash', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 0 }]);
+      const req = { params: { projectId: '1', normId: '9' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.restoreBrushNorm(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it('permanently deletes a trashed brush norm', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+      const req = { params: { projectId: '1', normId: '9' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.deleteBrushNormPermanently(req, res);
+      expect(db.query).toHaveBeenLastCalledWith(
+        'DELETE FROM project_brush_norms WHERE id = ? AND project_id = ? AND deleted_at IS NOT NULL',
+        ['9', '1'],
+      );
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('lists a project\'s trashed typography norms with days left', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([
+          [{ id: 4, font_family: 'Figtree', font_weight: '600', font_usage: 'Heading', font_style: null, deleted_at: '2026-07-01', days_left: '5' }],
+        ]);
+      const req = { params: { projectId: '1' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.listTrashedTypographyNorms(req, res);
+      expect(res.json).toHaveBeenCalledWith({
+        norms: [{
+          id: 4, fontFamily: 'Figtree', fontWeight: '600', fontUsage: 'Heading', fontStyle: null,
+          deletedAt: '2026-07-01', daysLeft: 5,
+        }],
+      });
+    });
+
+    it('restores a trashed typography norm', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+      const req = { params: { projectId: '1', normId: '4' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.restoreTypographyNorm(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('permanently deletes a trashed typography norm', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+      const req = { params: { projectId: '1', normId: '4' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.deleteTypographyNormPermanently(req, res);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+  });
+
+  describe('palette color trash', () => {
+    it('moves a single color to the trash (soft delete), scoped to the project', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+      const req = { params: { id: '1', colorId: '10' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.deletePaletteColor(req, res);
+      expect(db.query).toHaveBeenLastCalledWith(
+        'UPDATE project_palette SET deleted_at = NOW() WHERE id = ? AND project_id = ? AND deleted_at IS NULL',
+        ['10', '1'],
+      );
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('returns 404 when deleting a color that does not exist', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 0 }]);
+      const req = { params: { id: '1', colorId: '99' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.deletePaletteColor(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it('lists a project\'s trashed colors with days left', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([
+          [{ id: 10, name: 'Ink', hex: '#112233', deleted_at: '2026-07-01', days_left: '18' }],
+        ]);
+      const req = { params: { id: '1' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.listTrashedPaletteColors(req, res);
+      expect(res.json).toHaveBeenCalledWith({
+        colors: [{ id: 10, name: 'Ink', hex: '#112233', deletedAt: '2026-07-01', daysLeft: 18 }],
+      });
+    });
+
+    it('restores a trashed color', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+      const req = { params: { id: '1', colorId: '10' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.restorePaletteColor(req, res);
+      expect(db.query).toHaveBeenLastCalledWith(
+        'UPDATE project_palette SET deleted_at = NULL WHERE id = ? AND project_id = ? AND deleted_at IS NOT NULL',
+        ['10', '1'],
+      );
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('returns 404 when restoring a color that is not in the trash', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 0 }]);
+      const req = { params: { id: '1', colorId: '10' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.restorePaletteColor(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it('permanently deletes a trashed color', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ownership
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
+      const req = { params: { id: '1', colorId: '10' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.deletePaletteColorPermanently(req, res);
+      expect(db.query).toHaveBeenLastCalledWith(
+        'DELETE FROM project_palette WHERE id = ? AND project_id = ? AND deleted_at IS NOT NULL',
+        ['10', '1'],
+      );
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
   });

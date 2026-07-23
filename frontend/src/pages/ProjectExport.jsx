@@ -311,17 +311,17 @@ export default function ProjectExport() {
     doc.line(20, y, 190, y);
     y += 10;
 
-    let textX = 20;
     if (logoDataUrl) {
       const logoH = 7;
       const logoW = logoH * (2244 / 1148); // the source PNG's aspect ratio
       doc.addImage(logoDataUrl, 'PNG', 20, y - 5, logoW, logoH);
-      textX = 20 + logoW + 4;
     }
+    // Right-aligned against the page's right margin, same side as the
+    // "Create your own" button on the Shared reference sheet's footer.
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...PDF_SECONDARY);
-    doc.text('Made with FrameSet — the graphic reference for your projects.', textX, y);
+    doc.text('Made with FrameSet — the graphic reference for your projects.', 190, y, { align: 'right' });
 
     // Save with a filesystem-safe filename derived from the project name.
     doc.save(`${activeProject.name.replace(/\s+/g, '_')}_style_guide.pdf`);

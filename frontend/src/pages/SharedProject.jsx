@@ -184,15 +184,15 @@ export default function SharedProject() {
             </div>
 
             <footer className="mt-16 pt-8 border-t border-primary/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <Link to="/" aria-label="Discover FrameSet" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring w-16">
+                <Logo className="object-contain w-full h-auto" />
+              </Link>
               <div className="flex items-center gap-3">
-                <Link to="/" aria-label="Discover FrameSet" className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring w-16">
-                  <Logo className="object-contain w-full h-auto" />
-                </Link>
                 <p className="text-xs text-primary/60">Made with FrameSet — the graphic reference for your projects.</p>
+                <Button to="/register" variant="primary" className="text-sm">
+                  Create your own
+                </Button>
               </div>
-              <Button to="/register" variant="primary" className="text-sm">
-                Create your own
-              </Button>
             </footer>
           </div>
         )}

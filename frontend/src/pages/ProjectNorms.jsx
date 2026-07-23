@@ -1,6 +1,6 @@
 // Project norms page (/app/project/:id/norms): add/edit/delete/filter brush and
 // typography norms. Typography previews load the real Google Font dynamically.
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CustomSelect from '../components/CustomSelect';
 import useGoogleFonts from '../hooks/useGoogleFonts';
 import useNormFontLoader from '../hooks/useNormFontLoader';
@@ -17,6 +17,8 @@ import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
+import Card from '../components/Card';
+import Button from '../components/Button';
 import StandardCard from '../components/StandardCard';
 import BrushPreview from '../components/BrushPreview';
 import TypographyPreview from '../components/TypographyPreview';
@@ -36,9 +38,53 @@ export default function ProjectNorms() {
     deleteBrushNorm,
     deleteTypographyNorm,
     updateBrushNorm,
-    updateTypographyNorm
+    updateTypographyNorm,
+    trashedBrushNorms,
+    trashedTypographyNorms,
+    fetchTrashedBrushNorms,
+    fetchTrashedTypographyNorms,
+    restoreBrushNorm,
+    restoreTypographyNorm,
+    deleteBrushNormPermanently,
+    deleteTypographyNormPermanently
   } = useProjects();
   const { showToast } = useToast();
+
+  // Load this project's trashed standards so its trash section can appear
+  // (hidden when empty).
+  useEffect(() => {
+    if (id) {
+      fetchTrashedBrushNorms(id, { silent: true });
+      fetchTrashedTypographyNorms(id, { silent: true });
+    }
+  }, [id, fetchTrashedBrushNorms, fetchTrashedTypographyNorms]);
+
+  // Trash: brush + typography trashed norms shown together, newest first, each
+  // tagged with its type so the two dedicated restore/delete-forever actions
+  // and endpoints can be called correctly. Mutually exclusive (trashBusy) so a
+  // restore in flight and a "delete forever" can never race on the same
+  // soft-deleted row.
+  const trashedNorms = [
+    ...trashedBrushNorms.map((norm) => ({ ...norm, type: 'brush', label: norm.name })),
+    ...trashedTypographyNorms.map((norm) => ({ ...norm, type: 'typography', label: norm.fontUsage || norm.fontFamily })),
+  ].sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
+
+  const [confirmPermanentDeleteNorm, setConfirmPermanentDeleteNorm] = useState(null);
+  const [restoringNormKey, setRestoringNormKey] = useState(null);
+  const trashNormBusy = restoringNormKey !== null || confirmPermanentDeleteNorm !== null;
+  const handleRestoreNorm = async (norm) => {
+    if (trashNormBusy) return;
+    const key = `${norm.type}-${norm.id}`;
+    setRestoringNormKey(key);
+    try {
+      const ok = norm.type === 'brush'
+        ? await restoreBrushNorm(id, norm.id)
+        : await restoreTypographyNorm(id, norm.id);
+      if (ok) showToast('Standard restored.');
+    } finally {
+      setRestoringNormKey(null);
+    }
+  };
 
   const [editingNorm, setEditingNorm] = useState(null);
   const [editingType, setEditingType] = useState('brush');
@@ -296,6 +342,60 @@ export default function ProjectNorms() {
             ))}
           </div>
 
+          {trashedNorms.length > 0 && (
+            <section className="mt-14" aria-labelledby="norms-trash-title">
+              <h2 id="norms-trash-title" className="text-lg font-medium text-primary flex items-center">
+                <DeleteIcon className="w-5 h-5 mr-2 text-blue shrink-0" />
+                Trash
+                <span className="ml-2 text-sm font-normal text-primary/50">({trashedNorms.length})</span>
+              </h2>
+              <p className="text-xs text-primary/60 mt-1 mb-4">
+                Deleted standards are kept for 30 days, then deleted forever.
+              </p>
+              <div className="space-y-3">
+                {trashedNorms.map((norm) => {
+                  const key = `${norm.type}-${norm.id}`;
+                  return (
+                    <Card key={key} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-primary truncate">
+                          {norm.label}
+                          <span className="ml-2 text-xs font-normal text-primary/50 uppercase tracking-wide">
+                            {norm.type === 'brush' ? 'Brush' : 'Typography'}
+                          </span>
+                        </p>
+                        <p className="text-xs text-primary/60">
+                          {norm.daysLeft <= 0
+                            ? 'Will be deleted with the next cleanup'
+                            : `${norm.daysLeft} day${norm.daysLeft === 1 ? '' : 's'} left before permanent deletion`}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <Button
+                          variant="ghost"
+                          className="text-sm"
+                          onClick={() => handleRestoreNorm(norm)}
+                          loading={restoringNormKey === key}
+                          disabled={trashNormBusy}
+                        >
+                          Restore
+                        </Button>
+                        <Button
+                          variant="danger"
+                          className="text-sm"
+                          disabled={trashNormBusy}
+                          onClick={() => setConfirmPermanentDeleteNorm({ id: norm.id, type: norm.type, label: norm.label })}
+                        >
+                          Delete forever
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           <FormModal
             isOpen={!!editingNorm}
             onClose={() => setEditingNorm(null)}
@@ -449,10 +549,9 @@ export default function ProjectNorms() {
 
       <ConfirmDialog
         isOpen={!!confirmDeleteNorm}
-        title="Delete standard?"
-        message="This standard will be permanently deleted."
-        confirmLabel="Delete"
-       
+        title="Move to trash?"
+        message="You can restore it for 30 days; after that it is deleted forever."
+        confirmLabel="Move to trash"
         onCancel={() => setConfirmDeleteNorm(null)}
         onConfirm={async () => {
           if (!confirmDeleteNorm) return;
@@ -464,7 +563,27 @@ export default function ProjectNorms() {
           setLoadingDelete(null);
           setConfirmDeleteNorm(null);
           // Only confirm when the deletion actually went through.
-          if (ok) showToast('Standard deleted.');
+          if (ok) showToast('Standard moved to trash.');
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmPermanentDeleteNorm}
+        title="Delete forever?"
+        message={
+          confirmPermanentDeleteNorm?.label
+            ? `"${confirmPermanentDeleteNorm.label}" will be permanently lost. This cannot be undone.`
+            : 'This standard will be permanently lost. This cannot be undone.'
+        }
+        confirmLabel="Delete forever"
+        onCancel={() => setConfirmPermanentDeleteNorm(null)}
+        onConfirm={async () => {
+          if (!confirmPermanentDeleteNorm) return;
+          const ok = confirmPermanentDeleteNorm.type === 'brush'
+            ? await deleteBrushNormPermanently(id, confirmPermanentDeleteNorm.id)
+            : await deleteTypographyNormPermanently(id, confirmPermanentDeleteNorm.id);
+          setConfirmPermanentDeleteNorm(null);
+          if (ok) showToast('Standard permanently deleted.');
         }}
       />
     </>

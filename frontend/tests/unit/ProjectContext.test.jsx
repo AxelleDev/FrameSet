@@ -246,4 +246,186 @@ describe('ProjectContext mutations return success signals', () => {
     });
     expect(renameOk).toBe(false);
   });
+
+  describe('color trash', () => {
+    it('deleteColor removes the color locally via the single-color endpoint and refreshes the trash', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', palette: [{ id: 10, name: 'Ink', hex: '#112233' }] }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await act(async () => {});
+
+      apiMock.delete.mockResolvedValueOnce({ success: true });
+      apiMock.get.mockResolvedValueOnce({ colors: [] }); // silent trash refresh
+      let ok;
+      await act(async () => {
+        ok = await result.current.deleteColor(3, 10);
+      });
+
+      expect(ok).toBe(true);
+      expect(apiMock.delete).toHaveBeenCalledWith('/projects/3/palette/10', null, expect.any(Object));
+      expect(result.current.projects[0].palette).toEqual([]);
+    });
+
+    it('fetchTrashedColors stores the trashed list', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+
+      apiMock.get.mockResolvedValueOnce({
+        colors: [{ id: 9, name: 'Old blush', hex: '#FCBFC4', deletedAt: '2026-07-10', daysLeft: 21 }],
+      });
+      await act(async () => {
+        await result.current.fetchTrashedColors(3);
+      });
+
+      expect(result.current.trashedPaletteColors).toEqual([
+        { id: 9, name: 'Old blush', hex: '#FCBFC4', deletedAt: '2026-07-10', daysLeft: 21 },
+      ]);
+    });
+
+    it('restoreColor appends the restored color back to the project palette', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', palette: [] }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await act(async () => {});
+
+      apiMock.get.mockResolvedValueOnce({
+        colors: [{ id: 9, name: 'Old blush', hex: '#FCBFC4', deletedAt: '2026-07-10', daysLeft: 21 }],
+      });
+      await act(async () => {
+        await result.current.fetchTrashedColors(3);
+      });
+
+      apiMock.post.mockResolvedValueOnce({ success: true });
+      let ok;
+      await act(async () => {
+        ok = await result.current.restoreColor(3, 9);
+      });
+
+      expect(ok).toBe(true);
+      expect(apiMock.post).toHaveBeenCalledWith('/projects/3/palette/9/restore', {}, expect.any(Object));
+      expect(result.current.trashedPaletteColors).toEqual([]);
+      expect(result.current.projects[0].palette).toEqual([
+        { id: 9, name: 'Old blush', hex: '#FCBFC4' },
+      ]);
+    });
+
+    it('deleteColorPermanently prunes the trash list and returns a boolean', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+
+      apiMock.delete.mockResolvedValueOnce({ success: true });
+      let ok;
+      await act(async () => {
+        ok = await result.current.deleteColorPermanently(3, 9);
+      });
+      expect(ok).toBe(true);
+      expect(apiMock.delete).toHaveBeenCalledWith('/projects/3/palette/9/permanent', null, expect.any(Object));
+
+      apiMock.delete.mockRejectedValueOnce(new Error('no'));
+      await act(async () => {
+        ok = await result.current.deleteColorPermanently(3, 9);
+      });
+      expect(ok).toBe(false);
+    });
+  });
+
+  describe('brush/typography norm trash', () => {
+    it('fetchTrashedBrushNorms and fetchTrashedTypographyNorms store their lists', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+
+      apiMock.get.mockResolvedValueOnce({
+        norms: [{ id: 9, name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 0.5, deletedAt: 'x', daysLeft: 5 }],
+      });
+      await act(async () => {
+        await result.current.fetchTrashedBrushNorms(3);
+      });
+      expect(result.current.trashedBrushNorms).toHaveLength(1);
+
+      apiMock.get.mockResolvedValueOnce({
+        norms: [{ id: 4, fontFamily: 'Figtree', fontUsage: 'Heading', deletedAt: 'x', daysLeft: 5 }],
+      });
+      await act(async () => {
+        await result.current.fetchTrashedTypographyNorms(3);
+      });
+      expect(result.current.trashedTypographyNorms).toHaveLength(1);
+    });
+
+    it('restoreBrushNorm appends the restored norm back and bumps normsCount', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', brushNorms: [], normsCount: 0 }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await act(async () => {});
+
+      apiMock.get.mockResolvedValueOnce({
+        norms: [{ id: 9, name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 0.5, deletedAt: 'x', daysLeft: 5 }],
+      });
+      await act(async () => {
+        await result.current.fetchTrashedBrushNorms(3);
+      });
+
+      apiMock.post.mockResolvedValueOnce({ success: true });
+      let ok;
+      await act(async () => {
+        ok = await result.current.restoreBrushNorm(3, 9);
+      });
+
+      expect(ok).toBe(true);
+      expect(apiMock.post).toHaveBeenCalledWith('/projects/3/brush-norms/9/restore', {}, expect.any(Object));
+      expect(result.current.trashedBrushNorms).toEqual([]);
+      expect(result.current.projects[0].brushNorms).toHaveLength(1);
+      expect(result.current.projects[0].normsCount).toBe(1);
+    });
+
+    it('restoreTypographyNorm appends the restored norm back and bumps normsCount', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', typographyNorms: [], normsCount: 0 }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await act(async () => {});
+
+      apiMock.get.mockResolvedValueOnce({
+        norms: [{ id: 4, fontFamily: 'Figtree', fontUsage: 'Heading', deletedAt: 'x', daysLeft: 5 }],
+      });
+      await act(async () => {
+        await result.current.fetchTrashedTypographyNorms(3);
+      });
+
+      apiMock.post.mockResolvedValueOnce({ success: true });
+      let ok;
+      await act(async () => {
+        ok = await result.current.restoreTypographyNorm(3, 4);
+      });
+
+      expect(ok).toBe(true);
+      expect(apiMock.post).toHaveBeenCalledWith('/projects/3/typography-norms/4/restore', {}, expect.any(Object));
+      expect(result.current.trashedTypographyNorms).toEqual([]);
+      expect(result.current.projects[0].typographyNorms).toHaveLength(1);
+      expect(result.current.projects[0].normsCount).toBe(1);
+    });
+
+    it('deleteBrushNormPermanently and deleteTypographyNormPermanently prune their trash lists', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+
+      apiMock.delete.mockResolvedValueOnce({ success: true });
+      let brushOk;
+      await act(async () => {
+        brushOk = await result.current.deleteBrushNormPermanently(3, 9);
+      });
+      expect(brushOk).toBe(true);
+      expect(apiMock.delete).toHaveBeenCalledWith('/projects/3/brush-norms/9/permanent', null, expect.any(Object));
+
+      apiMock.delete.mockResolvedValueOnce({ success: true });
+      let typoOk;
+      await act(async () => {
+        typoOk = await result.current.deleteTypographyNormPermanently(3, 4);
+      });
+      expect(typoOk).toBe(true);
+      expect(apiMock.delete).toHaveBeenCalledWith('/projects/3/typography-norms/4/permanent', null, expect.any(Object));
+    });
+  });
 });

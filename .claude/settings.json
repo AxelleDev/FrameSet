@@ -22,7 +22,8 @@
       "Bash(node test_pdf.mjs)",
       "Bash(sed -i \"s|doc.save\\('./test_output.pdf'\\);|fs.writeFileSync\\('./test_output.pdf', Buffer.from\\(doc.output\\('arraybuffer'\\)\\)\\);|\" test_pdf.mjs)",
       "Bash(sed -i \"1i import fs from 'fs';\" test_pdf.mjs)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(node -e \"require\\('./src/docs/openapi.js'\\); console.log\\('openapi OK'\\)\")"
     ]
   }
 }

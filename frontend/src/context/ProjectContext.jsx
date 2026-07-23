@@ -30,6 +30,11 @@ export const ProjectProvider = ({ children }) => {
   const [projectsLoading, setProjectsLoading] = useState(false);
   // Soft-deleted projects (restorable for 30 days); loaded by the dashboard.
   const [trashedProjects, setTrashedProjects] = useState([]);
+  // Soft-deleted colors/standards of whichever project's Palette/Standards page
+  // is currently open (restorable for 30 days), same trash lifecycle as projects.
+  const [trashedPaletteColors, setTrashedPaletteColors] = useState([]);
+  const [trashedBrushNorms, setTrashedBrushNorms] = useState([]);
+  const [trashedTypographyNorms, setTrashedTypographyNorms] = useState([]);
   // Monotonic token to discard out-of-order responses: two interleaved fetches
   // (silent page-1 on login + a "load more", or a StrictMode double-mount) must
   // not let a stale response overwrite the newer list/pagination.
@@ -281,6 +286,85 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
+  // Fetches a project's trashed colors (small list: id, name, hex, days left).
+  const fetchTrashedColors = useCallback(async (projectId, { silent = false } = {}) => {
+    if (!projectId) {
+      setTrashedPaletteColors([]);
+      return [];
+    }
+    try {
+      const options = silent ? undefined : { onGlobalError: setGlobalError };
+      const data = await api.get(`/projects/${projectId}/palette/trash`, options);
+      const fetched = data?.colors || [];
+      setTrashedPaletteColors(fetched);
+      return fetched;
+    } catch (error) {
+      logger.error('projects.fetchTrashedColors.error', error);
+      return [];
+    }
+  }, [setGlobalError]);
+
+  // Moves a single color to the trash (soft delete server-side) and removes it
+  // locally. Distinct from updateProjectPalette (bulk replace): this is what the
+  // palette editor's "Delete" button calls, so a deletion is always
+  // independently restorable. The trash list is refreshed silently so the
+  // page's trash section stays accurate. Returns true on success.
+  const deleteColor = useCallback(async (projectId, colorId) => {
+    try {
+      await api.delete(`/projects/${projectId}/palette/${colorId}`, null, { onGlobalError: setGlobalError });
+      setProjects((prevProjects) => (
+        prevProjects.map((project) => (
+          String(project.id) === String(projectId)
+            ? { ...project, palette: (project.palette || []).filter((color) => String(color.id) !== String(colorId)) }
+            : project
+        ))
+      ));
+      fetchTrashedColors(projectId, { silent: true });
+      return true;
+    } catch (error) {
+      setGlobalError(error?.message || 'Failed to delete the color.');
+      logger.error('projects.deleteColor.error', error);
+      return false;
+    }
+  }, [setGlobalError, fetchTrashedColors]);
+
+  // Restores a trashed color, appending it back to the project's local palette
+  // using the data already held in the trash list. Returns true on success.
+  const restoreColor = useCallback(async (projectId, colorId) => {
+    try {
+      await api.post(`/projects/${projectId}/palette/${colorId}/restore`, {}, { onGlobalError: setGlobalError });
+      const restored = trashedPaletteColors.find((color) => String(color.id) === String(colorId));
+      setTrashedPaletteColors((prev) => prev.filter((color) => String(color.id) !== String(colorId)));
+      if (restored) {
+        setProjects((prevProjects) => (
+          prevProjects.map((project) => (
+            String(project.id) === String(projectId)
+              ? { ...project, palette: [...(project.palette || []), { id: restored.id, name: restored.name, hex: restored.hex }] }
+              : project
+          ))
+        ));
+      }
+      return true;
+    } catch (error) {
+      setGlobalError(error?.message || 'Failed to restore the color.');
+      logger.error('projects.restoreColor.error', error);
+      return false;
+    }
+  }, [trashedPaletteColors, setGlobalError]);
+
+  // Permanently deletes a TRASHED color (irreversible). Returns true on success.
+  const deleteColorPermanently = useCallback(async (projectId, colorId) => {
+    try {
+      await api.delete(`/projects/${projectId}/palette/${colorId}/permanent`, null, { onGlobalError: setGlobalError });
+      setTrashedPaletteColors((prev) => prev.filter((color) => String(color.id) !== String(colorId)));
+      return true;
+    } catch (error) {
+      setGlobalError(error?.message || 'Failed to delete the color.');
+      logger.error('projects.deleteColorPermanently.error', error);
+      return false;
+    }
+  }, [setGlobalError]);
+
   // Renames a project and locally marks it as just edited. Returns true on
   // success, false on failure.
   const updateProjectName = useCallback(async (projectId, { name }) => {
@@ -349,7 +433,44 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [setGlobalError]);
 
-  /** Deletes a brush norm by id and decrements normsCount. */
+  // Fetches a project's trashed brush norms (small list, with days left).
+  const fetchTrashedBrushNorms = useCallback(async (projectId, { silent = false } = {}) => {
+    if (!projectId) {
+      setTrashedBrushNorms([]);
+      return [];
+    }
+    try {
+      const options = silent ? undefined : { onGlobalError: setGlobalError };
+      const data = await api.get(`/projects/${projectId}/brush-norms/trash`, options);
+      const fetched = data?.norms || [];
+      setTrashedBrushNorms(fetched);
+      return fetched;
+    } catch (error) {
+      logger.error('projects.fetchTrashedBrushNorms.error', error);
+      return [];
+    }
+  }, [setGlobalError]);
+
+  // Fetches a project's trashed typography norms (small list, with days left).
+  const fetchTrashedTypographyNorms = useCallback(async (projectId, { silent = false } = {}) => {
+    if (!projectId) {
+      setTrashedTypographyNorms([]);
+      return [];
+    }
+    try {
+      const options = silent ? undefined : { onGlobalError: setGlobalError };
+      const data = await api.get(`/projects/${projectId}/typography-norms/trash`, options);
+      const fetched = data?.norms || [];
+      setTrashedTypographyNorms(fetched);
+      return fetched;
+    } catch (error) {
+      logger.error('projects.fetchTrashedTypographyNorms.error', error);
+      return [];
+    }
+  }, [setGlobalError]);
+
+  /** Moves a brush norm to the trash (soft delete) and decrements normsCount.
+      The trash list is refreshed silently so the page's trash section stays accurate. */
   const deleteBrushNorm = useCallback(async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
@@ -365,15 +486,16 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      fetchTrashedBrushNorms(projectId, { silent: true });
       return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to delete the standard.');
       logger.error('projects.deleteBrushNorm.error', error);
       return false;
     }
-  }, [setGlobalError]);
+  }, [setGlobalError, fetchTrashedBrushNorms]);
 
-  /** Deletes a typography norm by id and decrements normsCount. */
+  /** Moves a typography norm to the trash (soft delete) and decrements normsCount. */
   const deleteTypographyNorm = useCallback(async (projectId, normId) => {
     try {
       const normIdNum = Number(normId);
@@ -389,10 +511,93 @@ export const ProjectProvider = ({ children }) => {
             : project
         ))
       ));
+      fetchTrashedTypographyNorms(projectId, { silent: true });
       return true;
     } catch (error) {
       setGlobalError(error?.message || 'Failed to delete the standard.');
       logger.error('projects.deleteTypographyNorm.error', error);
+      return false;
+    }
+  }, [setGlobalError, fetchTrashedTypographyNorms]);
+
+  // Restores a trashed brush norm, appending it back to the project's local
+  // standards using the data already held in the trash list, and bumps
+  // normsCount. Returns true on success.
+  const restoreBrushNorm = useCallback(async (projectId, normId) => {
+    try {
+      await api.post(`/projects/${projectId}/brush-norms/${normId}/restore`, {}, { onGlobalError: setGlobalError });
+      const restored = trashedBrushNorms.find((norm) => String(norm.id) === String(normId));
+      setTrashedBrushNorms((prev) => prev.filter((norm) => String(norm.id) !== String(normId)));
+      if (restored) {
+        setProjects((prevProjects) => (
+          prevProjects.map((project) => (
+            String(project.id) === String(projectId)
+              ? {
+                ...project,
+                brushNorms: [...(project.brushNorms || []), restored],
+                normsCount: (project.normsCount || 0) + 1
+              }
+              : project
+          ))
+        ));
+      }
+      return true;
+    } catch (error) {
+      setGlobalError(error?.message || 'Failed to restore the standard.');
+      logger.error('projects.restoreBrushNorm.error', error);
+      return false;
+    }
+  }, [trashedBrushNorms, setGlobalError]);
+
+  // Restores a trashed typography norm the same way as restoreBrushNorm.
+  const restoreTypographyNorm = useCallback(async (projectId, normId) => {
+    try {
+      await api.post(`/projects/${projectId}/typography-norms/${normId}/restore`, {}, { onGlobalError: setGlobalError });
+      const restored = trashedTypographyNorms.find((norm) => String(norm.id) === String(normId));
+      setTrashedTypographyNorms((prev) => prev.filter((norm) => String(norm.id) !== String(normId)));
+      if (restored) {
+        setProjects((prevProjects) => (
+          prevProjects.map((project) => (
+            String(project.id) === String(projectId)
+              ? {
+                ...project,
+                typographyNorms: [...(project.typographyNorms || []), restored],
+                normsCount: (project.normsCount || 0) + 1
+              }
+              : project
+          ))
+        ));
+      }
+      return true;
+    } catch (error) {
+      setGlobalError(error?.message || 'Failed to restore the standard.');
+      logger.error('projects.restoreTypographyNorm.error', error);
+      return false;
+    }
+  }, [trashedTypographyNorms, setGlobalError]);
+
+  // Permanently deletes a TRASHED brush norm (irreversible). Returns true on success.
+  const deleteBrushNormPermanently = useCallback(async (projectId, normId) => {
+    try {
+      await api.delete(`/projects/${projectId}/brush-norms/${normId}/permanent`, null, { onGlobalError: setGlobalError });
+      setTrashedBrushNorms((prev) => prev.filter((norm) => String(norm.id) !== String(normId)));
+      return true;
+    } catch (error) {
+      setGlobalError(error?.message || 'Failed to delete the standard.');
+      logger.error('projects.deleteBrushNormPermanently.error', error);
+      return false;
+    }
+  }, [setGlobalError]);
+
+  // Permanently deletes a TRASHED typography norm (irreversible). Returns true on success.
+  const deleteTypographyNormPermanently = useCallback(async (projectId, normId) => {
+    try {
+      await api.delete(`/projects/${projectId}/typography-norms/${normId}/permanent`, null, { onGlobalError: setGlobalError });
+      setTrashedTypographyNorms((prev) => prev.filter((norm) => String(norm.id) !== String(normId)));
+      return true;
+    } catch (error) {
+      setGlobalError(error?.message || 'Failed to delete the standard.');
+      logger.error('projects.deleteTypographyNormPermanently.error', error);
       return false;
     }
   }, [setGlobalError]);
@@ -450,6 +655,9 @@ export const ProjectProvider = ({ children }) => {
     projects,
     projectsPagination,
     trashedProjects,
+    trashedPaletteColors,
+    trashedBrushNorms,
+    trashedTypographyNorms,
     activeProjectId,
     activeProject,
     projectsLoading,
@@ -466,16 +674,29 @@ export const ProjectProvider = ({ children }) => {
     disableSharing,
     updateProjectName,
     updateProjectPalette,
+    fetchTrashedColors,
+    deleteColor,
+    restoreColor,
+    deleteColorPermanently,
     addBrushNorm,
     addTypographyNorm,
+    fetchTrashedBrushNorms,
+    fetchTrashedTypographyNorms,
     deleteBrushNorm,
     deleteTypographyNorm,
+    restoreBrushNorm,
+    restoreTypographyNorm,
+    deleteBrushNormPermanently,
+    deleteTypographyNormPermanently,
     updateBrushNorm,
     updateTypographyNorm
   }), [
     projects,
     projectsPagination,
     trashedProjects,
+    trashedPaletteColors,
+    trashedBrushNorms,
+    trashedTypographyNorms,
     activeProjectId,
     activeProject,
     projectsLoading,
@@ -491,10 +712,20 @@ export const ProjectProvider = ({ children }) => {
     disableSharing,
     updateProjectName,
     updateProjectPalette,
+    fetchTrashedColors,
+    deleteColor,
+    restoreColor,
+    deleteColorPermanently,
     addBrushNorm,
     addTypographyNorm,
+    fetchTrashedBrushNorms,
+    fetchTrashedTypographyNorms,
     deleteBrushNorm,
     deleteTypographyNorm,
+    restoreBrushNorm,
+    restoreTypographyNorm,
+    deleteBrushNormPermanently,
+    deleteTypographyNormPermanently,
     updateBrushNorm,
     updateTypographyNorm
   ]);

@@ -19,6 +19,7 @@ jest.mock('../../src/services/token.service', () => ({
 
 jest.mock('../../src/services/projects.service', () => ({
   purgeExpiredTrashedProjects: jest.fn().mockResolvedValue(true),
+  purgeExpiredTrashedProjectItems: jest.fn().mockResolvedValue(true),
   TRASH_RETENTION_DAYS: 30,
 }));
 
@@ -78,7 +79,7 @@ describe('server', () => {
     expect(processOnSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
   });
 
-  it('runs both purges (revoked tokens + project trash) via the scheduler callback', async () => {
+  it('runs all purges (revoked tokens + project trash + item trash) via the scheduler callback', async () => {
     let scheduledCleanup;
     const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation((callback) => {
       scheduledCleanup = callback;
@@ -91,6 +92,7 @@ describe('server', () => {
     await scheduledCleanup();
 
     expect(tokenService.cleanupExpiredRevokedTokens).toHaveBeenCalledTimes(1);
+    expect(projectsService.purgeExpiredTrashedProjectItems).toHaveBeenCalledTimes(1);
     expect(projectsService.purgeExpiredTrashedProjects).toHaveBeenCalledTimes(1);
 
     setIntervalSpy.mockRestore();

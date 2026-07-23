@@ -15,6 +15,7 @@ import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AddTile from '../components/AddTile';
+import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
 import Seo from '../components/Seo';
 import ColorTile from '../components/ColorTile';
@@ -30,7 +31,17 @@ const MAX_PALETTE_SIZE = 50;
 
 export default function ProjectPalette() {
   const { id } = useParams();
-  const { activeProject, updateProjectPalette, projectsLoading, activeProjectId } = useProjects();
+  const {
+    activeProject,
+    updateProjectPalette,
+    projectsLoading,
+    activeProjectId,
+    trashedPaletteColors,
+    fetchTrashedColors,
+    deleteColor,
+    restoreColor,
+    deleteColorPermanently,
+  } = useProjects();
   const { showToast } = useToast();
 
   const [editIdx, setEditIdx] = useState(null);
@@ -63,6 +74,29 @@ export default function ProjectPalette() {
 
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null);
   const { copy, copiedValue } = useClipboard({ timeout: 1200 });
+
+  // Load this project's trashed colors so its trash section can appear (hidden when empty).
+  useEffect(() => {
+    if (id) fetchTrashedColors(id, { silent: true });
+  }, [id, fetchTrashedColors]);
+
+  // Trash actions: restore puts the color back in the grid; permanent delete is
+  // staged behind its own confirmation dialog. Mutually exclusive (trashBusy) so
+  // a restore in flight and a "delete forever" can never race on the same
+  // soft-deleted row.
+  const [confirmPermanentDeleteColor, setConfirmPermanentDeleteColor] = useState(null);
+  const [restoringColorId, setRestoringColorId] = useState(null);
+  const trashBusy = restoringColorId !== null || confirmPermanentDeleteColor !== null;
+  const handleRestoreColor = async (colorId) => {
+    if (trashBusy) return;
+    setRestoringColorId(colorId);
+    try {
+      const ok = await restoreColor(id, colorId);
+      if (ok) showToast('Color restored.');
+    } finally {
+      setRestoringColorId(null);
+    }
+  };
 
   // Copy a swatch's hex to the clipboard (stop the click from starting a drag).
   const handleCopyHex = async (e, hex) => {
@@ -490,6 +524,58 @@ export default function ProjectPalette() {
             />
           ))}
           </div>
+
+          {trashedPaletteColors.length > 0 && (
+            <section className="mt-14" aria-labelledby="palette-trash-title">
+              <h2 id="palette-trash-title" className="text-lg font-medium text-primary flex items-center">
+                <DeleteIcon className="w-5 h-5 mr-2 text-blue shrink-0" />
+                Trash
+                <span className="ml-2 text-sm font-normal text-primary/50">({trashedPaletteColors.length})</span>
+              </h2>
+              <p className="text-xs text-primary/60 mt-1 mb-4">
+                Deleted colors are kept for 30 days, then deleted forever.
+              </p>
+              <div className="space-y-3">
+                {trashedPaletteColors.map((color) => (
+                  <Card key={color.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="min-w-0 flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full ring-2 ring-surface shrink-0"
+                        style={{ backgroundColor: color.hex }}
+                      ></div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-primary truncate">{color.name}</p>
+                        <p className="text-xs text-primary/60">
+                          {color.daysLeft <= 0
+                            ? 'Will be deleted with the next cleanup'
+                            : `${color.daysLeft} day${color.daysLeft === 1 ? '' : 's'} left before permanent deletion`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <Button
+                        variant="ghost"
+                        className="text-sm"
+                        onClick={() => handleRestoreColor(color.id)}
+                        loading={restoringColorId === color.id}
+                        disabled={trashBusy}
+                      >
+                        Restore
+                      </Button>
+                      <Button
+                        variant="danger"
+                        className="text-sm"
+                        disabled={trashBusy}
+                        onClick={() => setConfirmPermanentDeleteColor({ id: color.id, name: color.name })}
+                      >
+                        Delete forever
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          )}
         </>
       ) : (
         <ProjectStatePlaceholder loading={projectsLoading || String(activeProjectId) !== String(id)} />
@@ -613,20 +699,33 @@ export default function ProjectPalette() {
 
       <ConfirmDialog
         isOpen={confirmDeleteColor !== null}
-        title="Delete color?"
-        message="It will be removed from the palette."
-        confirmLabel="Delete"
-       
+        title="Move to trash?"
+        message="You can restore it for 30 days; after that it is deleted forever."
+        confirmLabel="Move to trash"
         onCancel={() => setConfirmDeleteColor(null)}
         onConfirm={async () => {
           if (confirmDeleteColor === null) return;
-          // Delete by removing the color (matched by id) and persisting the rest.
-          const nextPalette = palette.filter((color) => color.id !== confirmDeleteColor);
-          const saved = await persistPalette(nextPalette);
-          if (saved) {
-            setConfirmDeleteColor(null);
-            showToast('Color deleted.');
-          }
+          const ok = await deleteColor(id, confirmDeleteColor);
+          setConfirmDeleteColor(null);
+          if (ok) showToast('Color moved to trash.');
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmPermanentDeleteColor}
+        title="Delete forever?"
+        message={
+          confirmPermanentDeleteColor?.name
+            ? `"${confirmPermanentDeleteColor.name}" will be permanently lost. This cannot be undone.`
+            : 'This color will be permanently lost. This cannot be undone.'
+        }
+        confirmLabel="Delete forever"
+        onCancel={() => setConfirmPermanentDeleteColor(null)}
+        onConfirm={async () => {
+          if (!confirmPermanentDeleteColor?.id) return;
+          const ok = await deleteColorPermanently(id, confirmPermanentDeleteColor.id);
+          setConfirmPermanentDeleteColor(null);
+          if (ok) showToast('Color permanently deleted.');
         }}
       />
     </>

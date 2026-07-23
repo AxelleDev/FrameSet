@@ -58,6 +58,18 @@ const startCleanupScheduler = () => {
           retentionDays: projectsService.TRASH_RETENTION_DAYS,
         });
       }
+
+      // Same daily tick for trashed colors/standards (of still-live projects).
+      const hasPurgedItems = await projectsService.purgeExpiredTrashedProjectItems();
+      if (!hasPurgedItems) {
+        logger.warn('projects.trash.purge_items.completed_with_errors', {
+          retentionDays: projectsService.TRASH_RETENTION_DAYS,
+        });
+      } else {
+        logger.info('projects.trash.purge_items.completed', {
+          retentionDays: projectsService.TRASH_RETENTION_DAYS,
+        });
+      }
     } catch (error) {
       logger.error('token.cleanup.failed', {
         error,

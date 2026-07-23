@@ -1108,6 +1108,61 @@ const openapiSpec = {
         },
       },
     },
+    '/api/projects/{projectId}/brush-norms/trash': {
+      get: {
+        tags: ['Projects'],
+        summary: "List a project's trashed brush standards (with days left before purge)",
+        security: AUTH,
+        parameters: [{ name: 'projectId', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: { description: 'Trashed brush standards.' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+        },
+      },
+    },
+    '/api/projects/{projectId}/brush-norms/{normId}/restore': {
+      post: {
+        tags: ['Projects'],
+        summary: 'Restore a trashed brush standard',
+        security: AUTH,
+        parameters: [
+          { name: 'projectId', in: 'path', required: true, schema: { type: 'integer' } },
+          { name: 'normId', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Restored.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+          404: { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
+    '/api/projects/{projectId}/brush-norms/{normId}/permanent': {
+      delete: {
+        tags: ['Projects'],
+        summary: 'Permanently delete a TRASHED brush standard (irreversible)',
+        security: AUTH,
+        parameters: [
+          { name: 'projectId', in: 'path', required: true, schema: { type: 'integer' } },
+          { name: 'normId', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Permanently deleted.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+          404: { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
     '/api/projects/{id}/typography-norms': {
       post: {
         tags: ['Projects'],
@@ -1199,6 +1254,61 @@ const openapiSpec = {
         },
       },
     },
+    '/api/projects/{projectId}/typography-norms/trash': {
+      get: {
+        tags: ['Projects'],
+        summary: "List a project's trashed typography standards (with days left before purge)",
+        security: AUTH,
+        parameters: [{ name: 'projectId', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: { description: 'Trashed typography standards.' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+        },
+      },
+    },
+    '/api/projects/{projectId}/typography-norms/{normId}/restore': {
+      post: {
+        tags: ['Projects'],
+        summary: 'Restore a trashed typography standard',
+        security: AUTH,
+        parameters: [
+          { name: 'projectId', in: 'path', required: true, schema: { type: 'integer' } },
+          { name: 'normId', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Restored.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+          404: { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
+    '/api/projects/{projectId}/typography-norms/{normId}/permanent': {
+      delete: {
+        tags: ['Projects'],
+        summary: 'Permanently delete a TRASHED typography standard (irreversible)',
+        security: AUTH,
+        parameters: [
+          { name: 'projectId', in: 'path', required: true, schema: { type: 'integer' } },
+          { name: 'normId', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Permanently deleted.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+          404: { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
     '/api/projects/{id}/palette': {
       post: {
         tags: ['Projects'],
@@ -1243,6 +1353,85 @@ const openapiSpec = {
           400: { $ref: '#/components/responses/ValidationError' },
           401: { $ref: '#/components/responses/Unauthorized' },
           403: { $ref: '#/components/responses/Forbidden' },
+        },
+      },
+    },
+    '/api/projects/{id}/palette/trash': {
+      get: {
+        tags: ['Projects'],
+        summary: "List a project's trashed colors (with days left before purge)",
+        security: AUTH,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: { description: 'Trashed colors.' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+        },
+      },
+    },
+    '/api/projects/{id}/palette/{colorId}': {
+      delete: {
+        tags: ['Projects'],
+        summary: 'Move a single color to the trash (soft delete)',
+        description:
+          'Distinct from POST .../palette (bulk replace): this is the single-color delete used ' +
+          'by the palette editor, so a deletion is always independently restorable.',
+        security: AUTH,
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+          { name: 'colorId', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Moved to the trash.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+          404: { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
+    '/api/projects/{id}/palette/{colorId}/restore': {
+      post: {
+        tags: ['Projects'],
+        summary: 'Restore a trashed color',
+        security: AUTH,
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+          { name: 'colorId', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Restored.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+          404: { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
+    '/api/projects/{id}/palette/{colorId}/permanent': {
+      delete: {
+        tags: ['Projects'],
+        summary: 'Permanently delete a TRASHED color (irreversible)',
+        security: AUTH,
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+          { name: 'colorId', in: 'path', required: true, schema: { type: 'integer' } },
+          CSRF_HEADER,
+        ],
+        responses: {
+          200: {
+            description: 'Permanently deleted.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+          404: { $ref: '#/components/responses/NotFound' },
         },
       },
     },
