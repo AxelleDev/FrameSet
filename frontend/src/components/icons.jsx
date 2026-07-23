@@ -68,3 +68,28 @@ export function PinIcon({ className = 'w-4 h-4', filled = false }) {
   );
 }
 PinIcon.propTypes = { className: PropTypes.string, filled: PropTypes.bool };
+
+// Password checklist: a met requirement (check-circle, lucide-style).
+export function CheckCircleIcon({ className = 'w-4 h-4' }) {
+  return (
+    <svg className={className} {...iconProps}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  );
+}
+CheckCircleIcon.propTypes = { className: PropTypes.string };
+
+// Password checklist: an unmet requirement (plain circle, lucide-style).
+export function CircleIcon({ className = 'w-4 h-4' }) {
+  return (
+    <svg className={className} {...iconProps}>
+      <circle cx="12" cy="12" r="9" strokeWidth="2" />
+    </svg>
+  );
+}
+CircleIcon.propTypes = { className: PropTypes.string };
