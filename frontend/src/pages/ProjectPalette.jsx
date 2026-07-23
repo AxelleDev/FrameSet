@@ -26,6 +26,7 @@ import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useClipboard from '../hooks/useClipboard';
 import useActiveProject from '../hooks/useActiveProject';
 import useDragReorder from '../hooks/useDragReorder';
+import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 import { extractColorsFromImage } from '../utils/extractColors';
 
 // Keep in sync with the backend cap (MAX_PALETTE_SIZE in projects.controller.js).
@@ -102,6 +103,14 @@ export default function ProjectPalette() {
   const [isAddingColor, setIsAddingColor] = useState(false);
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('');
+
+  const editingOriginalColor = editIdx !== null ? palette[editIdx] : null;
+  useUnsavedChangesWarning(
+    (isAddingColor && (newColorName.trim() !== '' || newColorHex.trim() !== '#')) ||
+      (editIdx !== null &&
+        editingOriginalColor &&
+        (editColorName !== editingOriginalColor.name || editColorHex !== editingOriginalColor.hex)),
+  );
 
   // "Palette from an image" state. imageColors: extracted [{ hex, selected }]
   // shown in the modal. extracting: true while analyzing. fileInputRef: the
@@ -443,7 +452,7 @@ export default function ProjectPalette() {
                 value={isValidEditHex() ? editColorHex : '#ffffff'}
                 onChange={(e) => setEditColorHex(e.target.value.toUpperCase())}
                 aria-label="Pick a color"
-                className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0"
+                className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0 focus-ring"
               />
               <TextInput
                 type="text"
@@ -485,7 +494,7 @@ export default function ProjectPalette() {
                 value={isValidHex() ? newColorHex : '#ffffff'}
                 onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
                 aria-label="Pick a color"
-                className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0"
+                className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0 focus-ring"
               />
               <TextInput
                 type="text"

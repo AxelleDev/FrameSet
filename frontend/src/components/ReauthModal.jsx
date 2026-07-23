@@ -11,7 +11,7 @@ import AppModal from './AppModal';
 import FormField from './FormField';
 import PasswordInput from './PasswordInput';
 import Button from './Button';
-import Alert from './Alert';
+import RateLimitAlert from './RateLimitAlert';
 import GoogleSignInButton from './GoogleSignInButton';
 
 export default function ReauthModal({
@@ -27,6 +27,7 @@ export default function ReauthModal({
   const usesPassword = user?.hasPassword !== false;
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState(undefined);
   const [busy, setBusy] = useState(false);
 
   // Fresh form every time the modal opens.
@@ -34,16 +35,19 @@ export default function ReauthModal({
     if (isOpen) {
       setPassword('');
       setError('');
+      setRetryAfterSeconds(undefined);
     }
   }, [isOpen]);
 
   const submitCredentials = async (credentials) => {
     setBusy(true);
     setError('');
+    setRetryAfterSeconds(undefined);
     try {
       const result = await onConfirm(credentials);
       if (result?.success === false) {
         setError(result.message || 'Verification failed. Please try again.');
+        setRetryAfterSeconds(result.retryAfterSeconds);
       }
     } finally {
       setBusy(false);
@@ -85,7 +89,7 @@ export default function ReauthModal({
             />
           </FormField>
 
-          {error && <Alert variant="danger">{error}</Alert>}
+          {error && <RateLimitAlert message={error} retryAfterSeconds={retryAfterSeconds} />}
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <Button
@@ -119,7 +123,7 @@ export default function ReauthModal({
             disabled={busy}
           />
 
-          {error && <Alert variant="danger">{error}</Alert>}
+          {error && <RateLimitAlert message={error} retryAfterSeconds={retryAfterSeconds} />}
 
           <div className="flex items-center justify-end pt-2">
             <Button

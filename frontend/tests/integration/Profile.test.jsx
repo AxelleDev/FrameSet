@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import Profile from '../../src/pages/Profile';
+import { getHasUnsavedChanges } from '../../src/utils/unsavedChangesStore';
 
 const { mockNavigate, authState } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
@@ -99,6 +100,23 @@ describe('Profile', () => {
 
     expect(screen.getByDisplayValue('Jane Doe')).toBeDisabled();
     expect(authState.updateUserProfile).not.toHaveBeenCalled();
+  });
+
+  it('flags unsaved changes while editing, and clears them on save/cancel', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    expect(getHasUnsavedChanges()).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
+    expect(getHasUnsavedChanges()).toBe(false); // no edits yet
+
+    const nameField = screen.getByDisplayValue('Jane Doe');
+    await user.clear(nameField);
+    await user.type(nameField, 'Changed Name');
+    expect(getHasUnsavedChanges()).toBe(true);
+
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    expect(getHasUnsavedChanges()).toBe(false);
   });
 
   it('opens the sign-out confirmation', async () => {

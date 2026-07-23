@@ -14,6 +14,7 @@ import Seo from '../components/Seo';
 import PasswordInput from '../components/PasswordInput';
 import TextInput from '../components/TextInput';
 import Alert from '../components/Alert';
+import RateLimitAlert from '../components/RateLimitAlert';
 import PasswordChecklist from '../components/PasswordChecklist';
 import useFormState from '../hooks/useFormState';
 import { isPasswordValid, isValidEmail } from '../utils/passwordRules';
@@ -32,6 +33,7 @@ export default function ForgotPassword() {
   });
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState(undefined);
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => setField(e.target.name, e.target.value);
@@ -53,10 +55,12 @@ export default function ForgotPassword() {
 
     if (result.success) {
       setError('');
+      setRetryAfterSeconds(undefined);
       setInfo('If an account exists for this email, a reset code has just been sent.');
       setStep('reset');
     } else if (result.message) {
       setError(result.message);
+      setRetryAfterSeconds(result.retryAfterSeconds);
     }
   };
 
@@ -76,6 +80,7 @@ export default function ForgotPassword() {
       navigate('/login');
     } else if (result.message) {
       setError(result.message);
+      setRetryAfterSeconds(result.retryAfterSeconds);
     }
   };
 
@@ -117,9 +122,7 @@ export default function ForgotPassword() {
           </Alert>
         )}
         {error && (
-          <Alert variant="danger" className="mb-4">
-            {error}
-          </Alert>
+          <RateLimitAlert message={error} retryAfterSeconds={retryAfterSeconds} className="mb-4" />
         )}
 
         {step === 'request' ? (
@@ -210,7 +213,7 @@ export default function ForgotPassword() {
         <div className="mt-8 text-center">
           <Link
             to="/login"
-            className="text-sm font-medium text-blue hover:text-primary transition-colors"
+            className="text-sm font-medium text-blue hover:text-primary transition-colors rounded focus-ring"
           >
             Back to sign in
           </Link>

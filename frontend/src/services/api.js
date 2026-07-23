@@ -28,6 +28,15 @@ export const setSessionExpiredHandler = (handler) => {
   sessionExpiredHandler = handler;
 };
 
+// Handler invoked whenever the session is actually renewed — both this module's
+// own silent/reactive refresh (below) and AuthContext's explicit one call it, so
+// AuthContext has a single place to reset its "session expires at" tracking used
+// for the proactive "expiring soon" warning.
+let sessionRefreshedHandler = null;
+export const setSessionRefreshedHandler = (handler) => {
+  sessionRefreshedHandler = handler;
+};
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Needs a CSRF token: mutating methods only, and never the CSRF endpoint itself
@@ -126,6 +135,9 @@ const attemptTokenRefresh = async () => {
 
     const data = await res.json();
     if (data.success) {
+      if (typeof sessionRefreshedHandler === 'function') {
+        sessionRefreshedHandler();
+      }
       return true;
     }
 
@@ -236,6 +248,14 @@ const request = async (
         const err = new Error(errorMsg);
         err.status = res.status;
         err.data = data;
+        if (res.status === 429) {
+          // express-rate-limit sends this in seconds; the backend explicitly
+          // exposes it cross-origin (see CORS config) so it survives here.
+          const retryAfter = Number.parseInt(res.headers.get('retry-after'), 10);
+          if (Number.isFinite(retryAfter) && retryAfter >= 0) {
+            err.retryAfterSeconds = retryAfter;
+          }
+        }
         throw err;
       }
       return data;

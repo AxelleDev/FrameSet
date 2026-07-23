@@ -5,7 +5,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import ProjectNorms from '../../src/pages/ProjectNorms';
 
-const { projectState } = vi.hoisted(() => ({ projectState: {} }));
+const { projectState, googleFontsState } = vi.hoisted(() => ({
+  projectState: {},
+  googleFontsState: { fonts: [], loading: false, error: null },
+}));
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -18,7 +21,7 @@ vi.mock('../../src/context/ProjectContext', () => ({
 
 vi.mock('../../src/hooks/useActiveProject', () => ({ default: () => {} }));
 vi.mock('../../src/hooks/useGoogleFonts', () => ({
-  default: () => ({ fonts: [], loading: false, error: null }),
+  default: () => googleFontsState,
 }));
 
 const renderPage = () =>
@@ -32,6 +35,16 @@ const renderPage = () =>
 
 describe('ProjectNorms', () => {
   beforeEach(() => {
+    Object.assign(googleFontsState, {
+      fonts: [
+        { family: 'Roboto', variants: ['regular', '700'] },
+        { family: 'Roboto Slab', variants: ['regular'] },
+        { family: 'Open Sans', variants: ['regular'] },
+        { family: 'Lobster', variants: ['regular'] },
+      ],
+      loading: false,
+      error: null,
+    });
     Object.assign(projectState, {
       activeProject: { id: '2', brushNorms: [], typographyNorms: [] },
       addBrushNorm: vi.fn().mockResolvedValue({}),
@@ -199,5 +212,30 @@ describe('ProjectNorms', () => {
     expect(secondLeft).not.toBeDisabled();
     expect(firstRight).not.toBeDisabled();
     expect(secondRight).toBeDisabled();
+  });
+
+  it('lets you search the font list instead of scrolling it', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    // Switch the "Type" field to Typography, revealing the font picker.
+    await user.click(screen.getByText('Brush'));
+    await user.click(await screen.findByText('Typography'));
+
+    const comboboxes = screen.getAllByRole('combobox');
+    const fontInput = comboboxes[comboboxes.length - 1];
+    await user.click(fontInput);
+    expect(screen.getByText('Open Sans')).toBeInTheDocument();
+
+    await user.type(fontInput, 'rob');
+
+    expect(screen.getByText('Roboto')).toBeInTheDocument();
+    expect(screen.getByText('Roboto Slab')).toBeInTheDocument();
+    expect(screen.queryByText('Open Sans')).not.toBeInTheDocument();
+    expect(screen.queryByText('Lobster')).not.toBeInTheDocument();
+
+    await user.click(screen.getByText('Roboto Slab'));
+    expect(screen.getByText('Roboto Slab')).toBeInTheDocument();
   });
 });

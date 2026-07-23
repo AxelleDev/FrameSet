@@ -22,6 +22,7 @@ import EmptyState from '../components/EmptyState';
 import { EditIcon, DuplicateIcon, DeleteIcon, PinIcon } from '../components/icons';
 import { formatModified } from '../utils/date';
 import useDragReorder from '../hooks/useDragReorder';
+import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 
 // The search bar only earns its place once there's enough to actually filter.
 const SEARCH_VISIBILITY_THRESHOLD = 6;
@@ -57,6 +58,12 @@ export default function Dashboard() {
   const [editProjectName, setEditProjectName] = useState('');
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(null);
   const [editProjectError, setEditProjectError] = useState('');
+
+  const editingOriginalName = projects.find((p) => p.id === editProjectId)?.name ?? '';
+  useUnsavedChangesWarning(
+    (isCreatingProject && newProjectName.trim() !== '') ||
+      (isEditingProject && editProjectName.trim() !== editingOriginalName),
+  );
 
   // Clear any active project when landing on the dashboard (we are not in a project).
   useEffect(() => {

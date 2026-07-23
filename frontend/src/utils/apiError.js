@@ -2,7 +2,8 @@
  * Splits API errors into global vs. inline handling. Business errors (4xx) are
  * user-correctable (e.g. bad credentials) and returned for inline display next
  * to the form; unexpected errors (5xx, network) go to the global banner.
- * Returns { isBusinessError, message }; message is set only for business errors.
+ * Returns { isBusinessError, message, retryAfterSeconds }; message is set only
+ * for business errors, retryAfterSeconds only for a 429 (see api.js).
  */
 export const handleApiError = (
   error,
@@ -19,6 +20,7 @@ export const handleApiError = (
   return {
     isBusinessError,
     message: isBusinessError ? error?.data?.error || error?.message : undefined,
+    retryAfterSeconds: error?.retryAfterSeconds,
   };
 };
 

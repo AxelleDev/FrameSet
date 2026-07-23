@@ -98,6 +98,11 @@ app.use(
   cors({
     origin: FRONTEND_ORIGIN,
     credentials: true,
+    // Retry-After isn't on the CORS-safelisted response header list, so without
+    // this the browser silently hides it from JS on cross-origin responses (the
+    // frontend runs on a different port in dev) even though it's on the wire —
+    // the frontend needs it to show a real countdown instead of a static message.
+    exposedHeaders: ['Retry-After'],
   }),
 );
 // Cap JSON body size to limit the impact of oversized/malicious payloads.

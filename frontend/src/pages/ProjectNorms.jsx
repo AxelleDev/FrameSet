@@ -8,6 +8,7 @@ import { loadGoogleFont } from '../utils/loadGoogleFont';
 import useFormState from '../hooks/useFormState';
 import useActiveProject from '../hooks/useActiveProject';
 import useDragReorder from '../hooks/useDragReorder';
+import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 import { useProjects } from '../context/ProjectContext';
 import { useToast } from '../context/ToastContext';
 import { useParams } from 'react-router-dom';
@@ -223,6 +224,33 @@ export default function ProjectNorms() {
 
   const [isAddingNorm, setIsAddingNorm] = useState(false);
   const [addType, setAddType] = useState('brush');
+
+  const isAddFormDirty =
+    isAddingNorm &&
+    (addType === 'brush'
+      ? Boolean(
+          brushForm.usage ||
+          brushForm.name ||
+          brushForm.value ||
+          brushForm.opacity ||
+          brushForm.unit !== 'px',
+        )
+      : Boolean(
+          typoForm.fontFamily || typoForm.fontWeight || typoForm.fontUsage || typoForm.fontStyle,
+        ));
+  const isEditFormDirty =
+    editingNorm !== null &&
+    (editingType === 'brush'
+      ? brushForm.usage !== editingNorm.name ||
+        brushForm.name !== (editingNorm.brushName || '') ||
+        String(brushForm.value) !== String(editingNorm.value) ||
+        brushForm.unit !== (editingNorm.unit || 'px') ||
+        String(brushForm.opacity) !== String(editingNorm.opacity ?? '')
+      : typoForm.fontFamily !== editingNorm.fontFamily ||
+        typoForm.fontWeight !== (editingNorm.fontWeight || '') ||
+        typoForm.fontUsage !== (editingNorm.fontUsage || '') ||
+        typoForm.fontStyle !== (editingNorm.fontStyle || ''));
+  useUnsavedChangesWarning(isAddFormDirty || isEditFormDirty);
 
   useActiveProject(id);
 
@@ -595,10 +623,10 @@ export default function ProjectNorms() {
                               }))
                             : []
                         }
-                        placeholder="Select a font"
+                        placeholder="Search fonts…"
                         isLoading={loadingFonts}
                         isDisabled={loadingFonts}
-                        noOptionsMessage={() => (loadingFonts ? 'Loading…' : 'No fonts')}
+                        noOptionsMessage={() => (loadingFonts ? 'Loading…' : 'No matching fonts')}
                       />
                     </div>
                     {loadingFonts && (
@@ -738,10 +766,10 @@ export default function ProjectNorms() {
                       ? googleFonts.map((font) => ({ value: font.family, label: font.family }))
                       : []
                   }
-                  placeholder="Select a font"
+                  placeholder="Search fonts…"
                   isLoading={loadingFonts}
                   isDisabled={loadingFonts}
-                  noOptionsMessage={() => (loadingFonts ? 'Loading…' : 'No fonts')}
+                  noOptionsMessage={() => (loadingFonts ? 'Loading…' : 'No matching fonts')}
                 />
                 {loadingFonts && <div className="text-xs text-secondary mt-1">Loading fonts…</div>}
                 {errorFonts && <div className="text-xs text-danger mt-1">Error loading fonts</div>}

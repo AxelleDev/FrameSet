@@ -11,7 +11,7 @@ import Button from '../components/Button';
 import Seo from '../components/Seo';
 import PasswordInput from '../components/PasswordInput';
 import TextInput from '../components/TextInput';
-import Alert from '../components/Alert';
+import RateLimitAlert from '../components/RateLimitAlert';
 import Divider from '../components/Divider';
 import TermsNotice from '../components/TermsNotice';
 import GoogleSignInButton from '../components/GoogleSignInButton';
@@ -28,6 +28,7 @@ export default function Login() {
   });
   const [error, setError] = useState('');
   const [errorCode, setErrorCode] = useState('');
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState(undefined);
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
@@ -52,10 +53,12 @@ export default function Login() {
     if (result.success) {
       setError('');
       setErrorCode('');
+      setRetryAfterSeconds(undefined);
       navigate('/app/dashboard');
     } else if (result.message) {
       setError(result.message);
       setErrorCode(result.code || '');
+      setRetryAfterSeconds(result.retryAfterSeconds);
     }
   };
 
@@ -71,10 +74,12 @@ export default function Login() {
     if (result.success) {
       setError('');
       setErrorCode('');
+      setRetryAfterSeconds(undefined);
       navigate('/app/dashboard');
     } else if (result.message) {
       setError(result.message);
       setErrorCode('');
+      setRetryAfterSeconds(result.retryAfterSeconds);
     }
   };
 
@@ -120,7 +125,7 @@ export default function Login() {
 
         {error && (
           <div className="mb-4">
-            <Alert variant="danger">{error}</Alert>
+            <RateLimitAlert message={error} retryAfterSeconds={retryAfterSeconds} />
             {/* Offer a verification shortcut when login failed due to an unverified email */}
             {errorCode === 'EMAIL_NOT_VERIFIED' && (
               <Button
@@ -159,7 +164,7 @@ export default function Login() {
             <div className="mt-2 flex justify-end">
               <Link
                 to="/forgot-password"
-                className="text-xs text-blue hover:text-primary transition-colors"
+                className="text-xs text-blue hover:text-primary transition-colors rounded focus-ring"
               >
                 Forgot password?
               </Link>
@@ -181,7 +186,7 @@ export default function Login() {
           <span className="text-sm text-primary">No account yet? </span>
           <Link
             to="/register"
-            className="text-sm font-medium text-blue hover:text-primary transition-colors"
+            className="text-sm font-medium text-blue hover:text-primary transition-colors rounded focus-ring"
           >
             Create one
           </Link>

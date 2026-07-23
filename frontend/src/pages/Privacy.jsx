@@ -9,7 +9,7 @@ export default function Privacy() {
       title="Privacy Policy"
       path="/privacy"
       description="What data FrameSet collects, why, and how it is protected."
-      lastUpdated="July 19, 2026"
+      lastUpdated="July 23, 2026"
     >
       <section>
         <h2>1. What we collect</h2>
@@ -43,7 +43,18 @@ export default function Privacy() {
       </section>
 
       <section>
-        <h2>4. Third-party services</h2>
+        <h2>4. Public sharing</h2>
+        <p>
+          You may generate a public share link for a project. Anyone with that link can view the
+          project&apos;s reference sheet — its colors, typography and brush specifications — without
+          an account, along with your display name shown as a &quot;Made by&quot; credit. Your email
+          address and account details are never exposed. You can revoke a share link at any time
+          from the project; once revoked, the link stops working immediately.
+        </p>
+      </section>
+
+      <section>
+        <h2>5. Third-party services</h2>
         <p>
           Two external services are involved: Google Fonts (to list and preview typefaces you pick
           for your projects) and Google Sign-In (only if you choose to continue with Google, under{' '}
@@ -55,7 +66,7 @@ export default function Privacy() {
       </section>
 
       <section>
-        <h2>5. How your data is protected</h2>
+        <h2>6. How your data is protected</h2>
         <p>
           Passwords are hashed with bcrypt, one-time codes are stored hashed, sessions use HttpOnly
           cookies with short lifetimes and server-side revocation, and every sensitive action
@@ -65,16 +76,19 @@ export default function Privacy() {
       </section>
 
       <section>
-        <h2>6. Retention and deletion</h2>
+        <h2>7. Retention and deletion</h2>
         <p>
-          Your data is kept for as long as your account exists. Deleting your account from your
-          profile page permanently removes your account and all associated projects. You can also
-          update your name, email and password at any time.
+          Your data is kept for as long as your account exists. Deleting a project, a color or a
+          standard does not erase it immediately: it is kept in a recoverable trash for 30 days, so
+          you can undo an accidental deletion, then permanently purged. Deleting your account from
+          your profile page is different — it is immediate and permanently removes your account and
+          all associated projects, bypassing the trash. You can also update your name, email and
+          password at any time.
         </p>
       </section>
 
       <section>
-        <h2>7. Your rights</h2>
+        <h2>8. Your rights</h2>
         <p>
           Depending on where you live (e.g. under the GDPR), you may have rights of access,
           rectification, portability and erasure over your personal data. Most of these are
@@ -84,7 +98,7 @@ export default function Privacy() {
       </section>
 
       <section>
-        <h2>8. Changes to this policy</h2>
+        <h2>9. Changes to this policy</h2>
         <p>
           We may update this policy from time to time; the &quot;Last updated&quot; date above
           reflects the latest revision. See also the <Link to="/terms">Terms of Service</Link>.

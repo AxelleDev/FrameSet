@@ -9,7 +9,7 @@ export default function Terms() {
       title="Terms of Service"
       path="/terms"
       description="The terms that govern your use of FrameSet."
-      lastUpdated="July 19, 2026"
+      lastUpdated="July 23, 2026"
     >
       <section>
         <h2>1. About FrameSet</h2>
@@ -41,7 +41,17 @@ export default function Terms() {
       </section>
 
       <section>
-        <h2>4. Acceptable use</h2>
+        <h2>4. Public sharing</h2>
+        <p>
+          FrameSet lets you generate a public, unauthenticated link to a project&apos;s reference
+          sheet. You are solely responsible for what you choose to share this way — anyone with the
+          link can view it. You can revoke a share link at any time; revoking it immediately
+          disables access for anyone still holding it.
+        </p>
+      </section>
+
+      <section>
+        <h2>5. Acceptable use</h2>
         <p>
           You agree not to misuse the service: no attempts to breach security, disrupt the service,
           access other users&apos; data, or use FrameSet for unlawful purposes. We may suspend or
@@ -50,7 +60,7 @@ export default function Terms() {
       </section>
 
       <section>
-        <h2>5. Availability and changes</h2>
+        <h2>6. Availability and changes</h2>
         <p>
           FrameSet is provided &quot;as is&quot;, without warranty of any kind. We work to keep the
           service available and your data safe, but we cannot guarantee uninterrupted operation.
@@ -59,15 +69,16 @@ export default function Terms() {
       </section>
 
       <section>
-        <h2>6. Account deletion</h2>
+        <h2>7. Account deletion</h2>
         <p>
           You can delete your account at any time from your profile page. Deletion is immediate and
-          irreversible: your account and all associated projects are permanently removed.
+          irreversible: your account and all associated projects are permanently removed, bypassing
+          the 30-day trash that applies to deleting an individual project, color or standard.
         </p>
       </section>
 
       <section>
-        <h2>7. Liability</h2>
+        <h2>8. Liability</h2>
         <p>
           To the maximum extent permitted by law, FrameSet shall not be liable for indirect or
           consequential damages arising from the use of the service, including loss of data.
@@ -76,7 +87,7 @@ export default function Terms() {
       </section>
 
       <section>
-        <h2>8. Changes to these terms</h2>
+        <h2>9. Changes to these terms</h2>
         <p>
           We may update these terms from time to time. The &quot;Last updated&quot; date above
           reflects the latest revision; continuing to use FrameSet after a change means you accept
@@ -85,7 +96,7 @@ export default function Terms() {
       </section>
 
       <section>
-        <h2>9. Contact</h2>
+        <h2>10. Contact</h2>
         <p>
           Questions about these terms? See the contact section of the project, or read the{' '}
           <Link to="/privacy">Privacy Policy</Link> for how your data is handled.

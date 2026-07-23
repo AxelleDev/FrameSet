@@ -52,3 +52,21 @@ export function formatRelativeTime(dateValue) {
   const diffYears = Math.floor(diffMonths / 12);
   return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
 }
+
+// Formats a rate-limit retry wait as "1h 05m", "2:30" or "45s" depending on
+// magnitude, so a countdown reads naturally whether the window is an hour or
+// a few seconds.
+export function formatCountdown(totalSeconds) {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  if (seconds >= 3600) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
+  }
+  if (seconds >= 60) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+  }
+  return `${seconds}s`;
+}

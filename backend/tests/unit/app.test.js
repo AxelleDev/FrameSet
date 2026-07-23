@@ -54,6 +54,16 @@ describe('application middleware', () => {
     });
   });
 
+  describe('CORS', () => {
+    it('exposes the Retry-After header so the frontend can read it on a 429', async () => {
+      const res = await request(app)
+        .get('/api/auth/csrf-token')
+        .set('Origin', 'http://localhost:5173');
+
+      expect(res.headers['access-control-expose-headers']).toContain('Retry-After');
+    });
+  });
+
   describe('API documentation', () => {
     it('serves the raw OpenAPI spec as JSON', async () => {
       const res = await request(app).get('/api-docs.json');

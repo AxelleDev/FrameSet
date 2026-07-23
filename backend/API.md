@@ -40,7 +40,8 @@ limited), `500` (server), `503` (dependency unavailable).
 
 JSON body is capped at **10 kB**. Sensitive endpoints are **rate limited** per IP
 (or per user), e.g. login/register 5/min, code verification 10 / 10 min, code
-resend 3 / 10 min, project/norm creation 30/h.
+resend 3 / 10 min, project/norm creation (and duplication) 30/h, public share
+views 60/min. A `429` response includes a `Retry-After` header (seconds).
 
 ---
 
@@ -52,17 +53,18 @@ resend 3 / 10 min, project/norm creation 30/h.
 
 ## Auth — `/api/auth`
 
-| Method | Path                    | Auth           | Body                           | Success                                                                        |
-| ------ | ----------------------- | -------------- | ------------------------------ | ------------------------------------------------------------------------------ |
-| `GET`  | `/auth/csrf-token`      | –              | –                              | `{ csrfToken }` (also sets the CSRF cookie)                                    |
-| `POST` | `/auth/register`        | –              | `{ name, email, password }`    | `{ success, id, name, email, avatarInitials, is_verified, passwordUpdatedAt }` |
-| `POST` | `/auth/login`           | –              | `{ email, password }`          | sets auth cookies, `{ success, ...user }`                                      |
-| `POST` | `/auth/verify`          | –              | `{ email, code }`              | `{ success }`                                                                  |
-| `POST` | `/auth/resend-code`     | –              | `{ email }`                    | `{ success }`                                                                  |
-| `POST` | `/auth/forgot-password` | –              | `{ email }`                    | `{ success }` (identical whether or not the email exists)                      |
-| `POST` | `/auth/reset-password`  | –              | `{ email, code, newPassword }` | `{ success }`                                                                  |
-| `POST` | `/auth/refresh`         | refresh cookie | –                              | rotates tokens, `{ success }`                                                  |
-| `POST` | `/auth/logout`          | –              | –                              | revokes tokens, clears cookies, `{ success }`                                  |
+| Method | Path                    | Auth           | Body                               | Success                                                                                                                                                                              |
+| ------ | ----------------------- | -------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/auth/csrf-token`      | –              | –                                  | `{ csrfToken }` (also sets the CSRF cookie)                                                                                                                                          |
+| `POST` | `/auth/register`        | –              | `{ name, email, password }`        | `{ success, id, name, email, avatarInitials, is_verified, passwordUpdatedAt }`                                                                                                       |
+| `POST` | `/auth/login`           | –              | `{ email, password }`              | sets auth cookies, `{ success, ...user }`                                                                                                                                            |
+| `POST` | `/auth/google`          | –              | `{ credential }` (Google ID token) | sets auth cookies, `{ success, ...user }` — signs in, links to an existing email/password account, or creates a new (passwordless) account; `503` if Google sign-in isn't configured |
+| `POST` | `/auth/verify`          | –              | `{ email, code }`                  | `{ success }`                                                                                                                                                                        |
+| `POST` | `/auth/resend-code`     | –              | `{ email }`                        | `{ success }`                                                                                                                                                                        |
+| `POST` | `/auth/forgot-password` | –              | `{ email }`                        | `{ success }` (identical whether or not the email exists)                                                                                                                            |
+| `POST` | `/auth/reset-password`  | –              | `{ email, code, newPassword }`     | `{ success }`                                                                                                                                                                        |
+| `POST` | `/auth/refresh`         | refresh cookie | –                                  | rotates tokens, `{ success }`                                                                                                                                                        |
+| `POST` | `/auth/logout`          | –              | –                                  | revokes tokens, clears cookies, `{ success }`                                                                                                                                        |
 
 Password policy: min 8 chars, at least one lowercase, one uppercase and one digit.
 
@@ -83,22 +85,82 @@ Password policy: min 8 chars, at least one lowercase, one uppercase and one digi
 All routes require authentication and enforce **ownership** (a user can only read
 or mutate their own projects).
 
-| Method   | Path                                            | Body                                                            | Success                                                                                                                                                                                                                  |
-| -------- | ----------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET`    | `/projects?page=&pageSize=`                     | –                                                               | `{ projects: [{ id, name, lastEdited, brushNorms[], typographyNorms[], normsCount, palette[] }], pagination: { page, pageSize, total, totalPages } }` (paginated, newest first; `pageSize` defaults to 12, capped at 50) |
-| `POST`   | `/projects`                                     | `{ name }` (2–50 chars)                                         | the created project                                                                                                                                                                                                      |
-| `PATCH`  | `/projects/:id`                                 | `{ name }`                                                      | `{ success, name }`                                                                                                                                                                                                      |
-| `DELETE` | `/projects/:id`                                 | –                                                               | `{ success }`                                                                                                                                                                                                            |
-| `POST`   | `/projects/:id/brush-norms`                     | `{ name, value, unit?, brushName?, opacity? }`                  | `{ success, id }`                                                                                                                                                                                                        |
-| `PUT`    | `/projects/:projectId/brush-norms/:normId`      | same as create                                                  | `{ success }`                                                                                                                                                                                                            |
-| `DELETE` | `/projects/:projectId/brush-norms/:normId`      | –                                                               | `{ success }`                                                                                                                                                                                                            |
-| `POST`   | `/projects/:id/typography-norms`                | `{ fontFamily, fontWeight?, fontUsage?, fontStyle? }`           | `{ success, id }`                                                                                                                                                                                                        |
-| `PUT`    | `/projects/:projectId/typography-norms/:normId` | same as create                                                  | `{ success }`                                                                                                                                                                                                            |
-| `DELETE` | `/projects/:projectId/typography-norms/:normId` | –                                                               | `{ success }`                                                                                                                                                                                                            |
-| `POST`   | `/projects/:id/palette`                         | array of `{ id?, name?, hex }` (≤ 50, `hex` = `#RGB`/`#RRGGBB`) | `{ success, palette }` — atomically replaces the palette, order preserved                                                                                                                                                |
+### Core
+
+| Method   | Path                                | Body                    | Success                                                                                                                                                                                                                                                                                                                                |
+| -------- | ----------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/projects?page=&pageSize=&search=` | –                       | `{ projects: [{ id, name, lastEdited, pinned, shareToken, brushNorms[], typographyNorms[], normsCount, palette[] }], pagination: { page, pageSize, total, totalPages } }` — paginated (`pageSize` defaults to 12, capped at 50); pinned projects sort first, then newest-edited; `search` filters by name (case-insensitive substring) |
+| `POST`   | `/projects`                         | `{ name }` (2–50 chars) | the created project                                                                                                                                                                                                                                                                                                                    |
+| `POST`   | `/projects/:id/duplicate`           | –                       | the new project — copies the palette and standards (order preserved), named `"<name> (copy)"`; shares the project-creation rate limit                                                                                                                                                                                                  |
+| `PATCH`  | `/projects/:id`                     | `{ name }`              | `{ success, name }`                                                                                                                                                                                                                                                                                                                    |
+| `DELETE` | `/projects/:id`                     | –                       | `{ success }` — soft delete, moves the project to the trash                                                                                                                                                                                                                                                                            |
+
+### Trash (30-day soft delete)
+
+Applies uniformly to projects, palette colors, and brush/typography standards:
+delete moves an item to the trash, where it's restorable for **30 days**
+before a scheduled purge deletes it permanently. Each resource has the same
+three-endpoint shape (`GET .../trash`, `POST .../:childId/restore`,
+`DELETE .../:childId/permanent`).
+
+| Method   | Path                                                      | Success                                                     |
+| -------- | --------------------------------------------------------- | ----------------------------------------------------------- |
+| `GET`    | `/projects/trash`                                         | `{ projects: [{ id, name, deletedAt, daysLeft }] }`         |
+| `POST`   | `/projects/:id/restore`                                   | the restored project                                        |
+| `DELETE` | `/projects/:id/permanent`                                 | `{ success }` — irreversible                                |
+| `GET`    | `/projects/:id/palette/trash`                             | `{ colors: [{ id, name, hex, deletedAt, daysLeft }] }`      |
+| `POST`   | `/projects/:id/palette/:colorId/restore`                  | `{ success }`                                               |
+| `DELETE` | `/projects/:id/palette/:colorId/permanent`                | `{ success }` — irreversible                                |
+| `GET`    | `/projects/:projectId/brush-norms/trash`                  | `{ norms: [{ id, name, ..., deletedAt, daysLeft }] }`       |
+| `POST`   | `/projects/:projectId/brush-norms/:normId/restore`        | `{ success }`                                               |
+| `DELETE` | `/projects/:projectId/brush-norms/:normId/permanent`      | `{ success }` — irreversible                                |
+| `GET`    | `/projects/:projectId/typography-norms/trash`             | `{ norms: [{ id, fontFamily, ..., deletedAt, daysLeft }] }` |
+| `POST`   | `/projects/:projectId/typography-norms/:normId/restore`   | `{ success }`                                               |
+| `DELETE` | `/projects/:projectId/typography-norms/:normId/permanent` | `{ success }` — irreversible                                |
+
+### Pinning
+
+Pinned projects sort before unpinned ones on `GET /projects`.
+
+| Method   | Path                       | Body                        | Success                                                                         |
+| -------- | -------------------------- | --------------------------- | ------------------------------------------------------------------------------- |
+| `POST`   | `/projects/:id/pin`        | –                           | `{ success }` — idempotent, appended after the user's other pinned projects     |
+| `DELETE` | `/projects/:id/pin`        | –                           | `{ success }`                                                                   |
+| `POST`   | `/projects/pinned/reorder` | array of pinned project ids | `{ success }` — reorders the user's pinned projects to match the given sequence |
+
+### Sharing
+
+| Method   | Path                  | Auth | Success                                                                                                                                                                                                    |
+| -------- | --------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST`   | `/projects/:id/share` | ✓    | `{ shareToken }` — mints (or returns the existing) public share token                                                                                                                                      |
+| `DELETE` | `/projects/:id/share` | ✓    | `{ success }` — revokes the link immediately                                                                                                                                                               |
+| `GET`    | `/share/:token`       | –    | the read-only reference sheet: `{ name, brushNorms[], typographyNorms[], palette[], ownerName }` — public, rate limited per IP (60/min); `404` if the token is invalid, revoked, or the project is trashed |
+
+`ownerName` is the owner's display name only — never their id or email — shown
+as a "Made by …" credit on the public page and in the exported PDF.
+
+### Standards (brush & typography norms)
+
+| Method   | Path                                            | Body                                                  | Success                                                                                     |
+| -------- | ----------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `POST`   | `/projects/:id/brush-norms`                     | `{ name, value, unit?, brushName?, opacity? }`        | `{ success, id }`                                                                           |
+| `PUT`    | `/projects/:projectId/brush-norms/:normId`      | same as create                                        | `{ success }`                                                                               |
+| `DELETE` | `/projects/:projectId/brush-norms/:normId`      | –                                                     | `{ success }` — soft delete                                                                 |
+| `POST`   | `/projects/:id/brush-norms/reorder`             | array of brush-norm ids                               | `{ success }` — reorders to match the given sequence; unrecognized ids are silently skipped |
+| `POST`   | `/projects/:id/typography-norms`                | `{ fontFamily, fontWeight?, fontUsage?, fontStyle? }` | `{ success, id }`                                                                           |
+| `PUT`    | `/projects/:projectId/typography-norms/:normId` | same as create                                        | `{ success }`                                                                               |
+| `DELETE` | `/projects/:projectId/typography-norms/:normId` | –                                                     | `{ success }` — soft delete                                                                 |
+| `POST`   | `/projects/:id/typography-norms/reorder`        | array of typography-norm ids                          | `{ success }` — same contract as the brush-norm reorder                                     |
 
 Field notes: brush `value` is a positive number (≤ 1000), `unit` letters/`%`
 only, `opacity` in `0..1`. Text fields are trimmed and length-bounded.
+
+### Palette
+
+| Method   | Path                             | Body                                                            | Success                                                                                                           |
+| -------- | -------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `POST`   | `/projects/:id/palette`          | array of `{ id?, name?, hex }` (≤ 50, `hex` = `#RGB`/`#RRGGBB`) | `{ success, palette }` — atomically replaces the whole palette, order preserved; used for add/edit/delete/reorder |
+| `DELETE` | `/projects/:id/palette/:colorId` | –                                                               | `{ success }` — soft delete of a single color (independent of the bulk replace above)                             |
 
 ## Fonts — `/api/fonts`
 

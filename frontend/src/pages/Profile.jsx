@@ -14,9 +14,10 @@ import Button from '../components/Button';
 import Avatar from '../components/Avatar';
 import FormField from '../components/FormField';
 import TextInput from '../components/TextInput';
-import Alert from '../components/Alert';
+import RateLimitAlert from '../components/RateLimitAlert';
 import PasswordInput from '../components/PasswordInput';
 import { isValidEmail } from '../utils/passwordRules';
+import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 
 export default function Profile() {
   const { user, updateUserProfile, logout, changePassword, deleteAccount } = useAuth();
@@ -26,6 +27,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState('');
+  const [editRetryAfterSeconds, setEditRetryAfterSeconds] = useState(undefined);
   const [editForm, setEditForm] = useState({
     name: '',
     email: '',
@@ -38,6 +40,7 @@ export default function Profile() {
     confirmPassword: '',
   });
   const [passwordError, setPasswordError] = useState('');
+  const [passwordRetryAfterSeconds, setPasswordRetryAfterSeconds] = useState(undefined);
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
@@ -64,15 +67,24 @@ export default function Profile() {
   const trimmedEmail = editForm.email.trim();
   const hasChanges = trimmedName !== (user?.name ?? '') || trimmedEmail !== (user?.email ?? '');
 
+  const hasUnsavedPasswordInput =
+    isPasswordModalOpen &&
+    Boolean(
+      passwordForm.currentPassword || passwordForm.newPassword || passwordForm.confirmPassword,
+    );
+  useUnsavedChangesWarning((isEditing && hasChanges) || hasUnsavedPasswordInput);
+
   const startEdit = () => {
     setEditForm({ name: user.name, email: user.email });
     setEditError('');
+    setEditRetryAfterSeconds(undefined);
     setIsEditing(true);
   };
 
   const cancelEdit = () => {
     setEditForm({ name: user.name, email: user.email });
     setEditError('');
+    setEditRetryAfterSeconds(undefined);
     setIsEditing(false);
   };
 
@@ -80,6 +92,7 @@ export default function Profile() {
   // by the backend as a pending email to confirm.
   const saveProfile = async () => {
     setEditError('');
+    setEditRetryAfterSeconds(undefined);
 
     if (!trimmedName) {
       setEditError('Your name cannot be empty.');
@@ -108,6 +121,7 @@ export default function Profile() {
       // Stay in edit mode on a business error so it can be fixed inline.
       if (result?.success === false) {
         setEditError(result.message || 'Something went wrong updating your profile.');
+        setEditRetryAfterSeconds(result.retryAfterSeconds);
         return;
       }
       setIsEditing(false);
@@ -127,6 +141,7 @@ export default function Profile() {
         return {
           success: false,
           message: result.message || 'Something went wrong updating your profile.',
+          retryAfterSeconds: result.retryAfterSeconds,
         };
       }
       setReauthAction(null);
@@ -139,7 +154,11 @@ export default function Profile() {
     if (reauthAction === 'delete') {
       const result = await deleteAccount(credentials);
       if (!result.success) {
-        return { success: false, message: result.message || 'Failed to delete the account.' };
+        return {
+          success: false,
+          message: result.message || 'Failed to delete the account.',
+          retryAfterSeconds: result.retryAfterSeconds,
+        };
       }
       setReauthAction(null);
       navigate('/login');
@@ -166,6 +185,7 @@ export default function Profile() {
   const openPasswordModal = () => {
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     setPasswordError('');
+    setPasswordRetryAfterSeconds(undefined);
     setIsPasswordModalOpen(true);
   };
 
@@ -179,6 +199,7 @@ export default function Profile() {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     setPasswordError('');
+    setPasswordRetryAfterSeconds(undefined);
 
     // Client-side validation stays inline (a hint inside the modal).
     if (
@@ -201,9 +222,15 @@ export default function Profile() {
         newPassword: passwordForm.newPassword,
       });
 
-      // Surface success/business error as a toast, like every in-app action.
+      // The modal stays open on failure. Business errors (4xx, e.g. wrong
+      // password or rate limited) show inline with a live countdown rather
+      // than in a toast that could vanish before a multi-minute wait is over;
+      // server errors (5xx) already went to the global banner via onGlobalError.
       if (!result.success) {
-        if (result.message) showToast(result.message, 'danger');
+        if (result.message) {
+          setPasswordError(result.message);
+          setPasswordRetryAfterSeconds(result.retryAfterSeconds);
+        }
         return;
       }
 
@@ -314,7 +341,7 @@ export default function Profile() {
                     <Link
                       to="/verify"
                       state={{ email: user.pendingEmail, type: 'pending-email' }}
-                      className="underline hover:text-primary"
+                      className="underline hover:text-primary rounded focus-ring"
                     >
                       Verify
                     </Link>
@@ -325,7 +352,9 @@ export default function Profile() {
 
             {isEditing && (
               <div className="space-y-4 animate-fade-in">
-                {editError && <Alert variant="danger">{editError}</Alert>}
+                {editError && (
+                  <RateLimitAlert message={editError} retryAfterSeconds={editRetryAfterSeconds} />
+                )}
                 <p className="text-xs text-primary/60">
                   Changing your email sends a confirmation code to the new address; it takes effect
                   once verified.
@@ -464,7 +493,9 @@ export default function Profile() {
             />
           </FormField>
 
-          {passwordError && <Alert variant="danger">{passwordError}</Alert>}
+          {passwordError && (
+            <RateLimitAlert message={passwordError} retryAfterSeconds={passwordRetryAfterSeconds} />
+          )}
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <Button type="button" onClick={closePasswordModal} variant="ghost" className="text-sm">

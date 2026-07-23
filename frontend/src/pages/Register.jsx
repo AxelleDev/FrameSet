@@ -11,7 +11,7 @@ import Button from '../components/Button';
 import Seo from '../components/Seo';
 import PasswordInput from '../components/PasswordInput';
 import TextInput from '../components/TextInput';
-import Alert from '../components/Alert';
+import RateLimitAlert from '../components/RateLimitAlert';
 import Divider from '../components/Divider';
 import TermsNotice from '../components/TermsNotice';
 import GoogleSignInButton from '../components/GoogleSignInButton';
@@ -31,6 +31,7 @@ export default function Register() {
     confirmPassword: '',
   });
   const [error, setError] = useState('');
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState(undefined);
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
@@ -57,11 +58,13 @@ export default function Register() {
 
     if (result.success) {
       setError('');
+      setRetryAfterSeconds(undefined);
       // Prefer the server-confirmed email; fall back to what the user typed.
       const verificationEmail = result.data?.email || formData.email.trim();
       navigate('/verify', { state: { email: verificationEmail } });
     } else if (result.message) {
       setError(result.message);
+      setRetryAfterSeconds(result.retryAfterSeconds);
     }
   };
 
@@ -76,9 +79,11 @@ export default function Register() {
 
     if (result.success) {
       setError('');
+      setRetryAfterSeconds(undefined);
       navigate('/app/dashboard');
     } else if (result.message) {
       setError(result.message);
+      setRetryAfterSeconds(result.retryAfterSeconds);
     }
   };
 
@@ -129,9 +134,7 @@ export default function Register() {
         </div>
 
         {error && (
-          <Alert variant="danger" className="mb-4">
-            {error}
-          </Alert>
+          <RateLimitAlert message={error} retryAfterSeconds={retryAfterSeconds} className="mb-4" />
         )}
 
         <form className="space-y-4" onSubmit={handleRegister} noValidate>
@@ -213,7 +216,7 @@ export default function Register() {
           <span className="text-sm text-primary">Already have an account? </span>
           <Link
             to="/login"
-            className="text-sm font-medium text-blue hover:text-primary transition-colors"
+            className="text-sm font-medium text-blue hover:text-primary transition-colors rounded focus-ring"
           >
             Sign in
           </Link>
