@@ -16,12 +16,12 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
 import Seo from '../components/Seo';
-import { EditIcon, DeleteIcon } from '../components/icons';
+import { EditIcon, DuplicateIcon, DeleteIcon } from '../components/icons';
 import { formatModified } from '../utils/date';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { projects, projectsPagination, projectsLoading, loadMoreProjects, setActiveProjectId, addProject, deleteProject, updateProjectName } = useProjects();
+  const { projects, projectsPagination, projectsLoading, trashedProjects, loadMoreProjects, setActiveProjectId, addProject, duplicateProject, deleteProject, updateProjectName, fetchTrashedProjects, restoreProject, deleteProjectPermanently } = useProjects();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [isCreatingProject, setIsCreatingProject] = useState(false);
@@ -36,6 +36,11 @@ export default function Dashboard() {
   useEffect(() => {
     setActiveProjectId(null);
   }, [setActiveProjectId]);
+
+  // Load the trash so its section can appear (it is hidden when empty).
+  useEffect(() => {
+    fetchTrashedProjects({ silent: true });
+  }, [fetchTrashedProjects]);
 
   // Aggregate norm count across the loaded projects for the summary stat. Guard
   // each normsCount so a project missing the field can't turn the total into NaN.
@@ -110,6 +115,41 @@ export default function Dashboard() {
     setConfirmDeleteProject(project ? { id: project.id, name: project.name } : { id, name: '' });
   };
 
+  // Trash actions: restore puts the project back in the grid; permanent delete
+  // is staged behind its own confirmation dialog. The two are mutually
+  // exclusive (trashBusy) so a restore in flight and a "delete forever" can
+  // never race on the same soft-deleted row (which would otherwise surface a
+  // confusing 404 when the loser's request lands after the row's state changed).
+  const [confirmPermanentDelete, setConfirmPermanentDelete] = useState(null);
+  const [restoringId, setRestoringId] = useState(null);
+  const trashBusy = restoringId !== null || confirmPermanentDelete !== null;
+  const handleRestoreProject = async (id) => {
+    if (trashBusy) return;
+    setRestoringId(id);
+    try {
+      const ok = await restoreProject(id);
+      if (ok) showToast('Project restored.');
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
+  // Duplicate a project (norms + palette) as "<name> (copy)". duplicatingId
+  // disables that card's button while the copy is in flight.
+  const [duplicatingId, setDuplicatingId] = useState(null);
+  const handleDuplicateProject = async (e, id) => {
+    e.stopPropagation();
+    if (duplicatingId) return;
+    setDuplicatingId(id);
+    try {
+      const copy = await duplicateProject(id);
+      // duplicateProject never throws; null means the global banner has the reason.
+      if (copy) showToast(`Project duplicated as "${copy.name}".`);
+    } finally {
+      setDuplicatingId(null);
+    }
+  };
+
   return (
     <>
       <Seo title="Dashboard" noindex />
@@ -161,6 +201,14 @@ export default function Dashboard() {
                 intent="edit"
               >
                 <EditIcon />
+              </ActionIconButton>
+              <ActionIconButton
+                onClick={(e) => handleDuplicateProject(e, project.id)}
+                title="Duplicate project"
+                intent="edit"
+                disabled={duplicatingId !== null}
+              >
+                <DuplicateIcon />
               </ActionIconButton>
               <ActionIconButton
                 onClick={(e) => handleDeleteProject(e, project.id)}
@@ -218,6 +266,52 @@ export default function Dashboard() {
         </div>
       )}
 
+      {trashedProjects.length > 0 && (
+        <section className="mt-14" aria-labelledby="trash-title">
+          <h2 id="trash-title" className="text-lg font-medium text-primary flex items-center">
+            <DeleteIcon className="w-5 h-5 mr-2 text-blue shrink-0" />
+            Trash
+            <span className="ml-2 text-sm font-normal text-primary/50">({trashedProjects.length})</span>
+          </h2>
+          <p className="text-xs text-primary/60 mt-1 mb-4">
+            Trashed projects are kept for 30 days, then deleted forever.
+          </p>
+          <div className="space-y-3">
+            {trashedProjects.map((project) => (
+              <Card key={project.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-primary truncate">{project.name}</p>
+                  <p className="text-xs text-primary/60">
+                    {project.daysLeft <= 0
+                      ? 'Will be deleted with the next cleanup'
+                      : `${project.daysLeft} day${project.daysLeft === 1 ? '' : 's'} left before permanent deletion`}
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <Button
+                    variant="ghost"
+                    className="text-sm"
+                    onClick={() => handleRestoreProject(project.id)}
+                    loading={restoringId === project.id}
+                    disabled={trashBusy}
+                  >
+                    Restore
+                  </Button>
+                  <Button
+                    variant="danger"
+                    className="text-sm"
+                    disabled={trashBusy}
+                    onClick={() => setConfirmPermanentDelete({ id: project.id, name: project.name })}
+                  >
+                    Delete forever
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       <FormModal
         isOpen={isCreatingProject}
         onClose={() => setIsCreatingProject(false)}
@@ -265,19 +359,37 @@ export default function Dashboard() {
 
       <ConfirmDialog
         isOpen={!!confirmDeleteProject}
-        title="Delete project?"
+        title="Move to trash?"
         message={
           confirmDeleteProject?.name
-            ? `All graphic standards and colors in "${confirmDeleteProject.name}" will be permanently lost.`
-            : 'All its graphic standards and colors will be permanently lost.'
+            ? `"${confirmDeleteProject.name}" will be moved to the trash. You can restore it for 30 days; after that it is deleted forever.`
+            : 'The project will be moved to the trash. You can restore it for 30 days; after that it is deleted forever.'
         }
-        confirmLabel="Delete"
+        confirmLabel="Move to trash"
         onCancel={() => setConfirmDeleteProject(null)}
         onConfirm={async () => {
           if (!confirmDeleteProject?.id) return;
           const ok = await deleteProject(confirmDeleteProject.id);
           setConfirmDeleteProject(null);
-          if (ok) showToast('Project deleted.');
+          if (ok) showToast('Project moved to trash.');
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmPermanentDelete}
+        title="Delete forever?"
+        message={
+          confirmPermanentDelete?.name
+            ? `"${confirmPermanentDelete.name}" and all its graphic standards and colors will be permanently lost. This cannot be undone.`
+            : 'The project and all its graphic standards and colors will be permanently lost. This cannot be undone.'
+        }
+        confirmLabel="Delete forever"
+        onCancel={() => setConfirmPermanentDelete(null)}
+        onConfirm={async () => {
+          if (!confirmPermanentDelete?.id) return;
+          const ok = await deleteProjectPermanently(confirmPermanentDelete.id);
+          setConfirmPermanentDelete(null);
+          if (ok) showToast('Project permanently deleted.');
         }}
       />
     </>

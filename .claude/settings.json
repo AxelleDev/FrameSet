@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker --version)",
+      "Read(//c/wamp64/bin/mysql/**)",
+      "Read(//c/wamp64/bin/mysql/mysql9.1.0/bin/**)",
+      "Bash(\"/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe\" -u root -e \"SELECT 1;\")",
+      "Bash(\"/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe\" -u root -e \"SHOW DATABASES;\")",
+      "Bash(\"/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe\" -u root -e \"CREATE DATABASE IF NOT EXISTS frameset_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\")",
+      "Read(//c/Users/atempier/Downloads//**)",
+      "Bash(\"/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe\" -u root frameset_db)",
+      "Bash(echo \"exit code: $?\")",
+      "Bash(\"/c/wamp64/bin/mysql/mysql9.1.0/bin/mysql.exe\" -u root frameset_db -e \"SHOW TABLES; SELECT id,name,email FROM users; SELECT id,user_id,name FROM projects;\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/health)",
+      "Bash(powershell -Command \"Get-Process -Name node -ErrorAction SilentlyContinue | Select-Object Id,StartTime\")",
+      "Bash(git -C \"c:\\\\Users\\\\atempier\\\\Documents\\\\FrameSet\" diff main -- backend/migrations backend/src backend/tests frontend/src frontend/tests)",
+      "Bash(sed -i \"s|'./node_modules/jspdf/dist/jspdf.es.min.js'|'C:/Users/atempier/Documents/FrameSet/frontend/node_modules/jspdf/dist/jspdf.es.min.js'|\" /tmp/test_pdf.mjs)",
+      "Bash(node /tmp/test_pdf.mjs)",
+      "Bash(cp /tmp/test_pdf.mjs \"c:/Users/atempier/Documents/FrameSet/frontend/test_pdf.mjs\")",
+      "Bash(sed -i \"s|'C:/Users/atempier/Documents/FrameSet/frontend/node_modules/jspdf/dist/jspdf.es.min.js'|'./node_modules/jspdf/dist/jspdf.es.min.js'|\" \"c:/Users/atempier/Documents/FrameSet/frontend/test_pdf.mjs\")",
+      "Bash(sed -i \"s|doc.save\\('/tmp/test_output.pdf'\\);|doc.save\\('./test_output.pdf'\\);|\" \"c:/Users/atempier/Documents/FrameSet/frontend/test_pdf.mjs\")",
+      "Bash(node test_pdf.mjs)",
+      "Bash(sed -i \"s|doc.save\\('./test_output.pdf'\\);|fs.writeFileSync\\('./test_output.pdf', Buffer.from\\(doc.output\\('arraybuffer'\\)\\)\\);|\" test_pdf.mjs)",
+      "Bash(sed -i \"1i import fs from 'fs';\" test_pdf.mjs)",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"require\\('./src/docs/openapi.js'\\); console.log\\('openapi OK'\\)\")"
+    ]
+  }
+}

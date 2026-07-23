@@ -40,6 +40,14 @@ describe('ProjectNorms', () => {
       updateTypographyNorm: vi.fn(),
       projectsLoading: false,
       activeProjectId: '2',
+      trashedBrushNorms: [],
+      trashedTypographyNorms: [],
+      fetchTrashedBrushNorms: vi.fn(),
+      fetchTrashedTypographyNorms: vi.fn(),
+      restoreBrushNorm: vi.fn(),
+      restoreTypographyNorm: vi.fn(),
+      deleteBrushNormPermanently: vi.fn(),
+      deleteTypographyNormPermanently: vi.fn(),
     });
   });
 
@@ -54,5 +62,58 @@ describe('ProjectNorms', () => {
     renderPage();
     await user.click(screen.getByRole('button', { name: 'Add' }));
     expect(await screen.findByPlaceholderText(/hair outline/i)).toBeInTheDocument();
+  });
+
+  it('moves a standard to the trash after confirmation', async () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [{ id: 5, name: 'Hair outline', value: '8', unit: 'px', opacity: 0.9 }],
+      typographyNorms: [],
+    };
+    projectState.deleteBrushNorm = vi.fn().mockResolvedValue(true);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Delete standard' }));
+    await user.click(screen.getByRole('button', { name: 'Move to trash' }));
+
+    expect(projectState.deleteBrushNorm).toHaveBeenCalledWith('2', 5);
+  });
+
+  it('shows the trash section (brush + typography together, newest first) and restores an item', async () => {
+    projectState.trashedBrushNorms = [
+      { id: 9, name: 'Old outline', value: '8', unit: 'px', opacity: 0.9, deletedAt: '2026-07-10T00:00:00Z', daysLeft: 21 },
+    ];
+    projectState.trashedTypographyNorms = [
+      { id: 4, fontFamily: 'Figtree', fontUsage: 'Heading', deletedAt: '2026-07-05T00:00:00Z', daysLeft: 16 },
+    ];
+    projectState.restoreBrushNorm = vi.fn().mockResolvedValue(true);
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.getByText('Old outline')).toBeInTheDocument();
+    expect(screen.getByText('Heading')).toBeInTheDocument();
+
+    // Newest first: the brush item (2026-07-10) sorts before the typography
+    // item (2026-07-05), so the first "Restore" button belongs to the brush norm.
+    const [firstRestore] = screen.getAllByRole('button', { name: 'Restore' });
+    await user.click(firstRestore);
+    expect(projectState.restoreBrushNorm).toHaveBeenCalledWith('2', 9);
+  });
+
+  it('permanently deletes a trashed standard after its own confirmation', async () => {
+    projectState.trashedBrushNorms = [
+      { id: 9, name: 'Old outline', value: '8', unit: 'px', opacity: 0.9, deletedAt: '2026-07-10', daysLeft: 3 },
+    ];
+    projectState.deleteBrushNormPermanently = vi.fn().mockResolvedValue(true);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Delete forever' }));
+    expect(await screen.findByText(/cannot be undone/i)).toBeInTheDocument();
+    const dialogButtons = screen.getAllByRole('button', { name: 'Delete forever' });
+    await user.click(dialogButtons[dialogButtons.length - 1]);
+
+    expect(projectState.deleteBrushNormPermanently).toHaveBeenCalledWith('2', 9);
   });
 });

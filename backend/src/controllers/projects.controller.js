@@ -69,6 +69,64 @@ const createProject = async (req, res) => {
   }
 };
 
+// Duplicate a project owned by the user: same norms and palette under a
+// "<name> (copy)" title. Returns the full new project (201) for the dashboard.
+const duplicateProject = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
+    const duplicated = await projectsService.duplicateProjectForUser(
+      getAuthenticatedUserId(req),
+      id,
+    );
+    res.status(201).json(duplicated);
+  } catch (error) {
+    if (error.code === 'not_found') {
+      return res.status(404).json({ error: 'Project not found.' });
+    }
+    logProjectsControllerError(req, 'duplicate', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Enable public sharing for an owned project; returns the (stable) share token.
+const enableSharing = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
+    res.json(await projectsService.enableProjectSharing(id));
+  } catch (error) {
+    logProjectsControllerError(req, 'enable_sharing', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Disable public sharing: the link dies immediately.
+const disableSharing = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
+    res.json(await projectsService.disableProjectSharing(id));
+  } catch (error) {
+    logProjectsControllerError(req, 'disable_sharing', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// PUBLIC (no auth): resolve a share token to its reference-sheet content. Any
+// invalid, revoked or trashed link is a plain 404 with no detail.
+const getSharedProject = async (req, res) => {
+  try {
+    res.json(await projectsService.getSharedProjectByToken(req.params.token));
+  } catch (error) {
+    if (error.code === 'not_found') {
+      return res.status(404).json({ error: 'This link is no longer active.' });
+    }
+    logProjectsControllerError(req, 'get_shared', error);
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
 // Rename a project owned by the user and refresh its last_edited timestamp.
 const updateProjectName = async (req, res) => {
   const { id } = req.params;
@@ -89,7 +147,8 @@ const updateProjectName = async (req, res) => {
   }
 };
 
-// Delete a project (cascades to its child norms and palette via schema foreign keys).
+// Move a project to the trash (soft delete): restorable for 30 days via the
+// trash endpoints, then dropped by the scheduled purge.
 const deleteProject = async (req, res) => {
   const { id } = req.params;
   try {
@@ -97,6 +156,56 @@ const deleteProject = async (req, res) => {
     res.json(await projectsService.deleteProjectById(id));
   } catch (error) {
     logProjectsControllerError(req, 'delete', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// List the user's trashed projects with the days left before their purge.
+const listTrashedProjects = async (req, res) => {
+  const userId = getAuthenticatedUserId(req);
+  if (!userId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+  try {
+    res.json({ projects: await projectsService.listTrashedProjectsForUser(userId) });
+  } catch (error) {
+    logProjectsControllerError(req, 'list_trash', error);
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Restore a trashed project back to the dashboard.
+const restoreProject = async (req, res) => {
+  const userId = getAuthenticatedUserId(req);
+  const { id } = req.params;
+  if (!userId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+  try {
+    res.json(await projectsService.restoreProjectForUser(userId, id));
+  } catch (error) {
+    if (error.code === 'not_found') {
+      return res.status(404).json({ error: 'Project not found in the trash.' });
+    }
+    logProjectsControllerError(req, 'restore', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Permanently delete a TRASHED project (children cascade); irreversible.
+const deleteProjectPermanently = async (req, res) => {
+  const userId = getAuthenticatedUserId(req);
+  const { id } = req.params;
+  if (!userId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+  try {
+    res.json(await projectsService.deleteProjectPermanently(userId, id));
+  } catch (error) {
+    if (error.code === 'not_found') {
+      return res.status(404).json({ error: 'Project not found in the trash.' });
+    }
+    logProjectsControllerError(req, 'delete_permanently', error, { projectId: id });
     res.status(500).json({ error: 'Database error.' });
   }
 };
@@ -174,7 +283,8 @@ const updatePalette = async (req, res) => {
   }
 };
 
-// Delete a brush norm, scoped by norm id and project id on top of the ownership check.
+// Move a brush norm to the trash (soft delete), scoped by norm id and project
+// id on top of the ownership check. Restorable for 30 days via the trash endpoints.
 const deleteBrushNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   try {
@@ -192,7 +302,8 @@ const deleteBrushNorm = async (req, res) => {
   }
 };
 
-// Delete a typography norm, scoped by norm id and project id on top of the ownership check.
+// Move a typography norm to the trash (soft delete), scoped by norm id and
+// project id on top of the ownership check.
 const deleteTypographyNorm = async (req, res) => {
   const { projectId, normId } = req.params;
   try {
@@ -205,6 +316,156 @@ const deleteTypographyNorm = async (req, res) => {
     logProjectsControllerError(req, 'delete_typography_norm', error, {
       projectId,
       normId,
+    });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// List a project's trashed brush norms with the days left before their purge.
+const listTrashedBrushNorms = async (req, res) => {
+  const { projectId } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, projectId))) return;
+    res.json({ norms: await projectsService.listTrashedBrushNormsForProject(projectId) });
+  } catch (error) {
+    logProjectsControllerError(req, 'list_trashed_brush_norms', error, { projectId });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Restore a trashed brush norm.
+const restoreBrushNorm = async (req, res) => {
+  const { projectId, normId } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, projectId))) return;
+    if (!(await projectsService.restoreBrushNormInProject(projectId, normId))) {
+      return res.status(404).json({ error: 'Standard not found in the trash.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    logProjectsControllerError(req, 'restore_brush_norm', error, { projectId, normId });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Permanently delete a TRASHED brush norm; irreversible.
+const deleteBrushNormPermanently = async (req, res) => {
+  const { projectId, normId } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, projectId))) return;
+    if (!(await projectsService.deleteBrushNormPermanently(projectId, normId))) {
+      return res.status(404).json({ error: 'Standard not found in the trash.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    logProjectsControllerError(req, 'delete_brush_norm_permanently', error, { projectId, normId });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// List a project's trashed typography norms with the days left before their purge.
+const listTrashedTypographyNorms = async (req, res) => {
+  const { projectId } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, projectId))) return;
+    res.json({ norms: await projectsService.listTrashedTypographyNormsForProject(projectId) });
+  } catch (error) {
+    logProjectsControllerError(req, 'list_trashed_typography_norms', error, { projectId });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Restore a trashed typography norm.
+const restoreTypographyNorm = async (req, res) => {
+  const { projectId, normId } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, projectId))) return;
+    if (!(await projectsService.restoreTypographyNormInProject(projectId, normId))) {
+      return res.status(404).json({ error: 'Standard not found in the trash.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    logProjectsControllerError(req, 'restore_typography_norm', error, { projectId, normId });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Permanently delete a TRASHED typography norm; irreversible.
+const deleteTypographyNormPermanently = async (req, res) => {
+  const { projectId, normId } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, projectId))) return;
+    if (!(await projectsService.deleteTypographyNormPermanently(projectId, normId))) {
+      return res.status(404).json({ error: 'Standard not found in the trash.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    logProjectsControllerError(req, 'delete_typography_norm_permanently', error, {
+      projectId,
+      normId,
+    });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Move a single palette color to the trash (soft delete), scoped by color id
+// and project id. Distinct from updatePalette (bulk replace): this is the
+// path the palette editor's "Delete" button uses, so an individual color
+// deletion is always independently restorable.
+const deletePaletteColor = async (req, res) => {
+  const { id, colorId } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
+    if (!(await projectsService.deletePaletteColorFromProject(id, colorId))) {
+      return res.status(404).json({ error: 'Color not found.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    logProjectsControllerError(req, 'delete_palette_color', error, { projectId: id, colorId });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// List a project's trashed palette colors with the days left before their purge.
+const listTrashedPaletteColors = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
+    res.json({ colors: await projectsService.listTrashedPaletteColorsForProject(id) });
+  } catch (error) {
+    logProjectsControllerError(req, 'list_trashed_palette_colors', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Restore a trashed palette color.
+const restorePaletteColor = async (req, res) => {
+  const { id, colorId } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
+    if (!(await projectsService.restorePaletteColorInProject(id, colorId))) {
+      return res.status(404).json({ error: 'Color not found in the trash.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    logProjectsControllerError(req, 'restore_palette_color', error, { projectId: id, colorId });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// Permanently delete a TRASHED palette color; irreversible.
+const deletePaletteColorPermanently = async (req, res) => {
+  const { id, colorId } = req.params;
+  try {
+    if (!(await ensureProjectOwnership(req, res, id))) return;
+    if (!(await projectsService.deletePaletteColorPermanently(id, colorId))) {
+      return res.status(404).json({ error: 'Color not found in the trash.' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    logProjectsControllerError(req, 'delete_palette_color_permanently', error, {
+      projectId: id,
+      colorId,
     });
     res.status(500).json({ error: 'Database error.' });
   }
@@ -272,13 +533,30 @@ const updateTypographyNorm = async (req, res) => {
 module.exports = {
   listProjects,
   createProject,
+  duplicateProject,
   updateProjectName,
   deleteProject,
+  listTrashedProjects,
+  restoreProject,
+  deleteProjectPermanently,
+  enableSharing,
+  disableSharing,
+  getSharedProject,
   addBrushNorm,
   addTypographyNorm,
   updatePalette,
   deleteBrushNorm,
+  listTrashedBrushNorms,
+  restoreBrushNorm,
+  deleteBrushNormPermanently,
   deleteTypographyNorm,
+  listTrashedTypographyNorms,
+  restoreTypographyNorm,
+  deleteTypographyNormPermanently,
+  deletePaletteColor,
+  listTrashedPaletteColors,
+  restorePaletteColor,
+  deletePaletteColorPermanently,
   updateBrushNorm,
   updateTypographyNorm,
 };

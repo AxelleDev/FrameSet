@@ -4,8 +4,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import Seo from '../components/Seo';
 import Logo from '../components/Logo';
 import Button from '../components/Button';
-import Badge from '../components/Badge';
 import PublicTopBar from '../components/PublicTopBar';
+import ColorTile from '../components/ColorTile';
+import StandardCard from '../components/StandardCard';
+import BrushPreview from '../components/BrushPreview';
+import TypographyPreview from '../components/TypographyPreview';
 
 const JSON_LD = {
   '@context': 'https://schema.org',
@@ -61,50 +64,38 @@ function Reveal({ children, className = '', delay = 0 }) {
   );
 }
 
-/** A palette swatch (square fill with the color name + hex below). */
-function Swatch({ hex, name }) {
-  return (
-    <div className="group">
-      <div className="aspect-square rounded-2xl transition-transform group-hover:-translate-y-1" style={{ backgroundColor: hex }}></div>
-      <p className="mt-1.5 text-xs font-semibold text-primary text-center truncate">{name}</p>
-      <p className="text-[10px] font-mono uppercase tracking-wide text-primary/60 text-center">{hex}</p>
-    </div>
-  );
-}
-
-/** A brush standard card, faithful to ProjectNorms. */
+/** A brush standard card — the exact same StandardCard used by ProjectNorms
+    and the Shared reference sheet, not a lookalike. */
 function BrushCard() {
   return (
-    <div className="bg-surface rounded-3xl ring-1 ring-primary/5 p-4 sm:p-5 flex flex-col">
-      <Badge color="primary" className="mb-2 self-start">Brush</Badge>
-      <h3 className="text-xs font-medium text-primary uppercase tracking-widest mb-1">Hair outline</h3>
-      <div className="flex items-baseline mb-1">
-        <span className="text-2xl font-light text-primary mr-1">8</span>
-        <span className="text-base text-blue font-medium">px</span>
-      </div>
-      <p className="text-[11px] text-secondary mb-4">Opacity: 0.9</p>
-      <div className="mt-auto h-14 bg-blue/5 rounded-xl flex items-center justify-center">
-        <div className="h-2.5 w-20 rounded-full bg-primary"></div>
-      </div>
-    </div>
+    <StandardCard
+      category="Brush"
+      badgeColor="primary"
+      title="Hair outline"
+      value="8"
+      unit="px"
+      detail={<div className="text-xs text-secondary mb-2">Opacity: 0.9</div>}
+      preview={<BrushPreview value="8" opacity={0.9} brushName="Plume G" />}
+    />
   );
 }
 
-/** A typography standard card, faithful to ProjectNorms. */
+/** A typography standard card — the exact same StandardCard used by
+    ProjectNorms and the Shared reference sheet, not a lookalike. Figtree is
+    the app's self-hosted base font, so it's already "loaded" here. */
 function TypeCard() {
   return (
-    <div className="bg-surface rounded-3xl ring-1 ring-primary/5 p-4 sm:p-5 flex flex-col">
-      <Badge color="blue" className="mb-2 self-start">Typography</Badge>
-      <h3 className="text-xs font-medium text-primary uppercase tracking-widest mb-1">Heading</h3>
-      <div className="flex items-baseline mb-1">
-        <span className="text-2xl font-light text-primary mr-1">Figtree</span>
-        <span className="text-base text-blue font-medium">700</span>
-      </div>
-      <p className="text-[11px] text-secondary mb-4">Italic</p>
-      <div className="mt-auto h-14 bg-blue/5 rounded-xl flex items-center justify-center">
-        <span className="text-3xl font-bold text-primary">AaBbCc</span>
-      </div>
-    </div>
+    <StandardCard
+      category="Typography"
+      badgeColor="blue"
+      title="Heading"
+      value="Figtree"
+      valueTitle="Figtree"
+      valueTruncate
+      unit="700"
+      detail={<div className="mb-2"><span className="text-xs text-primary italic">Italic</span></div>}
+      preview={<TypographyPreview fontFamily="Figtree" fontStyle="Italic" loaded />}
+    />
   );
 }
 
@@ -118,12 +109,12 @@ function StandardsMock() {
   );
 }
 
-/** Mockup for the "Color palette" feature — the real 4:5 swatch grid. */
+/** Mockup for the "Color palette" feature — the real square swatch grid. */
 function PaletteMock() {
   return (
     <div className="bg-surface rounded-3xl ring-1 ring-primary/5 p-4 sm:p-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-        {PALETTE.map((c) => <Swatch key={c.hex} hex={c.hex} name={c.name} />)}
+        {PALETTE.map((c) => <ColorTile key={c.hex} hex={c.hex} name={c.name} />)}
       </div>
     </div>
   );
@@ -166,7 +157,7 @@ function ExportMock() {
 const FEATURES = [
   {
     title: 'Graphic standards',
-    text: 'Document your brushes, sizes, opacities and typography so every project keeps a consistent direction — no more guessing your old settings.',
+    text: 'Document your brushes, sizes, opacities and typography so every project keeps a consistent direction — no more guessing your old settings. Starting something new? Duplicate a project and keep your favorite setup as the base.',
     Mock: StandardsMock,
   },
   {
@@ -176,7 +167,7 @@ const FEATURES = [
   },
   {
     title: 'Export & share',
-    text: 'Turn your standards and palette into a clean PDF or a JSON file, ready to hand off to a client or reuse in another tool.',
+    text: 'Turn your standards and palette into a clean PDF or a JSON file — or share a live read-only link that clients and collaborators can open without an account.',
     Mock: ExportMock,
   },
 ];

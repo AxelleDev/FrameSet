@@ -3,6 +3,7 @@
  * references (palettes, brush norms, typography norms). Never touches req/res.
  */
 
+const { randomBytes } = require('crypto');
 const db = require('../database');
 const validator = require('validator');
 const { logger } = require('../utils/logger');
@@ -24,14 +25,77 @@ class ProjectServiceError extends Error {
   }
 }
 
+// How long a trashed project (or one of its colors/standards) stays restorable
+// before the scheduled purge drops it.
+const TRASH_RETENTION_DAYS = 30;
+
+// Child tables that support the same per-row trash lifecycle as projects
+// (soft-delete, restore, permanent delete, purge), each scoped to project_id.
+// Not user input — always one of these three literals — so interpolating the
+// table name into SQL below is safe.
+const TRASHABLE_CHILD_TABLES = {
+  palette: 'project_palette',
+  brushNorm: 'project_brush_norms',
+  typographyNorm: 'project_typography_norms',
+};
+
+// Soft-deletes a single row of a project's child table (a color, brush norm or
+// typography norm), scoped to the project so one project can't reach into
+// another's row. Returns false when nothing matched (wrong project, already
+// trashed, or never existed).
+const softDeleteChildRow = async (table, projectId, rowId) => {
+  const [result] = await db.query(
+    `UPDATE ${table} SET deleted_at = NOW() WHERE id = ? AND project_id = ? AND deleted_at IS NULL`,
+    [rowId, projectId],
+  );
+  return result.affectedRows > 0;
+};
+
+// Restores a trashed child row. The UPDATE is scoped to trashed rows only, so
+// it doubles as both the "is it actually trashed" and ownership-adjacent check.
+const restoreChildRow = async (table, projectId, rowId) => {
+  const [result] = await db.query(
+    `UPDATE ${table} SET deleted_at = NULL WHERE id = ? AND project_id = ? AND deleted_at IS NOT NULL`,
+    [rowId, projectId],
+  );
+  return result.affectedRows > 0;
+};
+
+// Permanently deletes a TRASHED child row; irreversible. Only reachable from
+// the trash (the WHERE clause requires deleted_at IS NOT NULL), so a live row
+// can never be hard-deleted in one step.
+const deleteChildRowPermanently = async (table, projectId, rowId) => {
+  const [result] = await db.query(
+    `DELETE FROM ${table} WHERE id = ? AND project_id = ? AND deleted_at IS NOT NULL`,
+    [rowId, projectId],
+  );
+  return result.affectedRows > 0;
+};
+
+// Drops a child table's trashed rows past the retention window. Run by the
+// daily cleanup scheduler alongside the project purge; returns false instead
+// of throwing so a failed purge only logs a warning.
+const purgeExpiredTrashedChildRows = async (table) => {
+  try {
+    await db.query(
+      `DELETE FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < DATE_SUB(NOW(), INTERVAL ? DAY)`,
+      [TRASH_RETENTION_DAYS],
+    );
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
 // Ownership guard preventing IDOR: confirms the user owns the project so no one
-// can read/mutate another user's project by guessing its id. Returns true/false;
-// the controller maps false to a 403.
+// can read/mutate another user's project by guessing its id. Trashed projects
+// don't pass (they are only reachable via the trash endpoints). Returns
+// true/false; the controller maps false to a 403.
 const userOwnsProject = async (userId, projectId) => {
-  const [rows] = await db.query('SELECT id FROM projects WHERE id = ? AND user_id = ?', [
-    projectId,
-    userId,
-  ]);
+  const [rows] = await db.query(
+    'SELECT id FROM projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+    [projectId, userId],
+  );
 
   return rows.length > 0;
 };
@@ -256,7 +320,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
   // Total count drives the pagination metadata (and the dashboard's "N projects").
   const countQuery = await runTimedQuery({
     label: 'projects_count',
-    sql: 'SELECT COUNT(*) AS total FROM projects WHERE user_id = ?',
+    sql: 'SELECT COUNT(*) AS total FROM projects WHERE user_id = ? AND deleted_at IS NULL',
     params: [userId],
   });
   queryTimings.push(countQuery.timing);
@@ -270,7 +334,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
 
   const projectsQuery = await runTimedQuery({
     label: 'projects',
-    sql: 'SELECT id, name, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+    sql: 'SELECT id, name, share_token, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?',
     params: [userId, pageSize, offset],
   });
 
@@ -296,17 +360,17 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
   const [brushNormsQuery, typographyNormsQuery, paletteQuery] = await Promise.all([
     runTimedQuery({
       label: 'project_brush_norms',
-      sql: `SELECT id, project_id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id IN (${placeholders})`,
+      sql: `SELECT id, project_id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id IN (${placeholders}) AND deleted_at IS NULL`,
       params: projectIds,
     }),
     runTimedQuery({
       label: 'project_typography_norms',
-      sql: `SELECT id, project_id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id IN (${placeholders})`,
+      sql: `SELECT id, project_id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id IN (${placeholders}) AND deleted_at IS NULL`,
       params: projectIds,
     }),
     runTimedQuery({
       label: 'project_palette',
-      sql: `SELECT id, project_id, name, hex FROM project_palette WHERE project_id IN (${placeholders}) ORDER BY project_id ASC, position ASC, id ASC`,
+      sql: `SELECT id, project_id, name, hex FROM project_palette WHERE project_id IN (${placeholders}) AND deleted_at IS NULL ORDER BY project_id ASC, position ASC, id ASC`,
       params: projectIds,
     }),
   ]);
@@ -346,6 +410,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
       id: project.id,
       name: project.name,
       lastEdited: project.lastEditedFormatted || 'Just now',
+      shareToken: project.share_token || null,
       brushNorms,
       typographyNorms,
       normsCount: brushNorms.length + typographyNorms.length,
@@ -384,9 +449,109 @@ const createProjectForUser = async (userId, rawName) => {
     id: newId,
     name,
     lastEdited: 'Just now',
+    shareToken: null,
     normsCount: 0,
     norms: [],
     palette: [],
+  };
+};
+
+// Duplicates a project the user owns: copies the project row (name suffixed
+// with " (copy)", capped at the shared 50-char limit) and all of its brush
+// norms, typography norms and palette colors. The copies run in a transaction
+// so a half-duplicated project can never be left behind. Throws 'not_found'
+// when the project doesn't exist or belongs to someone else.
+const duplicateProjectForUser = async (userId, projectId) => {
+  const [rows] = await db.query(
+    'SELECT name FROM projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+    [projectId, userId],
+  );
+  if (rows.length === 0) {
+    throw new ProjectServiceError('not_found');
+  }
+
+  const suffix = ' (copy)';
+  const name = rows[0].name.slice(0, 50 - suffix.length) + suffix;
+
+  const connection = await db.getConnection();
+  let newProjectId;
+  try {
+    await connection.beginTransaction();
+
+    const [insertResult] = await connection.query(
+      'INSERT INTO projects (user_id, name) VALUES (?, ?)',
+      [userId, name],
+    );
+    newProjectId = insertResult.insertId;
+
+    // Trashed colors/standards are excluded: duplicating a project should not
+    // resurrect something its owner already threw away.
+    await connection.query(
+      'INSERT INTO project_brush_norms (project_id, name, value, unit, brush_name, opacity) SELECT ?, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ? AND deleted_at IS NULL',
+      [newProjectId, projectId],
+    );
+    await connection.query(
+      'INSERT INTO project_typography_norms (project_id, font_family, font_weight, font_usage, font_style) SELECT ?, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ? AND deleted_at IS NULL',
+      [newProjectId, projectId],
+    );
+    await connection.query(
+      'INSERT INTO project_palette (project_id, name, hex, position) SELECT ?, name, hex, position FROM project_palette WHERE project_id = ? AND deleted_at IS NULL',
+      [newProjectId, projectId],
+    );
+
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+
+  // Read the copies back so the response carries the new server-assigned ids,
+  // in the same shape as a listProjectsForUser item.
+  const [brushRows] = await db.query(
+    'SELECT id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ?',
+    [newProjectId],
+  );
+  const [typographyRows] = await db.query(
+    'SELECT id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ?',
+    [newProjectId],
+  );
+  const [paletteRows] = await db.query(
+    'SELECT id, name, hex FROM project_palette WHERE project_id = ? ORDER BY position ASC, id ASC',
+    [newProjectId],
+  );
+
+  const brushNorms = brushRows.map((norm) => ({
+    id: norm.id,
+    name: norm.name,
+    value: norm.value,
+    unit: norm.unit,
+    brushName: norm.brush_name,
+    opacity: norm.opacity,
+  }));
+  const typographyNorms = typographyRows.map((norm) => ({
+    id: norm.id,
+    fontFamily: norm.font_family,
+    fontWeight: norm.font_weight,
+    fontUsage: norm.font_usage,
+    fontStyle: norm.font_style,
+  }));
+  const palette = paletteRows.map((color) => ({
+    id: color.id,
+    name: color.name,
+    hex: color.hex,
+  }));
+
+  return {
+    id: newProjectId,
+    name,
+    lastEdited: 'Just now',
+    shareToken: null,
+    brushNorms,
+    typographyNorms,
+    normsCount: brushNorms.length + typographyNorms.length,
+    palette,
   };
 };
 
@@ -399,10 +564,172 @@ const renameProject = async (projectId, name) => {
   return { success: true, name: name.trim() };
 };
 
-// Deletes a project; child norms and palette cascade via the schema's foreign keys.
+// Moves a project to the trash (soft delete): it disappears from the dashboard
+// but stays restorable for TRASH_RETENTION_DAYS before the scheduled purge
+// drops it for good.
 const deleteProjectById = async (projectId) => {
-  await db.query('DELETE FROM projects WHERE id = ?', [projectId]);
+  await db.query('UPDATE projects SET deleted_at = NOW() WHERE id = ?', [projectId]);
   return { success: true };
+};
+
+// Lists the user's trashed projects (newest first), with how many days each one
+// has left before the purge removes it.
+const listTrashedProjectsForUser = async (userId) => {
+  const [rows] = await db.query(
+    'SELECT id, name, deleted_at, GREATEST(0, ? - DATEDIFF(NOW(), deleted_at)) AS days_left FROM projects WHERE user_id = ? AND deleted_at IS NOT NULL ORDER BY deleted_at DESC',
+    [TRASH_RETENTION_DAYS, userId],
+  );
+
+  return rows.map((project) => ({
+    id: project.id,
+    name: project.name,
+    deletedAt: project.deleted_at,
+    daysLeft: Number(project.days_left),
+  }));
+};
+
+// Restores a trashed project. The UPDATE is scoped to the owner and to trashed
+// rows, so it doubles as the ownership check. Throws 'not_found' when nothing
+// matched (wrong owner, already restored, or purged).
+const restoreProjectForUser = async (userId, projectId) => {
+  const [result] = await db.query(
+    'UPDATE projects SET deleted_at = NULL WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL',
+    [projectId, userId],
+  );
+  if (result.affectedRows === 0) {
+    throw new ProjectServiceError('not_found');
+  }
+  return { success: true };
+};
+
+// Permanently deletes a TRASHED project (children cascade). Only reachable from
+// the trash, so a live project can never be hard-deleted in one step. The DELETE
+// is owner- and trash-scoped; throws 'not_found' when nothing matched.
+const deleteProjectPermanently = async (userId, projectId) => {
+  const [result] = await db.query(
+    'DELETE FROM projects WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL',
+    [projectId, userId],
+  );
+  if (result.affectedRows === 0) {
+    throw new ProjectServiceError('not_found');
+  }
+  return { success: true };
+};
+
+// Shape of a valid share token: 32 hex chars (128 random bits). Checked before
+// querying so junk input never reaches the database.
+const SHARE_TOKEN_PATTERN = /^[a-f0-9]{32}$/i;
+
+// Enables public sharing for a project: mints an unguessable token on first
+// call and keeps the existing one afterwards (idempotent — re-enabling never
+// silently changes a link that may already be in someone's hands).
+const enableProjectSharing = async (projectId) => {
+  const candidateToken = randomBytes(16).toString('hex');
+  await db.query('UPDATE projects SET share_token = COALESCE(share_token, ?) WHERE id = ?', [
+    candidateToken,
+    projectId,
+  ]);
+  const [rows] = await db.query('SELECT share_token FROM projects WHERE id = ?', [projectId]);
+  return { shareToken: rows[0]?.share_token || candidateToken };
+};
+
+// Disables public sharing: the link stops working immediately. Re-enabling
+// later mints a brand-new token, so an old revoked link never comes back.
+const disableProjectSharing = async (projectId) => {
+  await db.query('UPDATE projects SET share_token = NULL WHERE id = ?', [projectId]);
+  return { success: true };
+};
+
+// Public, unauthenticated read of a shared project: the reference-sheet
+// content (name, norms, palette) plus the owner's display name for a "Made by"
+// credit — never their id, email, or the project's own id. Trashed projects
+// don't resolve. Throws 'not_found' for any invalid/unknown token.
+const getSharedProjectByToken = async (rawToken) => {
+  const token = typeof rawToken === 'string' ? rawToken.trim() : '';
+  if (!SHARE_TOKEN_PATTERN.test(token)) {
+    throw new ProjectServiceError('not_found');
+  }
+
+  // Joins the owner's display name only (never their email or id) — a small,
+  // deliberate exception to "never expose the owner": a "Made by <name>" credit
+  // on a public reference sheet, nothing that could be used to contact them.
+  const [rows] = await db.query(
+    `SELECT projects.id, projects.name, users.name AS owner_name
+     FROM projects
+     JOIN users ON users.id = projects.user_id
+     WHERE projects.share_token = ? AND projects.deleted_at IS NULL`,
+    [token],
+  );
+  if (rows.length === 0) {
+    throw new ProjectServiceError('not_found');
+  }
+  const projectId = rows[0].id;
+
+  const [brushRows] = await db.query(
+    'SELECT id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ? AND deleted_at IS NULL',
+    [projectId],
+  );
+  const [typographyRows] = await db.query(
+    'SELECT id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ? AND deleted_at IS NULL',
+    [projectId],
+  );
+  const [paletteRows] = await db.query(
+    'SELECT id, name, hex FROM project_palette WHERE project_id = ? AND deleted_at IS NULL ORDER BY position ASC, id ASC',
+    [projectId],
+  );
+
+  return {
+    name: rows[0].name,
+    ownerName: rows[0].owner_name,
+    brushNorms: brushRows.map((norm) => ({
+      id: norm.id,
+      name: norm.name,
+      value: norm.value,
+      unit: norm.unit,
+      brushName: norm.brush_name,
+      opacity: norm.opacity,
+    })),
+    typographyNorms: typographyRows.map((norm) => ({
+      id: norm.id,
+      fontFamily: norm.font_family,
+      fontWeight: norm.font_weight,
+      fontUsage: norm.font_usage,
+      fontStyle: norm.font_style,
+    })),
+    palette: paletteRows.map((color) => ({
+      id: color.id,
+      name: color.name,
+      hex: color.hex,
+    })),
+  };
+};
+
+// Drops trashed projects past the retention window; children cascade. Run by
+// the daily cleanup scheduler (same pattern as the revoked-token purge).
+// Returns false instead of throwing so a failed purge only logs a warning.
+const purgeExpiredTrashedProjects = async () => {
+  try {
+    await db.query(
+      'DELETE FROM projects WHERE deleted_at IS NOT NULL AND deleted_at < DATE_SUB(NOW(), INTERVAL ? DAY)',
+      [TRASH_RETENTION_DAYS],
+    );
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
+// Drops trashed colors/standards past the retention window, for rows whose
+// PROJECT is still live (a trashed project's children already cascade away
+// when the project itself is purged above). Returns false if any of the three
+// purges failed, so the caller only logs a warning.
+const purgeExpiredTrashedProjectItems = async () => {
+  const results = await Promise.all([
+    purgeExpiredTrashedChildRows(TRASHABLE_CHILD_TABLES.palette),
+    purgeExpiredTrashedChildRows(TRASHABLE_CHILD_TABLES.brushNorm),
+    purgeExpiredTrashedChildRows(TRASHABLE_CHILD_TABLES.typographyNorm),
+  ]);
+  return results.every(Boolean);
 };
 
 // Adds a brush norm after validation, then touches last_edited. Throws
@@ -499,10 +826,13 @@ const replaceProjectPalette = async (projectId, validatedColors) => {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // Ids that currently belong to this project, used both to detect removals
-    // and to ensure a client-supplied id can't target another project's color.
+    // Ids that currently belong to this project (excluding already-trashed
+    // ones — a trashed color can only come back via the dedicated restore
+    // endpoint, never by resurfacing in a bulk save), used both to detect
+    // removals and to ensure a client-supplied id can't target another
+    // project's color.
     const [existingRows] = await connection.query(
-      'SELECT id FROM project_palette WHERE project_id = ?',
+      'SELECT id FROM project_palette WHERE project_id = ? AND deleted_at IS NULL',
       [projectId],
     );
     const existingIds = new Set(existingRows.map((row) => row.id));
@@ -512,15 +842,19 @@ const replaceProjectPalette = async (projectId, validatedColors) => {
       .filter((color) => color.id !== null && existingIds.has(color.id))
       .map((color) => color.id);
 
-    // Delete the colors that are no longer present in the new palette.
+    // Soft-delete the colors that are no longer present in the new palette,
+    // so they're restorable from the trash instead of gone for good.
     if (keptIds.length > 0) {
       const placeholders = keptIds.map(() => '?').join(', ');
       await connection.query(
-        `DELETE FROM project_palette WHERE project_id = ? AND id NOT IN (${placeholders})`,
+        `UPDATE project_palette SET deleted_at = NOW() WHERE project_id = ? AND deleted_at IS NULL AND id NOT IN (${placeholders})`,
         [projectId, ...keptIds],
       );
     } else {
-      await connection.query('DELETE FROM project_palette WHERE project_id = ?', [projectId]);
+      await connection.query(
+        'UPDATE project_palette SET deleted_at = NOW() WHERE project_id = ? AND deleted_at IS NULL',
+        [projectId],
+      );
     }
 
     // Upsert each color at its array index, which becomes its persisted position.
@@ -528,7 +862,7 @@ const replaceProjectPalette = async (projectId, validatedColors) => {
       const color = validatedColors[position];
       if (color.id !== null && existingIds.has(color.id)) {
         await connection.query(
-          'UPDATE project_palette SET name = ?, hex = ?, position = ? WHERE id = ? AND project_id = ?',
+          'UPDATE project_palette SET name = ?, hex = ?, position = ? WHERE id = ? AND project_id = ? AND deleted_at IS NULL',
           [color.name, color.hex, position, color.id, projectId],
         );
       } else {
@@ -543,7 +877,7 @@ const replaceProjectPalette = async (projectId, validatedColors) => {
 
     // Return the saved palette (with ids) so the client can adopt the canonical state.
     const [paletteRows] = await connection.query(
-      'SELECT id, name, hex FROM project_palette WHERE project_id = ? ORDER BY position ASC, id ASC',
+      'SELECT id, name, hex FROM project_palette WHERE project_id = ? AND deleted_at IS NULL ORDER BY position ASC, id ASC',
       [projectId],
     );
 
@@ -557,27 +891,101 @@ const replaceProjectPalette = async (projectId, validatedColors) => {
   }
 };
 
-// Deletes a brush norm, scoped by both norm id and project id (defense in depth
-// beyond the ownership check). Returns false when no row matched.
-const deleteBrushNormFromProject = async (projectId, normId) => {
-  const [result] = await db.query(
-    'DELETE FROM project_brush_norms WHERE id = ? AND project_id = ?',
-    [normId, projectId],
+// Moves a brush norm to the trash (soft delete), scoped by both norm id and
+// project id (defense in depth beyond the ownership check). Restorable for
+// TRASH_RETENTION_DAYS. Returns false when no (non-trashed) row matched.
+const deleteBrushNormFromProject = (projectId, normId) =>
+  softDeleteChildRow(TRASHABLE_CHILD_TABLES.brushNorm, projectId, normId);
+
+// Moves a typography norm to the trash (soft delete), scoped by norm id and
+// project id. Returns false when no (non-trashed) row matched.
+const deleteTypographyNormFromProject = (projectId, normId) =>
+  softDeleteChildRow(TRASHABLE_CHILD_TABLES.typographyNorm, projectId, normId);
+
+// Restores a trashed brush norm. Returns false when nothing matched (wrong
+// project, already restored, or purged).
+const restoreBrushNormInProject = (projectId, normId) =>
+  restoreChildRow(TRASHABLE_CHILD_TABLES.brushNorm, projectId, normId);
+
+// Restores a trashed typography norm. Returns false when nothing matched.
+const restoreTypographyNormInProject = (projectId, normId) =>
+  restoreChildRow(TRASHABLE_CHILD_TABLES.typographyNorm, projectId, normId);
+
+// Permanently deletes a TRASHED brush norm; irreversible. Returns false when
+// nothing matched (not trashed, wrong project, or already purged).
+const deleteBrushNormPermanently = (projectId, normId) =>
+  deleteChildRowPermanently(TRASHABLE_CHILD_TABLES.brushNorm, projectId, normId);
+
+// Permanently deletes a TRASHED typography norm; irreversible.
+const deleteTypographyNormPermanently = (projectId, normId) =>
+  deleteChildRowPermanently(TRASHABLE_CHILD_TABLES.typographyNorm, projectId, normId);
+
+// Lists a project's trashed brush norms (newest first), with days left before purge.
+const listTrashedBrushNormsForProject = async (projectId) => {
+  const [rows] = await db.query(
+    'SELECT id, name, value, unit, brush_name, opacity, deleted_at, GREATEST(0, ? - DATEDIFF(NOW(), deleted_at)) AS days_left FROM project_brush_norms WHERE project_id = ? AND deleted_at IS NOT NULL ORDER BY deleted_at DESC',
+    [TRASH_RETENTION_DAYS, projectId],
   );
-  return result.affectedRows > 0;
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    value: row.value,
+    unit: row.unit,
+    brushName: row.brush_name,
+    opacity: row.opacity,
+    deletedAt: row.deleted_at,
+    daysLeft: Number(row.days_left),
+  }));
 };
 
-// Deletes a typography norm, scoped by norm id and project id. Returns false when no row matched.
-const deleteTypographyNormFromProject = async (projectId, normId) => {
-  const [result] = await db.query(
-    'DELETE FROM project_typography_norms WHERE id = ? AND project_id = ?',
-    [normId, projectId],
+// Lists a project's trashed typography norms (newest first), with days left before purge.
+const listTrashedTypographyNormsForProject = async (projectId) => {
+  const [rows] = await db.query(
+    'SELECT id, font_family, font_weight, font_usage, font_style, deleted_at, GREATEST(0, ? - DATEDIFF(NOW(), deleted_at)) AS days_left FROM project_typography_norms WHERE project_id = ? AND deleted_at IS NOT NULL ORDER BY deleted_at DESC',
+    [TRASH_RETENTION_DAYS, projectId],
   );
-  return result.affectedRows > 0;
+  return rows.map((row) => ({
+    id: row.id,
+    fontFamily: row.font_family,
+    fontWeight: row.font_weight,
+    fontUsage: row.font_usage,
+    fontStyle: row.font_style,
+    deletedAt: row.deleted_at,
+    daysLeft: Number(row.days_left),
+  }));
+};
+
+// Moves a palette color to the trash (soft delete), scoped by color id and
+// project id. Returns false when no (non-trashed) row matched.
+const deletePaletteColorFromProject = (projectId, colorId) =>
+  softDeleteChildRow(TRASHABLE_CHILD_TABLES.palette, projectId, colorId);
+
+// Restores a trashed palette color. Returns false when nothing matched.
+const restorePaletteColorInProject = (projectId, colorId) =>
+  restoreChildRow(TRASHABLE_CHILD_TABLES.palette, projectId, colorId);
+
+// Permanently deletes a TRASHED palette color; irreversible.
+const deletePaletteColorPermanently = (projectId, colorId) =>
+  deleteChildRowPermanently(TRASHABLE_CHILD_TABLES.palette, projectId, colorId);
+
+// Lists a project's trashed palette colors (newest first), with days left before purge.
+const listTrashedPaletteColorsForProject = async (projectId) => {
+  const [rows] = await db.query(
+    'SELECT id, name, hex, deleted_at, GREATEST(0, ? - DATEDIFF(NOW(), deleted_at)) AS days_left FROM project_palette WHERE project_id = ? AND deleted_at IS NOT NULL ORDER BY deleted_at DESC',
+    [TRASH_RETENTION_DAYS, projectId],
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    hex: row.hex,
+    deletedAt: row.deleted_at,
+    daysLeft: Number(row.days_left),
+  }));
 };
 
 // Updates a brush norm after validation, scoped by norm id and project id;
-// refreshes last_edited. Throws 'validation' on a bad payload, 'not_found' when no row matched.
+// refreshes last_edited. A trashed norm can't be edited directly (restore it
+// first). Throws 'validation' on a bad payload, 'not_found' when no row matched.
 const updateBrushNormInProject = async (projectId, normId, payload) => {
   const validatedBrushNorm = validateBrushNormPayload(payload);
   if (validatedBrushNorm.error) {
@@ -585,7 +993,7 @@ const updateBrushNormInProject = async (projectId, normId, payload) => {
   }
 
   const [result] = await db.query(
-    'UPDATE project_brush_norms SET name = ?, value = ?, unit = ?, brush_name = ?, opacity = ? WHERE id = ? AND project_id = ?',
+    'UPDATE project_brush_norms SET name = ?, value = ?, unit = ?, brush_name = ?, opacity = ? WHERE id = ? AND project_id = ? AND deleted_at IS NULL',
     [
       validatedBrushNorm.value.name,
       validatedBrushNorm.value.value,
@@ -604,7 +1012,8 @@ const updateBrushNormInProject = async (projectId, normId, payload) => {
 };
 
 // Updates a typography norm after validation, scoped by norm id and project id;
-// refreshes last_edited. Throws 'validation' on a bad payload, 'not_found' when no row matched.
+// refreshes last_edited. A trashed norm can't be edited directly (restore it
+// first). Throws 'validation' on a bad payload, 'not_found' when no row matched.
 const updateTypographyNormInProject = async (projectId, normId, payload) => {
   const validatedTypographyNorm = validateTypographyNormPayload(payload);
   if (validatedTypographyNorm.error) {
@@ -612,7 +1021,7 @@ const updateTypographyNormInProject = async (projectId, normId, payload) => {
   }
 
   const [result] = await db.query(
-    'UPDATE project_typography_norms SET font_family = ?, font_weight = ?, font_usage = ?, font_style = ? WHERE id = ? AND project_id = ?',
+    'UPDATE project_typography_norms SET font_family = ?, font_weight = ?, font_usage = ?, font_style = ? WHERE id = ? AND project_id = ? AND deleted_at IS NULL',
     [
       validatedTypographyNorm.value.fontFamily,
       validatedTypographyNorm.value.fontWeight,
@@ -634,14 +1043,34 @@ module.exports = {
   userOwnsProject,
   listProjectsForUser,
   createProjectForUser,
+  duplicateProjectForUser,
   renameProject,
   deleteProjectById,
+  listTrashedProjectsForUser,
+  restoreProjectForUser,
+  deleteProjectPermanently,
+  purgeExpiredTrashedProjects,
+  purgeExpiredTrashedProjectItems,
+  enableProjectSharing,
+  disableProjectSharing,
+  getSharedProjectByToken,
+  TRASH_RETENTION_DAYS,
   addBrushNormToProject,
   addTypographyNormToProject,
   validatePalettePayload,
   replaceProjectPalette,
   deleteBrushNormFromProject,
+  restoreBrushNormInProject,
+  deleteBrushNormPermanently,
+  listTrashedBrushNormsForProject,
   deleteTypographyNormFromProject,
+  restoreTypographyNormInProject,
+  deleteTypographyNormPermanently,
+  listTrashedTypographyNormsForProject,
+  deletePaletteColorFromProject,
+  restorePaletteColorInProject,
+  deletePaletteColorPermanently,
+  listTrashedPaletteColorsForProject,
   updateBrushNormInProject,
   updateTypographyNormInProject,
 };

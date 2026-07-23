@@ -27,6 +27,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Verify = lazy(() => import('./pages/Verify'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
+const SharedProject = lazy(() => import('./pages/SharedProject'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Warm up the route chunks once the browser is idle after first paint, so
@@ -47,6 +48,7 @@ function prefetchRouteChunks() {
       import('./pages/Verify'),
       import('./pages/Terms'),
       import('./pages/Privacy'),
+      import('./pages/SharedProject'),
       import('./pages/NotFound'),
     ].forEach((chunkPromise) => chunkPromise.catch(() => {}));
   };
@@ -147,6 +149,7 @@ function AppRoutes() {
           <Route path="/verify" element={<Verify />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/s/:token" element={<SharedProject />} />
           <Route path="/app" element={<MainLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="profile" element={<Profile />} />

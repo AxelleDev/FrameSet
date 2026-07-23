@@ -14,10 +14,11 @@ import Button from '../components/Button';
 import ModalActions from '../components/ModalActions';
 import ActionIconButton from '../components/ActionIconButton';
 import ConfirmDialog from '../components/ConfirmDialog';
-import CopyBadge from '../components/CopyBadge';
 import AddTile from '../components/AddTile';
+import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
 import Seo from '../components/Seo';
+import ColorTile from '../components/ColorTile';
 import { normalizeHexInput, isValidHexValue, handleHexKeyDown } from '../utils/hex';
 import { EditIcon, DeleteIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
@@ -30,7 +31,17 @@ const MAX_PALETTE_SIZE = 50;
 
 export default function ProjectPalette() {
   const { id } = useParams();
-  const { activeProject, updateProjectPalette, projectsLoading, activeProjectId } = useProjects();
+  const {
+    activeProject,
+    updateProjectPalette,
+    projectsLoading,
+    activeProjectId,
+    trashedPaletteColors,
+    fetchTrashedColors,
+    deleteColor,
+    restoreColor,
+    deleteColorPermanently,
+  } = useProjects();
   const { showToast } = useToast();
 
   const [editIdx, setEditIdx] = useState(null);
@@ -63,6 +74,29 @@ export default function ProjectPalette() {
 
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null);
   const { copy, copiedValue } = useClipboard({ timeout: 1200 });
+
+  // Load this project's trashed colors so its trash section can appear (hidden when empty).
+  useEffect(() => {
+    if (id) fetchTrashedColors(id, { silent: true });
+  }, [id, fetchTrashedColors]);
+
+  // Trash actions: restore puts the color back in the grid; permanent delete is
+  // staged behind its own confirmation dialog. Mutually exclusive (trashBusy) so
+  // a restore in flight and a "delete forever" can never race on the same
+  // soft-deleted row.
+  const [confirmPermanentDeleteColor, setConfirmPermanentDeleteColor] = useState(null);
+  const [restoringColorId, setRestoringColorId] = useState(null);
+  const trashBusy = restoringColorId !== null || confirmPermanentDeleteColor !== null;
+  const handleRestoreColor = async (colorId) => {
+    if (trashBusy) return;
+    setRestoringColorId(colorId);
+    try {
+      const ok = await restoreColor(id, colorId);
+      if (ok) showToast('Color restored.');
+    } finally {
+      setRestoringColorId(null);
+    }
+  };
 
   // Copy a swatch's hex to the clipboard (stop the click from starting a drag).
   const handleCopyHex = async (e, hex) => {
@@ -348,18 +382,22 @@ export default function ProjectPalette() {
            <AddTile
             onClick={openAddModal}
             label="New color"
-            className="aspect-[4/5]"
+            className="aspect-square"
            />
 
           {/* Live (preview) order; each node is registered in itemRefs (by id)
               for FLIP measurement, and the dragged swatch is dimmed. */}
           {previewPalette.map((color, idx) => (
-            <div
+            <ColorTile
               key={color.id}
               ref={el => { itemRefs.current[color.id] = el; }}
               tabIndex={-1}
               aria-label={`Color ${color.name}, ${color.hex}`}
-              className={`group relative flex flex-col aspect-[4/5] rounded-3xl outline-none ${color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}`}
+              hex={color.hex}
+              name={color.name}
+              onCopy={(e) => handleCopyHex(e, color.hex)}
+              copied={copiedValue === color.hex}
+              className={color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'}
               draggable
               onDragStart={e => {
                 // Begin a drag: reset FLIP bookkeeping and record the source swatch.
@@ -432,80 +470,112 @@ export default function ProjectPalette() {
                 setDragOverIndex(null);
                 setPreviewPalette(palette);
               }}
-            >
-              {/* No `overflow-hidden` on purpose: with `rounded-3xl` and the
-                  hover transform, Chrome drops the rounded clip mid-animation and
-                  the overlay flashes square corners. The swatch and its only
-                  full-bleed child (the copy overlay) are rounded to match. */}
-              <div className="flex-1 w-full rounded-3xl relative transition-transform duration-slow group-hover:-translate-y-2"
-                   style={{ backgroundColor: color.hex }}>
+              overlay={
+                <>
+                  <ActionIconButton
+                    onClick={(e) => handleDeleteColor(e, color.id)}
+                    title="Delete color"
+                    intent="delete"
+                    variant="light"
+                    className="absolute top-3 right-3 z-30"
+                  >
+                    <DeleteIcon />
+                  </ActionIconButton>
 
-                   <ActionIconButton
-                      onClick={(e) => handleDeleteColor(e, color.id)}
-                      title="Delete color"
-                      intent="delete"
-                      variant="light"
-                      className="absolute top-3 right-3 z-30"
-                   >
-                      <DeleteIcon />
-                   </ActionIconButton>
+                  <ActionIconButton
+                    onClick={() => openEditModal(idx)}
+                    title="Edit color"
+                    intent="edit"
+                    variant="light"
+                    className="absolute top-3 left-3 z-30"
+                  >
+                    <EditIcon />
+                  </ActionIconButton>
 
+                  {/* Reorder controls: keyboard-operable, non-drag alternative
+                      (WCAG 2.5.7). Visually hidden (srOnly) so sighted users
+                      drag while assistive-tech users get "move left/right". */}
+                  <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
                     <ActionIconButton
-                      onClick={() => openEditModal(idx)}
-                      title="Edit color"
-                      intent="edit"
+                      onClick={(e) => { e.stopPropagation(); moveColor(idx, idx - 1); }}
+                      title="Move color left"
                       variant="light"
-                      className="absolute top-3 left-3 z-30"
+                      srOnly
+                      disabled={idx === 0}
                     >
-                      <EditIcon />
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                      </svg>
                     </ActionIconButton>
-
-                   {/* Reorder controls: keyboard-operable, non-drag alternative
-                       (WCAG 2.5.7). Visually hidden (srOnly) so sighted users
-                       drag while assistive-tech users get "move left/right". */}
-                   <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
-                     <ActionIconButton
-                       onClick={(e) => { e.stopPropagation(); moveColor(idx, idx - 1); }}
-                       title="Move color left"
-                       variant="light"
-                       srOnly
-                       disabled={idx === 0}
-                     >
-                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                       </svg>
-                     </ActionIconButton>
-                     <ActionIconButton
-                       onClick={(e) => { e.stopPropagation(); moveColor(idx, idx + 1); }}
-                       title="Move color right"
-                       variant="light"
-                       srOnly
-                       disabled={idx === previewPalette.length - 1}
-                     >
-                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                       </svg>
-                     </ActionIconButton>
-                   </div>
-
-                   {/* Copy-to-clipboard: a real button so it is keyboard-operable
-                       (WCAG 2.1.1), revealed on hover or keyboard focus. */}
-                   <button
-                     type="button"
-                     onClick={e => handleCopyHex(e, color.hex)}
-                     aria-label={`Copy ${color.hex}`}
-                     className="absolute inset-0 flex items-center justify-center rounded-3xl opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
-                   >
-                      <CopyBadge isCopied={copiedValue === color.hex} />
-                   </button>
-              </div>
-              <div className="mt-4 text-center">
-                 <p className="text-sm font-semibold text-primary truncate" title={color.name}>{color.name}</p>
-                 <p className="text-xs text-primary font-mono mt-0.5 uppercase tracking-wide opacity-70 group-hover:opacity-100 transition-opacity">{color.hex}</p>
-              </div>
-            </div>
+                    <ActionIconButton
+                      onClick={(e) => { e.stopPropagation(); moveColor(idx, idx + 1); }}
+                      title="Move color right"
+                      variant="light"
+                      srOnly
+                      disabled={idx === previewPalette.length - 1}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </ActionIconButton>
+                  </div>
+                </>
+              }
+            />
           ))}
           </div>
+
+          {trashedPaletteColors.length > 0 && (
+            <section className="mt-14" aria-labelledby="palette-trash-title">
+              <h2 id="palette-trash-title" className="text-lg font-medium text-primary flex items-center">
+                <DeleteIcon className="w-5 h-5 mr-2 text-blue shrink-0" />
+                Trash
+                <span className="ml-2 text-sm font-normal text-primary/50">({trashedPaletteColors.length})</span>
+              </h2>
+              <p className="text-xs text-primary/60 mt-1 mb-4">
+                Deleted colors are kept for 30 days, then deleted forever.
+              </p>
+              <div className="space-y-3">
+                {trashedPaletteColors.map((color) => (
+                  <Card key={color.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="min-w-0 flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full ring-2 ring-surface shrink-0"
+                        style={{ backgroundColor: color.hex }}
+                      ></div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-primary truncate">{color.name}</p>
+                        <p className="text-xs text-primary/60">
+                          {color.daysLeft <= 0
+                            ? 'Will be deleted with the next cleanup'
+                            : `${color.daysLeft} day${color.daysLeft === 1 ? '' : 's'} left before permanent deletion`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <Button
+                        variant="ghost"
+                        className="text-sm"
+                        onClick={() => handleRestoreColor(color.id)}
+                        loading={restoringColorId === color.id}
+                        disabled={trashBusy}
+                      >
+                        Restore
+                      </Button>
+                      <Button
+                        variant="danger"
+                        className="text-sm"
+                        disabled={trashBusy}
+                        onClick={() => setConfirmPermanentDeleteColor({ id: color.id, name: color.name })}
+                      >
+                        Delete forever
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          )}
         </>
       ) : (
         <ProjectStatePlaceholder loading={projectsLoading || String(activeProjectId) !== String(id)} />
@@ -629,20 +699,33 @@ export default function ProjectPalette() {
 
       <ConfirmDialog
         isOpen={confirmDeleteColor !== null}
-        title="Delete color?"
-        message="It will be removed from the palette."
-        confirmLabel="Delete"
-       
+        title="Move to trash?"
+        message="You can restore it for 30 days; after that it is deleted forever."
+        confirmLabel="Move to trash"
         onCancel={() => setConfirmDeleteColor(null)}
         onConfirm={async () => {
           if (confirmDeleteColor === null) return;
-          // Delete by removing the color (matched by id) and persisting the rest.
-          const nextPalette = palette.filter((color) => color.id !== confirmDeleteColor);
-          const saved = await persistPalette(nextPalette);
-          if (saved) {
-            setConfirmDeleteColor(null);
-            showToast('Color deleted.');
-          }
+          const ok = await deleteColor(id, confirmDeleteColor);
+          setConfirmDeleteColor(null);
+          if (ok) showToast('Color moved to trash.');
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmPermanentDeleteColor}
+        title="Delete forever?"
+        message={
+          confirmPermanentDeleteColor?.name
+            ? `"${confirmPermanentDeleteColor.name}" will be permanently lost. This cannot be undone.`
+            : 'This color will be permanently lost. This cannot be undone.'
+        }
+        confirmLabel="Delete forever"
+        onCancel={() => setConfirmPermanentDeleteColor(null)}
+        onConfirm={async () => {
+          if (!confirmPermanentDeleteColor?.id) return;
+          const ok = await deleteColorPermanently(id, confirmPermanentDeleteColor.id);
+          setConfirmPermanentDeleteColor(null);
+          if (ok) showToast('Color permanently deleted.');
         }}
       />
     </>
