@@ -19,7 +19,12 @@ const stubGooglePayload = (payload) => {
   mockVerifyIdToken.mockResolvedValueOnce({ getPayload: () => payload });
 };
 
-const makeRes = () => ({ json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() });
+const makeRes = () => ({
+  json: jest.fn(),
+  status: jest.fn().mockReturnThis(),
+  cookie: jest.fn(),
+  clearCookie: jest.fn(),
+});
 
 describe('auth controller — Google sign-in', () => {
   beforeEach(() => {
