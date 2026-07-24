@@ -183,8 +183,10 @@ const validateBrushNormPayload = ({ name, value, unit, brushName, opacity }) => 
     return { error: 'The brush name is invalid.' };
   }
 
+  // An empty string means "left blank" (the field is optional), same as not
+  // sending it at all — not an invalid value to reject.
   let validatedOpacity = null;
-  if (opacity !== undefined) {
+  if (opacity !== undefined && opacity !== '') {
     if (typeof opacity === 'string' || typeof opacity === 'number') {
       const opStr = String(opacity).trim();
       if (validator.isFloat(opStr, { min: 0, max: 1 })) {

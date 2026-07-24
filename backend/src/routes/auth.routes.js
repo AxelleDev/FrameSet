@@ -6,21 +6,26 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const authController = require('../controllers/auth.controller');
+const { isE2ETestMode } = require('../utils/testMode');
 
 const router = express.Router();
+
+// Raised (not disabled) in E2E test mode so repeated local Playwright runs
+// from one machine don't get 429'd, while still catching a genuine runaway.
+const maxFor = (normalMax) => (isE2ETestMode ? 10000 : normalMax);
 
 // Login: tight per-IP limit to slow credential stuffing. Separate from register
 // so a burst of one can't consume the other's quota.
 const loginLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 5,
+  max: maxFor(5),
   message: 'Too many attempts, please try again in a minute.',
 });
 
 // Register: per-IP limit to slow spam signups, independent from login.
 const registerLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 5,
+  max: maxFor(5),
   message: 'Too many attempts, please try again in a minute.',
 });
 
@@ -29,7 +34,7 @@ const registerLimiter = rateLimit({
 // consume the other's quota and lock out a legitimate user.
 const verifyCodeLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 10,
+  max: maxFor(10),
   message: 'Too many verification attempts, try again in 10 minutes.',
 });
 
@@ -37,7 +42,7 @@ const verifyCodeLimiter = rateLimit({
 // from email verification so the two flows keep independent quotas.
 const resetPasswordLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 10,
+  max: maxFor(10),
   message: 'Too many attempts, try again in 10 minutes.',
 });
 
@@ -45,7 +50,7 @@ const resetPasswordLimiter = rateLimit({
 // relay. Dedicated instance, independent from the forgot-password quota below.
 const resendCodeLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 3,
+  max: maxFor(3),
   message: 'Too many resend requests, try again in 10 minutes.',
 });
 
@@ -53,14 +58,14 @@ const resendCodeLimiter = rateLimit({
 // resend limiter so neither flow can exhaust the other's quota.
 const forgotPasswordLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 3,
+  max: maxFor(3),
   message: 'Too many requests, try again in 10 minutes.',
 });
 
 // Token refresh: bounds how often clients can rotate tokens.
 const refreshLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
+  max: maxFor(10),
   message: 'Too many refresh requests, please try again in a minute.',
 });
 
@@ -68,7 +73,7 @@ const refreshLimiter = rateLimit({
 // account, so it gets its own login-grade per-IP cap.
 const googleSignInLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
+  max: maxFor(10),
   message: 'Too many attempts, please try again in a minute.',
 });
 

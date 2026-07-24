@@ -19,6 +19,7 @@ const openapiSpec = require('./docs/openapi');
 const { ensureCsrfCookie, csrfProtection } = require('./middleware/csrfProtection');
 const { healthCheckLimiter } = require('./middleware/projectCreateLimiter');
 const { logger } = require('./utils/logger');
+const { isE2ETestMode } = require('./utils/testMode');
 
 const app = express();
 // Trust the first proxy hop (Render/Railway/nginx/…): so req.ip is the real
@@ -233,6 +234,12 @@ app.use('/api/fonts', fontsRoutes);
 // Public read-only share links (GET only, so the CSRF guard's safe-method
 // exemption applies; rate limited inside the router).
 app.use('/api/share', shareRoutes);
+
+// E2E test mode only: lets a Playwright run read a verification code without
+// a real inbox. Never mounted otherwise — see utils/testMode.js.
+if (isE2ETestMode) {
+  app.use('/api/_test', require('./routes/testE2E.routes'));
+}
 
 // 404 handler.
 app.use((req, res, _next) => {

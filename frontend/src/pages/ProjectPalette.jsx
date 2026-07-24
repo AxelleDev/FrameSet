@@ -3,7 +3,7 @@
 // Every change persists the whole ordered palette via updateProjectPalette and
 // adopts the server's canonical result. Colors are keyed by stable `id`, never
 // hex, so two colors may share a hex without colliding.
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useToast } from '../context/ToastContext';
 import { useParams } from 'react-router-dom';
@@ -50,6 +50,13 @@ export default function ProjectPalette() {
   const [editIdx, setEditIdx] = useState(null);
   const [editColorName, setEditColorName] = useState('');
   const [editColorHex, setEditColorHex] = useState('');
+
+  // FormField's "Hex code" label can't use its usual auto-id cloning here: its
+  // child is a wrapping <div> (color swatch + text input side by side), so the
+  // generated id would land on that div — not labelable — leaving the actual
+  // text input with no accessible name. Wired manually instead.
+  const editHexFieldId = useId();
+  const newHexFieldId = useId();
 
   // Drag-and-drop reorder (FLIP animation + keyboard move + optimistic
   // persistence), shared with ProjectNorms and the dashboard's pinned section.
@@ -445,7 +452,10 @@ export default function ProjectPalette() {
               placeholder="Hair highlight"
             />
           </FormField>
-          <FormField label="Hex code">
+          <div>
+            <label htmlFor={editHexFieldId} className="block text-sm font-medium text-primary mb-2">
+              Hex code
+            </label>
             <div className="flex gap-3">
               <input
                 type="color"
@@ -455,6 +465,7 @@ export default function ProjectPalette() {
                 className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0 focus-ring"
               />
               <TextInput
+                id={editHexFieldId}
                 type="text"
                 value={editColorHex}
                 onChange={handleEditHexChange}
@@ -465,7 +476,7 @@ export default function ProjectPalette() {
                 className="flex-1"
               />
             </div>
-          </FormField>
+          </div>
         </div>
         <ModalActions
           secondaryLabel="Cancel"
@@ -487,7 +498,10 @@ export default function ProjectPalette() {
             />
           </FormField>
 
-          <FormField label="Hex code">
+          <div>
+            <label htmlFor={newHexFieldId} className="block text-sm font-medium text-primary mb-2">
+              Hex code
+            </label>
             <div className="flex gap-3">
               <input
                 type="color"
@@ -497,6 +511,7 @@ export default function ProjectPalette() {
                 className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0 focus-ring"
               />
               <TextInput
+                id={newHexFieldId}
                 type="text"
                 value={newColorHex}
                 onChange={handleNewHexChange}
@@ -507,7 +522,7 @@ export default function ProjectPalette() {
                 className="flex-1"
               />
             </div>
-          </FormField>
+          </div>
         </div>
 
         <ModalActions

@@ -562,7 +562,14 @@ export default function ProjectNorms() {
                       placeholder="Plume G"
                     />
                   </FormField>
-                  <FormField label="Size">
+                  <FormField
+                    label="Size"
+                    error={
+                      brushForm.value !== '' && !isBrushValueValid
+                        ? 'Size must be a positive number (≤ 1000).'
+                        : undefined
+                    }
+                  >
                     <TextInput
                       type="number"
                       min="0"
@@ -571,11 +578,6 @@ export default function ProjectNorms() {
                       onChange={(e) => setBrushField('value', e.target.value)}
                       placeholder="8"
                     />
-                    {brushForm.value !== '' && !isBrushValueValid && (
-                      <p className="text-xs text-danger mt-1">
-                        Size must be a positive number (≤ 1000).
-                      </p>
-                    )}
                   </FormField>
                   <FormField label="Unit">
                     <TextInput
@@ -600,42 +602,40 @@ export default function ProjectNorms() {
               ) : (
                 <>
                   <FormField label="Font">
-                    <div className="relative">
-                      <CustomSelect
-                        value={typoForm.fontFamily}
-                        onChange={(val) => {
-                          setTypoField('fontFamily', val);
-                          const selectedFont = googleFonts.find((f) => f.family === val);
-                          if (selectedFont) {
-                            loadGoogleFont(
-                              selectedFont.family,
-                              selectedFont.variants?.includes('regular')
-                                ? '400'
-                                : selectedFont.variants?.[0] || '400',
-                            );
-                          }
-                        }}
-                        options={
-                          googleFonts
-                            ? googleFonts.map((font) => ({
-                                value: font.family,
-                                label: font.family,
-                              }))
-                            : []
+                    <CustomSelect
+                      value={typoForm.fontFamily}
+                      onChange={(val) => {
+                        setTypoField('fontFamily', val);
+                        const selectedFont = googleFonts.find((f) => f.family === val);
+                        if (selectedFont) {
+                          loadGoogleFont(
+                            selectedFont.family,
+                            selectedFont.variants?.includes('regular')
+                              ? '400'
+                              : selectedFont.variants?.[0] || '400',
+                          );
                         }
-                        placeholder="Search fonts…"
-                        isLoading={loadingFonts}
-                        isDisabled={loadingFonts}
-                        noOptionsMessage={() => (loadingFonts ? 'Loading…' : 'No matching fonts')}
-                      />
-                    </div>
-                    {loadingFonts && (
-                      <div className="text-xs text-secondary mt-1">Loading fonts…</div>
-                    )}
-                    {errorFonts && (
-                      <div className="text-xs text-danger mt-1">Error loading fonts</div>
-                    )}
+                      }}
+                      options={
+                        googleFonts
+                          ? googleFonts.map((font) => ({
+                              value: font.family,
+                              label: font.family,
+                            }))
+                          : []
+                      }
+                      placeholder="Search fonts…"
+                      isLoading={loadingFonts}
+                      isDisabled={loadingFonts}
+                      noOptionsMessage={() => (loadingFonts ? 'Loading…' : 'No matching fonts')}
+                    />
                   </FormField>
+                  {loadingFonts && (
+                    <div className="text-xs text-secondary mt-1">Loading fonts…</div>
+                  )}
+                  {errorFonts && (
+                    <div className="text-xs text-danger mt-1">Error loading fonts</div>
+                  )}
                   <FormField label="Weight">
                     <TextInput
                       type="text"
@@ -709,7 +709,14 @@ export default function ProjectNorms() {
                   placeholder="Plume G"
                 />
               </FormField>
-              <FormField label="Size (px)">
+              <FormField
+                label="Size (px)"
+                error={
+                  brushForm.value !== '' && !isBrushValueValid
+                    ? 'Size must be a positive number (≤ 1000).'
+                    : undefined
+                }
+              >
                 <TextInput
                   type="number"
                   min="0"
@@ -718,11 +725,6 @@ export default function ProjectNorms() {
                   onChange={(e) => setBrushField('value', e.target.value)}
                   placeholder="8"
                 />
-                {brushForm.value !== '' && !isBrushValueValid && (
-                  <p className="text-xs text-danger mt-1">
-                    Size must be a positive number (≤ 1000).
-                  </p>
-                )}
               </FormField>
               <FormField label="Unit">
                 <TextInput
@@ -771,9 +773,9 @@ export default function ProjectNorms() {
                   isDisabled={loadingFonts}
                   noOptionsMessage={() => (loadingFonts ? 'Loading…' : 'No matching fonts')}
                 />
-                {loadingFonts && <div className="text-xs text-secondary mt-1">Loading fonts…</div>}
-                {errorFonts && <div className="text-xs text-danger mt-1">Error loading fonts</div>}
               </FormField>
+              {loadingFonts && <div className="text-xs text-secondary mt-1">Loading fonts…</div>}
+              {errorFonts && <div className="text-xs text-danger mt-1">Error loading fonts</div>}
               <FormField label="Weight">
                 <TextInput
                   type="text"

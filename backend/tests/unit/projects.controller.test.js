@@ -277,6 +277,29 @@ describe('projects controller', () => {
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({ success: true, id: 9 });
     });
+
+    it('treats an empty-string opacity as "not provided" rather than invalid', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 1 }]]) // ensureProjectOwnership
+        .mockResolvedValueOnce([{ insertId: 10 }])
+        .mockResolvedValueOnce([{}]);
+
+      const req = {
+        params: { id: '1' },
+        user: { id: 1 },
+        body: { name: 'Hair outline', value: '8', unit: 'px', opacity: '' },
+      };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await projectsController.addBrushNorm(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(db.query).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('INSERT INTO project_brush_norms'),
+        ['1', 'Hair outline', '8', 'px', null, null, '1'],
+      );
+    });
   });
 
   describe('palette update', () => {

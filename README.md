@@ -108,7 +108,36 @@ npm run dev            # app on http://localhost:5173
 
 > From the repo root, convenience scripts proxy to each package:
 > `npm run dev:backend`, `npm run dev:frontend`, `npm run migrate:backend`,
-> `npm run test:backend`, `npm run test:frontend`, `npm run build:frontend`.
+> `npm run test:backend`, `npm run test:frontend`, `npm run test:e2e`,
+> `npm run build:frontend`.
+
+### End-to-end tests (Playwright)
+
+`e2e/` runs the critical user journey — register, verify by email, create a
+project, add content, share it publicly, export a PDF, delete the account —
+against a real browser, backend and database. One-time setup:
+
+```bash
+cd e2e
+npm install
+npx playwright install chromium
+```
+
+Then, with your backend's `.env` configured (database + a real or Ethereal
+mail setup) and MySQL running:
+
+```bash
+npm run test:e2e   # from the repo root
+```
+
+This starts its own backend and frontend instances on dedicated ports (3100 /
+5273 — never your normal dev servers on 3000 / 5173), against the same dev
+database. The backend runs with `E2E_TEST_MODE=true`, which captures outgoing
+emails in memory instead of sending them (so the test can read the
+verification code) and raises rate limits so repeated local runs don't get
+throttled; this flag is inert whenever `NODE_ENV=production`. See
+`e2e/tests/critical-path.spec.js` and `backend/src/utils/testMode.js`. Not
+yet wired into CI — local-only for now.
 
 ---
 

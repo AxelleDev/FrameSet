@@ -34,6 +34,8 @@ export default function CustomSelect({
   placeholder,
   isClearable = false,
   components,
+  id,
+  inputId,
   ...props
 }) {
   // Normalize string options into the { value, label } shape react-select expects.
@@ -50,6 +52,13 @@ export default function CustomSelect({
       onChange={(opt) => onChange(opt ? opt.value : '')}
       placeholder={placeholder}
       isClearable={isClearable}
+      // react-select puts `id` on the outer container (not labelable) but
+      // `inputId` on the actual search input — a <label htmlFor> (e.g. from
+      // FormField, which only knows to pass `id`) needs the latter to
+      // actually associate. Falling back to `id` here means every existing
+      // "<FormField><CustomSelect /></FormField>" pairing gets a correctly
+      // labelled, accessible input for free, with no per-call-site wiring.
+      inputId={inputId || id}
       menuPlacement="auto"
       // Body-level fixed portal so the menu escapes the page shell's overflow/stacking
       // contexts; without it the menu is trapped beneath the cards grid below.

@@ -14,6 +14,14 @@ const {
   MAIL_PASS,
 } = require('../config/mail.config');
 const { logger } = require('../utils/logger');
+const { isE2ETestMode } = require('../utils/testMode');
+
+// E2E test mode only: the last email sent to each recipient, kept in memory so
+// a Playwright run can read a verification code without a real inbox (see the
+// /_test/last-email route, only mounted under the same flag). Never touched
+// outside test mode.
+const capturedEmailsByRecipient = new Map();
+const getLastEmail = (to) => capturedEmailsByRecipient.get(to) || null;
 
 // The brand logo is embedded inline via a CID attachment (see sendMail), which
 // renders reliably across email clients without needing a public image host.
@@ -45,7 +53,16 @@ let transporterPromise = null;
 
 // Returns the SMTP transport. With no SMTP configured (dev), an Ethereal test
 // account is created on the first call so the app can send without email setup.
+// In E2E test mode, a jsonTransport is used instead: no network call at all,
+// nothing sent anywhere — sendMail() captures the content itself (see below).
 const getTransporter = async () => {
+  if (isE2ETestMode) {
+    if (!transporter || !transporter.options?.jsonTransport) {
+      mailFrom = mailFrom || 'e2e@frameset.test';
+      transporter = nodemailer.createTransport({ jsonTransport: true });
+    }
+    return transporter;
+  }
   if (transporter) {
     return transporter;
   }
@@ -137,6 +154,11 @@ const sendMail = async ({ to, subject, text, html }) => {
     attachments: [{ filename: 'frameset-logo.png', path: LOGO_PATH, cid: LOGO_CID }],
   });
 
+  if (isE2ETestMode) {
+    capturedEmailsByRecipient.set(to, { subject, text, html });
+    return;
+  }
+
   // In non-production, log the Ethereal preview URL so the email can be read
   // from the server console without a real inbox.
   if (process.env.NODE_ENV !== 'production' && typeof nodemailer.getTestMessageUrl === 'function') {
@@ -150,4 +172,5 @@ const sendMail = async ({ to, subject, text, html }) => {
 module.exports = {
   sendMail,
   buildTemplate,
+  getLastEmail,
 };
