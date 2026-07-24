@@ -197,7 +197,7 @@ const authenticateUser = async ({ email: rawEmail, password: rawPassword }) => {
 // Columns returned to build a session user; `password IS NOT NULL` exposes
 // whether a local password exists without ever selecting the hash itself.
 const SESSION_USER_COLUMNS =
-  'id, name, email, avatar_initials, password_updated_at, pending_email, (password IS NOT NULL) AS has_password';
+  'id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, (password IS NOT NULL) AS has_password';
 
 /** Maps a users row (SESSION_USER_COLUMNS) to the session-user shape. */
 const toSessionUser = (userDb) => ({
@@ -208,7 +208,23 @@ const toSessionUser = (userDb) => ({
   passwordUpdatedAt: userDb.password_updated_at,
   pendingEmail: userDb.pending_email || null,
   hasPassword: Boolean(userDb.has_password),
+  isDemo: Boolean(userDb.is_demo),
 });
+
+// Logs into the single shared, read-only demo account (see migration 019) —
+// no credentials needed, this is the "Try without an account" entry point.
+// Writes for this account are rejected server-side (authenticateToken.js),
+// never relying on the client to respect isDemo.
+const loginAsDemo = async () => {
+  const [rows] = await db.query(
+    `SELECT ${SESSION_USER_COLUMNS} FROM users WHERE is_demo = 1 LIMIT 1`,
+  );
+  if (rows.length === 0) {
+    throw new AuthServiceError('demo_unavailable', 'The demo account is not available.');
+  }
+
+  return toSessionUser(rows[0]);
+};
 
 // Authenticates with a Google ID token (credential from Google Identity Services).
 // The token is verified cryptographically against Google's keys and our client id;
@@ -532,6 +548,7 @@ module.exports = {
   registerUser,
   authenticateUser,
   authenticateWithGoogle,
+  loginAsDemo,
   isRefreshTokenStale,
   verifyEmailCode,
   resendVerificationCode,

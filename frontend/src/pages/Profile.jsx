@@ -23,6 +23,7 @@ export default function Profile() {
   const { user, updateUserProfile, logout, changePassword, deleteAccount } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const isDemo = Boolean(user?.isDemo);
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -305,7 +306,7 @@ export default function Profile() {
               </svg>
               <span className="truncate">Personal information</span>
             </h2>
-            {!isEditing && (
+            {!isEditing && !isDemo && (
               <Button
                 onClick={startEdit}
                 variant="ghost"
@@ -315,6 +316,11 @@ export default function Profile() {
               </Button>
             )}
           </div>
+          {isDemo && (
+            <p className="text-xs text-primary/60 -mt-4 mb-4">
+              Account settings aren&apos;t editable in the demo.
+            </p>
+          )}
 
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -404,7 +410,9 @@ export default function Profile() {
             </svg>
             Security &amp; sign-in
           </h2>
-          {user.hasPassword === false ? (
+          {isDemo ? (
+            <p className="text-sm text-primary/60">Not available in the demo account.</p>
+          ) : user.hasPassword === false ? (
             <div className="min-w-0">
               <p className="text-sm font-medium text-primary">Google sign-in</p>
               <p className="text-xs text-primary/60 mt-1">
@@ -433,17 +441,24 @@ export default function Profile() {
 
         <Card className="p-6 sm:p-8">
           <h2 className="text-lg font-medium text-primary mb-2">Danger zone</h2>
-          <p className="text-sm text-primary mb-6">
-            Deleting your account is irreversible. All your data will be lost.
-          </p>
-
-          <Button
-            onClick={() => setIsDeleteAccountOpen(true)}
-            variant="danger"
-            className="text-sm w-full sm:w-auto"
-          >
-            Delete my account
-          </Button>
+          {isDemo ? (
+            <p className="text-sm text-primary/60">
+              Account deletion isn&apos;t available in the demo.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-primary mb-6">
+                Deleting your account is irreversible. All your data will be lost.
+              </p>
+              <Button
+                onClick={() => setIsDeleteAccountOpen(true)}
+                variant="danger"
+                className="text-sm w-full sm:w-auto"
+              >
+                Delete my account
+              </Button>
+            </>
+          )}
         </Card>
       </div>
 

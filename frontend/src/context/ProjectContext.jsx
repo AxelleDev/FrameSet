@@ -22,8 +22,26 @@ export const ProjectContext = createContext(null);
 // first request and its follow-ups stay consistent.
 const DEFAULT_PAGINATION = { page: 1, pageSize: 12, total: 0, totalPages: 1 };
 
+// The share token seeded for the demo project (migration 019's INSERT INTO
+// projects ... share_token). Reused by enableSharing's demo simulation.
+const DEMO_SHARE_TOKEN = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4';
+
 export const ProjectProvider = ({ children }) => {
   const { user, authLoading, setGlobalError } = useAuth();
+  // The demo account is read-only server-side (authenticateToken.js rejects
+  // every mutating request before it can reach the database) — so content
+  // mutations are simulated here instead: applied to local state only, never
+  // sent to the API, giving a fully interactive demo with zero DB writes.
+  // A reload re-fetches the real (unedited) seeded data, naturally "resetting"
+  // the demo for the next visitor.
+  const isDemo = Boolean(user?.isDemo);
+  // Always-negative, monotonic ids for demo-simulated rows: unique for the
+  // session, and never collide with real (positive) database ids.
+  const nextDemoIdRef = useRef(0);
+  const nextDemoId = () => {
+    nextDemoIdRef.current -= 1;
+    return nextDemoIdRef.current;
+  };
 
   const [projects, setProjects] = useState([]);
   const [projectsPagination, setProjectsPagination] = useState(DEFAULT_PAGINATION);
@@ -150,6 +168,23 @@ export const ProjectProvider = ({ children }) => {
     async (name) => {
       if (!user) return null;
 
+      if (isDemo) {
+        const newProject = {
+          id: nextDemoId(),
+          name,
+          lastEdited: 'Just now',
+          shareToken: null,
+          pinned: false,
+          brushNorms: [],
+          typographyNorms: [],
+          normsCount: 0,
+          palette: [],
+        };
+        setProjects((prevProjects) => [newProject, ...prevProjects]);
+        updatePagination({ ...paginationRef.current, total: paginationRef.current.total + 1 });
+        return newProject;
+      }
+
       try {
         const newProject = await api.post('/projects', { name }, { onGlobalError: setGlobalError });
         setProjects((prevProjects) => [newProject, ...prevProjects]);
@@ -161,7 +196,7 @@ export const ProjectProvider = ({ children }) => {
         return null;
       }
     },
-    [user, setGlobalError, updatePagination],
+    [user, isDemo, setGlobalError, updatePagination],
   );
 
   // Fetches the trashed projects (small list: id, name, days left). Refreshed
@@ -171,6 +206,12 @@ export const ProjectProvider = ({ children }) => {
       if (!user?.id) {
         setTrashedProjects([]);
         return [];
+      }
+      // The demo account's trash is simulated locally (see deleteProject); a
+      // real fetch would return the account's actual (empty) trash and wipe
+      // it out from under the visitor.
+      if (isDemo) {
+        return trashedProjects;
       }
 
       try {
@@ -184,7 +225,7 @@ export const ProjectProvider = ({ children }) => {
         return [];
       }
     },
-    [user?.id, setGlobalError],
+    [user?.id, isDemo, trashedProjects, setGlobalError],
   );
 
   // Restores a trashed project. The full project (norms + palette) comes back
@@ -193,6 +234,17 @@ export const ProjectProvider = ({ children }) => {
   // Returns true on success.
   const restoreProject = useCallback(
     async (id) => {
+      if (isDemo) {
+        const restored = trashedProjects.find((project) => String(project.id) === String(id));
+        setTrashedProjects((prev) => prev.filter((project) => String(project.id) !== String(id)));
+        if (restored) {
+          const { daysLeft: _daysLeft, ...projectFields } = restored;
+          setProjects((prev) => [projectFields, ...prev]);
+          updatePagination({ ...paginationRef.current, total: paginationRef.current.total + 1 });
+        }
+        return true;
+      }
+
       try {
         await api.post(`/projects/${id}/restore`, {}, { onGlobalError: setGlobalError });
         setTrashedProjects((prev) => prev.filter((project) => String(project.id) !== String(id)));
@@ -204,12 +256,17 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError, refetchLoadedProjects],
+    [isDemo, trashedProjects, setGlobalError, updatePagination, refetchLoadedProjects],
   );
 
   // Permanently deletes a TRASHED project (irreversible). Returns true on success.
   const deleteProjectPermanently = useCallback(
     async (id) => {
+      if (isDemo) {
+        setTrashedProjects((prev) => prev.filter((project) => String(project.id) !== String(id)));
+        return true;
+      }
+
       try {
         await api.delete(`/projects/${id}/permanent`, null, { onGlobalError: setGlobalError });
         setTrashedProjects((prev) => prev.filter((project) => String(project.id) !== String(id)));
@@ -220,13 +277,26 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Enables public sharing: the server mints (or returns) the project's stable
   // share token, mirrored locally. Returns the token, or null on failure.
   const enableSharing = useCallback(
     async (projectId) => {
+      if (isDemo) {
+        // Reuse the seeded token (migration 019) rather than a fabricated one,
+        // so the public share page keeps working no matter how many times a
+        // visitor toggles it off and back on.
+        const shareToken = DEMO_SHARE_TOKEN;
+        setProjects((prevProjects) =>
+          prevProjects.map((project) =>
+            String(project.id) === String(projectId) ? { ...project, shareToken } : project,
+          ),
+        );
+        return shareToken;
+      }
+
       try {
         const data = await api.post(
           `/projects/${projectId}/share`,
@@ -246,12 +316,21 @@ export const ProjectProvider = ({ children }) => {
         return null;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Disables public sharing: the link dies immediately server-side.
   const disableSharing = useCallback(
     async (projectId) => {
+      if (isDemo) {
+        setProjects((prevProjects) =>
+          prevProjects.map((project) =>
+            String(project.id) === String(projectId) ? { ...project, shareToken: null } : project,
+          ),
+        );
+        return true;
+      }
+
       try {
         await api.delete(`/projects/${projectId}/share`, null, { onGlobalError: setGlobalError });
         setProjects((prevProjects) =>
@@ -266,13 +345,40 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Duplicates a project (norms + palette copied server-side) and prepends the
   // copy to the local list. Returns the new project on success, or null.
   const duplicateProject = useCallback(
     async (id) => {
+      if (isDemo) {
+        const source = projects.find((project) => String(project.id) === String(id));
+        if (!source) return null;
+        const suffix = ' (copy)';
+        const baseName =
+          source.name.length + suffix.length > 50
+            ? source.name.slice(0, 50 - suffix.length)
+            : source.name;
+        const newProject = {
+          ...source,
+          id: nextDemoId(),
+          name: baseName + suffix,
+          lastEdited: 'Just now',
+          shareToken: null,
+          pinned: false,
+          palette: (source.palette || []).map((color) => ({ ...color, id: nextDemoId() })),
+          brushNorms: (source.brushNorms || []).map((norm) => ({ ...norm, id: nextDemoId() })),
+          typographyNorms: (source.typographyNorms || []).map((norm) => ({
+            ...norm,
+            id: nextDemoId(),
+          })),
+        };
+        setProjects((prevProjects) => [newProject, ...prevProjects]);
+        updatePagination({ ...paginationRef.current, total: paginationRef.current.total + 1 });
+        return newProject;
+      }
+
       try {
         const newProject = await api.post(
           `/projects/${id}/duplicate`,
@@ -288,7 +394,7 @@ export const ProjectProvider = ({ children }) => {
         return null;
       }
     },
-    [setGlobalError, updatePagination],
+    [isDemo, projects, setGlobalError, updatePagination],
   );
 
   // Pins a project to the top of the dashboard. Moves it locally to just after
@@ -296,8 +402,7 @@ export const ProjectProvider = ({ children }) => {
   // behavior, so the dashboard's pinned section doesn't jump around on refetch.
   const pinProject = useCallback(
     async (projectId) => {
-      try {
-        await api.post(`/projects/${projectId}/pin`, {}, { onGlobalError: setGlobalError });
+      const applyPin = () =>
         setProjects((prev) => {
           const target = prev.find((project) => String(project.id) === String(projectId));
           if (!target) return prev;
@@ -308,6 +413,15 @@ export const ProjectProvider = ({ children }) => {
           next.splice(insertAt, 0, { ...target, pinned: true });
           return next;
         });
+
+      if (isDemo) {
+        applyPin();
+        return true;
+      }
+
+      try {
+        await api.post(`/projects/${projectId}/pin`, {}, { onGlobalError: setGlobalError });
+        applyPin();
         return true;
       } catch (error) {
         setGlobalError(error?.message || 'Failed to pin the project.');
@@ -315,20 +429,28 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Unpins a project; it naturally falls back into the "Your projects" section
   // wherever it lands next time the grid is refetched.
   const unpinProject = useCallback(
     async (projectId) => {
-      try {
-        await api.delete(`/projects/${projectId}/pin`, null, { onGlobalError: setGlobalError });
+      const applyUnpin = () =>
         setProjects((prev) =>
           prev.map((project) =>
             String(project.id) === String(projectId) ? { ...project, pinned: false } : project,
           ),
         );
+
+      if (isDemo) {
+        applyUnpin();
+        return true;
+      }
+
+      try {
+        await api.delete(`/projects/${projectId}/pin`, null, { onGlobalError: setGlobalError });
+        applyUnpin();
         return true;
       } catch (error) {
         setGlobalError(error?.message || 'Failed to unpin the project.');
@@ -336,13 +458,15 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Reorders the user's pinned projects. Only bumps the request server-side;
   // the caller (the dashboard's drag hook) owns the optimistic local order.
   const reorderPinnedProjects = useCallback(
     async (orderedIds) => {
+      if (isDemo) return true;
+
       try {
         await api.post('/projects/pinned/reorder', orderedIds, { onGlobalError: setGlobalError });
         return true;
@@ -352,7 +476,7 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Moves a project to the trash (soft delete server-side) and removes it from
@@ -361,6 +485,24 @@ export const ProjectProvider = ({ children }) => {
   // success, false on failure.
   const deleteProject = useCallback(
     async (id) => {
+      if (isDemo) {
+        const target = projects.find((project) => String(project.id) === String(id));
+        setProjects((prevProjects) =>
+          prevProjects.filter((project) => String(project.id) !== String(id)),
+        );
+        updatePagination({
+          ...paginationRef.current,
+          total: Math.max(0, paginationRef.current.total - 1),
+        });
+        if (String(activeProjectId) === String(id)) {
+          setActiveProjectId(null);
+        }
+        if (target) {
+          setTrashedProjects((prev) => [{ ...target, daysLeft: 30 }, ...prev]);
+        }
+        return true;
+      }
+
       try {
         await api.delete(`/projects/${id}`, null, { onGlobalError: setGlobalError });
         setProjects((prevProjects) =>
@@ -381,7 +523,7 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [activeProjectId, setGlobalError, updatePagination, fetchTrashedProjects],
+    [isDemo, projects, activeProjectId, setGlobalError, updatePagination, fetchTrashedProjects],
   );
 
   // Replaces the whole palette and adopts the canonical one returned by the
@@ -389,6 +531,20 @@ export const ProjectProvider = ({ children }) => {
   // delete, reorder. Returns the saved palette, or null on failure.
   const updateProjectPalette = useCallback(
     async (projectId, palette) => {
+      if (isDemo) {
+        const savedPalette = palette.map((color) =>
+          color.id ? color : { ...color, id: nextDemoId() },
+        );
+        setProjects((prevProjects) =>
+          prevProjects.map((project) =>
+            String(project.id) === String(projectId)
+              ? { ...project, palette: savedPalette }
+              : project,
+          ),
+        );
+        return savedPalette;
+      }
+
       try {
         const response = await api.post(`/projects/${projectId}/palette`, palette, {
           onGlobalError: setGlobalError,
@@ -408,7 +564,7 @@ export const ProjectProvider = ({ children }) => {
         return null;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Fetches a project's trashed colors (small list: id, name, hex, days left).
@@ -417,6 +573,11 @@ export const ProjectProvider = ({ children }) => {
       if (!projectId) {
         setTrashedPaletteColors([]);
         return [];
+      }
+      // The demo account's color trash is simulated locally (see deleteColor);
+      // skip the network call so it isn't wiped by the real (empty) trash.
+      if (isDemo) {
+        return trashedPaletteColors;
       }
       try {
         const options = silent ? undefined : { onGlobalError: setGlobalError };
@@ -429,7 +590,7 @@ export const ProjectProvider = ({ children }) => {
         return [];
       }
     },
-    [setGlobalError],
+    [isDemo, trashedPaletteColors, setGlobalError],
   );
 
   // Moves a single color to the trash (soft delete server-side) and removes it
@@ -439,6 +600,27 @@ export const ProjectProvider = ({ children }) => {
   // page's trash section stays accurate. Returns true on success.
   const deleteColor = useCallback(
     async (projectId, colorId) => {
+      if (isDemo) {
+        const project = projects.find((p) => String(p.id) === String(projectId));
+        const target = project?.palette?.find((color) => String(color.id) === String(colorId));
+        setProjects((prevProjects) =>
+          prevProjects.map((p) =>
+            String(p.id) === String(projectId)
+              ? {
+                  ...p,
+                  palette: (p.palette || []).filter(
+                    (color) => String(color.id) !== String(colorId),
+                  ),
+                }
+              : p,
+          ),
+        );
+        if (target) {
+          setTrashedPaletteColors((prev) => [{ ...target, daysLeft: 30 }, ...prev]);
+        }
+        return true;
+      }
+
       try {
         await api.delete(`/projects/${projectId}/palette/${colorId}`, null, {
           onGlobalError: setGlobalError,
@@ -463,19 +645,14 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError, fetchTrashedColors],
+    [isDemo, projects, setGlobalError, fetchTrashedColors],
   );
 
   // Restores a trashed color, appending it back to the project's local palette
   // using the data already held in the trash list. Returns true on success.
   const restoreColor = useCallback(
     async (projectId, colorId) => {
-      try {
-        await api.post(
-          `/projects/${projectId}/palette/${colorId}/restore`,
-          {},
-          { onGlobalError: setGlobalError },
-        );
+      const applyRestore = () => {
         const restored = trashedPaletteColors.find((color) => String(color.id) === String(colorId));
         setTrashedPaletteColors((prev) =>
           prev.filter((color) => String(color.id) !== String(colorId)),
@@ -495,6 +672,20 @@ export const ProjectProvider = ({ children }) => {
             ),
           );
         }
+      };
+
+      if (isDemo) {
+        applyRestore();
+        return true;
+      }
+
+      try {
+        await api.post(
+          `/projects/${projectId}/palette/${colorId}/restore`,
+          {},
+          { onGlobalError: setGlobalError },
+        );
+        applyRestore();
         return true;
       } catch (error) {
         setGlobalError(error?.message || 'Failed to restore the color.');
@@ -502,12 +693,19 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [trashedPaletteColors, setGlobalError],
+    [isDemo, trashedPaletteColors, setGlobalError],
   );
 
   // Permanently deletes a TRASHED color (irreversible). Returns true on success.
   const deleteColorPermanently = useCallback(
     async (projectId, colorId) => {
+      if (isDemo) {
+        setTrashedPaletteColors((prev) =>
+          prev.filter((color) => String(color.id) !== String(colorId)),
+        );
+        return true;
+      }
+
       try {
         await api.delete(`/projects/${projectId}/palette/${colorId}/permanent`, null, {
           onGlobalError: setGlobalError,
@@ -522,13 +720,24 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Renames a project and locally marks it as just edited. Returns true on
   // success, false on failure.
   const updateProjectName = useCallback(
     async (projectId, { name }) => {
+      if (isDemo) {
+        setProjects((prevProjects) =>
+          prevProjects.map((project) =>
+            String(project.id) === String(projectId)
+              ? { ...project, name, lastEdited: 'Just now' }
+              : project,
+          ),
+        );
+        return true;
+      }
+
       try {
         await api.patch(`/projects/${projectId}`, { name }, { onGlobalError: setGlobalError });
         setProjects((prevProjects) =>
@@ -545,12 +754,28 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Adds a brush norm using the server-assigned id; keeps normsCount in sync.
   const addBrushNorm = useCallback(
     async (projectId, norm) => {
+      if (isDemo) {
+        const normWithId = { ...norm, id: nextDemoId() };
+        setProjects((prevProjects) =>
+          prevProjects.map((project) =>
+            String(project.id) === String(projectId)
+              ? {
+                  ...project,
+                  brushNorms: [...(project.brushNorms || []), normWithId],
+                  normsCount: (project.normsCount || 0) + 1,
+                }
+              : project,
+          ),
+        );
+        return normWithId;
+      }
+
       try {
         const data = await api.post(`/projects/${projectId}/brush-norms`, norm, {
           onGlobalError: setGlobalError,
@@ -574,12 +799,28 @@ export const ProjectProvider = ({ children }) => {
         return null;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Adds a typography norm using the server-assigned id; bumps normsCount.
   const addTypographyNorm = useCallback(
     async (projectId, norm) => {
+      if (isDemo) {
+        const normWithId = { ...norm, id: nextDemoId() };
+        setProjects((prevProjects) =>
+          prevProjects.map((project) =>
+            String(project.id) === String(projectId)
+              ? {
+                  ...project,
+                  typographyNorms: [...(project.typographyNorms || []), normWithId],
+                  normsCount: (project.normsCount || 0) + 1,
+                }
+              : project,
+          ),
+        );
+        return normWithId;
+      }
+
       try {
         const data = await api.post(`/projects/${projectId}/typography-norms`, norm, {
           onGlobalError: setGlobalError,
@@ -603,7 +844,7 @@ export const ProjectProvider = ({ children }) => {
         return null;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Fetches a project's trashed brush norms (small list, with days left).
@@ -612,6 +853,10 @@ export const ProjectProvider = ({ children }) => {
       if (!projectId) {
         setTrashedBrushNorms([]);
         return [];
+      }
+      // The demo account's norm trash is simulated locally (see deleteBrushNorm).
+      if (isDemo) {
+        return trashedBrushNorms;
       }
       try {
         const options = silent ? undefined : { onGlobalError: setGlobalError };
@@ -624,7 +869,7 @@ export const ProjectProvider = ({ children }) => {
         return [];
       }
     },
-    [setGlobalError],
+    [isDemo, trashedBrushNorms, setGlobalError],
   );
 
   // Fetches a project's trashed typography norms (small list, with days left).
@@ -633,6 +878,9 @@ export const ProjectProvider = ({ children }) => {
       if (!projectId) {
         setTrashedTypographyNorms([]);
         return [];
+      }
+      if (isDemo) {
+        return trashedTypographyNorms;
       }
       try {
         const options = silent ? undefined : { onGlobalError: setGlobalError };
@@ -645,15 +893,36 @@ export const ProjectProvider = ({ children }) => {
         return [];
       }
     },
-    [setGlobalError],
+    [isDemo, trashedTypographyNorms, setGlobalError],
   );
 
   /** Moves a brush norm to the trash (soft delete) and decrements normsCount.
       The trash list is refreshed silently so the page's trash section stays accurate. */
   const deleteBrushNorm = useCallback(
     async (projectId, normId) => {
+      const normIdNum = Number(normId);
+
+      if (isDemo) {
+        const project = projects.find((p) => String(p.id) === String(projectId));
+        const target = project?.brushNorms?.find((norm) => Number(norm.id) === normIdNum);
+        setProjects((prevProjects) =>
+          prevProjects.map((p) =>
+            String(p.id) === String(projectId)
+              ? {
+                  ...p,
+                  brushNorms: p.brushNorms.filter((norm) => Number(norm.id) !== normIdNum),
+                  normsCount: (p.normsCount || 0) - 1,
+                }
+              : p,
+          ),
+        );
+        if (target) {
+          setTrashedBrushNorms((prev) => [{ ...target, daysLeft: 30 }, ...prev]);
+        }
+        return true;
+      }
+
       try {
-        const normIdNum = Number(normId);
         await api.delete(`/projects/${projectId}/brush-norms/${normIdNum}`, null, {
           onGlobalError: setGlobalError,
         });
@@ -676,14 +945,37 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError, fetchTrashedBrushNorms],
+    [isDemo, projects, setGlobalError, fetchTrashedBrushNorms],
   );
 
   /** Moves a typography norm to the trash (soft delete) and decrements normsCount. */
   const deleteTypographyNorm = useCallback(
     async (projectId, normId) => {
+      const normIdNum = Number(normId);
+
+      if (isDemo) {
+        const project = projects.find((p) => String(p.id) === String(projectId));
+        const target = project?.typographyNorms?.find((norm) => Number(norm.id) === normIdNum);
+        setProjects((prevProjects) =>
+          prevProjects.map((p) =>
+            String(p.id) === String(projectId)
+              ? {
+                  ...p,
+                  typographyNorms: p.typographyNorms.filter(
+                    (norm) => Number(norm.id) !== normIdNum,
+                  ),
+                  normsCount: (p.normsCount || 0) - 1,
+                }
+              : p,
+          ),
+        );
+        if (target) {
+          setTrashedTypographyNorms((prev) => [{ ...target, daysLeft: 30 }, ...prev]);
+        }
+        return true;
+      }
+
       try {
-        const normIdNum = Number(normId);
         await api.delete(`/projects/${projectId}/typography-norms/${normIdNum}`, null, {
           onGlobalError: setGlobalError,
         });
@@ -708,7 +1000,7 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError, fetchTrashedTypographyNorms],
+    [isDemo, projects, setGlobalError, fetchTrashedTypographyNorms],
   );
 
   // Restores a trashed brush norm, appending it back to the project's local
@@ -716,12 +1008,7 @@ export const ProjectProvider = ({ children }) => {
   // normsCount. Returns true on success.
   const restoreBrushNorm = useCallback(
     async (projectId, normId) => {
-      try {
-        await api.post(
-          `/projects/${projectId}/brush-norms/${normId}/restore`,
-          {},
-          { onGlobalError: setGlobalError },
-        );
+      const applyRestore = () => {
         const restored = trashedBrushNorms.find((norm) => String(norm.id) === String(normId));
         setTrashedBrushNorms((prev) => prev.filter((norm) => String(norm.id) !== String(normId)));
         if (restored) {
@@ -737,6 +1024,20 @@ export const ProjectProvider = ({ children }) => {
             ),
           );
         }
+      };
+
+      if (isDemo) {
+        applyRestore();
+        return true;
+      }
+
+      try {
+        await api.post(
+          `/projects/${projectId}/brush-norms/${normId}/restore`,
+          {},
+          { onGlobalError: setGlobalError },
+        );
+        applyRestore();
         return true;
       } catch (error) {
         setGlobalError(error?.message || 'Failed to restore the standard.');
@@ -744,18 +1045,13 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [trashedBrushNorms, setGlobalError],
+    [isDemo, trashedBrushNorms, setGlobalError],
   );
 
   // Restores a trashed typography norm the same way as restoreBrushNorm.
   const restoreTypographyNorm = useCallback(
     async (projectId, normId) => {
-      try {
-        await api.post(
-          `/projects/${projectId}/typography-norms/${normId}/restore`,
-          {},
-          { onGlobalError: setGlobalError },
-        );
+      const applyRestore = () => {
         const restored = trashedTypographyNorms.find((norm) => String(norm.id) === String(normId));
         setTrashedTypographyNorms((prev) =>
           prev.filter((norm) => String(norm.id) !== String(normId)),
@@ -773,6 +1069,20 @@ export const ProjectProvider = ({ children }) => {
             ),
           );
         }
+      };
+
+      if (isDemo) {
+        applyRestore();
+        return true;
+      }
+
+      try {
+        await api.post(
+          `/projects/${projectId}/typography-norms/${normId}/restore`,
+          {},
+          { onGlobalError: setGlobalError },
+        );
+        applyRestore();
         return true;
       } catch (error) {
         setGlobalError(error?.message || 'Failed to restore the standard.');
@@ -780,12 +1090,17 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [trashedTypographyNorms, setGlobalError],
+    [isDemo, trashedTypographyNorms, setGlobalError],
   );
 
   // Permanently deletes a TRASHED brush norm (irreversible). Returns true on success.
   const deleteBrushNormPermanently = useCallback(
     async (projectId, normId) => {
+      if (isDemo) {
+        setTrashedBrushNorms((prev) => prev.filter((norm) => String(norm.id) !== String(normId)));
+        return true;
+      }
+
       try {
         await api.delete(`/projects/${projectId}/brush-norms/${normId}/permanent`, null, {
           onGlobalError: setGlobalError,
@@ -798,12 +1113,19 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Permanently deletes a TRASHED typography norm (irreversible). Returns true on success.
   const deleteTypographyNormPermanently = useCallback(
     async (projectId, normId) => {
+      if (isDemo) {
+        setTrashedTypographyNorms((prev) =>
+          prev.filter((norm) => String(norm.id) !== String(normId)),
+        );
+        return true;
+      }
+
       try {
         await api.delete(`/projects/${projectId}/typography-norms/${normId}/permanent`, null, {
           onGlobalError: setGlobalError,
@@ -818,16 +1140,13 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   /** Updates fields of an existing brush norm, merging `updates` locally. */
   const updateBrushNorm = useCallback(
     async (projectId, normId, updates) => {
-      try {
-        await api.put(`/projects/${projectId}/brush-norms/${normId}`, updates, {
-          onGlobalError: setGlobalError,
-        });
+      const applyUpdate = () =>
         setProjects((prevProjects) =>
           prevProjects.map((project) =>
             String(project.id) === String(projectId)
@@ -840,6 +1159,17 @@ export const ProjectProvider = ({ children }) => {
               : project,
           ),
         );
+
+      if (isDemo) {
+        applyUpdate();
+        return true;
+      }
+
+      try {
+        await api.put(`/projects/${projectId}/brush-norms/${normId}`, updates, {
+          onGlobalError: setGlobalError,
+        });
+        applyUpdate();
         return true;
       } catch (error) {
         setGlobalError(error?.message || 'Failed to update the standard.');
@@ -847,16 +1177,13 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   /** Updates fields of an existing typography norm, merging `updates` locally. */
   const updateTypographyNorm = useCallback(
     async (projectId, normId, updates) => {
-      try {
-        await api.put(`/projects/${projectId}/typography-norms/${normId}`, updates, {
-          onGlobalError: setGlobalError,
-        });
+      const applyUpdate = () =>
         setProjects((prevProjects) =>
           prevProjects.map((project) =>
             String(project.id) === String(projectId)
@@ -869,6 +1196,17 @@ export const ProjectProvider = ({ children }) => {
               : project,
           ),
         );
+
+      if (isDemo) {
+        applyUpdate();
+        return true;
+      }
+
+      try {
+        await api.put(`/projects/${projectId}/typography-norms/${normId}`, updates, {
+          onGlobalError: setGlobalError,
+        });
+        applyUpdate();
         return true;
       } catch (error) {
         setGlobalError(error?.message || 'Failed to update the standard.');
@@ -876,13 +1214,15 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Reorders a project's brush standards. Only bumps the request server-side;
   // the caller (the drag hook) owns the optimistic local order.
   const reorderBrushNorms = useCallback(
     async (projectId, orderedIds) => {
+      if (isDemo) return true;
+
       try {
         await api.post(`/projects/${projectId}/brush-norms/reorder`, orderedIds, {
           onGlobalError: setGlobalError,
@@ -894,12 +1234,14 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Reorders a project's typography standards, same contract as reorderBrushNorms.
   const reorderTypographyNorms = useCallback(
     async (projectId, orderedIds) => {
+      if (isDemo) return true;
+
       try {
         await api.post(`/projects/${projectId}/typography-norms/reorder`, orderedIds, {
           onGlobalError: setGlobalError,
@@ -911,7 +1253,7 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Memoized context value so consumers only re-render when state/actions change.

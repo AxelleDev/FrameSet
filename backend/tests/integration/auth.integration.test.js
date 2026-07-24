@@ -93,7 +93,7 @@ jest.mock('../../src/database', () => {
 
     if (
       normalizedSql ===
-      'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, (password IS NOT NULL) AS has_password FROM users WHERE id = ?'
+      'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, (password IS NOT NULL) AS has_password FROM users WHERE id = ?'
     ) {
       const [id] = params;
       const user = users.find((item) => item.id === id);
@@ -111,6 +111,7 @@ jest.mock('../../src/database', () => {
             avatar_initials: user.avatar_initials,
             password_updated_at: user.password_updated_at,
             pending_email: user.pending_email,
+            is_demo: user.is_demo ? 1 : 0,
             has_password: user.password === null ? 0 : 1,
           },
         ],

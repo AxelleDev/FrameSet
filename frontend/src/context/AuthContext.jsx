@@ -226,6 +226,23 @@ export const AuthProvider = ({ children }) => {
     [setAuthenticatedUser],
   );
 
+  // "Try without an account": logs into the shared, read-only demo account.
+  // No credentials needed — the backend picks the single demo user.
+  const loginAsDemo = useCallback(async () => {
+    try {
+      const userData = await api.post('/auth/demo-login', {}, { onGlobalError: setGlobalError });
+      setAuthenticatedUser(userData);
+      return { success: true, data: userData };
+    } catch (err) {
+      const { message, retryAfterSeconds } = handleApiError(
+        err,
+        setGlobalError,
+        'The demo is not available right now.',
+      );
+      return { success: false, message, retryAfterSeconds };
+    }
+  }, [setAuthenticatedUser]);
+
   // Authenticates with a Google ID token (from the GIS button): the backend
   // verifies it, resolves/creates the account, and issues the session cookies.
   const loginWithGoogle = useCallback(
@@ -292,6 +309,12 @@ export const AuthProvider = ({ children }) => {
   const updateUserProfile = useCallback(
     async (updates, credentials) => {
       if (!user) return;
+      // Account-level changes are always blocked for the demo account (see
+      // authenticateToken.js) — short-circuit here too so the UI never shows
+      // a raw "something went wrong" for an action that was never going anywhere.
+      if (user.isDemo) {
+        return { success: false, message: 'Not available in the demo account.' };
+      }
 
       try {
         const data = await api.put(
@@ -325,21 +348,28 @@ export const AuthProvider = ({ children }) => {
   // Permanently deletes the account and logs the user out locally on success.
   // Destructive, so it requires re-authentication credentials
   // ({ currentPassword } or { googleCredential }).
-  const deleteAccount = useCallback(async (credentials) => {
-    try {
-      await api.delete('/users/me', credentials || null, { onGlobalError: setGlobalError });
-      setUser(null);
-      setGlobalError(null);
-      return { success: true };
-    } catch (error) {
-      const { message, retryAfterSeconds } = handleApiError(
-        error,
-        setGlobalError,
-        'Failed to delete the account.',
-      );
-      return { success: false, message, retryAfterSeconds };
-    }
-  }, []);
+  const deleteAccount = useCallback(
+    async (credentials) => {
+      if (user?.isDemo) {
+        return { success: false, message: 'Not available in the demo account.' };
+      }
+
+      try {
+        await api.delete('/users/me', credentials || null, { onGlobalError: setGlobalError });
+        setUser(null);
+        setGlobalError(null);
+        return { success: true };
+      } catch (error) {
+        const { message, retryAfterSeconds } = handleApiError(
+          error,
+          setGlobalError,
+          'Failed to delete the account.',
+        );
+        return { success: false, message, retryAfterSeconds };
+      }
+    },
+    [user],
+  );
 
   // Changes the password after verifying the current one; records the
   // passwordUpdatedAt timestamp on success. `message` is set only for 4xx
@@ -348,6 +378,9 @@ export const AuthProvider = ({ children }) => {
     async ({ currentPassword, newPassword }) => {
       if (!user) {
         return { success: false, message: 'You are not signed in.' };
+      }
+      if (user.isDemo) {
+        return { success: false, message: 'Not available in the demo account.' };
       }
 
       try {
@@ -524,6 +557,7 @@ export const AuthProvider = ({ children }) => {
       sessionExpiringSoon,
       login,
       loginWithGoogle,
+      loginAsDemo,
       register,
       logout,
       refreshAccessToken,
@@ -545,6 +579,7 @@ export const AuthProvider = ({ children }) => {
       sessionExpiringSoon,
       login,
       loginWithGoogle,
+      loginAsDemo,
       register,
       logout,
       refreshAccessToken,

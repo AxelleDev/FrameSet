@@ -20,7 +20,7 @@ import useFormState from '../hooks/useFormState';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, loginAsDemo } = useAuth();
 
   const { values: formData, setField } = useFormState({
     email: '',
@@ -69,6 +69,27 @@ export default function Login() {
 
     setSubmitting(true);
     const result = await loginWithGoogle(credential);
+    setSubmitting(false);
+
+    if (result.success) {
+      setError('');
+      setErrorCode('');
+      setRetryAfterSeconds(undefined);
+      navigate('/app/dashboard');
+    } else if (result.message) {
+      setError(result.message);
+      setErrorCode('');
+      setRetryAfterSeconds(result.retryAfterSeconds);
+    }
+  };
+
+  // Lets a recruiter/visitor explore instantly, without registering, on a
+  // shared read-only account seeded with real project data.
+  const handleDemoLogin = async () => {
+    if (submitting) return;
+
+    setSubmitting(true);
+    const result = await loginAsDemo();
     setSubmitting(false);
 
     if (result.success) {
@@ -179,6 +200,17 @@ export default function Login() {
         <Divider className="my-6" />
 
         <GoogleSignInButton onCredential={handleGoogleCredential} disabled={submitting} />
+
+        <Button
+          type="button"
+          variant="outline"
+          fullWidth
+          className="mt-3"
+          onClick={handleDemoLogin}
+          disabled={submitting}
+        >
+          Try the demo — no account needed
+        </Button>
 
         <TermsNotice />
 

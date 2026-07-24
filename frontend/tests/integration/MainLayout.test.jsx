@@ -23,6 +23,7 @@ const renderLayout = () =>
             <Route path="dashboard" element={<div>Dashboard page</div>} />
             <Route path="profile" element={<div>Profile page</div>} />
           </Route>
+          <Route path="/register" element={<div>Register page</div>} />
         </Routes>
       </MemoryRouter>
     </HelmetProvider>,
@@ -65,5 +66,31 @@ describe('MainLayout unsaved-changes navigation guard', () => {
 
     expect(screen.getByText('Profile page')).toBeInTheDocument();
     confirmSpy.mockRestore();
+  });
+});
+
+describe('MainLayout demo account banner', () => {
+  afterEach(() => {
+    authState.user = { name: 'Jane Doe', avatarInitials: 'JD' };
+  });
+
+  it('is not shown for a normal account', () => {
+    renderLayout();
+    expect(screen.queryByText(/read-only demo/i)).not.toBeInTheDocument();
+  });
+
+  it('is shown for the demo account and signs out before going to /register', async () => {
+    const logout = vi.fn().mockResolvedValue();
+    authState.user = { name: 'Demo', avatarInitials: 'DM', isDemo: true };
+    authState.logout = logout;
+    const user = userEvent.setup();
+    renderLayout();
+
+    expect(screen.getByText(/read-only demo/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /create a free account/i }));
+
+    expect(logout).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('Register page')).toBeInTheDocument();
   });
 });

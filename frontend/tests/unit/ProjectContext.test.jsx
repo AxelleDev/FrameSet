@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 
 const { apiMock, authState } = vi.hoisted(() => ({
@@ -623,6 +623,210 @@ describe('ProjectContext mutations return success signals', () => {
         '/projects?page=2&search=Neo',
         expect.any(Object),
       );
+    });
+  });
+
+  // The demo account is enforced read-only server-side (authenticateToken.js
+  // rejects every mutating request before it reaches the database), but the UI
+  // still needs to *feel* interactive: these mutations are simulated entirely
+  // in local state. The single most important guarantee to prove here is that
+  // none of them ever call the API — a network call would mean either a wasted
+  // round trip to a 403, or (if this guard were ever removed) a real write.
+  describe('demo account simulation', () => {
+    beforeEach(() => {
+      authState.user = { id: 44, isDemo: true };
+    });
+
+    afterEach(() => {
+      // Restore the non-demo user so later top-level tests in this file aren't
+      // affected by this describe block's mutation of the shared authState.
+      authState.user = { id: 1 };
+    });
+
+    it('addProject prepends a locally-created project without calling the API', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      // Let the mount fetch (real GET, even for demo) settle first, so its
+      // resolution doesn't race with — and clobber — addProject's sync-ish
+      // local update below (it has no `await api.post` to yield behind).
+      await act(async () => {});
+
+      let returned;
+      await act(async () => {
+        returned = await result.current.addProject('Local Only');
+      });
+
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(returned.name).toBe('Local Only');
+      expect(returned.id).toBeLessThan(0);
+      expect(result.current.projects[0]).toEqual(returned);
+    });
+
+    it('updateProjectPalette assigns local ids to new colors and keeps existing ones, without calling the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', palette: [{ id: 10, name: 'Ink', hex: '#112233' }] }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      let saved;
+      await act(async () => {
+        saved = await result.current.updateProjectPalette(3, [
+          { id: 10, name: 'Ink', hex: '#112233' },
+          { name: 'New Color', hex: '#abcdef' },
+        ]);
+      });
+
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(saved).toHaveLength(2);
+      expect(saved[0].id).toBe(10);
+      expect(saved[1].id).toBeLessThan(0);
+      expect(result.current.projects[0].palette).toEqual(saved);
+    });
+
+    it('deleteProject and restoreProject round-trip through local trash without calling the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', palette: [], brushNorms: [], typographyNorms: [] }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      let deleted;
+      await act(async () => {
+        deleted = await result.current.deleteProject(3);
+      });
+      expect(deleted).toBe(true);
+      expect(apiMock.delete).not.toHaveBeenCalled();
+      expect(result.current.projects).toEqual([]);
+      expect(result.current.trashedProjects).toHaveLength(1);
+      expect(result.current.trashedProjects[0]).toMatchObject({ id: 3, name: 'P', daysLeft: 30 });
+
+      let restored;
+      await act(async () => {
+        restored = await result.current.restoreProject(3);
+      });
+      expect(restored).toBe(true);
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(result.current.trashedProjects).toEqual([]);
+      expect(result.current.projects[0]).toMatchObject({ id: 3, name: 'P' });
+    });
+
+    it('fetchTrashedProjects returns the local trash instead of hitting the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P' }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+      apiMock.get.mockClear();
+
+      await act(async () => {
+        await result.current.deleteProject(3);
+      });
+
+      let fetched;
+      await act(async () => {
+        fetched = await result.current.fetchTrashedProjects();
+      });
+
+      expect(apiMock.get).not.toHaveBeenCalled();
+      expect(fetched).toEqual(result.current.trashedProjects);
+    });
+
+    it('duplicateProject clones the source project with fresh local ids, without calling the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [
+          {
+            id: 3,
+            name: 'Original',
+            palette: [{ id: 10, name: 'Ink', hex: '#112233' }],
+            brushNorms: [{ id: 20, name: 'Outline' }],
+            typographyNorms: [{ id: 30, fontFamily: 'Figtree' }],
+          },
+        ],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      let copy;
+      await act(async () => {
+        copy = await result.current.duplicateProject(3);
+      });
+
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(copy.name).toBe('Original (copy)');
+      expect(copy.id).toBeLessThan(0);
+      expect(copy.palette[0]).toMatchObject({ name: 'Ink', hex: '#112233' });
+      expect(copy.palette[0].id).toBeLessThan(0);
+      expect(copy.palette[0].id).not.toBe(copy.id);
+      expect(result.current.projects[0]).toEqual(copy);
+    });
+
+    it('addBrushNorm appends a local norm and bumps normsCount, without calling the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', brushNorms: [], normsCount: 0 }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      let norm;
+      await act(async () => {
+        norm = await result.current.addBrushNorm(3, { name: 'Outline', value: '4' });
+      });
+
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(norm.id).toBeLessThan(0);
+      expect(result.current.projects[0].brushNorms).toEqual([norm]);
+      expect(result.current.projects[0].normsCount).toBe(1);
+    });
+
+    it('pinProject, unpinProject and reorderPinnedProjects never call the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', pinned: false }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      await act(async () => {
+        await result.current.pinProject(3);
+      });
+      expect(result.current.projects[0].pinned).toBe(true);
+
+      await act(async () => {
+        await result.current.unpinProject(3);
+      });
+      expect(result.current.projects[0].pinned).toBe(false);
+
+      let reorderOk;
+      await act(async () => {
+        reorderOk = await result.current.reorderPinnedProjects([3]);
+      });
+      expect(reorderOk).toBe(true);
+
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(apiMock.delete).not.toHaveBeenCalled();
+    });
+
+    it('enableSharing reuses the seeded demo token without calling the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', shareToken: null }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      let token;
+      await act(async () => {
+        token = await result.current.enableSharing(3);
+      });
+
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(token).toBe('a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4');
+      expect(result.current.projects[0].shareToken).toBe(token);
     });
   });
 });

@@ -26,7 +26,11 @@ from one drawing to the next.
 
 - **Accounts & authentication** — sign up, log in (email/password or "Continue
   with Google"), e-mail verification and profile management (JWT, hashed
-  passwords, CSRF protection & rate-limiting).
+  passwords, CSRF protection & rate-limiting). A "Try the demo" button signs
+  visitors straight into a shared, read-only account seeded with real project
+  data — content edits feel fully interactive but are simulated client-side
+  and never reach the database; every mutating request is also rejected
+  server-side regardless, as a second, independent guarantee.
 - **Projects** — a dashboard to create, duplicate and manage multiple illustration
   projects (duplication copies the standards and palette, to reuse a setup as a base).
   Pin projects to keep them at the top, search by name once you have several, and

@@ -126,3 +126,42 @@ describe('Profile', () => {
     expect(await screen.findByText(/you'll need to sign in again/i)).toBeInTheDocument();
   });
 });
+
+describe('Profile (demo account)', () => {
+  beforeEach(() => {
+    mockNavigate.mockReset();
+    Object.assign(authState, {
+      user: {
+        name: 'Demo',
+        email: 'demo@frameset.app',
+        avatarInitials: 'DM',
+        passwordUpdatedAt: null,
+        hasPassword: true,
+        isDemo: true,
+      },
+      updateUserProfile: vi.fn().mockResolvedValue({ success: true }),
+      logout: vi.fn(),
+      changePassword: vi.fn(),
+      deleteAccount: vi.fn(),
+    });
+  });
+
+  it('hides Edit, Change password and Delete my account, showing explanatory text instead', () => {
+    renderPage();
+
+    expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /change password/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /delete my account/i })).not.toBeInTheDocument();
+
+    expect(screen.getByText(/account settings aren.t editable in the demo/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/not available in the demo account/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/account deletion isn.t available in the demo/i)).toBeInTheDocument();
+  });
+
+  it('still allows signing out', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByRole('button', { name: /sign out/i }));
+    expect(await screen.findByText(/you'll need to sign in again/i)).toBeInTheDocument();
+  });
+});

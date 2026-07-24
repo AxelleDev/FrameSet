@@ -82,6 +82,11 @@ const openapiSpec = {
           avatarInitials: { type: 'string', example: 'AX' },
           isVerified: { type: 'boolean', example: true },
           passwordUpdatedAt: { type: 'string', format: 'date-time', nullable: true },
+          isDemo: {
+            type: 'boolean',
+            example: false,
+            description: 'True for the shared read-only demo account (see POST /auth/demo-login).',
+          },
         },
       },
       Profile: {
@@ -93,6 +98,7 @@ const openapiSpec = {
           avatarInitials: { type: 'string', example: 'AX' },
           passwordUpdatedAt: { type: 'string', format: 'date-time', nullable: true },
           pendingEmail: { type: 'string', format: 'email', nullable: true },
+          isDemo: { type: 'boolean', example: false },
         },
       },
       BrushNorm: {
@@ -324,6 +330,26 @@ const openapiSpec = {
           400: { $ref: '#/components/responses/ValidationError' },
           401: { $ref: '#/components/responses/Unauthorized' },
           429: { $ref: '#/components/responses/RateLimited' },
+        },
+      },
+    },
+    '/api/auth/demo-login': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Try without an account (sets auth cookies for the demo account)',
+        description:
+          'Signs in to a single shared, read-only demo account — no credentials needed. ' +
+          'Every mutating request from that account is rejected with 403 before it reaches ' +
+          'the database, regardless of endpoint.',
+        parameters: [CSRF_HEADER],
+        responses: {
+          200: {
+            description:
+              'Signed in as the demo account; sets `frameset_access_token` and `frameset_refresh_token` cookies.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } },
+          },
+          429: { $ref: '#/components/responses/RateLimited' },
+          503: { description: 'No demo account is seeded on this deployment.' },
         },
       },
     },

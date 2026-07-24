@@ -79,6 +79,7 @@ const googleSignInLimiter = rateLimit({
 
 router.post('/register', registerLimiter, authController.register);
 router.post('/login', loginLimiter, authController.login);
+router.post('/demo-login', loginLimiter, authController.demoLogin);
 router.post('/google', googleSignInLimiter, authController.googleSignIn);
 router.get('/csrf-token', authController.getCsrfToken);
 router.post('/verify', verifyCodeLimiter, authController.verify);

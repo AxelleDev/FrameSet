@@ -124,6 +124,44 @@ describe('authentication controller', () => {
     });
   });
 
+  describe('demo login', () => {
+    it('logs into the shared demo account and sets the HttpOnly cookies', async () => {
+      db.query.mockResolvedValueOnce([
+        [
+          {
+            id: 99,
+            name: 'Demo',
+            email: 'demo@frameset.app',
+            avatar_initials: 'DM',
+            is_demo: 1,
+            has_password: 0,
+          },
+        ],
+      ]);
+      tokenService.generateRefreshToken.mockReturnValue('refreshToken');
+      const req = {};
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+
+      await authController.demoLogin(req, res);
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ success: true, isDemo: true }),
+      );
+      expect(res.cookie).toHaveBeenCalledTimes(2);
+    });
+
+    it('returns 503 when no demo account exists', async () => {
+      db.query.mockResolvedValueOnce([[]]);
+      const req = {};
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+
+      await authController.demoLogin(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(503);
+      expect(res.cookie).not.toHaveBeenCalled();
+    });
+  });
+
   describe('refresh', () => {
     it('refreshes the token', async () => {
       const refreshHandler = authController.refresh || authController.refreshToken;

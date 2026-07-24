@@ -43,6 +43,16 @@ JSON body is capped at **10 kB**. Sensitive endpoints are **rate limited** per I
 resend 3 / 10 min, project/norm creation (and duplication) 30/h, public share
 views 60/min. A `429` response includes a `Retry-After` header (seconds).
 
+### Demo account
+
+`POST /auth/demo-login` opens a session on a single shared, read-only account
+(no credentials needed). For that account, **every mutating request
+(`POST`/`PUT`/`PATCH`/`DELETE`) on any endpoint is rejected with `403`** before
+it reaches a service or the database — enforced centrally in
+`authenticateToken`, so it can't be bypassed per-route. The frontend simulates
+those mutations client-side instead, so the demo still feels fully
+interactive; nothing it does ever persists.
+
 ---
 
 ## Health
@@ -58,6 +68,7 @@ views 60/min. A `429` response includes a `Retry-After` header (seconds).
 | `GET`  | `/auth/csrf-token`      | –              | –                                  | `{ csrfToken }` (also sets the CSRF cookie)                                                                                                                                          |
 | `POST` | `/auth/register`        | –              | `{ name, email, password }`        | `{ success, id, name, email, avatarInitials, is_verified, passwordUpdatedAt }`                                                                                                       |
 | `POST` | `/auth/login`           | –              | `{ email, password }`              | sets auth cookies, `{ success, ...user }`                                                                                                                                            |
+| `POST` | `/auth/demo-login`      | –              | –                                  | sets auth cookies for the shared read-only demo account, `{ success, ...user }` (`isDemo: true`); `503` if no demo account is seeded                                                 |
 | `POST` | `/auth/google`          | –              | `{ credential }` (Google ID token) | sets auth cookies, `{ success, ...user }` — signs in, links to an existing email/password account, or creates a new (passwordless) account; `503` if Google sign-in isn't configured |
 | `POST` | `/auth/verify`          | –              | `{ email, code }`                  | `{ success }`                                                                                                                                                                        |
 | `POST` | `/auth/resend-code`     | –              | `{ email }`                        | `{ success }`                                                                                                                                                                        |
@@ -73,7 +84,7 @@ Password policy: min 8 chars, at least one lowercase, one uppercase and one digi
 | Method   | Path                  | Auth | Body                               | Success                                                                                                |
 | -------- | --------------------- | ---- | ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `GET`    | `/users/count`        | –    | –                                  | `{ count }` (public stat)                                                                              |
-| `GET`    | `/users/profile`      | ✓    | –                                  | `{ id, name, email, avatarInitials, passwordUpdatedAt, pendingEmail }`                                 |
+| `GET`    | `/users/profile`      | ✓    | –                                  | `{ id, name, email, avatarInitials, passwordUpdatedAt, pendingEmail, isDemo }`                         |
 | `PUT`    | `/users`              | ✓    | `{ name, email }`                  | `{ success, name, email, pendingEmail }` — an email change is staged as `pendingEmail` until confirmed |
 | `POST`   | `/users/password`     | ✓    | `{ currentPassword, newPassword }` | `{ success, passwordUpdatedAt }` (re-issues the session)                                               |
 | `POST`   | `/users/email/verify` | ✓    | `{ email, code }`                  | `{ success, user }`                                                                                    |

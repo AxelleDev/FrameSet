@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, renderHook } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../../src/context/AuthContext';
 
 const {
@@ -220,5 +220,66 @@ describe('AuthContext session expiry', () => {
       markRefreshed();
     });
     expect(screen.getByTestId('session-expiring-soon')).toHaveTextContent('false');
+  });
+});
+
+// The demo account is also blocked server-side (authenticateToken.js rejects
+// every mutating request before it reaches the database) — these guards are
+// a second, independent layer: account-mutating actions never even attempt
+// the API call for a hydrated demo user, so there's no round trip to a 403
+// and no chance of a raw/generic error reaching the Profile page.
+describe('AuthContext demo account guards', () => {
+  beforeEach(() => {
+    mockApiGet.mockReset();
+    mockApiPost.mockReset();
+    mockApiPut.mockReset();
+    mockApiPatch.mockReset();
+    mockApiDelete.mockReset();
+  });
+
+  const renderAsDemo = async () => {
+    mockApiGet.mockResolvedValueOnce({ id: 44, email: 'demo@frameset.app', isDemo: true });
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.authLoading).toBe(false));
+    return result;
+  };
+
+  it('updateUserProfile refuses locally, without calling the API', async () => {
+    const result = await renderAsDemo();
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.updateUserProfile({ name: 'New Name', email: 'x@y.com' });
+    });
+
+    expect(outcome).toEqual({ success: false, message: 'Not available in the demo account.' });
+    expect(mockApiPut).not.toHaveBeenCalled();
+  });
+
+  it('changePassword refuses locally, without calling the API', async () => {
+    const result = await renderAsDemo();
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.changePassword({
+        currentPassword: 'whatever',
+        newPassword: 'NewPass123',
+      });
+    });
+
+    expect(outcome).toEqual({ success: false, message: 'Not available in the demo account.' });
+    expect(mockApiPost).not.toHaveBeenCalled();
+  });
+
+  it('deleteAccount refuses locally, without calling the API', async () => {
+    const result = await renderAsDemo();
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.deleteAccount({ currentPassword: 'whatever' });
+    });
+
+    expect(outcome).toEqual({ success: false, message: 'Not available in the demo account.' });
+    expect(mockApiDelete).not.toHaveBeenCalled();
   });
 });
