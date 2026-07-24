@@ -18,6 +18,9 @@ npm-debug.log*
 # Test coverage reports
 coverage/
 
+# Local database backups (npm run backup): never commit data dumps.
+backend/backups/
+
 # Playwright E2E test output
 e2e/test-results/
 e2e/playwright-report/

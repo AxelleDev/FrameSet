@@ -9,6 +9,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "migrate": "node src/migrate.js",
+    "backup": "node scripts/backup-db.js",
     "test": "jest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
