@@ -1,6 +1,9 @@
 // Public landing page (route: /): the only fully public, indexable page.
 // Sets its own SEO head + Schema.org JSON-LD so it can be crawled and shared.
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import Seo from '../components/Seo';
 import Logo from '../components/Logo';
 import Button from '../components/Button';
@@ -128,7 +131,8 @@ function PaletteMock() {
   );
 }
 
-/** Mockup for the "Export" feature, faithful to ProjectExport. */
+/** Mockup for the "Export" feature, faithful to ProjectExport: the PDF/JSON
+    cards plus the drawing-app palette rows (visual only — this is a mockup). */
 function ExportMock() {
   const cards = [
     {
@@ -136,6 +140,11 @@ function ExportMock() {
       icon: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z',
     },
     { title: 'JSON data', icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4' },
+  ];
+  const paletteFormats = [
+    { label: 'Photoshop / Illustrator', ext: '.ase' },
+    { label: 'Krita / GIMP', ext: '.gpl' },
+    { label: 'Procreate', ext: '.swatches' },
   ];
   return (
     <div className="space-y-4">
@@ -160,14 +169,35 @@ function ExportMock() {
       </div>
       <Card className="p-5">
         <h4 className="text-[10px] font-bold text-primary uppercase tracking-wider mb-3">
-          JSON output preview
+          Palette for your drawing app
         </h4>
-        <div className="bg-primary/5 rounded-2xl p-4">
-          <pre className="text-[11px] text-primary/60 font-mono leading-relaxed whitespace-pre-wrap break-words">{`{
-  "name": "Alyse Twitch Emotes",
-  "palette": ["#DBE7E5", "#558AA3"],
-  "brushNorms": [{ "name": "Hair outline" }]
-}`}</pre>
+        <div className="space-y-2">
+          {paletteFormats.map(({ label, ext }) => (
+            <div
+              key={ext}
+              className="flex items-center justify-between gap-3 rounded-xl bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary"
+            >
+              <span className="flex items-center gap-2.5">
+                <svg
+                  className="w-4 h-4 text-blue"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"
+                  />
+                </svg>
+                {label}
+              </span>
+              <span className="font-mono text-xs text-primary/60">{ext}</span>
+            </div>
+          ))}
         </div>
       </Card>
     </div>
@@ -187,12 +217,31 @@ const FEATURES = [
   },
   {
     title: 'Export & share',
-    text: 'Turn your standards and palette into a clean PDF or a JSON file — or share a live read-only link that clients and collaborators can open without an account.',
+    text: 'Turn your standards and palette into a clean PDF or a JSON file, import the palette straight into Photoshop, Krita or Procreate — or share a live read-only link that clients and collaborators can open without an account.',
     Mock: ExportMock,
   },
 ];
 
 export default function Landing() {
+  const { loginAsDemo } = useAuth();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  // Same instant, no-account entry as the Login page's demo button, surfaced
+  // here so a visitor can try the product without leaving the landing.
+  const handleDemoLogin = async () => {
+    if (demoLoading) return;
+    setDemoLoading(true);
+    const result = await loginAsDemo();
+    setDemoLoading(false);
+    if (result.success) {
+      navigate('/app/dashboard');
+    } else {
+      showToast(result.message || 'The demo is not available right now.', 'danger');
+    }
+  };
+
   // Smoothly scroll to the features section (honors reduced-motion).
   const scrollToFeatures = (e) => {
     e.preventDefault();
@@ -232,7 +281,15 @@ export default function Landing() {
                 Sign in
               </Button>
             </div>
-            <p className="mt-4 text-xs text-secondary">Free to use · No credit card required</p>
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              disabled={demoLoading}
+              className="mt-5 text-sm text-blue hover:text-primary transition-colors rounded focus-ring disabled:opacity-60"
+            >
+              {demoLoading ? 'Opening the demo…' : 'or try the demo — no account needed'}
+            </button>
+            <p className="mt-3 text-xs text-secondary">Free to use · No credit card required</p>
           </div>
 
           <a

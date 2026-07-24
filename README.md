@@ -39,9 +39,11 @@ from one drawing to the next.
 - **Palettes** — colour management with drag-and-drop reordering and quick code copy.
 - **Specs** — typographies (searchable Google Fonts picker) and brushes (size,
   opacity, usage…), also drag-and-drop reorderable.
-- **Export & share** — generate a PDF of the project's complete reference sheet,
-  or share a public read-only link (revocable anytime) that anyone can open
-  without an account.
+- **Export & share** — generate a PDF of the project's complete reference
+  sheet, download the palette in your drawing app's native format (Adobe
+  `.ase`, Krita/GIMP `.gpl`, Procreate `.swatches` — all generated client-side,
+  no dependency), or share a public read-only link (revocable anytime) that
+  anyone can open without an account.
 - **Accessible & resilient** — keyboard-operable throughout (including drag-and-drop,
   which always has a keyboard alternative), a warning before leaving a page with
   unsaved changes, a heads-up before your session expires, and clear rate-limit

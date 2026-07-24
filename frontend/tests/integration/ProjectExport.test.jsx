@@ -64,6 +64,43 @@ describe('ProjectExport', () => {
     clickSpy.mockRestore();
   });
 
+  it('hints to add colors instead of showing palette-file buttons when the palette is empty', () => {
+    renderPage();
+    expect(screen.getByText(/palette for your drawing app/i)).toBeInTheDocument();
+    expect(screen.getByText(/add colors to this project/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /procreate/i })).not.toBeInTheDocument();
+  });
+
+  it('downloads the palette in each drawing-app format', async () => {
+    const user = userEvent.setup();
+    projectState.activeProject = {
+      ...projectState.activeProject,
+      palette: [{ id: 1, name: 'Coral', hex: '#FF6B63' }],
+    };
+    // jsdom implements neither object URLs nor real navigation: stub both ends
+    // of the download (URL lifecycle + anchor click) and observe them.
+    const createUrl = vi.fn().mockReturnValue('blob:mock');
+    const revokeUrl = vi.fn();
+    vi.stubGlobal(
+      'URL',
+      Object.assign(Object.create(URL), { createObjectURL: createUrl, revokeObjectURL: revokeUrl }),
+    );
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /photoshop \/ illustrator/i }));
+    await user.click(screen.getByRole('button', { name: /krita \/ gimp/i }));
+    await user.click(screen.getByRole('button', { name: /procreate/i }));
+
+    expect(createUrl).toHaveBeenCalledTimes(3);
+    expect(clickSpy).toHaveBeenCalledTimes(3);
+    // Object URLs must be released after the click, or each export leaks memory.
+    expect(revokeUrl).toHaveBeenCalledTimes(3);
+
+    clickSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
   it('creates a share link when sharing is disabled', async () => {
     const user = userEvent.setup();
     projectState.enableSharing = vi.fn().mockResolvedValue('a'.repeat(32));

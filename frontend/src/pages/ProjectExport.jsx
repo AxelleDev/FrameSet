@@ -14,6 +14,12 @@ import Button from '../components/Button';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useActiveProject from '../hooks/useActiveProject';
 import useClipboard from '../hooks/useClipboard';
+import {
+  buildAsePalette,
+  buildGplPalette,
+  buildProcreateSwatches,
+  PROCREATE_MAX_SWATCHES,
+} from '../utils/paletteExport';
 
 // Loads an image (same-origin, e.g. the public logo) as a PNG data URL via an
 // offscreen canvas, so it can be embedded in the jsPDF document. Resolves null
@@ -99,6 +105,59 @@ export default function ProjectExport() {
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
+  };
+
+  // Filesystem-safe base name for downloaded files, derived from the project name.
+  const fileSlug = activeProject ? activeProject.name.replace(/\s+/g, '_').toLowerCase() : '';
+
+  // Downloads in-memory bytes (or text) as a file via a transient object URL —
+  // the binary-safe counterpart of downloadJson's data-URI approach.
+  const downloadBlob = (content, filename, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.setAttribute('href', url);
+    anchor.setAttribute('download', filename);
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const hasPalette = (activeProject?.palette?.length || 0) > 0;
+
+  // Palette-only exports, in the native formats of the main drawing tools so
+  // the palette can be imported instead of re-picked color by color.
+  const downloadAse = () => {
+    if (!hasPalette) return;
+    downloadBlob(
+      buildAsePalette(activeProject.palette),
+      `${fileSlug}_palette.ase`,
+      'application/octet-stream',
+    );
+  };
+
+  const downloadGpl = () => {
+    if (!hasPalette) return;
+    downloadBlob(
+      buildGplPalette(activeProject.name, activeProject.palette),
+      `${fileSlug}_palette.gpl`,
+      'text/plain',
+    );
+  };
+
+  const downloadSwatches = () => {
+    if (!hasPalette) return;
+    downloadBlob(
+      buildProcreateSwatches(activeProject.name, activeProject.palette),
+      `${fileSlug}_palette.swatches`,
+      'application/zip',
+    );
+    if (activeProject.palette.length > PROCREATE_MAX_SWATCHES) {
+      showToast(
+        `Procreate palettes hold ${PROCREATE_MAX_SWATCHES} colors — the first ${PROCREATE_MAX_SWATCHES} were exported.`,
+      );
+    }
   };
 
   // Brand colors mirrored from index.css (light theme, since the PDF page is
@@ -362,7 +421,9 @@ export default function ProjectExport() {
 
       {activeProject ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Three equal download cards on one row (wrapping to 2/1 columns on
+              smaller screens), then the share link on its own full-width row. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="p-8 flex flex-col items-start text-left">
               <IconCircle>
                 <svg
@@ -386,7 +447,9 @@ export default function ProjectExport() {
                 A structured PDF document bringing together all of the project's active standards
                 and palettes. Ideal for printing or sharing.
               </p>
-              <Button onClick={downloadPdf} variant="primary">
+              {/* mt-auto pins the action to the card bottom so the three
+                  download cards keep their buttons on one line. */}
+              <Button onClick={downloadPdf} variant="primary" className="mt-auto">
                 Download PDF
               </Button>
             </Card>
@@ -414,12 +477,79 @@ export default function ProjectExport() {
                 Raw data structure covering the entire project: standards, palettes, identifiers and
                 settings. Ready to plug into your own tools.
               </p>
-              <Button onClick={downloadJson} variant="primary">
+              <Button onClick={downloadJson} variant="primary" className="mt-auto">
                 Download JSON
               </Button>
             </Card>
 
-            <Card className="p-8 flex flex-col items-start text-left md:col-span-2">
+            <Card className="p-8 flex flex-col items-start text-left md:col-span-2 lg:col-span-1">
+              <IconCircle>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                  />
+                </svg>
+              </IconCircle>
+              <h2 className="text-lg font-medium text-primary mb-2">
+                Palette for your drawing app
+              </h2>
+              <p className="text-sm text-primary mb-6">
+                Import the color palette straight into your drawing app — no re-picking color by
+                color.
+              </p>
+              {hasPalette ? (
+                <div className="w-full mt-auto space-y-2">
+                  {[
+                    { label: 'Photoshop / Illustrator', ext: '.ase', onClick: downloadAse },
+                    { label: 'Krita / GIMP', ext: '.gpl', onClick: downloadGpl },
+                    { label: 'Procreate', ext: '.swatches', onClick: downloadSwatches },
+                  ].map(({ label, ext, onClick }) => (
+                    <button
+                      key={ext}
+                      type="button"
+                      onClick={onClick}
+                      className="w-full flex items-center justify-between gap-3 rounded-xl bg-primary/5 hover:bg-blue/10 px-4 py-3 text-sm font-medium text-primary transition-colors focus-ring"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <svg
+                          className="w-4 h-4 text-blue"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          aria-hidden="true"
+                          focusable="false"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"
+                          />
+                        </svg>
+                        {label}
+                      </span>
+                      <span className="font-mono text-xs text-primary/60">{ext}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-primary/60 mt-auto">
+                  Add colors to this project&apos;s palette to enable these exports.
+                </p>
+              )}
+            </Card>
+
+            <Card className="p-8 flex flex-col items-start text-left md:col-span-2 lg:col-span-3">
               <IconCircle>
                 <svg
                   className="w-5 h-5"
