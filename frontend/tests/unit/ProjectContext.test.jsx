@@ -1,6 +1,6 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
 
 const { apiMock, authState } = vi.hoisted(() => ({
   apiMock: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
@@ -493,6 +493,340 @@ describe('ProjectContext mutations return success signals', () => {
         null,
         expect.any(Object),
       );
+    });
+  });
+
+  describe('pinning, reordering and search', () => {
+    it('pinProject marks the project pinned and moves it after other pinned projects', async () => {
+      apiMock.get.mockResolvedValueOnce({
+        projects: [
+          { id: 1, name: 'Already pinned', pinned: true },
+          { id: 2, name: 'Not pinned', pinned: false },
+        ],
+        pagination: { page: 1, pageSize: 12, total: 2, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(2));
+
+      apiMock.post.mockResolvedValueOnce({ success: true });
+      let ok;
+      await act(async () => {
+        ok = await result.current.pinProject(2);
+      });
+
+      expect(ok).toBe(true);
+      expect(apiMock.post).toHaveBeenCalledWith('/projects/2/pin', {}, expect.any(Object));
+      expect(result.current.projects.map((p) => p.id)).toEqual([1, 2]);
+      expect(result.current.projects.find((p) => p.id === 2).pinned).toBe(true);
+    });
+
+    it('unpinProject clears the pinned flag', async () => {
+      apiMock.get.mockResolvedValueOnce({
+        projects: [{ id: 1, name: 'Pinned', pinned: true }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      apiMock.delete.mockResolvedValueOnce({ success: true });
+      let ok;
+      await act(async () => {
+        ok = await result.current.unpinProject(1);
+      });
+
+      expect(ok).toBe(true);
+      expect(apiMock.delete).toHaveBeenCalledWith('/projects/1/pin', null, expect.any(Object));
+      expect(result.current.projects[0].pinned).toBe(false);
+    });
+
+    it('reorderPinnedProjects posts the ordered id list', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      apiMock.post.mockResolvedValueOnce({ success: true });
+
+      let ok;
+      await act(async () => {
+        ok = await result.current.reorderPinnedProjects([4, 2]);
+      });
+
+      expect(ok).toBe(true);
+      expect(apiMock.post).toHaveBeenCalledWith(
+        '/projects/pinned/reorder',
+        [4, 2],
+        expect.any(Object),
+      );
+    });
+
+    it('reorderPinnedProjects returns false when the request fails', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      apiMock.post.mockRejectedValueOnce(new Error('boom'));
+
+      let ok;
+      await act(async () => {
+        ok = await result.current.reorderPinnedProjects([4, 2]);
+      });
+
+      expect(ok).toBe(false);
+    });
+
+    it('reorderBrushNorms and reorderTypographyNorms post to their own endpoints', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+
+      apiMock.post.mockResolvedValueOnce({ success: true });
+      let brushOk;
+      await act(async () => {
+        brushOk = await result.current.reorderBrushNorms(3, [9, 8]);
+      });
+      expect(brushOk).toBe(true);
+      expect(apiMock.post).toHaveBeenCalledWith(
+        '/projects/3/brush-norms/reorder',
+        [9, 8],
+        expect.any(Object),
+      );
+
+      apiMock.post.mockResolvedValueOnce({ success: true });
+      let typoOk;
+      await act(async () => {
+        typoOk = await result.current.reorderTypographyNorms(3, [5, 6]);
+      });
+      expect(typoOk).toBe(true);
+      expect(apiMock.post).toHaveBeenCalledWith(
+        '/projects/3/typography-norms/reorder',
+        [5, 6],
+        expect.any(Object),
+      );
+    });
+
+    it('fetchProjects includes the search term in the request and remembers it for later pages', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+
+      apiMock.get.mockResolvedValueOnce({
+        projects: [{ id: 5, name: 'Neo-Tokyo' }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      await act(async () => {
+        await result.current.fetchProjects({ search: 'Neo' });
+      });
+      expect(apiMock.get).toHaveBeenLastCalledWith(
+        '/projects?page=1&search=Neo',
+        expect.any(Object),
+      );
+
+      // Omitting search on the next call keeps the remembered term.
+      apiMock.get.mockResolvedValueOnce({
+        projects: [],
+        pagination: { page: 2, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      await act(async () => {
+        await result.current.fetchProjects({ page: 2 });
+      });
+      expect(apiMock.get).toHaveBeenLastCalledWith(
+        '/projects?page=2&search=Neo',
+        expect.any(Object),
+      );
+    });
+  });
+
+  // The demo account is enforced read-only server-side (authenticateToken.js
+  // rejects every mutating request before it reaches the database), but the UI
+  // still needs to *feel* interactive: these mutations are simulated entirely
+  // in local state. The single most important guarantee to prove here is that
+  // none of them ever call the API — a network call would mean either a wasted
+  // round trip to a 403, or (if this guard were ever removed) a real write.
+  describe('demo account simulation', () => {
+    beforeEach(() => {
+      authState.user = { id: 44, isDemo: true };
+    });
+
+    afterEach(() => {
+      // Restore the non-demo user so later top-level tests in this file aren't
+      // affected by this describe block's mutation of the shared authState.
+      authState.user = { id: 1 };
+    });
+
+    it('addProject prepends a locally-created project without calling the API', async () => {
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      // Let the mount fetch (real GET, even for demo) settle first, so its
+      // resolution doesn't race with — and clobber — addProject's sync-ish
+      // local update below (it has no `await api.post` to yield behind).
+      await act(async () => {});
+
+      let returned;
+      await act(async () => {
+        returned = await result.current.addProject('Local Only');
+      });
+
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(returned.name).toBe('Local Only');
+      expect(returned.id).toBeLessThan(0);
+      expect(result.current.projects[0]).toEqual(returned);
+    });
+
+    it('updateProjectPalette assigns local ids to new colors and keeps existing ones, without calling the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', palette: [{ id: 10, name: 'Ink', hex: '#112233' }] }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      let saved;
+      await act(async () => {
+        saved = await result.current.updateProjectPalette(3, [
+          { id: 10, name: 'Ink', hex: '#112233' },
+          { name: 'New Color', hex: '#abcdef' },
+        ]);
+      });
+
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(saved).toHaveLength(2);
+      expect(saved[0].id).toBe(10);
+      expect(saved[1].id).toBeLessThan(0);
+      expect(result.current.projects[0].palette).toEqual(saved);
+    });
+
+    it('deleteProject and restoreProject round-trip through local trash without calling the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', palette: [], brushNorms: [], typographyNorms: [] }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      let deleted;
+      await act(async () => {
+        deleted = await result.current.deleteProject(3);
+      });
+      expect(deleted).toBe(true);
+      expect(apiMock.delete).not.toHaveBeenCalled();
+      expect(result.current.projects).toEqual([]);
+      expect(result.current.trashedProjects).toHaveLength(1);
+      expect(result.current.trashedProjects[0]).toMatchObject({ id: 3, name: 'P', daysLeft: 30 });
+
+      let restored;
+      await act(async () => {
+        restored = await result.current.restoreProject(3);
+      });
+      expect(restored).toBe(true);
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(result.current.trashedProjects).toEqual([]);
+      expect(result.current.projects[0]).toMatchObject({ id: 3, name: 'P' });
+    });
+
+    it('fetchTrashedProjects returns the local trash instead of hitting the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P' }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+      apiMock.get.mockClear();
+
+      await act(async () => {
+        await result.current.deleteProject(3);
+      });
+
+      let fetched;
+      await act(async () => {
+        fetched = await result.current.fetchTrashedProjects();
+      });
+
+      expect(apiMock.get).not.toHaveBeenCalled();
+      expect(fetched).toEqual(result.current.trashedProjects);
+    });
+
+    it('duplicateProject clones the source project with fresh local ids, without calling the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [
+          {
+            id: 3,
+            name: 'Original',
+            palette: [{ id: 10, name: 'Ink', hex: '#112233' }],
+            brushNorms: [{ id: 20, name: 'Outline' }],
+            typographyNorms: [{ id: 30, fontFamily: 'Figtree' }],
+          },
+        ],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      let copy;
+      await act(async () => {
+        copy = await result.current.duplicateProject(3);
+      });
+
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(copy.name).toBe('Original (copy)');
+      expect(copy.id).toBeLessThan(0);
+      expect(copy.palette[0]).toMatchObject({ name: 'Ink', hex: '#112233' });
+      expect(copy.palette[0].id).toBeLessThan(0);
+      expect(copy.palette[0].id).not.toBe(copy.id);
+      expect(result.current.projects[0]).toEqual(copy);
+    });
+
+    it('addBrushNorm appends a local norm and bumps normsCount, without calling the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', brushNorms: [], normsCount: 0 }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      let norm;
+      await act(async () => {
+        norm = await result.current.addBrushNorm(3, { name: 'Outline', value: '4' });
+      });
+
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(norm.id).toBeLessThan(0);
+      expect(result.current.projects[0].brushNorms).toEqual([norm]);
+      expect(result.current.projects[0].normsCount).toBe(1);
+    });
+
+    it('pinProject, unpinProject and reorderPinnedProjects never call the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', pinned: false }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      await act(async () => {
+        await result.current.pinProject(3);
+      });
+      expect(result.current.projects[0].pinned).toBe(true);
+
+      await act(async () => {
+        await result.current.unpinProject(3);
+      });
+      expect(result.current.projects[0].pinned).toBe(false);
+
+      let reorderOk;
+      await act(async () => {
+        reorderOk = await result.current.reorderPinnedProjects([3]);
+      });
+      expect(reorderOk).toBe(true);
+
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(apiMock.delete).not.toHaveBeenCalled();
+    });
+
+    it('enableSharing reuses the seeded demo token without calling the API', async () => {
+      apiMock.get.mockResolvedValue({
+        projects: [{ id: 3, name: 'P', shareToken: null }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      });
+      const { result } = renderHook(() => useProjects(), { wrapper });
+      await waitFor(() => expect(result.current.projects).toHaveLength(1));
+
+      let token;
+      await act(async () => {
+        token = await result.current.enableSharing(3);
+      });
+
+      expect(apiMock.post).not.toHaveBeenCalled();
+      expect(token).toBe('a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4');
+      expect(result.current.projects[0].shareToken).toBe(token);
     });
   });
 });

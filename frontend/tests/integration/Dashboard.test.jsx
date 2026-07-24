@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -46,6 +46,10 @@ describe('Dashboard', () => {
       fetchTrashedProjects: vi.fn(),
       restoreProject: vi.fn(),
       deleteProjectPermanently: vi.fn(),
+      fetchProjects: vi.fn(),
+      pinProject: vi.fn().mockResolvedValue(true),
+      unpinProject: vi.fn().mockResolvedValue(true),
+      reorderPinnedProjects: vi.fn().mockResolvedValue(true),
     });
   });
 
@@ -178,5 +182,104 @@ describe('Dashboard', () => {
     expect(secondDeleteForever).toBeDisabled();
 
     releaseRestore(true);
+  });
+
+  it('pins a project from its card', async () => {
+    projectState.projects = [
+      {
+        id: 3,
+        name: 'Neo-Tokyo',
+        lastEdited: 'Just now',
+        normsCount: 0,
+        palette: [],
+        pinned: false,
+      },
+    ];
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Pin project' }));
+
+    await waitFor(() => expect(projectState.pinProject).toHaveBeenCalledWith(3));
+  });
+
+  it('unpins a project and shows it under a dedicated Pinned section', async () => {
+    projectState.projects = [
+      {
+        id: 3,
+        name: 'Neo-Tokyo',
+        lastEdited: 'Just now',
+        normsCount: 0,
+        palette: [],
+        pinned: true,
+      },
+      {
+        id: 4,
+        name: 'Retro Wave',
+        lastEdited: 'Just now',
+        normsCount: 0,
+        palette: [],
+        pinned: false,
+      },
+    ];
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.getByText('Pinned')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Unpin project' }));
+
+    await waitFor(() => expect(projectState.unpinProject).toHaveBeenCalledWith(3));
+  });
+
+  it('hides the Pinned section when no project is pinned', () => {
+    projectState.projects = [
+      {
+        id: 3,
+        name: 'Neo-Tokyo',
+        lastEdited: 'Just now',
+        normsCount: 0,
+        palette: [],
+        pinned: false,
+      },
+    ];
+    renderPage();
+    expect(screen.queryByText('Pinned')).not.toBeInTheDocument();
+  });
+
+  it('hides the search bar under the 6-project threshold', () => {
+    projectState.projects = Array.from({ length: 5 }, (_, i) => ({
+      id: i + 1,
+      name: `Project ${i + 1}`,
+      lastEdited: 'Just now',
+      normsCount: 0,
+      palette: [],
+      pinned: false,
+    }));
+    renderPage();
+    expect(screen.queryByPlaceholderText(/search projects/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the search bar and debounces the query once there are 6+ projects', async () => {
+    vi.useFakeTimers();
+    projectState.projects = Array.from({ length: 6 }, (_, i) => ({
+      id: i + 1,
+      name: `Project ${i + 1}`,
+      lastEdited: 'Just now',
+      normsCount: 0,
+      palette: [],
+      pinned: false,
+    }));
+    renderPage();
+
+    const input = screen.getByPlaceholderText(/search projects/i);
+    fireEvent.change(input, { target: { value: 'Neo' } });
+
+    expect(projectState.fetchProjects).not.toHaveBeenCalled();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    expect(projectState.fetchProjects).toHaveBeenCalledWith({ search: 'Neo' });
+
+    vi.useRealTimers();
   });
 });

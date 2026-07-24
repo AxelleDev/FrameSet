@@ -5,7 +5,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import ProjectNorms from '../../src/pages/ProjectNorms';
 
-const { projectState } = vi.hoisted(() => ({ projectState: {} }));
+const { projectState, googleFontsState } = vi.hoisted(() => ({
+  projectState: {},
+  googleFontsState: { fonts: [], loading: false, error: null },
+}));
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -18,7 +21,7 @@ vi.mock('../../src/context/ProjectContext', () => ({
 
 vi.mock('../../src/hooks/useActiveProject', () => ({ default: () => {} }));
 vi.mock('../../src/hooks/useGoogleFonts', () => ({
-  default: () => ({ fonts: [], loading: false, error: null }),
+  default: () => googleFontsState,
 }));
 
 const renderPage = () =>
@@ -32,6 +35,16 @@ const renderPage = () =>
 
 describe('ProjectNorms', () => {
   beforeEach(() => {
+    Object.assign(googleFontsState, {
+      fonts: [
+        { family: 'Roboto', variants: ['regular', '700'] },
+        { family: 'Roboto Slab', variants: ['regular'] },
+        { family: 'Open Sans', variants: ['regular'] },
+        { family: 'Lobster', variants: ['regular'] },
+      ],
+      loading: false,
+      error: null,
+    });
     Object.assign(projectState, {
       activeProject: { id: '2', brushNorms: [], typographyNorms: [] },
       addBrushNorm: vi.fn().mockResolvedValue({}),
@@ -50,6 +63,8 @@ describe('ProjectNorms', () => {
       restoreTypographyNorm: vi.fn(),
       deleteBrushNormPermanently: vi.fn(),
       deleteTypographyNormPermanently: vi.fn(),
+      reorderBrushNorms: vi.fn().mockResolvedValue(true),
+      reorderTypographyNorms: vi.fn().mockResolvedValue(true),
     });
   });
 
@@ -139,5 +154,88 @@ describe('ProjectNorms', () => {
     await user.click(dialogButtons[dialogButtons.length - 1]);
 
     expect(projectState.deleteBrushNormPermanently).toHaveBeenCalledWith('2', 9);
+  });
+
+  it('reorders brush standards via the move-right button', async () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [
+        { id: 5, name: 'Hair outline', value: '8', unit: 'px', opacity: 0.9 },
+        { id: 6, name: 'Shadow', value: '4', unit: 'px', opacity: 0.5 },
+      ],
+      typographyNorms: [],
+    };
+    const user = userEvent.setup();
+    renderPage();
+
+    const [moveRight] = screen.getAllByRole('button', { name: 'Move standard right' });
+    await user.click(moveRight);
+
+    expect(projectState.reorderBrushNorms).toHaveBeenCalledWith('2', [6, 5]);
+  });
+
+  it('reorders typography standards independently from brush standards', async () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [],
+      typographyNorms: [
+        { id: 11, fontFamily: 'Inter', fontUsage: 'Body' },
+        { id: 12, fontFamily: 'Figtree', fontUsage: 'Heading' },
+      ],
+    };
+    const user = userEvent.setup();
+    renderPage();
+
+    const [moveRight] = screen.getAllByRole('button', { name: 'Move standard right' });
+    await user.click(moveRight);
+
+    expect(projectState.reorderTypographyNorms).toHaveBeenCalledWith('2', [12, 11]);
+    expect(projectState.reorderBrushNorms).not.toHaveBeenCalled();
+  });
+
+  it('disables the move-left button on the first standard and move-right on the last', () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [
+        { id: 5, name: 'Hair outline', value: '8', unit: 'px', opacity: 0.9 },
+        { id: 6, name: 'Shadow', value: '4', unit: 'px', opacity: 0.5 },
+      ],
+      typographyNorms: [],
+    };
+    renderPage();
+
+    const [firstLeft, secondLeft] = screen.getAllByRole('button', { name: 'Move standard left' });
+    const [firstRight, secondRight] = screen.getAllByRole('button', {
+      name: 'Move standard right',
+    });
+    expect(firstLeft).toBeDisabled();
+    expect(secondLeft).not.toBeDisabled();
+    expect(firstRight).not.toBeDisabled();
+    expect(secondRight).toBeDisabled();
+  });
+
+  it('lets you search the font list instead of scrolling it', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    // Switch the "Type" field to Typography, revealing the font picker.
+    await user.click(screen.getByText('Brush'));
+    await user.click(await screen.findByText('Typography'));
+
+    const comboboxes = screen.getAllByRole('combobox');
+    const fontInput = comboboxes[comboboxes.length - 1];
+    await user.click(fontInput);
+    expect(screen.getByText('Open Sans')).toBeInTheDocument();
+
+    await user.type(fontInput, 'rob');
+
+    expect(screen.getByText('Roboto')).toBeInTheDocument();
+    expect(screen.getByText('Roboto Slab')).toBeInTheDocument();
+    expect(screen.queryByText('Open Sans')).not.toBeInTheDocument();
+    expect(screen.queryByText('Lobster')).not.toBeInTheDocument();
+
+    await user.click(screen.getByText('Roboto Slab'));
+    expect(screen.getByText('Roboto Slab')).toBeInTheDocument();
   });
 });

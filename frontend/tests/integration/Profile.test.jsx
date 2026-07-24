@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import Profile from '../../src/pages/Profile';
+import { getHasUnsavedChanges } from '../../src/utils/unsavedChangesStore';
 
 const { mockNavigate, authState } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
@@ -101,7 +102,63 @@ describe('Profile', () => {
     expect(authState.updateUserProfile).not.toHaveBeenCalled();
   });
 
+  it('flags unsaved changes while editing, and clears them on save/cancel', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    expect(getHasUnsavedChanges()).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
+    expect(getHasUnsavedChanges()).toBe(false); // no edits yet
+
+    const nameField = screen.getByDisplayValue('Jane Doe');
+    await user.clear(nameField);
+    await user.type(nameField, 'Changed Name');
+    expect(getHasUnsavedChanges()).toBe(true);
+
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    expect(getHasUnsavedChanges()).toBe(false);
+  });
+
   it('opens the sign-out confirmation', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByRole('button', { name: /sign out/i }));
+    expect(await screen.findByText(/you'll need to sign in again/i)).toBeInTheDocument();
+  });
+});
+
+describe('Profile (demo account)', () => {
+  beforeEach(() => {
+    mockNavigate.mockReset();
+    Object.assign(authState, {
+      user: {
+        name: 'Demo',
+        email: 'demo@frameset.app',
+        avatarInitials: 'DM',
+        passwordUpdatedAt: null,
+        hasPassword: true,
+        isDemo: true,
+      },
+      updateUserProfile: vi.fn().mockResolvedValue({ success: true }),
+      logout: vi.fn(),
+      changePassword: vi.fn(),
+      deleteAccount: vi.fn(),
+    });
+  });
+
+  it('hides Edit, Change password and Delete my account, showing explanatory text instead', () => {
+    renderPage();
+
+    expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /change password/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /delete my account/i })).not.toBeInTheDocument();
+
+    expect(screen.getByText(/account settings aren.t editable in the demo/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/not available in the demo account/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/account deletion isn.t available in the demo/i)).toBeInTheDocument();
+  });
+
+  it('still allows signing out', async () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByRole('button', { name: /sign out/i }));

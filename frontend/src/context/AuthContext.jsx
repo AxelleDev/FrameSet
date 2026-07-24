@@ -2,12 +2,31 @@
  * Auth context: mirrors the user session (which lives in backend HttpOnly
  * cookies) and exposes the auth actions via useAuth(). Also drives globalError.
  */
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import api, { setSessionExpiredHandler } from '../services/api';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import api, { setSessionExpiredHandler, setSessionRefreshedHandler } from '../services/api';
 import logger from '../utils/logger';
 import { handleApiError } from '../utils/apiError';
 
 export const AuthContext = createContext(null);
+
+// Mirrors the backend's refresh-token cookie lifetime (see
+// REFRESH_TOKEN_MAX_AGE_MS in backend/src/utils/cookies.utils.js): every
+// successful refresh rotates the refresh token and slides this window forward,
+// so an active user practically never hits it. It's the real "you'll be signed
+// out" boundary — the access token (2h) refreshes silently and is never
+// user-visible. Warn a bit ahead of it so an idle-but-open tab gets a chance to
+// stay signed in before losing unsaved work.
+const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const SESSION_WARNING_BEFORE_MS = 10 * 60 * 1000;
+const SESSION_CHECK_INTERVAL_MS = 60 * 1000;
 
 export const AuthProvider = ({ children }) => {
   // Authenticated user (null when logged out). authLoading is true until the
@@ -15,6 +34,19 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [globalError, setGlobalError] = useState(null);
+  // When the current session is estimated to expire (see SESSION_MAX_AGE_MS),
+  // and whether we're within the warning window of that estimate.
+  const sessionExpiresAtRef = useRef(null);
+  const [sessionExpiringSoon, setSessionExpiringSoon] = useState(false);
+
+  // Marks "now" as the start of a fresh SESSION_MAX_AGE_MS window: called after
+  // every successful login/hydration/refresh (explicit or the reactive one
+  // inside services/api.js), since each of those rotates the refresh token
+  // server-side.
+  const markSessionRefreshed = useCallback(() => {
+    sessionExpiresAtRef.current = Date.now() + SESSION_MAX_AGE_MS;
+    setSessionExpiringSoon(false);
+  }, []);
 
   // Requests a new access token via the refresh cookie. silent suppresses the
   // global error banner (used during hydration). Returns whether a token issued.
@@ -24,13 +56,15 @@ export const AuthProvider = ({ children }) => {
         // Silent refresh (during hydration) must not flash a global error.
         const refreshOptions = silent ? undefined : { onGlobalError: setGlobalError };
         const data = await api.post('/auth/refresh', {}, refreshOptions);
-        return Boolean(data?.success);
+        const succeeded = Boolean(data?.success);
+        if (succeeded) markSessionRefreshed();
+        return succeeded;
       } catch (error) {
         logger.error('auth.refreshAccessToken.error', error);
         return false;
       }
     },
-    [setGlobalError],
+    [setGlobalError, markSessionRefreshed],
   );
 
   // On mount, restore the session from the auth cookies by fetching the profile.
@@ -45,6 +79,10 @@ export const AuthProvider = ({ children }) => {
       }
 
       setUser(nextUser);
+      // A valid session was confirmed (with or without needing a refresh):
+      // start the estimate fresh rather than assume the worst-case "already
+      // near expiry", since we have no way to read the httpOnly cookie's exp.
+      if (nextUser) markSessionRefreshed();
     };
 
     const hydrateSession = async () => {
@@ -95,24 +133,61 @@ export const AuthProvider = ({ children }) => {
     return () => {
       isMounted = false;
     };
-  }, [refreshAccessToken]);
+  }, [refreshAccessToken, markSessionRefreshed]);
 
   // Clear the session when the API reports a terminal auth failure (a 403 that a
-  // token refresh could not recover). Route guards then redirect to /login.
+  // token refresh could not recover). Route guards then redirect to /login. Also
+  // surface a clear reason via the global-error toast, instead of a silent bounce
+  // that leaves the user guessing why they landed back on the login page.
   useEffect(() => {
-    setSessionExpiredHandler(() => setUser(null));
+    setSessionExpiredHandler(() => {
+      setUser(null);
+      sessionExpiresAtRef.current = null;
+      setSessionExpiringSoon(false);
+      setGlobalError('Your session has expired. Please sign in again.');
+    });
     return () => setSessionExpiredHandler(null);
-  }, []);
+  }, [setGlobalError]);
+
+  // Whenever the session is renewed anywhere (this provider's own refresh calls,
+  // or the reactive silent refresh inside services/api.js triggered by a random
+  // request hitting a 403), reset the "expires at" estimate the same way.
+  useEffect(() => {
+    setSessionRefreshedHandler(markSessionRefreshed);
+    return () => setSessionRefreshedHandler(null);
+  }, [markSessionRefreshed]);
+
+  // Poll for the proactive "session expiring soon" warning while signed in, so
+  // an idle-but-open tab gets a chance to stay signed in before losing unsaved
+  // work, instead of being silently logged out once the estimate is exceeded.
+  useEffect(() => {
+    if (!user) return undefined;
+
+    const checkExpiry = () => {
+      if (!sessionExpiresAtRef.current) return;
+      const isExpiringSoon = Date.now() >= sessionExpiresAtRef.current - SESSION_WARNING_BEFORE_MS;
+      setSessionExpiringSoon(isExpiringSoon);
+    };
+
+    checkExpiry();
+    const interval = setInterval(checkExpiry, SESSION_CHECK_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [user]);
 
   /** Replaces the current user (clears it when given a falsy value). */
-  const setAuthenticatedUser = useCallback((userData) => {
-    if (!userData) {
-      setUser(null);
-      return;
-    }
+  const setAuthenticatedUser = useCallback(
+    (userData) => {
+      if (!userData) {
+        setUser(null);
+        return;
+      }
 
-    setUser(userData);
-  }, []);
+      setUser(userData);
+      // Login/Google sign-in just (re)issued fresh auth cookies.
+      markSessionRefreshed();
+    },
+    [markSessionRefreshed],
+  );
 
   /** Shallow-merges partial fields into the current user (e.g. after an update). */
   const applyUserUpdate = useCallback((userData) => {
@@ -138,14 +213,35 @@ export const AuthProvider = ({ children }) => {
         setAuthenticatedUser(userData);
         return { success: true, data: userData };
       } catch (err) {
-        const { message } = handleApiError(err, setGlobalError, 'Something went wrong.');
+        const { message, retryAfterSeconds } = handleApiError(
+          err,
+          setGlobalError,
+          'Something went wrong.',
+        );
         // Surface the server error code (e.g. EMAIL_NOT_VERIFIED) so callers branch on
         // a stable identifier instead of matching the human-readable message text.
-        return { success: false, message, code: err?.data?.code };
+        return { success: false, message, code: err?.data?.code, retryAfterSeconds };
       }
     },
     [setAuthenticatedUser],
   );
+
+  // "Try without an account": logs into the shared, read-only demo account.
+  // No credentials needed — the backend picks the single demo user.
+  const loginAsDemo = useCallback(async () => {
+    try {
+      const userData = await api.post('/auth/demo-login', {}, { onGlobalError: setGlobalError });
+      setAuthenticatedUser(userData);
+      return { success: true, data: userData };
+    } catch (err) {
+      const { message, retryAfterSeconds } = handleApiError(
+        err,
+        setGlobalError,
+        'The demo is not available right now.',
+      );
+      return { success: false, message, retryAfterSeconds };
+    }
+  }, [setAuthenticatedUser]);
 
   // Authenticates with a Google ID token (from the GIS button): the backend
   // verifies it, resolves/creates the account, and issues the session cookies.
@@ -160,8 +256,12 @@ export const AuthProvider = ({ children }) => {
         setAuthenticatedUser(userData);
         return { success: true, data: userData };
       } catch (err) {
-        const { message } = handleApiError(err, setGlobalError, 'Google sign-in failed.');
-        return { success: false, message };
+        const { message, retryAfterSeconds } = handleApiError(
+          err,
+          setGlobalError,
+          'Google sign-in failed.',
+        );
+        return { success: false, message, retryAfterSeconds };
       }
     },
     [setAuthenticatedUser],
@@ -176,8 +276,12 @@ export const AuthProvider = ({ children }) => {
         });
         return { success: true, data: registrationData };
       } catch (err) {
-        const { message } = handleApiError(err, setGlobalError, 'Something went wrong.');
-        return { success: false, message };
+        const { message, retryAfterSeconds } = handleApiError(
+          err,
+          setGlobalError,
+          'Something went wrong.',
+        );
+        return { success: false, message, retryAfterSeconds };
       }
     },
     [setGlobalError],
@@ -193,6 +297,8 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       setGlobalError(null);
+      sessionExpiresAtRef.current = null;
+      setSessionExpiringSoon(false);
     }
   }, []);
 
@@ -203,6 +309,12 @@ export const AuthProvider = ({ children }) => {
   const updateUserProfile = useCallback(
     async (updates, credentials) => {
       if (!user) return;
+      // Account-level changes are always blocked for the demo account (see
+      // authenticateToken.js) — short-circuit here too so the UI never shows
+      // a raw "something went wrong" for an action that was never going anywhere.
+      if (user.isDemo) {
+        return { success: false, message: 'Not available in the demo account.' };
+      }
 
       try {
         const data = await api.put(
@@ -226,6 +338,7 @@ export const AuthProvider = ({ children }) => {
         return {
           success: false,
           message: isBusinessError ? error.data?.error || error.message : undefined,
+          retryAfterSeconds: error.retryAfterSeconds,
         };
       }
     },
@@ -235,17 +348,28 @@ export const AuthProvider = ({ children }) => {
   // Permanently deletes the account and logs the user out locally on success.
   // Destructive, so it requires re-authentication credentials
   // ({ currentPassword } or { googleCredential }).
-  const deleteAccount = useCallback(async (credentials) => {
-    try {
-      await api.delete('/users/me', credentials || null, { onGlobalError: setGlobalError });
-      setUser(null);
-      setGlobalError(null);
-      return { success: true };
-    } catch (error) {
-      const { message } = handleApiError(error, setGlobalError, 'Failed to delete the account.');
-      return { success: false, message };
-    }
-  }, []);
+  const deleteAccount = useCallback(
+    async (credentials) => {
+      if (user?.isDemo) {
+        return { success: false, message: 'Not available in the demo account.' };
+      }
+
+      try {
+        await api.delete('/users/me', credentials || null, { onGlobalError: setGlobalError });
+        setUser(null);
+        setGlobalError(null);
+        return { success: true };
+      } catch (error) {
+        const { message, retryAfterSeconds } = handleApiError(
+          error,
+          setGlobalError,
+          'Failed to delete the account.',
+        );
+        return { success: false, message, retryAfterSeconds };
+      }
+    },
+    [user],
+  );
 
   // Changes the password after verifying the current one; records the
   // passwordUpdatedAt timestamp on success. `message` is set only for 4xx
@@ -254,6 +378,9 @@ export const AuthProvider = ({ children }) => {
     async ({ currentPassword, newPassword }) => {
       if (!user) {
         return { success: false, message: 'You are not signed in.' };
+      }
+      if (user.isDemo) {
+        return { success: false, message: 'Not available in the demo account.' };
       }
 
       try {
@@ -276,6 +403,7 @@ export const AuthProvider = ({ children }) => {
         return {
           success: false,
           message: isBusinessError ? error.data?.error || error.message : undefined,
+          retryAfterSeconds: error.retryAfterSeconds,
         };
       }
     },
@@ -293,8 +421,12 @@ export const AuthProvider = ({ children }) => {
         );
         return { success: Boolean(data?.success) };
       } catch (err) {
-        const { message } = handleApiError(err, setGlobalError, 'Code incorrect.');
-        return { success: false, message };
+        const { message, retryAfterSeconds } = handleApiError(
+          err,
+          setGlobalError,
+          'Code incorrect.',
+        );
+        return { success: false, message, retryAfterSeconds };
       }
     },
     [setGlobalError],
@@ -311,8 +443,12 @@ export const AuthProvider = ({ children }) => {
         );
         return { success: Boolean(data?.success) };
       } catch (err) {
-        const { message } = handleApiError(err, setGlobalError, 'Failed to send the code.');
-        return { success: false, message };
+        const { message, retryAfterSeconds } = handleApiError(
+          err,
+          setGlobalError,
+          'Failed to send the code.',
+        );
+        return { success: false, message, retryAfterSeconds };
       }
     },
     [setGlobalError],
@@ -330,8 +466,12 @@ export const AuthProvider = ({ children }) => {
         );
         return { success: Boolean(data?.success) };
       } catch (err) {
-        const { message } = handleApiError(err, setGlobalError, 'Failed to send the code.');
-        return { success: false, message };
+        const { message, retryAfterSeconds } = handleApiError(
+          err,
+          setGlobalError,
+          'Failed to send the code.',
+        );
+        return { success: false, message, retryAfterSeconds };
       }
     },
     [setGlobalError],
@@ -348,8 +488,12 @@ export const AuthProvider = ({ children }) => {
         );
         return { success: Boolean(data?.success) };
       } catch (err) {
-        const { message } = handleApiError(err, setGlobalError, 'Password reset failed.');
-        return { success: false, message };
+        const { message, retryAfterSeconds } = handleApiError(
+          err,
+          setGlobalError,
+          'Password reset failed.',
+        );
+        return { success: false, message, retryAfterSeconds };
       }
     },
     [setGlobalError],
@@ -370,8 +514,12 @@ export const AuthProvider = ({ children }) => {
         }
         return { success: Boolean(data?.success) };
       } catch (err) {
-        const { message } = handleApiError(err, setGlobalError, 'Code incorrect.');
-        return { success: false, message };
+        const { message, retryAfterSeconds } = handleApiError(
+          err,
+          setGlobalError,
+          'Code incorrect.',
+        );
+        return { success: false, message, retryAfterSeconds };
       }
     },
     [applyUserUpdate, setGlobalError],
@@ -388,8 +536,12 @@ export const AuthProvider = ({ children }) => {
         );
         return { success: Boolean(data?.success) };
       } catch (err) {
-        const { message } = handleApiError(err, setGlobalError, 'Failed to send the code.');
-        return { success: false, message };
+        const { message, retryAfterSeconds } = handleApiError(
+          err,
+          setGlobalError,
+          'Failed to send the code.',
+        );
+        return { success: false, message, retryAfterSeconds };
       }
     },
     [setGlobalError],
@@ -402,8 +554,10 @@ export const AuthProvider = ({ children }) => {
       authLoading,
       globalError,
       setGlobalError,
+      sessionExpiringSoon,
       login,
       loginWithGoogle,
+      loginAsDemo,
       register,
       logout,
       refreshAccessToken,
@@ -422,8 +576,10 @@ export const AuthProvider = ({ children }) => {
       user,
       authLoading,
       globalError,
+      sessionExpiringSoon,
       login,
       loginWithGoogle,
+      loginAsDemo,
       register,
       logout,
       refreshAccessToken,

@@ -9,6 +9,7 @@
     "migrate:backend": "npm --prefix backend run migrate",
     "test:frontend": "npm --prefix frontend run test",
     "test:backend": "npm --prefix backend run test",
+    "test:e2e": "npm --prefix e2e run test",
     "build:frontend": "npm --prefix frontend run build"
   }
 }

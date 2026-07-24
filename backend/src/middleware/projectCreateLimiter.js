@@ -6,8 +6,11 @@
 const rateLimit = require('express-rate-limit');
 const { ipKeyGenerator } = rateLimit;
 const { getAuthenticatedUserId } = require('../utils/auth.utils');
+const { isE2ETestMode } = require('../utils/testMode');
 
-const PROJECT_CREATE_LIMIT = 30;
+// Raised (not disabled) in E2E test mode so repeated local Playwright runs
+// from one machine don't get 429'd, while still catching a genuine runaway.
+const PROJECT_CREATE_LIMIT = isE2ETestMode ? 10000 : 30;
 const PROJECT_CREATE_WINDOW_MS = 60 * 60 * 1000;
 const PROJECT_CREATE_LIMIT_MESSAGE =
   'Too many project or standard creations, try again in an hour.';

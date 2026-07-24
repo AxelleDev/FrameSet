@@ -78,7 +78,7 @@ const getUserCount = async () => {
 // can adapt for Google-only accounts).
 const getUserProfile = async (userId) => {
   const [rows] = await db.query(
-    'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, (password IS NOT NULL) AS has_password FROM users WHERE id = ?',
+    'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, (password IS NOT NULL) AS has_password FROM users WHERE id = ?',
     [userId],
   );
 
@@ -95,6 +95,7 @@ const getUserProfile = async (userId) => {
     passwordUpdatedAt: userDb.password_updated_at,
     pendingEmail: userDb.pending_email || null,
     hasPassword: Boolean(userDb.has_password),
+    isDemo: Boolean(userDb.is_demo),
   };
 };
 

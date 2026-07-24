@@ -6,9 +6,10 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AuthContext } from '../../src/context/AuthContext';
 import Login from '../../src/pages/Login';
 
-const { mockNavigate, mockLogin } = vi.hoisted(() => ({
+const { mockNavigate, mockLogin, mockLoginAsDemo } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockLogin: vi.fn(),
+  mockLoginAsDemo: vi.fn(),
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -21,7 +22,7 @@ vi.mock('../../src/hooks/useUserCount', () => ({ default: () => 12 }));
 const renderPage = () =>
   render(
     <HelmetProvider>
-      <AuthContext.Provider value={{ login: mockLogin }}>
+      <AuthContext.Provider value={{ login: mockLogin, loginAsDemo: mockLoginAsDemo }}>
         <MemoryRouter>
           <Login />
         </MemoryRouter>
@@ -33,6 +34,7 @@ describe('Login', () => {
   beforeEach(() => {
     mockNavigate.mockReset();
     mockLogin.mockReset();
+    mockLoginAsDemo.mockReset();
   });
 
   it('refuses to submit empty fields', async () => {
@@ -66,6 +68,28 @@ describe('Login', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     expect(await screen.findByText('Invalid credentials')).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('"Try the demo" logs in as the demo account and redirects to the dashboard', async () => {
+    const user = userEvent.setup();
+    mockLoginAsDemo.mockResolvedValue({ success: true });
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /try the demo/i }));
+
+    expect(mockLoginAsDemo).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/app/dashboard'));
+  });
+
+  it('shows the error message when the demo login fails', async () => {
+    const user = userEvent.setup();
+    mockLoginAsDemo.mockResolvedValue({ success: false, message: 'The demo is not available.' });
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /try the demo/i }));
+
+    expect(await screen.findByText('The demo is not available.')).toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

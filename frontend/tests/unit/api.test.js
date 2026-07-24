@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 describe('api service', () => {
   let api;
   let setSessionExpiredHandler;
+  let setSessionRefreshedHandler;
 
   const jsonResponse = (status, body) => ({
     ok: status >= 200 && status < 300,
@@ -21,6 +22,7 @@ describe('api service', () => {
     const mod = await import('../../src/services/api');
     api = mod.default;
     setSessionExpiredHandler = mod.setSessionExpiredHandler;
+    setSessionRefreshedHandler = mod.setSessionRefreshedHandler;
   });
 
   afterEach(() => {
@@ -64,6 +66,19 @@ describe('api service', () => {
     await expect(api.get('/users/profile')).rejects.toMatchObject({ status: 401 });
     expect(onExpired).toHaveBeenCalledTimes(1);
     expect(global.fetch).toHaveBeenCalledTimes(1); // no retry
+  });
+
+  it('calls the session-refreshed handler after a successful silent refresh', async () => {
+    const onRefreshed = vi.fn();
+    setSessionRefreshedHandler(onRefreshed);
+    global.fetch
+      .mockResolvedValueOnce(jsonResponse(403, { error: 'Access token expired' })) // GET /users/profile
+      .mockResolvedValueOnce(jsonResponse(200, { csrfToken: 'tok' })) // GET /auth/csrf-token
+      .mockResolvedValueOnce(jsonResponse(200, { success: true })) // POST /auth/refresh
+      .mockResolvedValueOnce(jsonResponse(200, { id: 1 })); // retried GET /users/profile
+
+    await expect(api.get('/users/profile')).resolves.toEqual({ id: 1 });
+    expect(onRefreshed).toHaveBeenCalledTimes(1);
   });
 
   it('does not retry a POST on a network error (avoids duplicate mutations)', async () => {

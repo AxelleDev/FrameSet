@@ -53,3 +53,43 @@ export function DeleteIcon({ className = 'w-4 h-4' }) {
   );
 }
 DeleteIcon.propTypes = { className: PropTypes.string };
+
+// filled fills the pin head when the project is pinned; unpinned uses the plain outline.
+export function PinIcon({ className = 'w-4 h-4', filled = false }) {
+  return (
+    <svg className={className} {...iconProps} fill={filled ? 'currentColor' : 'none'}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M9 4.5h6l-.75 6L18 13.5v1.5h-5.25V21l-.75 1.5-.75-1.5v-6H6v-1.5l3.75-3z"
+      />
+    </svg>
+  );
+}
+PinIcon.propTypes = { className: PropTypes.string, filled: PropTypes.bool };
+
+// Password checklist: a met requirement (check-circle, lucide-style).
+export function CheckCircleIcon({ className = 'w-4 h-4' }) {
+  return (
+    <svg className={className} {...iconProps}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  );
+}
+CheckCircleIcon.propTypes = { className: PropTypes.string };
+
+// Password checklist: an unmet requirement (plain circle, lucide-style).
+export function CircleIcon({ className = 'w-4 h-4' }) {
+  return (
+    <svg className={className} {...iconProps}>
+      <circle cx="12" cy="12" r="9" strokeWidth="2" />
+    </svg>
+  );
+}
+CircleIcon.propTypes = { className: PropTypes.string };

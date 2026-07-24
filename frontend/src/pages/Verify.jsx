@@ -12,6 +12,7 @@ import Seo from '../components/Seo';
 import FormField from '../components/FormField';
 import TextInput from '../components/TextInput';
 import Alert from '../components/Alert';
+import RateLimitAlert from '../components/RateLimitAlert';
 import Button from '../components/Button';
 
 export default function Verify() {
@@ -30,6 +31,7 @@ export default function Verify() {
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState(undefined);
   const [success, setSuccess] = useState(false);
   const [resendMsg, setResendMsg] = useState('');
   // Guards against a double submit (e.g. a double-Enter firing /auth/verify twice);
@@ -40,6 +42,7 @@ export default function Verify() {
   const handleVerify = async () => {
     if (submitting) return;
     setError('');
+    setRetryAfterSeconds(undefined);
     if (!email.trim()) {
       setError('Enter your email address.');
       return;
@@ -57,6 +60,7 @@ export default function Verify() {
         setTimeout(() => navigate(type === 'pending-email' ? '/app/profile' : '/login'), 2000);
       } else {
         setError(result.message || 'That code is incorrect.');
+        setRetryAfterSeconds(result.retryAfterSeconds);
       }
     } finally {
       setSubmitting(false);
@@ -68,6 +72,7 @@ export default function Verify() {
     if (submitting) return;
     setResendMsg('');
     setError('');
+    setRetryAfterSeconds(undefined);
     if (!email.trim()) {
       setError('Enter your email address.');
       return;
@@ -83,6 +88,7 @@ export default function Verify() {
         setResendMsg('Code resent! Check your email.');
       } else {
         setError(result.message || 'Something went wrong sending the code.');
+        setRetryAfterSeconds(result.retryAfterSeconds);
       }
     } finally {
       setSubmitting(false);
@@ -121,9 +127,7 @@ export default function Verify() {
         </div>
 
         {error && (
-          <Alert variant="danger" className="mb-4">
-            {error}
-          </Alert>
+          <RateLimitAlert message={error} retryAfterSeconds={retryAfterSeconds} className="mb-4" />
         )}
         {resendMsg && (
           <Alert variant="info" className="mb-4">

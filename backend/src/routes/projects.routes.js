@@ -26,6 +26,13 @@ router.get('/trash', authenticateToken, projectsController.listTrashedProjects);
 router.post('/:id/restore', authenticateToken, projectsController.restoreProject);
 router.delete('/:id/permanent', authenticateToken, projectsController.deleteProjectPermanently);
 
+// Pinning: keeps a project at the top of the dashboard. Reorder is a
+// user-level action (not scoped under a single project id), registered
+// before '/:id/*' for the same "literal segment first" reason as '/trash'.
+router.post('/pinned/reorder', authenticateToken, projectsController.reorderPinnedProjects);
+router.post('/:id/pin', authenticateToken, projectsController.pinProject);
+router.delete('/:id/pin', authenticateToken, projectsController.unpinProject);
+
 // Public sharing: enable mints/returns the share token, disable revokes the link.
 router.post('/:id/share', authenticateToken, projectsController.enableSharing);
 router.delete('/:id/share', authenticateToken, projectsController.disableSharing);
@@ -50,6 +57,15 @@ router.post(
   authenticateToken,
   projectCreateLimiter,
   projectsController.updatePalette,
+);
+
+// Reorder (drag-and-drop): same "send the full ordered id array" contract for
+// both standard types, mirroring the palette's own position model.
+router.post('/:id/brush-norms/reorder', authenticateToken, projectsController.reorderBrushNorms);
+router.post(
+  '/:id/typography-norms/reorder',
+  authenticateToken,
+  projectsController.reorderTypographyNorms,
 );
 
 // Individual color trash: the palette editor's "Delete" button uses this

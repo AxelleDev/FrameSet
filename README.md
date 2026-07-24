@@ -1,4 +1,3 @@
-
 <div align="center">
 	<picture>
 		<source media="(prefers-color-scheme: dark)" srcset="frontend/public/FrameSet_Logo_Reversed.png">
@@ -27,16 +26,26 @@ from one drawing to the next.
 
 - **Accounts & authentication** — sign up, log in (email/password or "Continue
   with Google"), e-mail verification and profile management (JWT, hashed
-  passwords, CSRF protection & rate-limiting).
+  passwords, CSRF protection & rate-limiting). A "Try the demo" button signs
+  visitors straight into a shared, read-only account seeded with real project
+  data — content edits feel fully interactive but are simulated client-side
+  and never reach the database; every mutating request is also rejected
+  server-side regardless, as a second, independent guarantee.
 - **Projects** — a dashboard to create, duplicate and manage multiple illustration
   projects (duplication copies the standards and palette, to reuse a setup as a base).
-  Deleted projects go to a trash and stay restorable for 30 days before being purged.
+  Pin projects to keep them at the top, search by name once you have several, and
+  reorder pinned projects by drag-and-drop. Deleted projects (and individual colors
+  and standards) go to a trash and stay restorable for 30 days before being purged.
 - **Palettes** — colour management with drag-and-drop reordering and quick code copy.
-- **Specs** — typographies (with Google Fonts loading) and brushes (size, opacity,
-  usage…).
+- **Specs** — typographies (searchable Google Fonts picker) and brushes (size,
+  opacity, usage…), also drag-and-drop reorderable.
 - **Export & share** — generate a PDF of the project's complete reference sheet,
   or share a public read-only link (revocable anytime) that anyone can open
   without an account.
+- **Accessible & resilient** — keyboard-operable throughout (including drag-and-drop,
+  which always has a keyboard alternative), a warning before leaving a page with
+  unsaved changes, a heads-up before your session expires, and clear rate-limit
+  feedback with a live countdown instead of a static "try again later".
 
 ---
 
@@ -103,20 +112,51 @@ npm run dev            # app on http://localhost:5173
 
 > From the repo root, convenience scripts proxy to each package:
 > `npm run dev:backend`, `npm run dev:frontend`, `npm run migrate:backend`,
-> `npm run test:backend`, `npm run test:frontend`, `npm run build:frontend`.
+> `npm run test:backend`, `npm run test:frontend`, `npm run test:e2e`,
+> `npm run build:frontend`.
+
+### End-to-end tests (Playwright)
+
+`e2e/` runs real user journeys — the critical path (register, verify by
+email, create a project, add content, share it publicly, export a PDF,
+delete the account), password reset, project trash/restore, and
+drag-and-drop palette reordering — against a real browser, backend and
+database. One-time setup:
+
+```bash
+cd e2e
+npm install
+npx playwright install chromium
+```
+
+Then, with your backend's `.env` configured (database + a real or Ethereal
+mail setup) and MySQL running:
+
+```bash
+npm run test:e2e   # from the repo root
+```
+
+This starts its own backend and frontend instances on dedicated ports (3100 /
+5273 — never your normal dev servers on 3000 / 5173), against the same dev
+database. The backend runs with `E2E_TEST_MODE=true`, which captures outgoing
+emails in memory instead of sending them (so the test can read the
+verification code) and raises rate limits so repeated local runs don't get
+throttled; this flag is inert whenever `NODE_ENV=production`. See
+`e2e/tests/` and `backend/src/utils/testMode.js`.
 
 ---
 
 ## ✧･ﾟ: ✧･ﾟ CI (GitHub Actions)
 
-On every push / pull request to `main`, GitHub Actions runs — for both backend
-and frontend:
+On every push / pull request to `main`, GitHub Actions runs three jobs:
 
-- a production dependency audit (`npm audit`, high severity)
-- linting (ESLint)
-- formatting (Prettier, check-only)
-- the test suites (Jest + Supertest / Vitest)
-- the frontend build
+- **Backend** — a production dependency audit (`npm audit`, high severity),
+  linting, formatting (Prettier, check-only) and the test suite.
+- **Frontend** — the same audit/lint/format checks, the test suite, and the
+  production build.
+- **End-to-end** — spins up a MySQL service container, runs the migrations,
+  then runs the full Playwright suite (`e2e/`) against real backend and
+  frontend instances in `E2E_TEST_MODE`.
 
 Workflow: `.github/workflows/ci.yml`. Dependency updates are proposed monthly by
 Dependabot (`.github/dependabot.yml`).

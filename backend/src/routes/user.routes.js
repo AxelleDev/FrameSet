@@ -8,41 +8,46 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const userController = require('../controllers/user.controller');
 const authenticateToken = require('../middleware/authenticateToken');
+const { isE2ETestMode } = require('../utils/testMode');
 
 const router = express.Router();
+
+// Raised (not disabled) in E2E test mode so repeated local Playwright runs
+// from one machine don't get 429'd, while still catching a genuine runaway.
+const maxFor = (normalMax) => (isE2ETestMode ? 10000 : normalMax);
 
 // Password change: limits attempts that also revalidate the current password.
 const passwordChangeLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 5,
+  max: maxFor(5),
   message: 'Too many attempts, please try again in a minute.',
 });
 
 // Profile update: bounds rapid repeated profile edits / email-change triggers.
 const updateProfileLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
+  max: maxFor(10),
   message: 'Too many updates, please try again in a minute.',
 });
 
 // Pending-email verification: limits brute-forcing of the confirmation code.
 const pendingEmailVerifyLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 10,
+  max: maxFor(10),
   message: 'Too many verification attempts, try again in 10 minutes.',
 });
 
 // Pending-email resend: strict cap to avoid email-spam abuse.
 const pendingEmailResendLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 3,
+  max: maxFor(3),
   message: 'Too many resend requests, try again in 10 minutes.',
 });
 
 // Account deletion: strict cap on a destructive, irreversible operation.
 const deleteAccountLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 3,
+  max: maxFor(3),
   message: 'Too many attempts, try again in 10 minutes.',
 });
 
@@ -50,7 +55,7 @@ const deleteAccountLimiter = rateLimit({
 // since every call runs a COUNT(*) and it is otherwise a free DB-load vector.
 const userCountLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 30,
+  max: maxFor(30),
   message: 'Too many requests, please try again in a minute.',
 });
 

@@ -40,7 +40,10 @@ export default function ActionIconButton({
     }
   }
 
-  // Visually hidden but kept keyboard-focusable, so the action is exposed only to assistive tech.
+  // Hidden until keyboard-focused (sr-only + focus:not-sr-only, same escape-hatch
+  // pattern as the skip link): a mouse user reorders by dragging, so this stays out
+  // of their way, but a keyboard-only user — sighted or not — needs to both reach
+  // AND see it, so it must render fully (not just be exposed to assistive tech).
   if (srOnly) {
     return (
       <button
@@ -48,7 +51,7 @@ export default function ActionIconButton({
         disabled={disabled}
         title={title}
         aria-label={title}
-        className={`sr-only ${className}`.trim()}
+        className={`sr-only focus:not-sr-only focus:absolute focus:z-40 w-9 h-9 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white focus-ring disabled:opacity-30 disabled:cursor-not-allowed ${className}`.trim()}
       >
         {icon}
       </button>

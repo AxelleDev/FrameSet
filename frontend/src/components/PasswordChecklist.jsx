@@ -2,6 +2,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { PASSWORD_RULES } from '../utils/passwordRules';
+import { CheckCircleIcon, CircleIcon } from './icons';
 
 // Hidden until the user starts typing a password.
 export default function PasswordChecklist({ password }) {
@@ -16,8 +17,12 @@ export default function PasswordChecklist({ password }) {
             key={rule.id}
             className={`flex items-center gap-2 text-xs transition-colors ${satisfied ? 'text-success' : 'text-secondary'}`}
           >
-            <span aria-hidden="true" className="font-bold w-3 inline-block text-center">
-              {satisfied ? '✓' : '○'}
+            <span aria-hidden="true" className="shrink-0">
+              {satisfied ? (
+                <CheckCircleIcon className="w-3.5 h-3.5" />
+              ) : (
+                <CircleIcon className="w-3.5 h-3.5" />
+              )}
             </span>
             {/* Convey the met/unmet state to assistive tech, not by color alone. */}
             <span className="sr-only">

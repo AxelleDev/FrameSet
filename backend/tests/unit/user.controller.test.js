@@ -59,7 +59,7 @@ describe('user controller', () => {
       await userController.getProfile(req, res);
 
       expect(db.query).toHaveBeenCalledWith(
-        'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, (password IS NOT NULL) AS has_password FROM users WHERE id = ?',
+        'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, (password IS NOT NULL) AS has_password FROM users WHERE id = ?',
         [1],
       );
       expect(res.json).toHaveBeenCalledWith(

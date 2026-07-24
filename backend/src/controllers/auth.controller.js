@@ -172,6 +172,33 @@ const login = async (req, res) => {
   }
 };
 
+// "Try without an account": logs into the single shared, read-only demo
+// account — no credentials needed. Same cookie-issuing/response shape as login.
+const demoLogin = async (req, res) => {
+  try {
+    const user = await authService.loginAsDemo();
+
+    logger.info('auth.demo_login.success', {
+      requestId: req.id,
+      userId: user.id,
+    });
+
+    issueAuthCookies(res, user);
+    res.json({ success: true, ...user });
+  } catch (error) {
+    if (error.code === 'demo_unavailable') {
+      return res.status(503).json({ error: error.message });
+    }
+
+    logger.error('auth.demo_login.error', {
+      requestId: req.id,
+      error,
+    });
+
+    res.status(500).json({ error: 'Server error.' });
+  }
+};
+
 // Authenticate with a Google ID token: the service verifies it against Google's
 // keys and resolves/creates the account; on success the same session cookies as
 // a password login are issued. Failure reasons are surfaced without detail.
@@ -475,6 +502,7 @@ module.exports = {
   getCsrfToken,
   register,
   login,
+  demoLogin,
   googleSignIn,
   verify,
   resendCode,

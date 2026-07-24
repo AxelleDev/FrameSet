@@ -8,6 +8,9 @@ import ThemeToggle from '../components/ThemeToggle';
 import Logo from '../components/Logo';
 import Seo from '../components/Seo';
 import Spinner from '../components/Spinner';
+import SessionExpiryBanner from '../components/SessionExpiryBanner';
+import DemoAccountBanner from '../components/DemoAccountBanner';
+import { getHasUnsavedChanges } from '../utils/unsavedChangesStore';
 
 /**
  * Authenticated application shell: collapsible sidebar navigation, top header
@@ -28,6 +31,21 @@ export default function MainLayout() {
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
+  };
+
+  // beforeunload (useUnsavedChangesWarning) only fires on a real document
+  // unload, never on client-side route changes — so in-app nav clicks (the
+  // sidebar, the Workspace breadcrumb) need their own confirmation, checked
+  // synchronously against whatever page is currently mounted and dirty.
+  const guardNavigation = (e) => {
+    if (
+      getHasUnsavedChanges() &&
+      !window.confirm('You have unsaved changes. Leave this page without saving?')
+    ) {
+      e.preventDefault();
+      return;
+    }
+    closeMobileMenu();
   };
 
   // Always close the drawer when the route changes (defensive; nav items also close it).
@@ -108,7 +126,7 @@ export default function MainLayout() {
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 z-overlay bg-black/40 backdrop-blur-sm md:hidden animate-fade-in"
+          className="fixed inset-0 z-overlay bg-black/40 backdrop-blur-sm md:hidden animate-fade-in focus-ring"
           onClick={closeMobileMenu}
         ></button>
       )}
@@ -132,7 +150,7 @@ export default function MainLayout() {
             <p className="px-4 text-[10px] font-bold text-secondary uppercase tracking-widest mb-4">
               Workspace
             </p>
-            <NavLink to="/app/dashboard" className={navLinkClass} onClick={closeMobileMenu}>
+            <NavLink to="/app/dashboard" className={navLinkClass} onClick={guardNavigation}>
               <svg
                 className="mr-3 h-5 w-5 text-blue group-hover:text-blue transition-colors"
                 fill="none"
@@ -163,7 +181,7 @@ export default function MainLayout() {
                 <NavLink
                   to={`/app/project/${activeProject.id}/norms`}
                   className={navLinkClass}
-                  onClick={closeMobileMenu}
+                  onClick={guardNavigation}
                 >
                   <svg
                     className="mr-3 h-4 w-4 opacity-50"
@@ -183,7 +201,7 @@ export default function MainLayout() {
                 <NavLink
                   to={`/app/project/${activeProject.id}/palette`}
                   className={navLinkClass}
-                  onClick={closeMobileMenu}
+                  onClick={guardNavigation}
                 >
                   <svg
                     className="mr-3 h-4 w-4 opacity-50"
@@ -203,7 +221,7 @@ export default function MainLayout() {
                 <NavLink
                   to={`/app/project/${activeProject.id}/export`}
                   className={navLinkClass}
-                  onClick={closeMobileMenu}
+                  onClick={guardNavigation}
                 >
                   <svg
                     className="mr-3 h-4 w-4 opacity-50"
@@ -234,9 +252,9 @@ export default function MainLayout() {
 
         <NavLink
           to="/app/profile"
-          onClick={closeMobileMenu}
+          onClick={guardNavigation}
           className={({ isActive }) =>
-            `p-4 transition cursor-pointer group ${isActive ? 'bg-blue/15' : 'hover:bg-blue/10'}`
+            `p-4 transition cursor-pointer group focus-ring ${isActive ? 'bg-blue/15' : 'hover:bg-blue/10'}`
           }
         >
           {({ isActive }) => (
@@ -297,8 +315,9 @@ export default function MainLayout() {
               className="flex items-center text-sm font-medium min-w-0 animate-fade-in"
             >
               <Link
-                className="hidden sm:inline whitespace-nowrap text-blue hover:text-primary transition cursor-pointer"
+                className="hidden sm:inline whitespace-nowrap text-blue hover:text-primary transition cursor-pointer rounded focus-ring"
                 to="/app/dashboard"
+                onClick={guardNavigation}
               >
                 Workspace
               </Link>
@@ -332,6 +351,8 @@ export default function MainLayout() {
         </header>
 
         <div id="content" tabIndex={-1} className="p-4 md:p-8 max-w-7xl mx-auto pb-24 outline-none">
+          <DemoAccountBanner />
+          <SessionExpiryBanner />
           <Outlet />
         </div>
       </main>
