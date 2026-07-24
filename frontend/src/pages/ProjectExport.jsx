@@ -14,6 +14,12 @@ import Button from '../components/Button';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useActiveProject from '../hooks/useActiveProject';
 import useClipboard from '../hooks/useClipboard';
+import {
+  buildAsePalette,
+  buildGplPalette,
+  buildProcreateSwatches,
+  PROCREATE_MAX_SWATCHES,
+} from '../utils/paletteExport';
 
 // Loads an image (same-origin, e.g. the public logo) as a PNG data URL via an
 // offscreen canvas, so it can be embedded in the jsPDF document. Resolves null
@@ -99,6 +105,59 @@ export default function ProjectExport() {
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
+  };
+
+  // Filesystem-safe base name for downloaded files, derived from the project name.
+  const fileSlug = activeProject ? activeProject.name.replace(/\s+/g, '_').toLowerCase() : '';
+
+  // Downloads in-memory bytes (or text) as a file via a transient object URL —
+  // the binary-safe counterpart of downloadJson's data-URI approach.
+  const downloadBlob = (content, filename, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.setAttribute('href', url);
+    anchor.setAttribute('download', filename);
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const hasPalette = (activeProject?.palette?.length || 0) > 0;
+
+  // Palette-only exports, in the native formats of the main drawing tools so
+  // the palette can be imported instead of re-picked color by color.
+  const downloadAse = () => {
+    if (!hasPalette) return;
+    downloadBlob(
+      buildAsePalette(activeProject.palette),
+      `${fileSlug}_palette.ase`,
+      'application/octet-stream',
+    );
+  };
+
+  const downloadGpl = () => {
+    if (!hasPalette) return;
+    downloadBlob(
+      buildGplPalette(activeProject.name, activeProject.palette),
+      `${fileSlug}_palette.gpl`,
+      'text/plain',
+    );
+  };
+
+  const downloadSwatches = () => {
+    if (!hasPalette) return;
+    downloadBlob(
+      buildProcreateSwatches(activeProject.name, activeProject.palette),
+      `${fileSlug}_palette.swatches`,
+      'application/zip',
+    );
+    if (activeProject.palette.length > PROCREATE_MAX_SWATCHES) {
+      showToast(
+        `Procreate palettes hold ${PROCREATE_MAX_SWATCHES} colors — the first ${PROCREATE_MAX_SWATCHES} were exported.`,
+      );
+    }
   };
 
   // Brand colors mirrored from index.css (light theme, since the PDF page is
@@ -417,6 +476,51 @@ export default function ProjectExport() {
               <Button onClick={downloadJson} variant="primary">
                 Download JSON
               </Button>
+            </Card>
+
+            <Card className="p-8 flex flex-col items-start text-left md:col-span-2">
+              <IconCircle>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                  />
+                </svg>
+              </IconCircle>
+              <h2 className="text-lg font-medium text-primary mb-2">
+                Palette for your drawing app
+              </h2>
+              <p className="text-sm text-primary mb-6">
+                Import the color palette straight into your tools instead of re-picking it color by
+                color — Photoshop, Illustrator, Affinity and Clip Studio Paint read .ase, Krita and
+                GIMP read .gpl, and Procreate reads .swatches.
+              </p>
+              {hasPalette ? (
+                <div className="flex flex-wrap gap-3">
+                  <Button onClick={downloadAse} variant="primary">
+                    Adobe (.ase)
+                  </Button>
+                  <Button onClick={downloadGpl} variant="primary">
+                    Krita / GIMP (.gpl)
+                  </Button>
+                  <Button onClick={downloadSwatches} variant="primary">
+                    Procreate (.swatches)
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-primary/60">
+                  Add colors to this project&apos;s palette to enable these exports.
+                </p>
+              )}
             </Card>
 
             <Card className="p-8 flex flex-col items-start text-left md:col-span-2">
