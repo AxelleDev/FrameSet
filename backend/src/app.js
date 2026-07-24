@@ -19,6 +19,7 @@ const openapiSpec = require('./docs/openapi');
 const { ensureCsrfCookie, csrfProtection } = require('./middleware/csrfProtection');
 const { healthCheckLimiter } = require('./middleware/projectCreateLimiter');
 const { logger } = require('./utils/logger');
+const { captureException } = require('./utils/monitoring');
 const { isE2ETestMode } = require('./utils/testMode');
 
 const app = express();
@@ -279,6 +280,14 @@ app.use((err, req, res, _next) => {
     method: req.method,
     path: req.path,
     error: err,
+  });
+
+  // Forward server errors to the (optional) error monitoring backend with just
+  // enough context to correlate with the logs — no body, no user input.
+  captureException(err, {
+    requestId: req.id,
+    method: req.method,
+    path: req.path,
   });
 
   res.status(500).json({

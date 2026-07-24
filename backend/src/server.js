@@ -5,6 +5,11 @@
 
 require('dotenv').config();
 
+// Initialize (optional) error monitoring before anything else can fail, so
+// even an error during app wiring is reported. No-op without SENTRY_DSN.
+const { initMonitoring, captureException, flushMonitoring } = require('./utils/monitoring');
+const isMonitoringEnabled = initMonitoring();
+
 const app = require('./app');
 const db = require('./database');
 const { logger } = require('./utils/logger');
@@ -89,6 +94,7 @@ const onServerListening = () => {
     port: Number(PORT),
     host: HOST || '::',
     nodeEnv: process.env.NODE_ENV || 'development',
+    monitoring: isMonitoringEnabled ? 'sentry' : 'disabled',
   });
 
   startCleanupScheduler();
@@ -152,6 +158,8 @@ const shutdownGracefully = async (signal) => {
 
     await closeServer();
     await db.closePool();
+    // Drain any queued error reports before exiting (no-op when disabled).
+    await flushMonitoring();
 
     clearTimeout(forcedExitTimer);
 
@@ -184,15 +192,16 @@ process.on('SIGINT', () => {
 // Last-resort safety nets: an unhandled rejection or uncaught exception leaves the
 // process in an undefined state, so log it and shut down cleanly rather than limp on.
 process.on('unhandledRejection', (reason) => {
-  logger.error('process.unhandledRejection', {
-    error: reason instanceof Error ? reason : new Error(String(reason)),
-  });
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  logger.error('process.unhandledRejection', { error });
+  captureException(error, { origin: 'unhandledRejection' });
 
   void shutdownGracefully('unhandledRejection');
 });
 
 process.on('uncaughtException', (error) => {
   logger.error('process.uncaughtException', { error });
+  captureException(error, { origin: 'uncaughtException' });
 
   void shutdownGracefully('uncaughtException');
 });

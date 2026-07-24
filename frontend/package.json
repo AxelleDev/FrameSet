@@ -18,6 +18,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@sentry/react": "^10.68.0",
     "fontfaceobserver": "^2.3.0",
     "jspdf": "^4.2.1",
     "prop-types": "^15.8.1",
