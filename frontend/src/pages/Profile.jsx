@@ -96,7 +96,7 @@ export default function Profile() {
     setEditRetryAfterSeconds(undefined);
 
     if (!trimmedName) {
-      setEditError('Your name cannot be empty.');
+      setEditError('Your username cannot be empty.');
       return;
     }
     if (!isValidEmail(trimmedEmail)) {
@@ -324,13 +324,13 @@ export default function Profile() {
 
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField label="Full name">
+              <FormField label="Username">
                 <TextInput
                   type="text"
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                   disabled={!isEditing}
-                  autoComplete="name"
+                  autoComplete="nickname"
                 />
               </FormField>
               <FormField label="Email address">

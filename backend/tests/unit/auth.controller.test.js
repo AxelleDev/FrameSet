@@ -49,7 +49,7 @@ describe('authentication controller', () => {
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
       const payload = res.json.mock.calls[0][0];
       expect(payload.name).toBe('Jane   Doe');
-      expect(payload.avatarInitials).toBe('JD');
+      expect(payload.avatarInitials).toBe('J');
       expect(payload.token).toBeUndefined();
       expect(payload.refreshToken).toBeUndefined();
       expect(db.query).toHaveBeenCalledWith(

@@ -54,14 +54,14 @@ describe('Register', () => {
 
     renderPage();
 
-    await user.type(screen.getByPlaceholderText(/jane doe/i), 'Jane Doe');
+    await user.type(screen.getByLabelText(/username/i), 'AxelleDev');
     await user.type(screen.getByPlaceholderText(/email@example.com/i), 'axelle@example.com');
     await user.type(screen.getByPlaceholderText('Your password'), 'Pass1234');
     await user.type(screen.getByPlaceholderText(/confirm your password/i), 'Pass1234');
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(mockRegister).toHaveBeenCalledWith({
-      name: 'Jane Doe',
+      name: 'AxelleDev',
       email: 'axelle@example.com',
       password: 'Pass1234',
     });

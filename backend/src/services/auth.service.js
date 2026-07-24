@@ -73,7 +73,7 @@ const registerUser = async (
   // Bound the name to the column width so an over-long value is a clean 400, not a
   // MySQL ER_DATA_TOO_LONG surfacing as a generic 500.
   if (!validator.isLength(name, { max: 255 })) {
-    throw new AuthServiceError('validation', 'Name is too long.');
+    throw new AuthServiceError('validation', 'Username is too long.');
   }
   if (!validator.isEmail(email)) {
     throw new AuthServiceError('validation', 'Invalid email.');
