@@ -88,9 +88,9 @@ describe('ProjectExport', () => {
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /adobe \(\.ase\)/i }));
-    await user.click(screen.getByRole('button', { name: /krita \/ gimp \(\.gpl\)/i }));
-    await user.click(screen.getByRole('button', { name: /procreate \(\.swatches\)/i }));
+    await user.click(screen.getByRole('button', { name: /photoshop \/ illustrator/i }));
+    await user.click(screen.getByRole('button', { name: /krita \/ gimp/i }));
+    await user.click(screen.getByRole('button', { name: /procreate/i }));
 
     expect(createUrl).toHaveBeenCalledTimes(3);
     expect(clickSpy).toHaveBeenCalledTimes(3);

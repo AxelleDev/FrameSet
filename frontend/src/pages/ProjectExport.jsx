@@ -421,7 +421,9 @@ export default function ProjectExport() {
 
       {activeProject ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Three equal download cards on one row (wrapping to 2/1 columns on
+              smaller screens), then the share link on its own full-width row. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="p-8 flex flex-col items-start text-left">
               <IconCircle>
                 <svg
@@ -445,7 +447,9 @@ export default function ProjectExport() {
                 A structured PDF document bringing together all of the project's active standards
                 and palettes. Ideal for printing or sharing.
               </p>
-              <Button onClick={downloadPdf} variant="primary">
+              {/* mt-auto pins the action to the card bottom so the three
+                  download cards keep their buttons on one line. */}
+              <Button onClick={downloadPdf} variant="primary" className="mt-auto">
                 Download PDF
               </Button>
             </Card>
@@ -473,12 +477,12 @@ export default function ProjectExport() {
                 Raw data structure covering the entire project: standards, palettes, identifiers and
                 settings. Ready to plug into your own tools.
               </p>
-              <Button onClick={downloadJson} variant="primary">
+              <Button onClick={downloadJson} variant="primary" className="mt-auto">
                 Download JSON
               </Button>
             </Card>
 
-            <Card className="p-8 flex flex-col items-start text-left md:col-span-2">
+            <Card className="p-8 flex flex-col items-start text-left md:col-span-2 lg:col-span-1">
               <IconCircle>
                 <svg
                   className="w-5 h-5"
@@ -500,30 +504,52 @@ export default function ProjectExport() {
                 Palette for your drawing app
               </h2>
               <p className="text-sm text-primary mb-6">
-                Import the color palette straight into your tools instead of re-picking it color by
-                color — Photoshop, Illustrator, Affinity and Clip Studio Paint read .ase, Krita and
-                GIMP read .gpl, and Procreate reads .swatches.
+                Import the color palette straight into your drawing app — no re-picking color by
+                color.
               </p>
               {hasPalette ? (
-                <div className="flex flex-wrap gap-3">
-                  <Button onClick={downloadAse} variant="primary">
-                    Adobe (.ase)
-                  </Button>
-                  <Button onClick={downloadGpl} variant="primary">
-                    Krita / GIMP (.gpl)
-                  </Button>
-                  <Button onClick={downloadSwatches} variant="primary">
-                    Procreate (.swatches)
-                  </Button>
+                <div className="w-full mt-auto space-y-2">
+                  {[
+                    { label: 'Photoshop / Illustrator', ext: '.ase', onClick: downloadAse },
+                    { label: 'Krita / GIMP', ext: '.gpl', onClick: downloadGpl },
+                    { label: 'Procreate', ext: '.swatches', onClick: downloadSwatches },
+                  ].map(({ label, ext, onClick }) => (
+                    <button
+                      key={ext}
+                      type="button"
+                      onClick={onClick}
+                      className="w-full flex items-center justify-between gap-3 rounded-xl bg-primary/5 hover:bg-blue/10 px-4 py-3 text-sm font-medium text-primary transition-colors focus-ring"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <svg
+                          className="w-4 h-4 text-blue"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          aria-hidden="true"
+                          focusable="false"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"
+                          />
+                        </svg>
+                        {label}
+                      </span>
+                      <span className="font-mono text-xs text-primary/60">{ext}</span>
+                    </button>
+                  ))}
                 </div>
               ) : (
-                <p className="text-sm text-primary/60">
+                <p className="text-sm text-primary/60 mt-auto">
                   Add colors to this project&apos;s palette to enable these exports.
                 </p>
               )}
             </Card>
 
-            <Card className="p-8 flex flex-col items-start text-left md:col-span-2">
+            <Card className="p-8 flex flex-col items-start text-left md:col-span-2 lg:col-span-3">
               <IconCircle>
                 <svg
                   className="w-5 h-5"
