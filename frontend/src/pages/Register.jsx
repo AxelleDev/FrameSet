@@ -108,10 +108,12 @@ export default function Register() {
           <div className="space-y-4 pt-2">
             <div className="border-l-2 border-blue/40 pl-5 space-y-1.5">
               <p className="text-sm font-medium text-primary">
-                "An essential tool for picking a project back up without losing my graphic
-                settings."
+                "I kept forgetting the exact brush size or black I'd used the day before — so I
+                built FrameSet to never lose that again."
               </p>
-              <p className="text-xs text-blue uppercase tracking-widest">Alyse C., Illustrator</p>
+              <p className="text-xs text-blue uppercase tracking-widest">
+                Axelle, illustrator &amp; creator of FrameSet
+              </p>
             </div>
             <p className="text-sm text-blue">
               {userCount !== null
@@ -138,14 +140,14 @@ export default function Register() {
         )}
 
         <form className="space-y-4" onSubmit={handleRegister} noValidate>
-          <FormField label="Full name" required>
+          <FormField label="Username" required>
             <TextInput
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Jane Doe"
-              autoComplete="name"
+              placeholder="Your username"
+              autoComplete="nickname"
             />
           </FormField>
 

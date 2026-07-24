@@ -120,7 +120,7 @@ describe('auth controller — Google sign-in', () => {
     expect(db.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO users'), [
       'New User',
       'new@example.com',
-      'NU',
+      'N',
       'g-456',
     ]);
     expect(res.cookie).toHaveBeenCalledTimes(2);

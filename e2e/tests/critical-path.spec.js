@@ -37,7 +37,7 @@ test.describe('critical path: register, verify, project, share, export', () => {
 
   test('registers a new account', async () => {
     await page.goto('/register');
-    await page.getByLabel('Full name').fill(name);
+    await page.getByLabel('Username').fill(name);
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password', { exact: true }).fill(password);
     await page.getByLabel('Confirm password').fill(password);

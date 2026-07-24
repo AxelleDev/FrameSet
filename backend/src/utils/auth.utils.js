@@ -35,16 +35,14 @@ const getIdentifierFingerprint = (value) => {
   return createHash('sha256').update(normalizedValue).digest('hex').slice(0, 12);
 };
 
-// Up to two uppercase initials from a display name, for avatar placeholders.
-const getInitials = (name) =>
-  String(name || '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => word[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase();
+// The first letter of a username/pseudo, for avatar placeholders. Usernames
+// are a single handle (not a "First Last" name), so the avatar is always
+// exactly one letter — trims surrounding whitespace and returns '' for an
+// empty/missing name rather than throwing.
+const getInitials = (name) => {
+  const trimmed = String(name || '').trim();
+  return trimmed ? trimmed[0].toUpperCase() : '';
+};
 
 /**
  * Factory: returns an error logger emitting `<namespace>.<operation>.error`,
