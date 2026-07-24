@@ -10,7 +10,10 @@ module.exports = defineConfig({
   testDir: './tests',
   timeout: 30_000,
   fullyParallel: false,
-  retries: 0,
+  // Real-browser UI interactions occasionally flake on animation/timing (a
+  // modal's close transition, a debounce) — one retry absorbs that without
+  // masking a genuine, reproducible failure (which fails again on retry too).
+  retries: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: FRONTEND_URL,

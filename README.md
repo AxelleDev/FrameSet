@@ -113,9 +113,11 @@ npm run dev            # app on http://localhost:5173
 
 ### End-to-end tests (Playwright)
 
-`e2e/` runs the critical user journey — register, verify by email, create a
-project, add content, share it publicly, export a PDF, delete the account —
-against a real browser, backend and database. One-time setup:
+`e2e/` runs real user journeys — the critical path (register, verify by
+email, create a project, add content, share it publicly, export a PDF,
+delete the account), password reset, project trash/restore, and
+drag-and-drop palette reordering — against a real browser, backend and
+database. One-time setup:
 
 ```bash
 cd e2e
@@ -136,21 +138,21 @@ database. The backend runs with `E2E_TEST_MODE=true`, which captures outgoing
 emails in memory instead of sending them (so the test can read the
 verification code) and raises rate limits so repeated local runs don't get
 throttled; this flag is inert whenever `NODE_ENV=production`. See
-`e2e/tests/critical-path.spec.js` and `backend/src/utils/testMode.js`. Not
-yet wired into CI — local-only for now.
+`e2e/tests/` and `backend/src/utils/testMode.js`.
 
 ---
 
 ## ✧･ﾟ: ✧･ﾟ CI (GitHub Actions)
 
-On every push / pull request to `main`, GitHub Actions runs — for both backend
-and frontend:
+On every push / pull request to `main`, GitHub Actions runs three jobs:
 
-- a production dependency audit (`npm audit`, high severity)
-- linting (ESLint)
-- formatting (Prettier, check-only)
-- the test suites (Jest + Supertest / Vitest)
-- the frontend build
+- **Backend** — a production dependency audit (`npm audit`, high severity),
+  linting, formatting (Prettier, check-only) and the test suite.
+- **Frontend** — the same audit/lint/format checks, the test suite, and the
+  production build.
+- **End-to-end** — spins up a MySQL service container, runs the migrations,
+  then runs the full Playwright suite (`e2e/`) against real backend and
+  frontend instances in `E2E_TEST_MODE`.
 
 Workflow: `.github/workflows/ci.yml`. Dependency updates are proposed monthly by
 Dependabot (`.github/dependabot.yml`).
