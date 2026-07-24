@@ -9,7 +9,7 @@ export default function Terms() {
       title="Terms of Service"
       path="/terms"
       description="The terms that govern your use of FrameSet."
-      lastUpdated="July 23, 2026"
+      lastUpdated="July 24, 2026"
     >
       <section>
         <h2>1. About FrameSet</h2>
@@ -36,7 +36,8 @@ export default function Terms() {
         <p>
           The projects, palettes and specifications you create remain yours. FrameSet claims no
           ownership over your content and only stores and processes it to provide the service — for
-          example to display your projects and generate your PDF exports.
+          example to display your projects and generate your exports (PDF reference sheets, JSON
+          data or palette files for your drawing app).
         </p>
       </section>
 

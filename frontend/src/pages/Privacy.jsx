@@ -9,7 +9,7 @@ export default function Privacy() {
       title="Privacy Policy"
       path="/privacy"
       description="What data FrameSet collects, why, and how it is protected."
-      lastUpdated="July 23, 2026"
+      lastUpdated="July 24, 2026"
     >
       <section>
         <h2>1. What we collect</h2>
@@ -56,12 +56,15 @@ export default function Privacy() {
       <section>
         <h2>5. Third-party services</h2>
         <p>
-          Two external services are involved: Google Fonts (to list and preview typefaces you pick
+          A few external services are involved: Google Fonts (to list and preview typefaces you pick
           for your projects) and Google Sign-In (only if you choose to continue with Google, under{' '}
           <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">
             Google&apos;s privacy policy
           </a>
-          ). Transactional emails are delivered through our email provider.
+          ). Transactional emails are delivered through our email provider. To keep the service
+          reliable, technical error reports (an error message, a request identifier and technical
+          context — never your password or the content of your projects) may be processed by our
+          error-monitoring provider, Sentry.
         </p>
       </section>
 
