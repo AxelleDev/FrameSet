@@ -83,6 +83,16 @@ describe('MainLayout demo account banner', () => {
     const logout = vi.fn().mockResolvedValue();
     authState.user = { name: 'Demo', avatarInitials: 'DM', isDemo: true };
     authState.logout = logout;
+    // The banner leaves via a hard document navigation (immune to the route
+    // guard racing the router — see DemoAccountBanner), which jsdom does not
+    // perform; stub location.assign to observe it instead.
+    const assign = vi.fn();
+    const originalLocation = window.location;
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, assign },
+      writable: true,
+      configurable: true,
+    });
     const user = userEvent.setup();
     renderLayout();
 
@@ -90,7 +100,16 @@ describe('MainLayout demo account banner', () => {
 
     await user.click(screen.getByRole('button', { name: /create a free account/i }));
 
+    // The demo session must be revoked before the redirect, so the register
+    // page never loads with the shared demo cookies still active.
     expect(logout).toHaveBeenCalledTimes(1);
-    expect(await screen.findByText('Register page')).toBeInTheDocument();
+    expect(assign).toHaveBeenCalledWith('/register');
+    expect(logout.mock.invocationCallOrder[0]).toBeLessThan(assign.mock.invocationCallOrder[0]);
+
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      writable: true,
+      configurable: true,
+    });
   });
 });
