@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 /**
@@ -9,15 +8,19 @@ import { useAuth } from '../context/AuthContext';
  */
 export default function DemoAccountBanner() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
   if (!user?.isDemo) return null;
 
   // Signs out of the shared demo account first, so a new registration never
-  // ends up tangled with the demo session's cookies.
+  // ends up tangled with the demo session's cookies. The redirect is a full
+  // document navigation on purpose: logging out clears `user`, which makes the
+  // route guard race a client-side navigate() for the router's next location
+  // (guard wins under React Router v7's startTransition-wrapped navigations,
+  // landing on /login instead of /register). A hard navigation after logout
+  // resolves is immune to that race and starts registration from a clean slate.
   const handleCreateAccount = async () => {
     await logout();
-    navigate('/register');
+    window.location.assign('/register');
   };
 
   return (

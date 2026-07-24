@@ -1,0 +1,39 @@
+# Uptime check: probes the production API's /health endpoint on a schedule and
+# fails (triggering GitHub's workflow-failure notification email) when it is
+# unreachable or reports an unhealthy database.
+#
+# Setup: define a repository variable HEALTH_CHECK_URL (Settings → Secrets and
+# variables → Actions → Variables) pointing at the deployed probe, e.g.
+# https://api.frameset.app/health. The workflow is skipped while it is unset.
+#
+# Notes:
+# - GitHub pauses scheduled workflows after 60 days without repository
+#   activity; a dedicated uptime service (UptimeRobot, Better Stack, …) is the
+#   long-term answer, this is the zero-dependency baseline.
+# - /health is rate limited (60/min/IP); a 15-minute cadence stays far below.
+name: Uptime check
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: none
+
+jobs:
+  health:
+    name: Probe /health
+    runs-on: ubuntu-latest
+    if: vars.HEALTH_CHECK_URL != ''
+    steps:
+      - name: Probe the health endpoint
+        env:
+          HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL }}
+        # --fail makes curl exit non-zero on any HTTP error (including the 503
+        # the API returns when the database is unreachable); transient network
+        # blips are absorbed by 3 retries before the check is declared failed.
+        run: |
+          curl --fail --silent --show-error --max-time 15 \
+            --retry 3 --retry-delay 10 --retry-all-errors \
+            "$HEALTH_CHECK_URL"

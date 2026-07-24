@@ -9,6 +9,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "migrate": "node src/migrate.js",
+    "backup": "node scripts/backup-db.js",
     "test": "jest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -16,6 +17,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@sentry/node": "^10.68.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

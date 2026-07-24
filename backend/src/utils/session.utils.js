@@ -7,6 +7,8 @@ const { generateRefreshToken } = require('../services/token.service');
 const {
   ACCESS_TOKEN_COOKIE_NAME,
   REFRESH_TOKEN_COOKIE_NAME,
+  REFRESH_TOKEN_COOKIE_PATH,
+  LEGACY_REFRESH_TOKEN_COOKIE_PATH,
   getAccessTokenCookieOptions,
   getRefreshTokenCookieOptions,
   getCookieBaseOptions,
@@ -24,14 +26,30 @@ const issueAuthCookies = (res, user) => {
     generateRefreshToken({ id: user.id, email: user.email }),
     getRefreshTokenCookieOptions(),
   );
+  // Sessions issued before the refresh cookie was narrowed to /api/auth carry a
+  // copy at the legacy path "/"; drop it here so the first rotation after the
+  // change leaves exactly one refresh cookie (the old token is revoked anyway).
+  res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
+    ...getCookieBaseOptions(),
+    path: LEGACY_REFRESH_TOKEN_COOKIE_PATH,
+  });
 };
 
-// Clears the auth cookies with the same base options they were set with
-// (path/flags must match for the browser to actually remove them).
+// Clears the auth cookies with the same options they were set with (path/flags
+// must match for the browser to actually remove them). The refresh cookie is
+// also cleared at its legacy path so sessions issued before the path was
+// narrowed to /api/auth don't keep a stale copy until it expires.
 const clearAuthCookies = (res) => {
   const cookieOptions = getCookieBaseOptions();
   res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, cookieOptions);
-  res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
+  res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
+    ...cookieOptions,
+    path: REFRESH_TOKEN_COOKIE_PATH,
+  });
+  res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
+    ...cookieOptions,
+    path: LEGACY_REFRESH_TOKEN_COOKIE_PATH,
+  });
 };
 
 module.exports = { createAccessToken, issueAuthCookies, clearAuthCookies };

@@ -280,7 +280,12 @@ describe('user controller', () => {
         user: { id: 1, email: 'axelle@example.com' },
         body: { id: 999, currentPassword: 'old', newPassword: 'NewPass123' },
       };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
       await userController.changePassword(req, res);
       expect(db.query).toHaveBeenCalledWith('SELECT email, password FROM users WHERE id = ?', [1]);
       expect(res.json).toHaveBeenCalledWith({ success: true, passwordUpdatedAt: expect.any(Date) });
@@ -299,7 +304,12 @@ describe('user controller', () => {
         user: { id: 1 },
         body: { currentPassword: 'whatever', newPassword: 'NewPass123' },
       };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
       await userController.changePassword(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.cookie).not.toHaveBeenCalled();

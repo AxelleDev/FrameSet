@@ -195,9 +195,33 @@ Production checklist:
 - Rate limiting is **in-memory (per instance)**: run a single API instance, or
   move to a shared store (e.g. Redis) before scaling horizontally.
 - Run `npm run migrate` against the production database.
+- **Monitoring (optional but recommended)**: set `SENTRY_DSN` (API) and
+  `VITE_SENTRY_DSN` (frontend, at build time) to a sentry.io project DSN to
+  report every 5xx, crash and caught render error. Both are no-ops when unset.
+- **Uptime check**: set the `HEALTH_CHECK_URL` repository variable (Settings →
+  Secrets and variables → Actions → Variables) to your deployed
+  `https://…/health` URL; `.github/workflows/uptime.yml` then probes it every
+  15 minutes and a failure triggers GitHub's notification email. For serious
+  alerting, point a dedicated uptime service at the same URL.
+
+### Backups & restore
+
+`npm run backup` (from `backend/`, or `npm run backup:backend` at the root)
+dumps the database to a gzipped SQL file in `backend/backups/` (override with
+`BACKUP_DIR`) using `mysqldump` — required on `PATH` — and prunes dumps older
+than `BACKUP_RETENTION_DAYS` (default 14). The dump is consistent
+(`--single-transaction`) and never locks the live API.
+
+- **Schedule it** before onboarding real users — e.g. a daily cron on the API
+  host: `0 4 * * * cd /srv/frameset/backend && npm run backup`. Store copies
+  off-host (object storage, or your DB host's managed backups if available).
+- **Restore**: `gunzip < frameset_db-<timestamp>.sql.gz | mysql -u <user> -p frameset_db`
+- **Migration rollback**: migrations are forward-only; the rollback path is
+  restoring the latest pre-migration backup (take one right before
+  `npm run migrate` on production).
 
 > Not yet provided (add when the hosting target is chosen): a continuous
-> deployment workflow, a backend Dockerfile, and migration rollbacks.
+> deployment workflow and a backend Dockerfile.
 
 ---
 

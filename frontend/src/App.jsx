@@ -11,6 +11,7 @@ import { ProjectProvider } from './context/ProjectContext';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { getFriendlyMessage } from './utils/friendlyError';
 import ErrorBoundary from './components/ErrorBoundary';
+import { captureException } from './utils/monitoring';
 import MainLayout from './layouts/MainLayout';
 
 // Pages are code-split via React.lazy so each route's JS (and heavy deps like
@@ -177,7 +178,7 @@ function AppRoutes() {
               <Route
                 path="project/:id"
                 element={
-                  <ErrorBoundary>
+                  <ErrorBoundary onError={captureException}>
                     <Outlet />
                   </ErrorBoundary>
                 }

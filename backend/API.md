@@ -21,6 +21,9 @@ accepted on protected routes.
 - Access token: short-lived (2h).
 - Refresh token: longer-lived (7d), **rotated** on every `/auth/refresh` and
   revocable server-side. Tokens issued before a password change are rejected.
+  Its cookie is scoped to `path=/api/auth`, so the browser only attaches it to
+  the auth endpoints that actually need it (`/auth/refresh`, `/auth/logout`) —
+  never to the rest of the API.
 
 ### CSRF
 

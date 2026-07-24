@@ -7,6 +7,7 @@
     "dev:backend": "npm --prefix backend run dev",
     "start:backend": "npm --prefix backend run start",
     "migrate:backend": "npm --prefix backend run migrate",
+    "backup:backend": "npm --prefix backend run backup",
     "test:frontend": "npm --prefix frontend run test",
     "test:backend": "npm --prefix backend run test",
     "test:e2e": "npm --prefix e2e run test",

@@ -16,6 +16,11 @@ const MAX_PALETTE_SIZE = 50;
 const DEFAULT_PROJECTS_PAGE_SIZE = 12;
 const MAX_PROJECTS_PAGE_SIZE = 50;
 
+// Escapes the LIKE pattern metacharacters (% _ and the escape char itself) in a
+// user-supplied search term, so "50%" matches a literal "50%" instead of turning
+// into a wildcard that matches everything. MySQL's default LIKE escape is "\".
+const escapeLikeWildcards = (value) => value.replace(/[\\%_]/g, '\\$&');
+
 // Thrown to signal a business/validation failure the controller maps to an HTTP status + message.
 class ProjectServiceError extends Error {
   constructor(code, message) {
@@ -322,7 +327,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
   const offset = (page - 1) * pageSize;
   const search = typeof options.search === 'string' ? options.search.trim() : '';
   const searchClause = search ? 'AND name LIKE ?' : '';
-  const searchParam = search ? [`%${search}%`] : [];
+  const searchParam = search ? [`%${escapeLikeWildcards(search)}%`] : [];
 
   // Total count drives the pagination metadata (and the dashboard's "N projects").
   const countQuery = await runTimedQuery({
@@ -1160,6 +1165,7 @@ const updateTypographyNormInProject = async (projectId, normId, payload) => {
 
 module.exports = {
   ProjectServiceError,
+  escapeLikeWildcards,
   userOwnsProject,
   listProjectsForUser,
   createProjectForUser,

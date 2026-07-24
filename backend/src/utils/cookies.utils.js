@@ -5,6 +5,16 @@ const ACCESS_TOKEN_COOKIE_NAME = 'frameset_access_token';
 const REFRESH_TOKEN_COOKIE_NAME = 'frameset_refresh_token';
 const CSRF_TOKEN_COOKIE_NAME = 'frameset_csrf_token';
 
+// The refresh token is only ever read by /api/auth/refresh (rotation) and
+// /api/auth/logout (revocation), so scope its cookie to /api/auth: the browser
+// then never attaches the most sensitive credential to any other API request.
+// Assumes the reverse proxy forwards paths unchanged (no /api prefix stripping).
+const REFRESH_TOKEN_COOKIE_PATH = '/api/auth';
+// Path the refresh cookie was scoped to before it was narrowed to /api/auth.
+// Kept so logout/account-deletion can also clear a lingering legacy cookie on
+// sessions issued before the change; safe to remove once those have expired.
+const LEGACY_REFRESH_TOKEN_COOKIE_PATH = '/';
+
 const ACCESS_TOKEN_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 const REFRESH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const CSRF_TOKEN_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -28,9 +38,13 @@ const getAccessTokenCookieOptions = () => ({
   maxAge: ACCESS_TOKEN_MAX_AGE_MS,
 });
 
-/** Cookie options for the longer-lived refresh token (matches JWT refresh TTL). */
+/**
+ * Cookie options for the longer-lived refresh token (matches JWT refresh TTL).
+ * Narrower path than the base options: see REFRESH_TOKEN_COOKIE_PATH.
+ */
 const getRefreshTokenCookieOptions = () => ({
   ...getCookieBaseOptions(),
+  path: REFRESH_TOKEN_COOKIE_PATH,
   maxAge: REFRESH_TOKEN_MAX_AGE_MS,
 });
 
@@ -72,6 +86,8 @@ module.exports = {
   ACCESS_TOKEN_COOKIE_NAME,
   REFRESH_TOKEN_COOKIE_NAME,
   CSRF_TOKEN_COOKIE_NAME,
+  REFRESH_TOKEN_COOKIE_PATH,
+  LEGACY_REFRESH_TOKEN_COOKIE_PATH,
   getCookieBaseOptions,
   getAccessTokenCookieOptions,
   getRefreshTokenCookieOptions,

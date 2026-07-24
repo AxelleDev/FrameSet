@@ -88,7 +88,12 @@ describe('authentication controller', () => {
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       tokenService.generateRefreshToken.mockReturnValue('refreshToken');
       const req = { body: { email: 'axelle@example.com', password: 'pass' } };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
       await authController.login(req, res);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
       expect(res.cookie).toHaveBeenCalledTimes(2);
@@ -102,7 +107,12 @@ describe('authentication controller', () => {
         [{ id: 3, email: 'g@example.com', is_verified: 1, password: null }],
       ]);
       const req = { body: { email: 'g@example.com', password: 'whatever' } };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
       await authController.login(req, res);
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'GOOGLE_ACCOUNT' }));
@@ -114,7 +124,12 @@ describe('authentication controller', () => {
       jest.spyOn(bcrypt, 'hash').mockResolvedValue('dummyHash');
       const compareSpy = jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
       const req = { body: { email: 'unknown@example.com', password: 'whatever' } };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
       await authController.login(req, res);
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({ error: 'Incorrect email or password.' });
@@ -140,7 +155,12 @@ describe('authentication controller', () => {
       ]);
       tokenService.generateRefreshToken.mockReturnValue('refreshToken');
       const req = {};
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
 
       await authController.demoLogin(req, res);
 
@@ -153,7 +173,12 @@ describe('authentication controller', () => {
     it('returns 503 when no demo account exists', async () => {
       db.query.mockResolvedValueOnce([[]]);
       const req = {};
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
 
       await authController.demoLogin(req, res);
 
@@ -172,7 +197,12 @@ describe('authentication controller', () => {
       tokenService.generateRefreshToken.mockReturnValue('rotated-refresh-token');
       tokenService.revokeToken.mockResolvedValue(true);
       const req = { body: { refreshToken: 'token' } };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
       await refreshHandler(req, res);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
       expect(tokenService.revokeToken).toHaveBeenCalledWith(1, 'token');
@@ -185,7 +215,12 @@ describe('authentication controller', () => {
       tokenService.isTokenRevoked.mockResolvedValue(true);
 
       const req = { id: 'req-1', body: { refreshToken: 'token' } };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
 
       await refreshHandler(req, res);
 
@@ -203,7 +238,12 @@ describe('authentication controller', () => {
       tokenService.revokeToken.mockResolvedValue(false);
 
       const req = { id: 'req-refresh-1', body: { refreshToken: 'token' } };
-      const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), cookie: jest.fn() };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
 
       await refreshHandler(req, res);
 
@@ -233,7 +273,8 @@ describe('authentication controller', () => {
       expect(tokenService.revokeToken).toHaveBeenCalledWith(1, accessToken);
       expect(tokenService.revokeToken).toHaveBeenCalledWith(1, 'refresh-token');
       expect(res.json).toHaveBeenCalledWith({ success: true });
-      expect(res.clearCookie).toHaveBeenCalledTimes(2);
+      // Access cookie + refresh cookie at its current path + legacy-path cleanup.
+      expect(res.clearCookie).toHaveBeenCalledTimes(3);
     });
 
     it('allows logout with an expired access token when the refresh token is valid', async () => {
@@ -257,7 +298,8 @@ describe('authentication controller', () => {
       expect(tokenService.revokeToken).toHaveBeenCalledWith(1, expiredAccessToken);
       expect(tokenService.revokeToken).toHaveBeenCalledWith(1, 'refresh-token');
       expect(res.json).toHaveBeenCalledWith({ success: true });
-      expect(res.clearCookie).toHaveBeenCalledTimes(2);
+      // Access cookie + refresh cookie at its current path + legacy-path cleanup.
+      expect(res.clearCookie).toHaveBeenCalledTimes(3);
     });
 
     it('returns success even without an active session', async () => {
@@ -267,7 +309,8 @@ describe('authentication controller', () => {
       await authController.logout(req, res);
 
       expect(res.json).toHaveBeenCalledWith({ success: true });
-      expect(res.clearCookie).toHaveBeenCalledTimes(2);
+      // Access cookie + refresh cookie at its current path + legacy-path cleanup.
+      expect(res.clearCookie).toHaveBeenCalledTimes(3);
     });
   });
 
