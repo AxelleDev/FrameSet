@@ -134,12 +134,14 @@ const ColorTile = React.forwardRef(function ColorTile(
               </svg>
             </button>
             {isMenuOpen && (
-              /* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- keydown implements the menu's Escape/arrow-key pattern, not a click substitute */
               <div
                 ref={menuRef}
                 id={menuId}
                 role="menu"
                 aria-label={`Copy formats for ${hex}`}
+                /* Programmatically focusable, per the ARIA menu pattern (focus
+                   itself lives on the menuitem buttons, moved by the arrows). */
+                tabIndex={-1}
                 onKeyDown={handleMenuKeyDown}
                 className="absolute left-1/2 -translate-x-1/2 top-full mt-1 z-popover min-w-max rounded-xl bg-surface p-1 shadow-lg ring-1 ring-primary/10 text-left"
               >
