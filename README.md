@@ -187,8 +187,10 @@ Production checklist:
 
 - Set **`NODE_ENV=production`** on the API (enables secure cookies, HSTS, JSON
   logs, and makes SMTP config mandatory).
-- Run the API behind **exactly one** reverse proxy — it trusts a single hop
-  (`trust proxy = 1`) so per-IP rate limiting stays per-client.
+- The API trusts **one** reverse-proxy hop by default (`trust proxy = 1`) so
+  per-IP rate limiting stays per-client. If the chain is deeper — e.g. the
+  frontend host proxies `/api` to the platform edge in front of the API — set
+  `TRUST_PROXY_HOPS` to the real number of hops.
 - **Cross-domain cookies**: auth cookies are `HttpOnly` + `SameSite`. If the app
   and API are on different domains, set `FRONTEND_ORIGIN` (API) and
   `VITE_API_URL` (frontend) to the real HTTPS origins.

@@ -23,11 +23,16 @@ const { captureException } = require('./utils/monitoring');
 const { isE2ETestMode } = require('./utils/testMode');
 
 const app = express();
-// Trust the first proxy hop (Render/Railway/nginx/…): so req.ip is the real
-// client IP from X-Forwarded-For and per-IP rate limiting stays per-client
-// instead of collapsing to the proxy's single IP. `1` = trust one hop only
-// (not permissive), which express-rate-limit accepts without warning.
-app.set('trust proxy', 1);
+// Trust the proxy hops in front of the app so req.ip is the real client IP
+// from X-Forwarded-For and per-IP rate limiting stays per-client instead of
+// collapsing to a proxy's single IP. Defaults to 1 hop (Render/Railway/nginx);
+// set TRUST_PROXY_HOPS when the chain is deeper — e.g. 2 when the frontend
+// host proxies /api to the platform edge in front of this app.
+const parsedTrustProxyHops = Number.parseInt(process.env.TRUST_PROXY_HOPS, 10);
+app.set(
+  'trust proxy',
+  Number.isInteger(parsedTrustProxyHops) && parsedTrustProxyHops > 0 ? parsedTrustProxyHops : 1,
+);
 const isDevelopment = process.env.NODE_ENV !== 'production';
 // Fail fast in production if the frontend origin isn't set, rather than silently
 // falling back to localhost (which would leave CORS/cookies broken but undetected).
