@@ -34,16 +34,22 @@ from one drawing to the next.
 - **Projects** — a dashboard to create, duplicate and manage multiple illustration
   projects (duplication copies the standards and palette, to reuse a setup as a base).
   Pin projects to keep them at the top, search by name once you have several, and
-  reorder pinned projects by drag-and-drop. Deleted projects (and individual colors
-  and standards) go to a trash and stay restorable for 30 days before being purged.
-- **Palettes** — colour management with drag-and-drop reordering and quick code copy.
+  reorder pinned projects by drag-and-drop. A global **Ctrl+K search** jumps to any
+  project, palette colour (by name or hex) or standard from anywhere in the app.
+  Deleted projects (and individual colors and standards) go to a trash and stay
+  restorable for 30 days before being purged.
+- **Palettes** — colour management with drag-and-drop reordering. Build a palette
+  by hand, extract it from an image, or **import an existing palette file**
+  (Adobe `.ase`, Krita/GIMP `.gpl`, Procreate `.swatches` — parsed client-side,
+  drag-and-drop the file anywhere on the page). Copy any colour in one click as
+  **HEX, RGB, HSL or HSB** (the values Procreate's sliders expose).
 - **Specs** — typographies (searchable Google Fonts picker) and brushes (size,
   opacity, usage…), also drag-and-drop reorderable.
 - **Export & share** — generate a PDF of the project's complete reference
   sheet, download the palette in your drawing app's native format (Adobe
   `.ase`, Krita/GIMP `.gpl`, Procreate `.swatches` — all generated client-side,
-  no dependency), or share a public read-only link (revocable anytime) that
-  anyone can open without an account.
+  no dependency, and re-importable the same way), or share a public read-only
+  link (revocable anytime) that anyone can open without an account.
 - **Accessible & resilient** — keyboard-operable throughout (including drag-and-drop,
   which always has a keyboard alternative), a warning before leaving a page with
   unsaved changes, a heads-up before your session expires, and clear rate-limit
