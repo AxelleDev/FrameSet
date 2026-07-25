@@ -44,8 +44,14 @@ const loadImageDataUrl = (src) =>
 
 export default function ProjectExport() {
   const { id } = useParams();
-  const { activeProject, projectsLoading, activeProjectId, enableSharing, disableSharing } =
-    useProjects();
+  const {
+    activeProject,
+    activeProjectNotFound,
+    projectsLoading,
+    activeProjectId,
+    enableSharing,
+    disableSharing,
+  } = useProjects();
   const { user } = useAuth();
   const { showToast } = useToast();
   const { copy, copiedValue } = useClipboard({ timeout: 1500 });
@@ -620,7 +626,11 @@ export default function ProjectExport() {
         </>
       ) : (
         <ProjectStatePlaceholder
-          loading={projectsLoading || String(activeProjectId) !== String(id)}
+          // Stay in the loading state until the deep-link lookup has actually
+          // failed: a project beyond the loaded pages is fetched by id first.
+          loading={
+            projectsLoading || String(activeProjectId) !== String(id) || !activeProjectNotFound
+          }
         />
       )}
     </>

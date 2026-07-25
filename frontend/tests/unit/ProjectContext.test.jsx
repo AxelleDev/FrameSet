@@ -861,3 +861,91 @@ describe('ProjectContext mutations return success signals', () => {
     });
   });
 });
+
+describe('ProjectContext deep-link resolution (fetch by id)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authState.user = { id: 1 };
+  });
+
+  const emptyPage = {
+    projects: [],
+    pagination: { page: 1, pageSize: 12, total: 0, totalPages: 1 },
+  };
+
+  it('fetches a project beyond the loaded pages by id and merges it into the list', async () => {
+    const deepProject = {
+      id: 42,
+      name: 'Deep Linked',
+      lastEdited: '15/03 10:00',
+      shareToken: null,
+      pinned: false,
+      brushNorms: [],
+      typographyNorms: [],
+      normsCount: 0,
+      palette: [],
+    };
+    apiMock.get.mockImplementation((path) =>
+      Promise.resolve(path === '/projects/42' ? deepProject : emptyPage),
+    );
+
+    const { result } = renderHook(() => useProjects(), { wrapper });
+    await act(async () => {}); // mount fetch settles (page 1, without the project)
+
+    act(() => {
+      result.current.setActiveProjectId('42');
+    });
+
+    await waitFor(() => expect(result.current.activeProject?.id).toBe(42));
+    expect(apiMock.get).toHaveBeenCalledWith('/projects/42');
+    expect(result.current.activeProjectNotFound).toBe(false);
+  });
+
+  it('only reports not-found once the by-id lookup actually failed', async () => {
+    const notFoundError = Object.assign(new Error('Project not found.'), { status: 404 });
+    apiMock.get.mockImplementation((path) =>
+      path === '/projects/99' ? Promise.reject(notFoundError) : Promise.resolve(emptyPage),
+    );
+
+    const { result } = renderHook(() => useProjects(), { wrapper });
+    await act(async () => {});
+
+    act(() => {
+      result.current.setActiveProjectId('99');
+    });
+
+    await waitFor(() => expect(result.current.activeProjectNotFound).toBe(true));
+    expect(result.current.activeProject).toBeNull();
+    expect(result.current.projects).toEqual([]);
+  });
+});
+
+describe('ProjectContext unfiltered total (dashboard stat)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authState.user = { id: 1 };
+  });
+
+  it('keeps projectsTotalAll untouched by a filtered fetch', async () => {
+    apiMock.get
+      .mockResolvedValueOnce({
+        projects: [{ id: 1, name: 'Alpha' }],
+        pagination: { page: 1, pageSize: 12, total: 20, totalPages: 2 },
+      }) // mount fetch, unfiltered
+      .mockResolvedValueOnce({
+        projects: [{ id: 1, name: 'Alpha' }],
+        pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+      }); // filtered fetch
+
+    const { result } = renderHook(() => useProjects(), { wrapper });
+    await waitFor(() => expect(result.current.projectsTotalAll).toBe(20));
+
+    await act(async () => {
+      await result.current.fetchProjects({ search: 'Alp' });
+    });
+
+    // The grid pagination follows the filter; the dashboard stat does not.
+    expect(result.current.projectsPagination.total).toBe(1);
+    expect(result.current.projectsTotalAll).toBe(20);
+  });
+});

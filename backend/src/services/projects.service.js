@@ -717,6 +717,77 @@ const deleteProjectPermanently = async (userId, projectId) => {
   return { success: true };
 };
 
+// Reads a project's live (non-trashed) children in display order and maps them
+// to the API's camelCase shapes. Shared by the single-project read and the
+// public share read, which return the exact same content.
+const fetchLiveProjectChildren = async (projectId) => {
+  const [brushRows] = await db.query(
+    'SELECT id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ? AND deleted_at IS NULL ORDER BY position ASC, id ASC',
+    [projectId],
+  );
+  const [typographyRows] = await db.query(
+    'SELECT id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ? AND deleted_at IS NULL ORDER BY position ASC, id ASC',
+    [projectId],
+  );
+  const [paletteRows] = await db.query(
+    'SELECT id, name, hex FROM project_palette WHERE project_id = ? AND deleted_at IS NULL ORDER BY position ASC, id ASC',
+    [projectId],
+  );
+
+  return {
+    brushNorms: brushRows.map((norm) => ({
+      id: norm.id,
+      name: norm.name,
+      value: norm.value,
+      unit: norm.unit,
+      brushName: norm.brush_name,
+      opacity: norm.opacity,
+    })),
+    typographyNorms: typographyRows.map((norm) => ({
+      id: norm.id,
+      fontFamily: norm.font_family,
+      fontWeight: norm.font_weight,
+      fontUsage: norm.font_usage,
+      fontStyle: norm.font_style,
+    })),
+    palette: paletteRows.map((color) => ({
+      id: color.id,
+      name: color.name,
+      hex: color.hex,
+    })),
+  };
+};
+
+// Fetches one of the user's projects by id, in the exact shape of a
+// listProjectsForUser item. The paginated list stays the primary source; this
+// exists so a deep link / hard reload on a project beyond the loaded pages can
+// resolve it directly instead of wrongly concluding "not found". Scoped to the
+// owner and to live projects; throws 'not_found' otherwise.
+const getProjectByIdForUser = async (userId, projectId) => {
+  const [rows] = await db.query(
+    'SELECT id, name, share_token, pin_position, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+    [projectId, userId],
+  );
+  if (rows.length === 0) {
+    throw new ProjectServiceError('not_found');
+  }
+  const project = rows[0];
+
+  const { brushNorms, typographyNorms, palette } = await fetchLiveProjectChildren(project.id);
+
+  return {
+    id: project.id,
+    name: project.name,
+    lastEdited: project.lastEditedFormatted || 'Just now',
+    shareToken: project.share_token || null,
+    pinned: project.pin_position !== null,
+    brushNorms,
+    typographyNorms,
+    normsCount: brushNorms.length + typographyNorms.length,
+    palette,
+  };
+};
+
 // Shape of a valid share token: 32 hex chars (128 random bits). Checked before
 // querying so junk input never reaches the database.
 const SHARE_TOKEN_PATTERN = /^[a-f0-9]{32}$/i;
@@ -764,44 +835,14 @@ const getSharedProjectByToken = async (rawToken) => {
   if (rows.length === 0) {
     throw new ProjectServiceError('not_found');
   }
-  const projectId = rows[0].id;
-
-  const [brushRows] = await db.query(
-    'SELECT id, name, value, unit, brush_name, opacity FROM project_brush_norms WHERE project_id = ? AND deleted_at IS NULL ORDER BY position ASC, id ASC',
-    [projectId],
-  );
-  const [typographyRows] = await db.query(
-    'SELECT id, font_family, font_weight, font_usage, font_style FROM project_typography_norms WHERE project_id = ? AND deleted_at IS NULL ORDER BY position ASC, id ASC',
-    [projectId],
-  );
-  const [paletteRows] = await db.query(
-    'SELECT id, name, hex FROM project_palette WHERE project_id = ? AND deleted_at IS NULL ORDER BY position ASC, id ASC',
-    [projectId],
-  );
+  const { brushNorms, typographyNorms, palette } = await fetchLiveProjectChildren(rows[0].id);
 
   return {
     name: rows[0].name,
     ownerName: rows[0].owner_name,
-    brushNorms: brushRows.map((norm) => ({
-      id: norm.id,
-      name: norm.name,
-      value: norm.value,
-      unit: norm.unit,
-      brushName: norm.brush_name,
-      opacity: norm.opacity,
-    })),
-    typographyNorms: typographyRows.map((norm) => ({
-      id: norm.id,
-      fontFamily: norm.font_family,
-      fontWeight: norm.font_weight,
-      fontUsage: norm.font_usage,
-      fontStyle: norm.font_style,
-    })),
-    palette: paletteRows.map((color) => ({
-      id: color.id,
-      name: color.name,
-      hex: color.hex,
-    })),
+    brushNorms,
+    typographyNorms,
+    palette,
   };
 };
 
@@ -1267,6 +1308,7 @@ module.exports = {
   searchProjectContentForUser,
   userOwnsProject,
   listProjectsForUser,
+  getProjectByIdForUser,
   createProjectForUser,
   duplicateProjectForUser,
   renameProject,

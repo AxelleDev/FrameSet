@@ -43,8 +43,9 @@ limited), `500` (server), `503` (dependency unavailable).
 
 JSON body is capped at **10 kB**. Sensitive endpoints are **rate limited** per IP
 (or per user), e.g. login/register 5/min, code verification 10 / 10 min, code
-resend 3 / 10 min, project/norm creation (and duplication) 30/h, public share
-views 60/min. A `429` response includes a `Retry-After` header (seconds).
+resend 3 / 10 min, project/norm creation (and duplication) 30/h, palette saves
+300/h, public share views 60/min. A `429` response includes a `Retry-After`
+header (seconds).
 
 ### Demo account
 
@@ -69,7 +70,7 @@ interactive; nothing it does ever persists.
 | Method | Path                    | Auth           | Body                               | Success                                                                                                                                                                              |
 | ------ | ----------------------- | -------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `GET`  | `/auth/csrf-token`      | –              | –                                  | `{ csrfToken }` (also sets the CSRF cookie)                                                                                                                                          |
-| `POST` | `/auth/register`        | –              | `{ name, email, password }`        | `{ success, id, name, email, avatarInitials, is_verified, passwordUpdatedAt }`                                                                                                       |
+| `POST` | `/auth/register`        | –              | `{ name, email, password }`        | `{ success, id, name, email, avatarInitials, isVerified, passwordUpdatedAt }`                                                                                                        |
 | `POST` | `/auth/login`           | –              | `{ email, password }`              | sets auth cookies, `{ success, ...user }`                                                                                                                                            |
 | `POST` | `/auth/demo-login`      | –              | –                                  | sets auth cookies for the shared read-only demo account, `{ success, ...user }` (`isDemo: true`); `503` if no demo account is seeded                                                 |
 | `POST` | `/auth/google`          | –              | `{ credential }` (Google ID token) | sets auth cookies, `{ success, ...user }` — signs in, links to an existing email/password account, or creates a new (passwordless) account; `503` if Google sign-in isn't configured |
@@ -105,6 +106,7 @@ or mutate their own projects).
 | -------- | ----------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GET`    | `/projects?page=&pageSize=&search=` | –                       | `{ projects: [{ id, name, lastEdited, pinned, shareToken, brushNorms[], typographyNorms[], normsCount, palette[] }], pagination: { page, pageSize, total, totalPages } }` — paginated (`pageSize` defaults to 12, capped at 50); pinned projects sort first, then newest-edited; `search` filters by name (case-insensitive substring) |
 | `GET`    | `/projects/search?q=`               | –                       | `{ projects[], colors[], brushNorms[], typographyNorms[] }` — global search (the app's Ctrl+K): one term (1–100 chars, `LIKE` wildcards escaped) matched against project names, colour names/hex (`#` optional) and standards, capped at 5 matches per category; only the caller's live (non-trashed) content is searched              |
+| `GET`    | `/projects/:id`                     | –                       | one project, same shape as a list item — lets a deep link / hard reload resolve a project beyond the loaded pages; trashed/unknown/foreign ids are a plain `404`                                                                                                                                                                       |
 | `POST`   | `/projects`                         | `{ name }` (2–50 chars) | the created project                                                                                                                                                                                                                                                                                                                    |
 | `POST`   | `/projects/:id/duplicate`           | –                       | the new project — copies the palette and standards (order preserved), named `"<name> (copy)"`; shares the project-creation rate limit                                                                                                                                                                                                  |
 | `PATCH`  | `/projects/:id`                     | `{ name }`              | `{ success, name }`                                                                                                                                                                                                                                                                                                                    |

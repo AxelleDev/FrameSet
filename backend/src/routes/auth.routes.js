@@ -22,6 +22,15 @@ const loginLimiter = rateLimit({
   message: 'Too many attempts, please try again in a minute.',
 });
 
+// Demo login: same shape of cap as a normal login, but its own instance so
+// demo clicks can't consume the login quota (and failed logins can't lock the
+// demo out) — the same isolation principle as every other limiter here.
+const demoLoginLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: maxFor(5),
+  message: 'Too many attempts, please try again in a minute.',
+});
+
 // Register: per-IP limit to slow spam signups, independent from login.
 const registerLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -87,7 +96,7 @@ const logoutLimiter = rateLimit({
 
 router.post('/register', registerLimiter, authController.register);
 router.post('/login', loginLimiter, authController.login);
-router.post('/demo-login', loginLimiter, authController.demoLogin);
+router.post('/demo-login', demoLoginLimiter, authController.demoLogin);
 router.post('/google', googleSignInLimiter, authController.googleSignIn);
 router.get('/csrf-token', authController.getCsrfToken);
 router.post('/verify', verifyCodeLimiter, authController.verify);

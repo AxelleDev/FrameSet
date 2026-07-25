@@ -33,6 +33,7 @@ export default function Dashboard() {
   const {
     projects,
     projectsPagination,
+    projectsTotalAll,
     projectsLoading,
     trashedProjects,
     loadMoreProjects,
@@ -78,10 +79,13 @@ export default function Dashboard() {
   // Aggregate norm count across the loaded projects for the summary stat. Guard
   // each normsCount so a project missing the field can't turn the total into NaN.
   const totalNorms = projects.reduce((acc, p) => acc + (p.normsCount || 0), 0);
-  // Authoritative project total from the server (all pages), guarded so it never
-  // shows fewer than what is currently on screen.
+  // The hero/stat tiles and the empty/search gates use the UNFILTERED total
+  // (projectsTotalAll): pagination.total follows the active search filter, so
+  // using it there would make "You currently have N projects" change while
+  // typing a search — and hide the search box on a zero-match filter, leaving
+  // no way to clear it. The grid's own pagination stays on the filtered total.
   const paginationTotal = projectsPagination?.total ?? projects.length;
-  const totalProjects = Math.max(paginationTotal, projects.length);
+  const totalProjects = Math.max(projectsTotalAll || 0, paginationTotal, projects.length);
   const hasMoreProjects = projects.length < paginationTotal;
 
   // Pinned projects stay at the top, own their own drag-and-drop reorder
