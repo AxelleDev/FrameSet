@@ -5,9 +5,10 @@ import CopyBadge from './CopyBadge';
 /**
  * The one color-swatch shape used everywhere a palette color is shown:
  * Landing's mockup, ProjectPalette's editor and the public Shared reference
- * sheet. A square flat-color tile with the name/hex centered directly below
- * it (both inside the same square block, like ProjectPalette), so a color
- * never looks like a different shape or size depending on the page.
+ * sheet. The swatch itself is always a true square (sized off its own width
+ * via `aspect-square`, not squeezed by the caption below it), with the
+ * name/hex centered underneath — so a color never looks like a different
+ * shape or size depending on the page.
  */
 const ColorTile = React.forwardRef(function ColorTile(
   { hex, name, onCopy, copied = false, overlay, className = '', ...rest },
@@ -16,14 +17,16 @@ const ColorTile = React.forwardRef(function ColorTile(
   return (
     <div
       ref={ref}
-      className={`group relative flex flex-col aspect-square rounded-3xl outline-none ${className}`.trim()}
+      className={`group relative flex flex-col outline-none ${className}`.trim()}
       {...rest}
     >
       {/* No `overflow-hidden` on purpose: with `rounded-3xl` and the hover
           transform, Chrome drops the rounded clip mid-animation and the
-          copy overlay flashes square corners. */}
+          copy overlay flashes square corners. `aspect-square` (not `flex-1`)
+          so the swatch stays a true square regardless of the caption's
+          height, instead of being squeezed into a rectangle to fit it. */}
       <div
-        className="flex-1 w-full rounded-3xl relative transition-transform duration-slow group-hover:-translate-y-2"
+        className="w-full aspect-square rounded-3xl relative transition-transform duration-slow group-hover:-translate-y-2"
         style={{ backgroundColor: hex }}
       >
         {overlay}
