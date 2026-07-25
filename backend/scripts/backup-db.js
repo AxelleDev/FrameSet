@@ -89,7 +89,14 @@ const runDump = (config, partialFilePath) =>
 
     dump.on('error', (error) => {
       // Typically ENOENT: the mysqldump binary is not installed / not on PATH.
-      reject(new Error(`Failed to start mysqldump: ${error.message}`));
+      // Reject only once the file stream has settled: rejecting immediately
+      // would let the caller delete the .partial file while the pipeline can
+      // still create or flush it, leaving an orphaned .partial behind.
+      const failure = new Error(`Failed to start mysqldump: ${error.message}`);
+      streamDone.then(
+        () => reject(failure),
+        () => reject(failure),
+      );
     });
 
     dump.on('close', (exitCode) => {
