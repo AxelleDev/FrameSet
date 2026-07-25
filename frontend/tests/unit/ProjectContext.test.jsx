@@ -182,6 +182,37 @@ describe('ProjectContext mutations return success signals', () => {
     ]);
   });
 
+  it('trash fetchers keep a stable identity after a fetch stores its result', async () => {
+    // Regression guard: the pages load the trash in an effect that depends on
+    // the fetcher, so a fetcher whose identity changes whenever the trash state
+    // it just stored changes would re-trigger that effect after every response —
+    // an endless request loop.
+    const { result } = renderHook(() => useProjects(), { wrapper });
+
+    const before = {
+      projects: result.current.fetchTrashedProjects,
+      colors: result.current.fetchTrashedColors,
+      brush: result.current.fetchTrashedBrushNorms,
+      typography: result.current.fetchTrashedTypographyNorms,
+    };
+
+    apiMock.get.mockResolvedValueOnce({ projects: [{ id: 9, name: 'Old', daysLeft: 21 }] });
+    apiMock.get.mockResolvedValueOnce({ colors: [{ id: 4, name: 'Teal', hex: '#008080' }] });
+    apiMock.get.mockResolvedValueOnce({ norms: [{ id: 5, name: 'Lineart' }] });
+    apiMock.get.mockResolvedValueOnce({ norms: [{ id: 6, fontFamily: 'Figtree' }] });
+    await act(async () => {
+      await result.current.fetchTrashedProjects();
+      await result.current.fetchTrashedColors(3);
+      await result.current.fetchTrashedBrushNorms(3);
+      await result.current.fetchTrashedTypographyNorms(3);
+    });
+
+    expect(result.current.fetchTrashedProjects).toBe(before.projects);
+    expect(result.current.fetchTrashedColors).toBe(before.colors);
+    expect(result.current.fetchTrashedBrushNorms).toBe(before.brush);
+    expect(result.current.fetchTrashedTypographyNorms).toBe(before.typography);
+  });
+
   it('enableSharing stores the minted token on the project', async () => {
     apiMock.get.mockResolvedValue({
       projects: [{ id: 3, name: 'P', shareToken: null }],

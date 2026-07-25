@@ -61,6 +61,21 @@ export const ProjectProvider = ({ children }) => {
   const [trashedPaletteColors, setTrashedPaletteColors] = useState([]);
   const [trashedBrushNorms, setTrashedBrushNorms] = useState([]);
   const [trashedTypographyNorms, setTrashedTypographyNorms] = useState([]);
+  // Live mirrors of the trash lists, read by the demo-mode branch of the
+  // fetchers below. They must NOT close over the state directly: with the state
+  // in their deps, every fetch (which stores a fresh array) would give the
+  // fetcher a new identity, re-triggering the pages' "load the trash" effects —
+  // which depend on the fetcher — in an endless request loop.
+  const trashedProjectsRef = useRef([]);
+  const trashedPaletteColorsRef = useRef([]);
+  const trashedBrushNormsRef = useRef([]);
+  const trashedTypographyNormsRef = useRef([]);
+  useEffect(() => {
+    trashedProjectsRef.current = trashedProjects;
+    trashedPaletteColorsRef.current = trashedPaletteColors;
+    trashedBrushNormsRef.current = trashedBrushNorms;
+    trashedTypographyNormsRef.current = trashedTypographyNorms;
+  }, [trashedProjects, trashedPaletteColors, trashedBrushNorms, trashedTypographyNorms]);
   // Monotonic token to discard out-of-order responses: two interleaved fetches
   // (silent page-1 on login + a "load more", or a StrictMode double-mount) must
   // not let a stale response overwrite the newer list/pagination.
@@ -211,7 +226,7 @@ export const ProjectProvider = ({ children }) => {
       // real fetch would return the account's actual (empty) trash and wipe
       // it out from under the visitor.
       if (isDemo) {
-        return trashedProjects;
+        return trashedProjectsRef.current;
       }
 
       try {
@@ -225,7 +240,7 @@ export const ProjectProvider = ({ children }) => {
         return [];
       }
     },
-    [user?.id, isDemo, trashedProjects, setGlobalError],
+    [user?.id, isDemo, setGlobalError],
   );
 
   // Restores a trashed project. The full project (norms + palette) comes back
@@ -577,7 +592,7 @@ export const ProjectProvider = ({ children }) => {
       // The demo account's color trash is simulated locally (see deleteColor);
       // skip the network call so it isn't wiped by the real (empty) trash.
       if (isDemo) {
-        return trashedPaletteColors;
+        return trashedPaletteColorsRef.current;
       }
       try {
         const options = silent ? undefined : { onGlobalError: setGlobalError };
@@ -590,7 +605,7 @@ export const ProjectProvider = ({ children }) => {
         return [];
       }
     },
-    [isDemo, trashedPaletteColors, setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Moves a single color to the trash (soft delete server-side) and removes it
@@ -856,7 +871,7 @@ export const ProjectProvider = ({ children }) => {
       }
       // The demo account's norm trash is simulated locally (see deleteBrushNorm).
       if (isDemo) {
-        return trashedBrushNorms;
+        return trashedBrushNormsRef.current;
       }
       try {
         const options = silent ? undefined : { onGlobalError: setGlobalError };
@@ -869,7 +884,7 @@ export const ProjectProvider = ({ children }) => {
         return [];
       }
     },
-    [isDemo, trashedBrushNorms, setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   // Fetches a project's trashed typography norms (small list, with days left).
@@ -880,7 +895,7 @@ export const ProjectProvider = ({ children }) => {
         return [];
       }
       if (isDemo) {
-        return trashedTypographyNorms;
+        return trashedTypographyNormsRef.current;
       }
       try {
         const options = silent ? undefined : { onGlobalError: setGlobalError };
@@ -893,7 +908,7 @@ export const ProjectProvider = ({ children }) => {
         return [];
       }
     },
-    [isDemo, trashedTypographyNorms, setGlobalError],
+    [isDemo, setGlobalError],
   );
 
   /** Moves a brush norm to the trash (soft delete) and decrements normsCount.
