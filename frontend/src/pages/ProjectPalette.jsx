@@ -555,7 +555,7 @@ export default function ProjectPalette() {
                 aria-pressed={selected}
                 className={`flex flex-col items-center gap-1 rounded-xl p-2 transition-all ${selected ? 'ring-2 ring-blue/40' : 'opacity-50 hover:opacity-100'}`}
               >
-                <span className="w-full h-12 rounded-lg " style={{ backgroundColor: hex }}></span>
+                <span className="w-full h-12 rounded-lg" style={{ backgroundColor: hex }}></span>
                 <span className="text-xs font-mono text-primary uppercase">{hex}</span>
               </button>
             ))}
