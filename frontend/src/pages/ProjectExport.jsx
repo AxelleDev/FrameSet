@@ -92,23 +92,27 @@ export default function ProjectExport() {
     return activeProject ? JSON.stringify(activeProject, null, 2) : '';
   }, [activeProject]);
 
+  // Filesystem-safe base name for every downloaded file (PDF, JSON, palettes),
+  // derived from the project name: characters that are invalid in file names on
+  // common platforms are dropped, whitespace becomes '_'. Falls back to
+  // 'project' if nothing survives (e.g. a name made only of such characters).
+  const fileSlug = activeProject
+    ? (activeProject.name.replace(/[\\/:*?"<>|]/g, '').trim() || 'project')
+        .replace(/\s+/g, '_')
+        .toLowerCase()
+    : '';
+
   // Trigger a JSON file download via a transient data-URI anchor.
   const downloadJson = () => {
     if (!activeProject) return;
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(projectJson);
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute('href', dataStr);
-    downloadAnchorNode.setAttribute(
-      'download',
-      `${activeProject.name.replace(/\s+/g, '_').toLowerCase()}_standards.json`,
-    );
+    downloadAnchorNode.setAttribute('download', `${fileSlug}_standards.json`);
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
   };
-
-  // Filesystem-safe base name for downloaded files, derived from the project name.
-  const fileSlug = activeProject ? activeProject.name.replace(/\s+/g, '_').toLowerCase() : '';
 
   // Downloads in-memory bytes (or text) as a file via a transient object URL —
   // the binary-safe counterpart of downloadJson's data-URI approach.
@@ -407,8 +411,8 @@ export default function ProjectExport() {
       align: 'right',
     });
 
-    // Save with a filesystem-safe filename derived from the project name.
-    doc.save(`${activeProject.name.replace(/\s+/g, '_')}_style_guide.pdf`);
+    // Save with the same filesystem-safe base name as every other export.
+    doc.save(`${fileSlug}_style_guide.pdf`);
   };
 
   return (

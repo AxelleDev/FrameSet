@@ -537,7 +537,6 @@ export default function Profile() {
         }
         confirmLabel="Delete"
         cancelLabel="Cancel"
-
         confirmationWord="DELETE"
         confirmationInputLabel="Type the confirmation word"
         confirmationInputPlaceholder="DELETE"
