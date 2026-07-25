@@ -283,3 +283,136 @@ describe('AuthContext demo account guards', () => {
     expect(mockApiDelete).not.toHaveBeenCalled();
   });
 });
+
+// Business (4xx) failures must come back inline ({ success: false, message })
+// so pages can show them next to the form; 5xx go to the global banner and
+// leave `message` unset. Same contract for every action.
+describe('AuthContext action error paths', () => {
+  beforeEach(() => {
+    mockApiGet.mockReset();
+    mockApiPost.mockReset();
+    mockApiPut.mockReset();
+    mockApiDelete.mockReset();
+  });
+
+  const buildBusinessError = (status, message, extra = {}) => {
+    const error = new Error(message);
+    error.status = status;
+    error.data = { error: message, ...extra.data };
+    if (extra.retryAfterSeconds !== undefined) error.retryAfterSeconds = extra.retryAfterSeconds;
+    return error;
+  };
+
+  const renderSignedOut = async () => {
+    mockApiGet.mockRejectedValueOnce(buildBusinessError(401, 'Missing token.'));
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.authLoading).toBe(false));
+    return result;
+  };
+
+  const renderSignedIn = async () => {
+    mockApiGet.mockResolvedValueOnce({ id: 7, name: 'Jane', email: 'jane@example.com' });
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.authLoading).toBe(false));
+    return result;
+  };
+
+  it('login surfaces the message, the stable error code and the retry delay', async () => {
+    const result = await renderSignedOut();
+    mockApiPost.mockRejectedValueOnce(
+      buildBusinessError(401, 'Please verify your email before signing in.', {
+        data: { code: 'EMAIL_NOT_VERIFIED' },
+        retryAfterSeconds: 30,
+      }),
+    );
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.login('jane@example.com', 'BadPass1');
+    });
+
+    expect(outcome).toEqual({
+      success: false,
+      message: 'Please verify your email before signing in.',
+      code: 'EMAIL_NOT_VERIFIED',
+      retryAfterSeconds: 30,
+    });
+    expect(result.current.user).toBeNull();
+  });
+
+  it('verify/resend/forgot/reset all return the business message inline', async () => {
+    const result = await renderSignedOut();
+
+    const actions = [
+      ['verifyEmail', () => result.current.verifyEmail('jane@example.com', '123456')],
+      ['resendVerificationCode', () => result.current.resendVerificationCode('jane@example.com')],
+      ['requestPasswordReset', () => result.current.requestPasswordReset('jane@example.com')],
+      [
+        'resetPassword',
+        () => result.current.resetPassword('jane@example.com', '123456', 'NewPass123'),
+      ],
+    ];
+
+    for (const [name, run] of actions) {
+      mockApiPost.mockRejectedValueOnce(buildBusinessError(400, `${name} went wrong.`));
+      let outcome;
+      await act(async () => {
+        outcome = await run();
+      });
+      expect(outcome).toEqual({
+        success: false,
+        message: `${name} went wrong.`,
+        retryAfterSeconds: undefined,
+      });
+    }
+  });
+
+  it('updateUserProfile keeps the current user and returns the message on a 4xx', async () => {
+    const result = await renderSignedIn();
+    mockApiPut.mockRejectedValueOnce(buildBusinessError(400, 'This email is already in use.'));
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.updateUserProfile({
+        name: 'Jane',
+        email: 'taken@example.com',
+      });
+    });
+
+    expect(outcome).toEqual({
+      success: false,
+      message: 'This email is already in use.',
+      retryAfterSeconds: undefined,
+    });
+    expect(result.current.user.email).toBe('jane@example.com');
+  });
+
+  it('changePassword leaves message unset on a 5xx (the global banner owns it)', async () => {
+    const result = await renderSignedIn();
+    const serverError = new Error('Internal server error.');
+    serverError.status = 500;
+    mockApiPost.mockRejectedValueOnce(serverError);
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.changePassword({
+        currentPassword: 'OldPass123',
+        newPassword: 'NewPass123',
+      });
+    });
+
+    expect(outcome.success).toBe(false);
+    expect(outcome.message).toBeUndefined();
+  });
+
+  it('logout clears the user locally even when the server revocation fails', async () => {
+    const result = await renderSignedIn();
+    mockApiPost.mockRejectedValueOnce(new Error('network down'));
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(result.current.user).toBeNull();
+  });
+});

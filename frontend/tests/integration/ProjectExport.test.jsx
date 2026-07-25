@@ -5,7 +5,34 @@ import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import ProjectExport from '../../src/pages/ProjectExport';
 
-const { projectState } = vi.hoisted(() => ({ projectState: {} }));
+const { projectState, pdfDoc } = vi.hoisted(() => ({
+  projectState: {},
+  // Every jsPDF method the PDF builder touches, as spies: the test asserts the
+  // document is assembled and saved without rendering anything for real.
+  pdfDoc: {
+    setFontSize: vi.fn(),
+    setFont: vi.fn(),
+    setTextColor: vi.fn(),
+    setDrawColor: vi.fn(),
+    setFillColor: vi.fn(),
+    text: vi.fn(),
+    line: vi.fn(),
+    roundedRect: vi.fn(),
+    addPage: vi.fn(),
+    addImage: vi.fn(),
+    splitTextToSize: vi.fn((value) => [String(value)]),
+    getTextWidth: vi.fn(() => 10),
+    save: vi.fn(),
+  },
+}));
+
+// The page imports jsPDF lazily (dynamic import); vitest mocks that too.
+// A classic function (not an arrow) so `new jsPDF()` works.
+vi.mock('jspdf', () => ({
+  jsPDF: vi.fn(function jsPDF() {
+    return pdfDoc;
+  }),
+}));
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -99,6 +126,48 @@ describe('ProjectExport', () => {
 
     clickSpy.mockRestore();
     vi.unstubAllGlobals();
+  });
+
+  it('builds and saves the PDF style guide under a filesystem-safe name', async () => {
+    const user = userEvent.setup();
+    // jsdom never loads images: a fake Image that fails immediately exercises
+    // the "logo unavailable" fallback (the PDF must still be produced).
+    const RealImage = globalThis.Image;
+    vi.stubGlobal(
+      'Image',
+      class {
+        set src(_value) {
+          queueMicrotask(() => this.onerror?.());
+        }
+      },
+    );
+    projectState.activeProject = {
+      ...projectState.activeProject,
+      // "/" is invalid in a file name and must be stripped from the slug.
+      name: 'Mon/Projet Été',
+      palette: [{ id: 1, name: 'Coral', hex: '#FF6B63' }],
+      brushNorms: [{ id: 2, name: 'Hair outline', value: '8', unit: 'px', opacity: 0.9 }],
+      typographyNorms: [{ id: 3, fontFamily: 'Figtree', fontWeight: '700', fontUsage: 'Title' }],
+    };
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /download pdf/i }));
+
+    await vi.waitFor(() => expect(pdfDoc.save).toHaveBeenCalled());
+    expect(pdfDoc.save).toHaveBeenCalledWith('monprojet_été_style_guide.pdf');
+    // All three sections made it into the document.
+    const drawnText = pdfDoc.text.mock.calls.map(([value]) => String(value)).join('\n');
+    expect(drawnText).toContain('Color palette');
+    expect(drawnText).toContain('Graphic standards');
+    expect(drawnText).toContain('Made by Jane Doe');
+    // No logo loaded -> no image embedded, and that must not block the export.
+    expect(pdfDoc.addImage).not.toHaveBeenCalled();
+
+    vi.stubGlobal('Image', RealImage);
+    vi.unstubAllGlobals();
+    pdfDoc.save.mockClear();
+    pdfDoc.text.mockClear();
+    pdfDoc.addImage.mockClear();
   });
 
   it('creates a share link when sharing is disabled', async () => {

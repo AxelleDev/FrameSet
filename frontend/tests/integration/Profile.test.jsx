@@ -125,6 +125,83 @@ describe('Profile', () => {
     await user.click(screen.getByRole('button', { name: /sign out/i }));
     expect(await screen.findByText(/you'll need to sign in again/i)).toBeInTheDocument();
   });
+
+  it('routes an email change through re-authentication before saving', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
+    const emailField = screen.getByDisplayValue('axelle@example.com');
+    await user.clear(emailField);
+    await user.type(emailField, 'new@example.com');
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+
+    // Nothing is saved yet: the critical action first demands the password.
+    expect(authState.updateUserProfile).not.toHaveBeenCalled();
+    expect(await screen.findByText(/confirm your identity/i)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/current password/i), 'Sup3rSecret!');
+    const dialogSave = screen
+      .getAllByRole('button', { name: /save changes/i })
+      .find((button) => button.getAttribute('type') === 'submit');
+    await user.click(dialogSave);
+
+    expect(authState.updateUserProfile).toHaveBeenCalledWith(
+      { name: 'Jane Doe', email: 'new@example.com' },
+      { currentPassword: 'Sup3rSecret!' },
+    );
+  });
+
+  it('surfaces a wrong password inline in the re-auth modal and stays open', async () => {
+    const user = userEvent.setup();
+    authState.updateUserProfile = vi
+      .fn()
+      .mockResolvedValue({ success: false, message: 'Current password is incorrect.' });
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
+    const emailField = screen.getByDisplayValue('axelle@example.com');
+    await user.clear(emailField);
+    await user.type(emailField, 'new@example.com');
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+
+    await user.type(await screen.findByLabelText(/current password/i), 'wrong');
+    const dialogSave = screen
+      .getAllByRole('button', { name: /save changes/i })
+      .find((button) => button.getAttribute('type') === 'submit');
+    await user.click(dialogSave);
+
+    expect(await screen.findByText(/current password is incorrect/i)).toBeInTheDocument();
+    // The modal stays open so the user can retry.
+    expect(screen.getByLabelText(/current password/i)).toBeInTheDocument();
+  });
+
+  it('deletes the account after the typed confirmation and re-authentication', async () => {
+    const user = userEvent.setup();
+    authState.deleteAccount = vi.fn().mockResolvedValue({ success: true });
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /delete my account/i }));
+
+    // Step 1: the type-to-confirm dialog gates the destructive intent.
+    const confirmInput = await screen.findByLabelText(/type the confirmation word/i);
+    const confirmButton = screen.getByRole('button', { name: /^delete$/i });
+    expect(confirmButton).toBeDisabled();
+    await user.type(confirmInput, 'DELETE');
+    expect(confirmButton).toBeEnabled();
+    await user.click(confirmButton);
+
+    // Step 2: a session alone is not enough — the password is required.
+    expect(authState.deleteAccount).not.toHaveBeenCalled();
+    await user.type(await screen.findByLabelText(/current password/i), 'Sup3rSecret!');
+    const dialogDelete = screen
+      .getAllByRole('button', { name: /delete my account/i })
+      .find((button) => button.getAttribute('type') === 'submit');
+    await user.click(dialogDelete);
+
+    expect(authState.deleteAccount).toHaveBeenCalledWith({ currentPassword: 'Sup3rSecret!' });
+    expect(mockNavigate).toHaveBeenCalledWith('/login');
+  });
 });
 
 describe('Profile (demo account)', () => {
