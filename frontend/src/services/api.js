@@ -309,8 +309,12 @@ const request = async (
       // An unexpected 401 on a protected (non-auth) route means there is no valid
       // session at all. Treat it as terminal — clear the session rather than leave
       // a phantom logged-in UI. Auth endpoints (login/forgot/...) legitimately
-      // return 401 for bad credentials and must not trigger a logout.
-      if (e?.status === 401 && !path.startsWith('/auth/')) {
+      // return 401 for bad credentials and must not trigger a logout. Hydration
+      // probes (skipTokenRefresh) are exempt too: a plain visitor with no session
+      // yet gets a 401 there, and the caller handles it silently — firing the
+      // "session expired" handler would toast an error at someone who never
+      // signed in.
+      if (e?.status === 401 && !skipTokenRefresh && !path.startsWith('/auth/')) {
         if (typeof sessionExpiredHandler === 'function') {
           sessionExpiredHandler();
         }
