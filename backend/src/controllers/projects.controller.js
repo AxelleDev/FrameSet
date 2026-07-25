@@ -48,6 +48,26 @@ const listProjects = async (req, res) => {
   }
 };
 
+// Fetch a single project (same shape as a listProjects item). Exists so a deep
+// link / hard reload on a project beyond the loaded pages can resolve it; a
+// project that is trashed, unknown or someone else's is a plain 404.
+const getProject = async (req, res) => {
+  const userId = getAuthenticatedUserId(req);
+  const { id } = req.params;
+  if (!userId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+  try {
+    res.json(await projectsService.getProjectByIdForUser(userId, id));
+  } catch (error) {
+    if (error.code === 'not_found') {
+      return res.status(404).json({ error: 'Project not found.' });
+    }
+    logProjectsControllerError(req, 'get', error, { projectId: id });
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
 // Global search (Ctrl+K): one term matched across the user's project names,
 // palette colors and standards. Scoping to the caller lives in the service.
 const searchProjects = async (req, res) => {
@@ -637,6 +657,7 @@ const updateTypographyNorm = async (req, res) => {
 
 module.exports = {
   listProjects,
+  getProject,
   searchProjects,
   createProject,
   duplicateProject,

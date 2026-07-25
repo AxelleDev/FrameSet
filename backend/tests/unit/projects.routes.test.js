@@ -6,6 +6,7 @@ const buildTestApp = () => {
 
   const controllerMocks = {
     listProjects: jest.fn((req, res) => res.status(200).json([])),
+    getProject: jest.fn((req, res) => res.status(200).json({ id: Number(req.params.id) })),
     createProject: jest.fn((req, res) => res.status(201).json({ success: true })),
     duplicateProject: jest.fn((req, res) => res.status(201).json({ success: true })),
     searchProjects: jest.fn((req, res) => res.status(200).json({ projects: [] })),
@@ -110,5 +111,43 @@ describe('projects routes', () => {
     expect(blockedNormResponse.status).toBe(429);
     expect(otherUserResponse.status).toBe(201);
     expect(controllerMocks.addBrushNorm).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not let palette saves consume the creation quota (or vice versa)', async () => {
+    const { app, controllerMocks } = buildTestApp();
+
+    // Exhaust the creation quota for this user...
+    for (let index = 0; index < 30; index += 1) {
+      await request(app)
+        .post('/projects')
+        .set('x-test-user-id', '9')
+        .send({ name: `Project ${index + 1}` });
+    }
+
+    // ...a palette save must still go through: it is routine editing, capped
+    // by its own (much more generous) limiter.
+    const paletteResponse = await request(app)
+      .post('/projects/1/palette')
+      .set('x-test-user-id', '9')
+      .send([{ name: 'Primary', hex: '#112233' }]);
+
+    expect(paletteResponse.status).toBe(201);
+    expect(controllerMocks.updatePalette).toHaveBeenCalledTimes(1);
+  });
+
+  it('routes GET /projects/:id to the single-project controller, without swallowing /trash or /search', async () => {
+    const { app, controllerMocks } = buildTestApp();
+
+    const byIdResponse = await request(app).get('/projects/42');
+    expect(byIdResponse.status).toBe(200);
+    expect(byIdResponse.body).toEqual({ id: 42 });
+    expect(controllerMocks.getProject).toHaveBeenCalledTimes(1);
+
+    // The literal segments must keep hitting their own handlers, never ':id'.
+    await request(app).get('/projects/trash');
+    await request(app).get('/projects/search?q=x');
+    expect(controllerMocks.listTrashedProjects).toHaveBeenCalledTimes(1);
+    expect(controllerMocks.searchProjects).toHaveBeenCalledTimes(1);
+    expect(controllerMocks.getProject).toHaveBeenCalledTimes(1);
   });
 });

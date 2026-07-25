@@ -37,6 +37,7 @@ export default function ProjectPalette() {
   const { id } = useParams();
   const {
     activeProject,
+    activeProjectNotFound,
     updateProjectPalette,
     projectsLoading,
     activeProjectId,
@@ -526,7 +527,11 @@ export default function ProjectPalette() {
         </div>
       ) : (
         <ProjectStatePlaceholder
-          loading={projectsLoading || String(activeProjectId) !== String(id)}
+          // Stay in the loading state until the deep-link lookup has actually
+          // failed: a project beyond the loaded pages is fetched by id first.
+          loading={
+            projectsLoading || String(activeProjectId) !== String(id) || !activeProjectNotFound
+          }
         />
       )}
 

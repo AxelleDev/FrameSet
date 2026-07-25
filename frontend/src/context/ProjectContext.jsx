@@ -45,6 +45,13 @@ export const ProjectProvider = ({ children }) => {
 
   const [projects, setProjects] = useState([]);
   const [projectsPagination, setProjectsPagination] = useState(DEFAULT_PAGINATION);
+  // Unfiltered project total, for the dashboard's "you have N projects" stat:
+  // pagination.total follows the active search filter, so it can't be used
+  // there without the hero count changing while the user types a search.
+  const [projectsTotalAll, setProjectsTotalAll] = useState(0);
+  const adjustProjectsTotalAll = useCallback((delta) => {
+    setProjectsTotalAll((total) => Math.max(0, total + delta));
+  }, []);
   // Mirror of the latest pagination so loadMoreProjects can read it without
   // depending on (and re-creating itself on) every pagination change.
   const paginationRef = useRef(DEFAULT_PAGINATION);
@@ -113,7 +120,13 @@ export const ProjectProvider = ({ children }) => {
           return data?.projects || [];
         }
         const fetched = data?.projects || [];
-        updatePagination(data?.pagination || { ...DEFAULT_PAGINATION, total: fetched.length });
+        const nextPagination = data?.pagination || { ...DEFAULT_PAGINATION, total: fetched.length };
+        updatePagination(nextPagination);
+        // Only an unfiltered fetch may update the unfiltered total: a search's
+        // total reflects the filter and must not leak into the dashboard stat.
+        if (!searchRef.current) {
+          setProjectsTotalAll(nextPagination.total);
+        }
         setProjects((prev) => {
           if (page <= 1) return fetched;
           const seen = new Set(prev.map((p) => String(p.id)));
@@ -164,6 +177,7 @@ export const ProjectProvider = ({ children }) => {
       setTrashedProjects([]);
       setActiveProjectId(null);
       setProjectsLoading(false);
+      setProjectsTotalAll(0);
       return;
     }
 
@@ -176,6 +190,64 @@ export const ProjectProvider = ({ children }) => {
     () => projects.find((project) => String(project.id) === String(activeProjectId)) || null,
     [projects, activeProjectId],
   );
+
+  // Deep-link resolution: the list is paginated, so a hard reload (or direct
+  // link) on a project beyond the loaded pages can't find it locally. Rather
+  // than wrongly showing "Project not found", fetch it by id once and merge it
+  // into the list; only a confirmed failure marks it missing. The one-lookup-
+  // per-id guard is a ref (not state in the deps), so starting the lookup
+  // can't re-run the effect and self-cancel the in-flight request.
+  const [activeProjectNotFound, setActiveProjectNotFound] = useState(false);
+  const activeProjectLookupRef = useRef(null);
+  useEffect(() => {
+    setActiveProjectNotFound(false);
+    activeProjectLookupRef.current = null;
+  }, [activeProjectId]);
+  useEffect(() => {
+    if (authLoading || !user?.id || !activeProjectId) return undefined;
+    if (activeProject || projectsLoading) return undefined;
+    // Already looked this id up (in flight or settled): never retry in a loop.
+    if (String(activeProjectLookupRef.current) === String(activeProjectId)) return undefined;
+    activeProjectLookupRef.current = activeProjectId;
+
+    // Demo-simulated projects live only in local state: after a reload they
+    // are legitimately gone, and the API would reject the lookup anyway.
+    if (isDemo) {
+      setActiveProjectNotFound(true);
+      return undefined;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const project = await api.get(`/projects/${activeProjectId}`);
+        if (cancelled) return;
+        if (project?.id) {
+          setProjects((prev) =>
+            prev.some((p) => String(p.id) === String(project.id)) ? prev : [...prev, project],
+          );
+        } else {
+          setActiveProjectNotFound(true);
+        }
+      } catch (error) {
+        if (cancelled) return;
+        if (error?.status !== 404) {
+          logger.error('projects.fetchById.error', error);
+        }
+        setActiveProjectNotFound(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      // A teardown mid-flight (e.g. a concurrent list fetch flipped
+      // projectsLoading) drops the response above; release the guard so the
+      // re-run can retry instead of sticking on the loading state forever.
+      if (String(activeProjectLookupRef.current) === String(activeProjectId)) {
+        activeProjectLookupRef.current = null;
+      }
+    };
+  }, [authLoading, user?.id, activeProjectId, activeProject, projectsLoading, isDemo]);
 
   // Creates a project and prepends it to the local list. Returns the created
   // project on success, or null on failure (so callers can gate toasts/modals).
@@ -197,6 +269,7 @@ export const ProjectProvider = ({ children }) => {
         };
         setProjects((prevProjects) => [newProject, ...prevProjects]);
         updatePagination({ ...paginationRef.current, total: paginationRef.current.total + 1 });
+        adjustProjectsTotalAll(1);
         return newProject;
       }
 
@@ -204,6 +277,7 @@ export const ProjectProvider = ({ children }) => {
         const newProject = await api.post('/projects', { name }, { onGlobalError: setGlobalError });
         setProjects((prevProjects) => [newProject, ...prevProjects]);
         updatePagination({ ...paginationRef.current, total: paginationRef.current.total + 1 });
+        adjustProjectsTotalAll(1);
         return newProject;
       } catch (error) {
         setGlobalError(error?.message || 'Failed to add the project.');
@@ -211,7 +285,7 @@ export const ProjectProvider = ({ children }) => {
         return null;
       }
     },
-    [user, isDemo, setGlobalError, updatePagination],
+    [user, isDemo, setGlobalError, updatePagination, adjustProjectsTotalAll],
   );
 
   // Fetches the trashed projects (small list: id, name, days left). Refreshed
@@ -256,6 +330,7 @@ export const ProjectProvider = ({ children }) => {
           const { daysLeft: _daysLeft, ...projectFields } = restored;
           setProjects((prev) => [projectFields, ...prev]);
           updatePagination({ ...paginationRef.current, total: paginationRef.current.total + 1 });
+          adjustProjectsTotalAll(1);
         }
         return true;
       }
@@ -263,6 +338,9 @@ export const ProjectProvider = ({ children }) => {
       try {
         await api.post(`/projects/${id}/restore`, {}, { onGlobalError: setGlobalError });
         setTrashedProjects((prev) => prev.filter((project) => String(project.id) !== String(id)));
+        // Keep the unfiltered total right even while a search is active (the
+        // refetch below only overwrites it when no filter is applied).
+        adjustProjectsTotalAll(1);
         await refetchLoadedProjects();
         return true;
       } catch (error) {
@@ -271,7 +349,14 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [isDemo, trashedProjects, setGlobalError, updatePagination, refetchLoadedProjects],
+    [
+      isDemo,
+      trashedProjects,
+      setGlobalError,
+      updatePagination,
+      refetchLoadedProjects,
+      adjustProjectsTotalAll,
+    ],
   );
 
   // Permanently deletes a TRASHED project (irreversible). Returns true on success.
@@ -391,6 +476,7 @@ export const ProjectProvider = ({ children }) => {
         };
         setProjects((prevProjects) => [newProject, ...prevProjects]);
         updatePagination({ ...paginationRef.current, total: paginationRef.current.total + 1 });
+        adjustProjectsTotalAll(1);
         return newProject;
       }
 
@@ -402,6 +488,7 @@ export const ProjectProvider = ({ children }) => {
         );
         setProjects((prevProjects) => [newProject, ...prevProjects]);
         updatePagination({ ...paginationRef.current, total: paginationRef.current.total + 1 });
+        adjustProjectsTotalAll(1);
         return newProject;
       } catch (error) {
         setGlobalError(error?.message || 'Failed to duplicate the project.');
@@ -409,7 +496,7 @@ export const ProjectProvider = ({ children }) => {
         return null;
       }
     },
-    [isDemo, projects, setGlobalError, updatePagination],
+    [isDemo, projects, setGlobalError, updatePagination, adjustProjectsTotalAll],
   );
 
   // Pins a project to the top of the dashboard. Moves it locally to just after
@@ -509,6 +596,7 @@ export const ProjectProvider = ({ children }) => {
           ...paginationRef.current,
           total: Math.max(0, paginationRef.current.total - 1),
         });
+        adjustProjectsTotalAll(-1);
         if (String(activeProjectId) === String(id)) {
           setActiveProjectId(null);
         }
@@ -527,6 +615,7 @@ export const ProjectProvider = ({ children }) => {
           ...paginationRef.current,
           total: Math.max(0, paginationRef.current.total - 1),
         });
+        adjustProjectsTotalAll(-1);
         if (String(activeProjectId) === String(id)) {
           setActiveProjectId(null);
         }
@@ -538,7 +627,15 @@ export const ProjectProvider = ({ children }) => {
         return false;
       }
     },
-    [isDemo, projects, activeProjectId, setGlobalError, updatePagination, fetchTrashedProjects],
+    [
+      isDemo,
+      projects,
+      activeProjectId,
+      setGlobalError,
+      updatePagination,
+      fetchTrashedProjects,
+      adjustProjectsTotalAll,
+    ],
   );
 
   // Replaces the whole palette and adopts the canonical one returned by the
@@ -1276,6 +1373,8 @@ export const ProjectProvider = ({ children }) => {
     () => ({
       projects,
       projectsPagination,
+      projectsTotalAll,
+      activeProjectNotFound,
       trashedProjects,
       trashedPaletteColors,
       trashedBrushNorms,
@@ -1321,6 +1420,8 @@ export const ProjectProvider = ({ children }) => {
     [
       projects,
       projectsPagination,
+      projectsTotalAll,
+      activeProjectNotFound,
       trashedProjects,
       trashedPaletteColors,
       trashedBrushNorms,

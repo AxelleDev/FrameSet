@@ -7,7 +7,7 @@
 const express = require('express');
 const projectsController = require('../controllers/projects.controller');
 const authenticateToken = require('../middleware/authenticateToken');
-const { projectCreateLimiter } = require('../middleware/projectCreateLimiter');
+const { projectCreateLimiter, paletteWriteLimiter } = require('../middleware/projectCreateLimiter');
 
 const router = express.Router();
 
@@ -28,6 +28,13 @@ router.post(
 router.get('/trash', authenticateToken, projectsController.listTrashedProjects);
 router.post('/:id/restore', authenticateToken, projectsController.restoreProject);
 router.delete('/:id/permanent', authenticateToken, projectsController.deleteProjectPermanently);
+
+// Single-project read, same shape as a list item: the paginated list stays the
+// primary source, this exists so a deep link / hard reload on a project beyond
+// the loaded pages can resolve it instead of wrongly reading as "not found".
+// Registered after the literal '/search' and '/trash' GETs so neither of those
+// segments is ever read as a project id.
+router.get('/:id', authenticateToken, projectsController.getProject);
 
 // Pinning: keeps a project at the top of the dashboard. Reorder is a
 // user-level action (not scoped under a single project id), registered
@@ -55,10 +62,14 @@ router.post(
   projectCreateLimiter,
   projectsController.addTypographyNorm,
 );
+// Palette saves are bulk replaces (add, edit, reorder and import all POST the
+// whole palette), i.e. routine editing — not creations. They get their own,
+// far more generous limiter so an active editing session can't burn the
+// project/standard creation quota and end up blocked for an hour.
 router.post(
   '/:id/palette',
   authenticateToken,
-  projectCreateLimiter,
+  paletteWriteLimiter,
   projectsController.updatePalette,
 );
 

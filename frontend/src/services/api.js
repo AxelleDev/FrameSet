@@ -7,7 +7,12 @@
  *   3. Retrying transient failures (network, 5xx, timeouts) within a time budget.
  */
 const API_URL = import.meta.env.VITE_API_URL || '/api';
-const RETRY_WINDOW_MS = 5000; // total budget for retrying a single request
+const RETRY_WINDOW_MS = 5000; // window (from the first attempt) during which transient failures may be retried
+// Hard cap on a single attempt. Deliberately much longer than the retry
+// window: a slow-but-alive server (backend cold start, first Google Fonts
+// catalog fetch, mobile network) must be waited out, not killed at 5s — the
+// retry window only bounds how long we keep STARTING new attempts.
+const ATTEMPT_TIMEOUT_MS = 20000;
 const RETRY_INTERVAL_MS = 500; // delay between transient-failure retries
 const COOKIE_PROPAGATION_DELAY_MS = 100; // brief pause after a token refresh so the new auth cookie is applied before the replay
 const CSRF_HEADER_NAME = 'x-csrf-token';
@@ -197,11 +202,11 @@ const request = async (
   let hasAttemptedCsrfRefresh = false;
 
   while (true) {
-    // Compute the time left in the retry budget before starting this attempt.
+    // A new attempt only ever starts inside the retry window (measured from
+    // the first attempt); the attempt itself may then run up to its own cap.
     const elapsedBeforeAttempt = Date.now() - requestStartedAt;
-    const remainingBeforeAttempt = RETRY_WINDOW_MS - elapsedBeforeAttempt;
 
-    if (remainingBeforeAttempt <= 0) {
+    if (elapsedBeforeAttempt >= RETRY_WINDOW_MS) {
       const timeoutErr = new Error(
         "Couldn't reach the server. Check your connection or try again later.",
       );
@@ -212,12 +217,12 @@ const request = async (
       throw timeoutErr;
     }
 
-    // Per-attempt abort controller: fires when the remaining budget elapses
-    // (timeout) and is also chained to the caller's signal so unmounts cancel it.
+    // Per-attempt abort controller: fires at the per-attempt cap (timeout) and
+    // is also chained to the caller's signal so unmounts cancel it.
     const attemptController = new AbortController();
     const timeoutId = setTimeout(() => {
       attemptController.abort();
-    }, remainingBeforeAttempt);
+    }, ATTEMPT_TIMEOUT_MS);
     const onAbort = () => attemptController.abort();
     if (signal) {
       if (signal.aborted) {

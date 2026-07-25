@@ -855,6 +855,24 @@ const openapiSpec = {
       },
     },
     '/api/projects/{id}': {
+      get: {
+        tags: ['Projects'],
+        summary: 'Fetch a single project (same shape as a list item)',
+        description:
+          'The paginated list stays the primary source; this endpoint lets a deep link or ' +
+          'hard reload resolve a project that sits beyond the loaded pages. A trashed, ' +
+          "unknown or someone else's project is a plain 404.",
+        security: AUTH,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: {
+            description: 'The project, with its norms and palette.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Project' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          404: { $ref: '#/components/responses/NotFound' },
+        },
+      },
       patch: {
         tags: ['Projects'],
         summary: 'Rename a project',

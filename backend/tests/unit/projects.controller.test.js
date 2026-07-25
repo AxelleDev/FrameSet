@@ -8,6 +8,106 @@ describe('projects controller', () => {
     jest.resetAllMocks();
   });
 
+  describe('get project (single, by id)', () => {
+    it('returns 401 when the user is not authenticated', async () => {
+      const req = { params: { id: '1' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.getProject(req, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'User not authenticated.' });
+    });
+
+    it('returns 404 when the project is trashed, unknown or not owned', async () => {
+      db.query.mockResolvedValueOnce([[]]);
+
+      const req = { params: { id: '999' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.getProject(req, res);
+
+      expect(db.query).toHaveBeenCalledWith(
+        expect.stringContaining('WHERE id = ? AND user_id = ? AND deleted_at IS NULL'),
+        ['999', 1],
+      );
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Project not found.' });
+    });
+
+    it('returns the project in the same shape as a list item', async () => {
+      db.query.mockResolvedValueOnce([
+        [
+          {
+            id: 42,
+            name: 'Deep Linked',
+            share_token: 'aa11bb22cc33dd44ee55ff6677889900',
+            pin_position: 0,
+            lastEditedFormatted: '15/03 10:00',
+          },
+        ],
+      ]);
+      db.query.mockResolvedValueOnce([
+        [
+          {
+            id: 10,
+            name: 'Outline',
+            value: '8',
+            unit: 'px',
+            brush_name: 'Smooth',
+            opacity: null,
+          },
+        ],
+      ]);
+      db.query.mockResolvedValueOnce([
+        [
+          {
+            id: 11,
+            font_family: 'Inter',
+            font_weight: '700',
+            font_usage: 'Heading',
+            font_style: 'Italic',
+          },
+        ],
+      ]);
+      db.query.mockResolvedValueOnce([[{ id: 5, name: 'Primary', hex: '#112233' }]]);
+
+      const req = { params: { id: '42' }, user: { id: 1 } };
+      const res = { json: jest.fn() };
+      await projectsController.getProject(req, res);
+
+      expect(res.json).toHaveBeenCalledWith({
+        id: 42,
+        name: 'Deep Linked',
+        lastEdited: '15/03 10:00',
+        shareToken: 'aa11bb22cc33dd44ee55ff6677889900',
+        pinned: true,
+        brushNorms: [
+          { id: 10, name: 'Outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: null },
+        ],
+        typographyNorms: [
+          {
+            id: 11,
+            fontFamily: 'Inter',
+            fontWeight: '700',
+            fontUsage: 'Heading',
+            fontStyle: 'Italic',
+          },
+        ],
+        normsCount: 2,
+        palette: [{ id: 5, name: 'Primary', hex: '#112233' }],
+      });
+    });
+
+    it('returns 500 on a database error', async () => {
+      db.query.mockRejectedValueOnce(new Error('db down'));
+
+      const req = { params: { id: '42' }, user: { id: 1 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await projectsController.getProject(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Database error.' });
+    });
+  });
+
   describe('list projects', () => {
     it('returns 401 when the user is not authenticated', async () => {
       const req = { query: {} };

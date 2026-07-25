@@ -34,6 +34,7 @@ export default function ProjectNorms() {
   const { id } = useParams();
   const {
     activeProject,
+    activeProjectNotFound,
     projectsLoading,
     activeProjectId,
     addBrushNorm,
@@ -674,7 +675,11 @@ export default function ProjectNorms() {
         </>
       ) : (
         <ProjectStatePlaceholder
-          loading={projectsLoading || String(activeProjectId) !== String(id)}
+          // Stay in the loading state until the deep-link lookup has actually
+          // failed: a project beyond the loaded pages is fetched by id first.
+          loading={
+            projectsLoading || String(activeProjectId) !== String(id) || !activeProjectNotFound
+          }
         />
       )}
 
