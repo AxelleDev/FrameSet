@@ -12,6 +12,9 @@ const { projectCreateLimiter } = require('../middleware/projectCreateLimiter');
 const router = express.Router();
 
 router.get('/', authenticateToken, projectsController.listProjects);
+// Global search (Ctrl+K): one term across project names, palette colors and
+// standards. Literal segment, kept clear of the '/:id' patterns below.
+router.get('/search', authenticateToken, projectsController.searchProjects);
 router.post('/', authenticateToken, projectCreateLimiter, projectsController.createProject);
 // Duplication creates a project too, so it shares the creation rate limit.
 router.post(

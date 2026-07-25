@@ -132,6 +132,8 @@ export default function SharedProject() {
                         name={color.name}
                         onCopy={() => copy(color.hex)}
                         copied={copiedValue === color.hex}
+                        onCopyValue={copy}
+                        copiedValue={copiedValue}
                       />
                     ))}
                   </div>

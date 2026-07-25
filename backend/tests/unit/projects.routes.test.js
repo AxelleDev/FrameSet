@@ -8,6 +8,7 @@ const buildTestApp = () => {
     listProjects: jest.fn((req, res) => res.status(200).json([])),
     createProject: jest.fn((req, res) => res.status(201).json({ success: true })),
     duplicateProject: jest.fn((req, res) => res.status(201).json({ success: true })),
+    searchProjects: jest.fn((req, res) => res.status(200).json({ projects: [] })),
     listTrashedProjects: jest.fn((req, res) => res.status(200).json({ projects: [] })),
     restoreProject: jest.fn((req, res) => res.status(200).json({ success: true })),
     deleteProjectPermanently: jest.fn((req, res) => res.status(200).json({ success: true })),

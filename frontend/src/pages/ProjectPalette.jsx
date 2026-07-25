@@ -28,6 +28,7 @@ import useActiveProject from '../hooks/useActiveProject';
 import useDragReorder from '../hooks/useDragReorder';
 import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 import { extractColorsFromImage } from '../utils/extractColors';
+import { parsePaletteFile } from '../utils/paletteImport';
 
 // Keep in sync with the backend cap (MAX_PALETTE_SIZE in projects.service.js).
 const MAX_PALETTE_SIZE = 50;
@@ -119,14 +120,20 @@ export default function ProjectPalette() {
         (editColorName !== editingOriginalColor.name || editColorHex !== editingOriginalColor.hex)),
   );
 
-  // "Palette from an image" state. imageColors: extracted [{ hex, selected }]
-  // shown in the modal. extracting: true while analyzing. fileInputRef: the
-  // hidden <input type="file"> opened by the import button.
+  // Palette-import state, shared by the two sources: colors extracted from an
+  // image, or parsed from a palette file (.ase/.gpl/.swatches). imageColors:
+  // [{ hex, name?, selected }] shown in the preview modal. importSource picks
+  // the modal wording; importSkipped counts entries a file parser could not
+  // read. The two hidden <input type="file"> are opened by their buttons.
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [imageColors, setImageColors] = useState([]);
   const [imageError, setImageError] = useState('');
   const [extracting, setExtracting] = useState(false);
+  const [importSource, setImportSource] = useState('image'); // 'image' | 'file'
+  const [importSkipped, setImportSkipped] = useState(0);
+  const [isDropActive, setIsDropActive] = useState(false);
   const fileInputRef = useRef(null);
+  const paletteFileInputRef = useRef(null);
 
   const handleEditHexChange = (e) => {
     setEditColorHex(normalizeHexInput(e.target.value));
@@ -211,12 +218,14 @@ export default function ProjectPalette() {
     fileInputRef.current?.click();
   };
 
-  // Extract dominant colors from the chosen image, then open the preview modal.
-  const handleImageSelected = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = ''; // reset so the same file can be re-selected later
-    if (!file) return;
+  // Open the OS file picker to import a palette file (.ase/.gpl/.swatches).
+  const openPaletteFilePicker = () => {
+    setImageError('');
+    paletteFileInputRef.current?.click();
+  };
 
+  // Extract dominant colors from an image, then open the preview modal.
+  const processImageFile = async (file) => {
     setExtracting(true);
     setImageError('');
     try {
@@ -226,6 +235,8 @@ export default function ProjectPalette() {
         return;
       }
       setImageColors(hexes.map((hex) => ({ hex, selected: true })));
+      setImportSource('image');
+      setImportSkipped(0);
       setIsImageModalOpen(true);
     } catch {
       setImageError('This image could not be analyzed.');
@@ -234,14 +245,64 @@ export default function ProjectPalette() {
     }
   };
 
-  // Toggle whether an extracted color will be added to the palette.
-  const toggleImageColor = (hex) => {
+  const handleImageSelected = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // reset so the same file can be re-selected later
+    if (file) processImageFile(file);
+  };
+
+  // Parse a palette file (the mirror of the export formats), then open the
+  // same preview modal — imported colors keep the names the file carries.
+  const processPaletteFile = async (file) => {
+    setImageError('');
+    try {
+      const { colors, skipped } = await parsePaletteFile(file);
+      if (colors.length === 0) {
+        setImageError('No colors found in this file.');
+        return;
+      }
+      setImageColors(colors.map(({ hex, name }) => ({ hex, name, selected: true })));
+      setImportSource('file');
+      setImportSkipped(skipped);
+      setIsImageModalOpen(true);
+    } catch (error) {
+      setImageError(error?.message || 'This file could not be read.');
+    }
+  };
+
+  const handlePaletteFileSelected = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // reset so the same file can be re-selected later
+    if (file) processPaletteFile(file);
+  };
+
+  // Drag-and-drop: a palette file or an image dropped anywhere on the page
+  // routes to the matching import flow (buttons remain the accessible path).
+  const isPaletteFileName = (name) => /\.(ase|gpl|swatches)$/i.test(String(name || ''));
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDropActive(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+    if (isPaletteFileName(file.name)) {
+      processPaletteFile(file);
+    } else if (file.type?.startsWith('image/')) {
+      processImageFile(file);
+    } else {
+      setImageError('Unsupported file type — use .ase, .gpl, .swatches or an image.');
+    }
+  };
+
+  // Toggle (by index: an imported file may legitimately repeat a hex) whether
+  // a previewed color will be added to the palette.
+  const toggleImageColor = (index) => {
     setImageColors((prev) =>
-      prev.map((c) => (c.hex === hex ? { ...c, selected: !c.selected } : c)),
+      prev.map((c, i) => (i === index ? { ...c, selected: !c.selected } : c)),
     );
   };
 
-  // Append the selected extracted colors (capped at MAX_PALETTE_SIZE) and persist.
+  // Append the selected colors (capped at MAX_PALETTE_SIZE) and persist.
+  // Imported colors keep their file-given name; unnamed ones get "Color N".
   const confirmAddImageColors = async () => {
     const chosen = imageColors.filter((c) => c.selected);
     if (chosen.length === 0) return;
@@ -253,7 +314,7 @@ export default function ProjectPalette() {
     }
 
     const toAdd = chosen.slice(0, room).map((c, i) => ({
-      name: `Color ${palette.length + i + 1}`,
+      name: (c.name || '').trim().slice(0, 255) || `Color ${palette.length + i + 1}`,
       hex: c.hex,
     }));
 
@@ -281,7 +342,7 @@ export default function ProjectPalette() {
         subtitle="This project's reference colors."
         actions={
           activeProject ? (
-            <>
+            <div className="flex flex-wrap gap-2 justify-end">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -289,6 +350,16 @@ export default function ProjectPalette() {
                 onChange={handleImageSelected}
                 className="hidden"
               />
+              <input
+                ref={paletteFileInputRef}
+                type="file"
+                accept=".ase,.gpl,.swatches"
+                onChange={handlePaletteFileSelected}
+                className="hidden"
+              />
+              <Button type="button" variant="outline" onClick={openPaletteFilePicker}>
+                Import a palette
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -297,13 +368,28 @@ export default function ProjectPalette() {
               >
                 {extracting ? 'Analyzing…' : 'Palette from an image'}
               </Button>
-            </>
+            </div>
           ) : null
         }
       />
 
       {activeProject ? (
-        <>
+        /* Dropping a palette file or an image anywhere on the page imports it;
+           the ring highlights the page while a compatible drag hovers it. */
+        <div
+          data-testid="palette-dropzone"
+          onDragOver={(e) => {
+            if (e.dataTransfer?.types?.includes('Files')) {
+              e.preventDefault();
+              setIsDropActive(true);
+            }
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) setIsDropActive(false);
+          }}
+          onDrop={handleDrop}
+          className={`rounded-3xl transition-shadow ${isDropActive ? 'ring-2 ring-blue ring-offset-4 ring-offset-canvas' : ''}`}
+        >
           {imageError && !isImageModalOpen && (
             <p className="text-xs text-danger mb-4 text-right">{imageError}</p>
           )}
@@ -323,6 +409,8 @@ export default function ProjectPalette() {
                 name={color.name}
                 onCopy={(e) => handleCopyHex(e, color.hex)}
                 copied={copiedValue === color.hex}
+                onCopyValue={copy}
+                copiedValue={copiedValue}
                 className={
                   color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'
                 }
@@ -435,7 +523,7 @@ export default function ProjectPalette() {
               ))}
             </TrashSection>
           )}
-        </>
+        </div>
       ) : (
         <ProjectStatePlaceholder
           loading={projectsLoading || String(activeProjectId) !== String(id)}
@@ -540,22 +628,36 @@ export default function ProjectPalette() {
           setIsImageModalOpen(false);
           setImageColors([]);
         }}
-        title="Palette from an image"
+        title={importSource === 'file' ? 'Import a palette' : 'Palette from an image'}
       >
         <div className="space-y-4">
           <p className="text-sm text-primary">
-            Colors extracted from the image — click to select or deselect the ones to add.
+            {importSource === 'file'
+              ? 'Colors found in the file — click to select or deselect the ones to add.'
+              : 'Colors extracted from the image — click to select or deselect the ones to add.'}
           </p>
+          {importSkipped > 0 && (
+            <p className="text-xs text-primary/60">
+              {importSkipped} entr{importSkipped > 1 ? 'ies' : 'y'} in this file could not be read
+              and {importSkipped > 1 ? 'were' : 'was'} skipped.
+            </p>
+          )}
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            {imageColors.map(({ hex, selected }) => (
+            {imageColors.map(({ hex, name, selected }, index) => (
               <button
                 type="button"
-                key={hex}
-                onClick={() => toggleImageColor(hex)}
+                key={`${hex}-${index}`}
+                onClick={() => toggleImageColor(index)}
                 aria-pressed={selected}
+                aria-label={`${name || hex}, ${hex}`}
                 className={`flex flex-col items-center gap-1 rounded-xl p-2 transition-all ${selected ? 'ring-2 ring-blue/40' : 'opacity-50 hover:opacity-100'}`}
               >
                 <span className="w-full h-12 rounded-lg" style={{ backgroundColor: hex }}></span>
+                {name ? (
+                  <span className="max-w-full truncate text-xs font-medium text-primary">
+                    {name}
+                  </span>
+                ) : null}
                 <span className="text-xs font-mono text-primary uppercase">{hex}</span>
               </button>
             ))}

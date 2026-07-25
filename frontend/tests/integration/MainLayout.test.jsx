@@ -69,6 +69,23 @@ describe('MainLayout unsaved-changes navigation guard', () => {
   });
 });
 
+describe('MainLayout global search', () => {
+  it('opens with Ctrl+K, closes with Escape, and opens via the header button', async () => {
+    const user = userEvent.setup();
+    renderLayout();
+
+    expect(screen.queryByRole('searchbox')).toBeNull();
+    await user.keyboard('{Control>}k{/Control}');
+    expect(await screen.findByRole('searchbox')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('searchbox')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /^search$/i }));
+    expect(await screen.findByRole('searchbox')).toBeInTheDocument();
+  });
+});
+
 describe('MainLayout mobile drawer', () => {
   it('opens via the burger button, moves focus inside, and closes on Escape', async () => {
     const user = userEvent.setup();
