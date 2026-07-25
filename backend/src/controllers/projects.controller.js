@@ -48,20 +48,21 @@ const listProjects = async (req, res) => {
   }
 };
 
-// Create a new empty project for the authenticated user.
+// Create a new empty project for the authenticated user. Name validation
+// (shape + 2-50 chars) lives in the service, shared with rename.
 const createProject = async (req, res) => {
   const userId = getAuthenticatedUserId(req);
   const { name } = req.body;
   if (!userId) {
     return res.status(401).json({ error: 'User not authenticated.' });
   }
-  if (!name) {
-    return res.status(400).json({ error: 'Required fields are missing.' });
-  }
   try {
     const newProject = await projectsService.createProjectForUser(userId, name);
     res.status(201).json(newProject);
   } catch (error) {
+    if (error.code === 'missing_name') {
+      return res.status(400).json({ error: 'Required fields are missing.' });
+    }
     if (error.code === 'invalid_name') {
       return res.status(400).json({ error: 'Invalid project name.' });
     }
@@ -182,14 +183,16 @@ const getSharedProject = async (req, res) => {
 };
 
 // Rename a project owned by the user and refresh its last_edited timestamp.
+// Same name rule as creation, enforced by the shared service validator.
 const updateProjectName = async (req, res) => {
   const { id } = req.params;
-  const { name } = req.body;
-  if (typeof name !== 'string' || !name.trim()) {
-    return res.status(400).json({ error: 'Project name is required.' });
-  }
-  const trimmedName = name.trim();
-  if (trimmedName.length < 2 || trimmedName.length > 50) {
+  let name;
+  try {
+    name = projectsService.validateProjectName(req.body?.name);
+  } catch (error) {
+    if (error.code === 'missing_name') {
+      return res.status(400).json({ error: 'Project name is required.' });
+    }
     return res.status(400).json({ error: 'Invalid project name.' });
   }
   try {

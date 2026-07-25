@@ -116,6 +116,11 @@ const updateUserProfile = async (
   }
   const trimmedName = validator.trim(name);
   const trimmedEmail = validator.trim(email);
+  // Same bound as registration (auth.service): the column is varchar(255), so
+  // an over-long value must be a clean 400 here, not an ER_DATA_TOO_LONG 500.
+  if (!validator.isLength(trimmedName, { max: 255 })) {
+    throw new UserServiceError('validation', 'Name is too long.');
+  }
   if (!validator.isEmail(trimmedEmail)) {
     throw new UserServiceError('validation', 'Invalid email.');
   }

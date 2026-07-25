@@ -34,31 +34,64 @@ const ICONS = {
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
+  // id -> { timeoutId, expiresAt, remainingMs }: enough state to pause the
+  // auto-dismiss (clear the timeout, remember what was left) and resume it.
   const timers = useRef({});
 
   const dismiss = useCallback((id) => {
     setToasts((list) => list.filter((t) => t.id !== id));
     if (timers.current[id]) {
-      clearTimeout(timers.current[id]);
+      clearTimeout(timers.current[id].timeoutId);
       delete timers.current[id];
     }
   }, []);
+
+  const armTimer = useCallback(
+    (id, durationMs) => {
+      timers.current[id] = {
+        timeoutId: setTimeout(() => dismiss(id), durationMs),
+        expiresAt: Date.now() + durationMs,
+      };
+    },
+    [dismiss],
+  );
 
   const showToast = useCallback(
     (message, variant = 'success', duration = 3500) => {
       const id = ++toastId;
       setToasts((list) => [...list, { id, message, variant }]);
-      timers.current[id] = setTimeout(() => dismiss(id), duration);
+      armTimer(id, duration);
       return id;
     },
-    [dismiss],
+    [armTimer],
+  );
+
+  // WCAG 2.2.1 (timing adjustable): hovering or focusing a toast pauses its
+  // auto-dismiss so it can be read or its close button reached without a race.
+  const pauseTimer = useCallback((id) => {
+    const timer = timers.current[id];
+    if (!timer || timer.timeoutId === null) return;
+    clearTimeout(timer.timeoutId);
+    timer.timeoutId = null;
+    timer.remainingMs = Math.max(0, timer.expiresAt - Date.now());
+  }, []);
+
+  const resumeTimer = useCallback(
+    (id) => {
+      const timer = timers.current[id];
+      if (!timer || timer.timeoutId !== null) return;
+      // Grant at least a short grace so the toast never vanishes the very
+      // instant the pointer slips off it.
+      armTimer(id, Math.max(timer.remainingMs ?? 0, 500));
+    },
+    [armTimer],
   );
 
   // Clear any pending auto-dismiss timers if the provider unmounts.
   useEffect(() => {
     const timersSnapshot = timers.current;
     return () => {
-      Object.values(timersSnapshot).forEach(clearTimeout);
+      Object.values(timersSnapshot).forEach((timer) => clearTimeout(timer.timeoutId));
     };
   }, []);
 
@@ -81,6 +114,10 @@ export function ToastProvider({ children }) {
               <div
                 key={toast.id}
                 role={toast.variant === 'danger' ? 'alert' : 'status'}
+                onMouseEnter={() => pauseTimer(toast.id)}
+                onMouseLeave={() => resumeTimer(toast.id)}
+                onFocus={() => pauseTimer(toast.id)}
+                onBlur={() => resumeTimer(toast.id)}
                 className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 text-sm font-medium text-primary ring-1 ring-primary/10 animate-fade-in"
               >
                 <svg

@@ -29,7 +29,7 @@ import useDragReorder from '../hooks/useDragReorder';
 import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 import { extractColorsFromImage } from '../utils/extractColors';
 
-// Keep in sync with the backend cap (MAX_PALETTE_SIZE in projects.controller.js).
+// Keep in sync with the backend cap (MAX_PALETTE_SIZE in projects.service.js).
 const MAX_PALETTE_SIZE = 50;
 
 export default function ProjectPalette() {
@@ -555,7 +555,7 @@ export default function ProjectPalette() {
                 aria-pressed={selected}
                 className={`flex flex-col items-center gap-1 rounded-xl p-2 transition-all ${selected ? 'ring-2 ring-blue/40' : 'opacity-50 hover:opacity-100'}`}
               >
-                <span className="w-full h-12 rounded-lg " style={{ backgroundColor: hex }}></span>
+                <span className="w-full h-12 rounded-lg" style={{ backgroundColor: hex }}></span>
                 <span className="text-xs font-mono text-primary uppercase">{hex}</span>
               </button>
             ))}

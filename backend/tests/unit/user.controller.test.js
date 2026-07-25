@@ -99,6 +99,19 @@ describe('user controller', () => {
       });
     });
 
+    it('rejects an over-long name with a clean 400 (never a DB error 500)', async () => {
+      const req = {
+        user: { id: 1 },
+        body: { name: 'x'.repeat(256), email: 'axelle@example.com' },
+      };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await userController.updateUser(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Name is too long.' });
+      // Validation fires before any query: the DB is never touched.
+      expect(db.query).not.toHaveBeenCalled();
+    });
+
     it('rejects an email change without re-authentication', async () => {
       db.query.mockResolvedValueOnce([
         [{ email: 'old@example.com', pending_email: null, password: 'hashed', google_id: null }],

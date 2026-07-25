@@ -1123,19 +1123,38 @@ describe('projects controller', () => {
 
   describe('pin/unpin projects', () => {
     it('pins a project when owned', async () => {
-      db.query
-        .mockResolvedValueOnce([[{ next_position: 0 }]]) // rank lookup
-        .mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE pin_position
+      // The rank lookup + update run inside one transaction (FOR UPDATE).
+      const connection = {
+        query: jest
+          .fn()
+          .mockResolvedValueOnce([[{ next_position: 0 }]]) // rank lookup
+          .mockResolvedValueOnce([{ affectedRows: 1 }]), // UPDATE pin_position
+        beginTransaction: jest.fn(),
+        commit: jest.fn(),
+        rollback: jest.fn(),
+        release: jest.fn(),
+      };
+      db.getConnection.mockResolvedValueOnce(connection);
       const req = { params: { id: '1' }, user: { id: 1 } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.pinProject(req, res);
+      expect(connection.commit).toHaveBeenCalled();
+      expect(connection.release).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
 
     it('returns 404 pinning a project that does not exist or is not owned', async () => {
-      db.query
-        .mockResolvedValueOnce([[{ next_position: 0 }]]) // rank lookup
-        .mockResolvedValueOnce([{ affectedRows: 0 }]); // UPDATE matches nothing
+      const connection = {
+        query: jest
+          .fn()
+          .mockResolvedValueOnce([[{ next_position: 0 }]]) // rank lookup
+          .mockResolvedValueOnce([{ affectedRows: 0 }]), // UPDATE matches nothing
+        beginTransaction: jest.fn(),
+        commit: jest.fn(),
+        rollback: jest.fn(),
+        release: jest.fn(),
+      };
+      db.getConnection.mockResolvedValueOnce(connection);
       const req = { params: { id: '99' }, user: { id: 1 } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.pinProject(req, res);

@@ -1,11 +1,15 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import ProjectPalette from '../../src/pages/ProjectPalette';
+import { extractColorsFromImage } from '../../src/utils/extractColors';
 
 const { projectState } = vi.hoisted(() => ({ projectState: {} }));
+
+// Canvas-based extraction cannot run in jsdom; the flow around it can.
+vi.mock('../../src/utils/extractColors', () => ({ extractColorsFromImage: vi.fn() }));
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -55,6 +59,76 @@ describe('ProjectPalette', () => {
     await user.click(screen.getByRole('button', { name: 'New color' }));
     // The add-color modal opens (its title is an <h3>, distinct from the tile button).
     expect(await screen.findByRole('heading', { name: 'New color' })).toBeInTheDocument();
+  });
+
+  it('adds a color through the modal and persists the whole ordered palette', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'New color' }));
+    await user.type(screen.getByLabelText(/color name/i), 'Sunset');
+    // The hex field normalizes as you type (leading '#', uppercase).
+    await user.type(screen.getByLabelText(/hex code/i), 'aabbcc');
+    await user.click(screen.getByRole('button', { name: /^add$/i }));
+
+    expect(projectState.updateProjectPalette).toHaveBeenCalledWith('2', [
+      { id: 1, name: 'Reflet', hex: '#FF0000' },
+      { name: 'Sunset', hex: '#AABBCC' },
+    ]);
+  });
+
+  it('edits a color in place, keeping its id', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Edit color' }));
+    const nameField = screen.getByDisplayValue('Reflet');
+    await user.clear(nameField);
+    await user.type(nameField, 'Rouge vif');
+    await user.click(screen.getByRole('button', { name: /^save$/i }));
+
+    expect(projectState.updateProjectPalette).toHaveBeenCalledWith('2', [
+      { id: 1, name: 'Rouge vif', hex: '#FF0000' },
+    ]);
+  });
+
+  it('imports colors from an image: extract, deselect one, add the rest', async () => {
+    const user = userEvent.setup();
+    extractColorsFromImage.mockResolvedValueOnce(['#111111', '#222222']);
+    const { container } = renderPage();
+
+    // The picker button drives a hidden file input; feed it a file directly.
+    const fileInput = container.querySelector('input[type="file"]');
+    fireEvent.change(fileInput, {
+      target: { files: [new File(['img'], 'ref.png', { type: 'image/png' })] },
+    });
+
+    // Both extracted colors show up selected; deselect the first one.
+    const firstSwatch = await screen.findByRole('button', { name: '#111111' });
+    expect(firstSwatch).toHaveAttribute('aria-pressed', 'true');
+    await user.click(firstSwatch);
+    expect(firstSwatch).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(screen.getByRole('button', { name: /add \(1\)/i }));
+
+    expect(projectState.updateProjectPalette).toHaveBeenCalledWith('2', [
+      { id: 1, name: 'Reflet', hex: '#FF0000' },
+      { name: 'Color 2', hex: '#222222' },
+    ]);
+  });
+
+  it('reports an unreadable image without opening the modal', async () => {
+    extractColorsFromImage.mockRejectedValueOnce(new Error('bad image'));
+    const { container } = renderPage();
+
+    fireEvent.change(container.querySelector('input[type="file"]'), {
+      target: { files: [new File(['x'], 'broken.png', { type: 'image/png' })] },
+    });
+
+    expect(await screen.findByText(/could not be analyzed/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: /palette from an image/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('moves a color to the trash via the single-color delete endpoint', async () => {

@@ -248,13 +248,16 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto animate-fade-in pb-12 text-primary">
       <Seo title="Profile" noindex />
-      <Card className="p-6 sm:p-8 mb-8 flex flex-col sm:flex-row items-center gap-5 sm:gap-8">
+      {/* Side-by-side only from lg: at md the sidebar appears and eats ~320px,
+          so a 768-1023px window would squeeze the name/email column into a
+          letter-per-line sliver next to the avatar and the sign-out button. */}
+      <Card className="p-6 sm:p-8 mb-8 flex flex-col lg:flex-row items-center gap-5 lg:gap-8">
         <Avatar
           initials={user.avatarInitials}
           className="w-24 h-24 text-3xl sm:w-28 sm:h-28 sm:text-4xl shrink-0"
         />
 
-        <div className="flex flex-col items-center sm:items-start text-center sm:text-left flex-1 min-w-0 w-full">
+        <div className="flex flex-col items-center lg:items-start text-center lg:text-left flex-1 min-w-0 w-full">
           <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-primary break-words max-w-full">
             {user.name}
           </h1>
@@ -537,7 +540,6 @@ export default function Profile() {
         }
         confirmLabel="Delete"
         cancelLabel="Cancel"
-
         confirmationWord="DELETE"
         confirmationInputLabel="Type the confirmation word"
         confirmationInputPlaceholder="DELETE"

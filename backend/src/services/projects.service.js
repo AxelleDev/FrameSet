@@ -441,16 +441,25 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
   return { projects: fullProjects, pagination };
 };
 
-// Creates an empty project after validating the name. Throws 'missing_name' or
-// 'invalid_name' (trimmed length out of range).
-const createProjectForUser = async (userId, rawName) => {
-  if (!rawName) {
+// The one project-name rule, shared by creation and rename so the two can
+// never drift apart: a non-blank string whose trimmed length is 2-50 chars.
+// Returns the trimmed name; throws 'missing_name' (absent/blank/non-string)
+// or 'invalid_name' (length out of range).
+const validateProjectName = (rawName) => {
+  if (typeof rawName !== 'string' || !rawName.trim()) {
     throw new ProjectServiceError('missing_name');
   }
   const name = validator.trim(rawName);
   if (!validator.isLength(name, { min: 2, max: 50 })) {
     throw new ProjectServiceError('invalid_name');
   }
+  return name;
+};
+
+// Creates an empty project after validating the name. Throws 'missing_name' or
+// 'invalid_name' (see validateProjectName).
+const createProjectForUser = async (userId, rawName) => {
+  const name = validateProjectName(rawName);
 
   const [result] = await db.query('INSERT INTO projects (user_id, name) VALUES (?, ?)', [
     userId,
@@ -892,18 +901,30 @@ const reorderTypographyNormsForProject = (projectId, ids) =>
 // Pins a project to the top of the dashboard, appended after the user's
 // current last-pinned project. Idempotent: re-pinning an already-pinned
 // project leaves its position untouched (COALESCE). Scoped to the owner and
-// to live projects, which doubles as the ownership check.
+// to live projects, which doubles as the ownership check. Rank lookup and
+// update run in one transaction with FOR UPDATE, so two concurrent pins
+// serialize instead of both reading the same next position.
 const pinProjectForUser = async (userId, projectId) => {
-  const [rankRows] = await db.query(
-    'SELECT COALESCE(MAX(pin_position), -1) + 1 AS next_position FROM projects WHERE user_id = ? AND pin_position IS NOT NULL',
-    [userId],
-  );
-  const nextPosition = rankRows[0]?.next_position ?? 0;
-  const [result] = await db.query(
-    'UPDATE projects SET pin_position = COALESCE(pin_position, ?) WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
-    [nextPosition, projectId, userId],
-  );
-  return result.affectedRows > 0;
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [rankRows] = await connection.query(
+      'SELECT COALESCE(MAX(pin_position), -1) + 1 AS next_position FROM projects WHERE user_id = ? AND pin_position IS NOT NULL FOR UPDATE',
+      [userId],
+    );
+    const nextPosition = rankRows[0]?.next_position ?? 0;
+    const [result] = await connection.query(
+      'UPDATE projects SET pin_position = COALESCE(pin_position, ?) WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+      [nextPosition, projectId, userId],
+    );
+    await connection.commit();
+    return result.affectedRows > 0;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
 };
 
 // Unpins a project. Returns false when nothing matched (wrong owner, trashed,
@@ -1166,6 +1187,7 @@ const updateTypographyNormInProject = async (projectId, normId, payload) => {
 module.exports = {
   ProjectServiceError,
   escapeLikeWildcards,
+  validateProjectName,
   userOwnsProject,
   listProjectsForUser,
   createProjectForUser,

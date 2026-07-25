@@ -324,11 +324,6 @@ const refresh = async (req, res) => {
     return res.status(403).json({ error: 'Invalid or expired refresh token.' });
   }
 
-  logger.info('auth.refresh.success', {
-    requestId: req.id,
-    userId: user.id,
-  });
-
   // Claim the rotation atomically: revoke the presented token FIRST and only proceed
   // if this call actually inserted the revocation row. INSERT IGNORE is the lock, so
   // two concurrent refreshes with the same token can't both mint a fresh valid pair.
@@ -342,6 +337,13 @@ const refresh = async (req, res) => {
 
     return res.status(403).json({ error: 'Invalid or expired refresh token.' });
   }
+
+  // Logged only once the rotation claim is won, so a refresh that ends up
+  // rejected just above can never emit a success entry for the same request.
+  logger.info('auth.refresh.success', {
+    requestId: req.id,
+    userId: user.id,
+  });
 
   issueAuthCookies(res, user);
   res.json({ success: true });

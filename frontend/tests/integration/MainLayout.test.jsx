@@ -69,6 +69,50 @@ describe('MainLayout unsaved-changes navigation guard', () => {
   });
 });
 
+describe('MainLayout mobile drawer', () => {
+  it('opens via the burger button, moves focus inside, and closes on Escape', async () => {
+    const user = userEvent.setup();
+    renderLayout();
+
+    const aside = document.querySelector('aside');
+    expect(aside.className).toContain('invisible');
+
+    await user.click(screen.getByRole('button', { name: /open menu/i }));
+    expect(aside.className).not.toContain('invisible');
+    // Focus lands inside the drawer so keyboard users aren't left behind the overlay.
+    expect(aside.contains(document.activeElement)).toBe(true);
+
+    await user.keyboard('{Escape}');
+    expect(aside.className).toContain('invisible');
+  });
+
+  it('closes when the backdrop is clicked', async () => {
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByRole('button', { name: /open menu/i }));
+    await user.click(screen.getByRole('button', { name: /close menu/i }));
+
+    expect(document.querySelector('aside').className).toContain('invisible');
+    expect(screen.queryByRole('button', { name: /close menu/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps Tab cycling inside the open drawer (focus trap)', async () => {
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByRole('button', { name: /open menu/i }));
+    const aside = document.querySelector('aside');
+
+    // Tab far more times than the drawer has focusable elements: focus must
+    // never escape to the content masked behind the overlay.
+    for (let i = 0; i < 12; i += 1) {
+      await user.tab();
+      expect(aside.contains(document.activeElement)).toBe(true);
+    }
+  });
+});
+
 describe('MainLayout demo account banner', () => {
   afterEach(() => {
     authState.user = { name: 'Jane Doe', avatarInitials: 'JD' };

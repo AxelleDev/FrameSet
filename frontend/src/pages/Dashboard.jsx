@@ -301,7 +301,10 @@ export default function Dashboard() {
     <>
       <Seo title="Dashboard" noindex />
       <Card className="overflow-hidden mb-12 animate-fade-in">
-        <div className="relative z-10 p-6 sm:p-10 md:p-14 flex flex-col md:flex-row items-start justify-between gap-6 md:gap-8">
+        {/* Side-by-side only from lg: the sidebar appears at md and eats ~320px
+            of the viewport, so a 768-1023px window leaves this hero too narrow
+            for a row (the greeting wraps hard and the stat tiles get clipped). */}
+        <div className="relative z-10 p-6 sm:p-10 lg:p-14 flex flex-col lg:flex-row items-start justify-between gap-6 lg:gap-8">
           <div>
             <h1 className="text-primary text-3xl md:text-4xl font-light mb-4 tracking-tight">
               Hi, {user.name.split(' ')[0]}.
@@ -324,7 +327,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-4 shrink-0 md:mt-0">
+          <div className="flex flex-wrap gap-4 shrink-0 lg:mt-0">
             <div className="p-4 rounded-2xl flex-1 sm:flex-none sm:w-32 text-center stat-bg">
               <div className="text-2xl font-bold text-primary">{totalNorms}</div>
               <div className="text-xs text-primary uppercase tracking-wider mt-1 font-semibold">
