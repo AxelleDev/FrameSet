@@ -311,9 +311,12 @@ export default function Landing() {
           </a>
         </section>
 
+        {/* scroll-mt matches the sticky PublicTopBar height (h-16 / sm:h-20)
+            plus breathing room, so jumping here (the hero's arrow, or a
+            #features link) never tucks the section title under the bar. */}
         <section
           id="features"
-          className="scroll-mt-6 max-w-6xl mx-auto px-6 py-4 md:py-8"
+          className="scroll-mt-20 sm:scroll-mt-24 max-w-6xl mx-auto px-6 py-4 md:py-8"
           aria-labelledby="features-title"
         >
           <Reveal className="text-center max-w-2xl mx-auto mb-12 md:mb-16">
