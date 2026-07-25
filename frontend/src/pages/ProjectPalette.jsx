@@ -29,7 +29,7 @@ import useDragReorder from '../hooks/useDragReorder';
 import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 import { extractColorsFromImage } from '../utils/extractColors';
 
-// Keep in sync with the backend cap (MAX_PALETTE_SIZE in projects.controller.js).
+// Keep in sync with the backend cap (MAX_PALETTE_SIZE in projects.service.js).
 const MAX_PALETTE_SIZE = 50;
 
 export default function ProjectPalette() {
