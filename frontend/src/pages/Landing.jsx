@@ -207,12 +207,12 @@ function ExportMock() {
 const FEATURES = [
   {
     title: 'Graphic standards',
-    text: 'Document your brushes, sizes, opacities and typography so every project keeps a consistent direction — no more guessing your old settings. Starting something new? Duplicate a project and keep your favorite setup as the base.',
+    text: 'Document your brushes, sizes, opacities and typography so every project keeps a consistent direction — no more guessing your old settings. Starting something new? Duplicate a project and keep your favorite setup as the base — everything stays one Ctrl+K search away.',
     Mock: StandardsMock,
   },
   {
     title: 'Color palette',
-    text: "Build each project's reference palette by hand, or extract it straight from an image. Reorder, tweak and copy any color in a click.",
+    text: "Build each project's reference palette by hand, extract it straight from an image, or import the .ase, .gpl or Procreate .swatches palette you already have. Reorder, tweak and copy any color — as HEX, RGB, HSL or HSB — in a click.",
     Mock: PaletteMock,
   },
   {

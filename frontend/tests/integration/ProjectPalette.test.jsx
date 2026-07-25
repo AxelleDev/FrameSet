@@ -61,6 +61,22 @@ describe('ProjectPalette', () => {
     expect(await screen.findByRole('heading', { name: 'New color' })).toBeInTheDocument();
   });
 
+  it('copies a color in another format from the hex caption menu', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(window.navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    });
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /copy #FF0000 in another format/i }));
+    await user.click(screen.getByRole('menuitem', { name: /hsb/i }));
+
+    // #FF0000 as the HSB values a Procreate user would dial in.
+    expect(writeText).toHaveBeenCalledWith('0°, 100%, 100%');
+  });
+
   it('adds a color through the modal and persists the whole ordered palette', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -104,7 +120,7 @@ describe('ProjectPalette', () => {
     });
 
     // Both extracted colors show up selected; deselect the first one.
-    const firstSwatch = await screen.findByRole('button', { name: '#111111' });
+    const firstSwatch = await screen.findByRole('button', { name: /#111111/ });
     expect(firstSwatch).toHaveAttribute('aria-pressed', 'true');
     await user.click(firstSwatch);
     expect(firstSwatch).toHaveAttribute('aria-pressed', 'false');
@@ -115,6 +131,52 @@ describe('ProjectPalette', () => {
       { id: 1, name: 'Reflet', hex: '#FF0000' },
       { name: 'Color 2', hex: '#222222' },
     ]);
+  });
+
+  it('imports a .gpl palette file: parsed colors preview with their names, then add', async () => {
+    const user = userEvent.setup();
+    const gpl = 'GIMP Palette\nName: Krita export\n#\n255 0 0\tSignal Red\n0 0 255\tDeep Blue\n';
+    const { container } = renderPage();
+
+    const fileInput = container.querySelector('input[accept=".ase,.gpl,.swatches"]');
+    fireEvent.change(fileInput, {
+      target: { files: [new File([gpl], 'krita.gpl', { type: 'application/octet-stream' })] },
+    });
+
+    // Both parsed colors show up, named, selected by default.
+    expect(await screen.findByText('Signal Red')).toBeInTheDocument();
+    expect(screen.getByText('Deep Blue')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /add \(2\)/i }));
+
+    expect(projectState.updateProjectPalette).toHaveBeenCalledWith('2', [
+      { id: 1, name: 'Reflet', hex: '#FF0000' },
+      { name: 'Signal Red', hex: '#FF0000' },
+      { name: 'Deep Blue', hex: '#0000FF' },
+    ]);
+  });
+
+  it('accepts a palette file dropped anywhere on the page', async () => {
+    const gpl = 'GIMP Palette\n#\n0 255 0\tLime\n';
+    const { container } = renderPage();
+
+    fireEvent.drop(container.querySelector('[data-testid="palette-dropzone"]'), {
+      dataTransfer: { files: [new File([gpl], 'drop.gpl')] },
+    });
+
+    expect(await screen.findByText('Lime')).toBeInTheDocument();
+  });
+
+  it('reports a malformed palette file with the parser message', async () => {
+    const { container } = renderPage();
+
+    const fileInput = container.querySelector('input[accept=".ase,.gpl,.swatches"]');
+    fireEvent.change(fileInput, {
+      target: { files: [new File(['not a palette'], 'junk.gpl')] },
+    });
+
+    expect(await screen.findByText(/not a gimp palette/i)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /import a palette/i })).not.toBeInTheDocument();
   });
 
   it('reports an unreadable image without opening the modal', async () => {

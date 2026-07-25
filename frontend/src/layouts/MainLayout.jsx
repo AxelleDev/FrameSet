@@ -10,6 +10,7 @@ import Seo from '../components/Seo';
 import Spinner from '../components/Spinner';
 import SessionExpiryBanner from '../components/SessionExpiryBanner';
 import DemoAccountBanner from '../components/DemoAccountBanner';
+import GlobalSearch from '../components/GlobalSearch';
 import { getHasUnsavedChanges } from '../utils/unsavedChangesStore';
 
 /**
@@ -27,7 +28,20 @@ export default function MainLayout() {
   const loading = authLoading || (projectsLoading && projects.length === 0);
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const asideRef = useRef(null);
+
+  // Ctrl+K / Cmd+K opens the global search from anywhere in the app shell.
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
@@ -344,9 +358,37 @@ export default function MainLayout() {
             </span>
           )}
 
-          {/* Desktop only: the burger menu carries the theme switch on phones. */}
-          <div className="ml-auto hidden md:block shrink-0">
-            <ThemeToggle />
+          <div className="ml-auto flex items-center gap-1 sm:gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsSearchOpen(true)}
+              aria-label="Search"
+              title="Search (Ctrl+K)"
+              className="flex items-center gap-2 rounded-xl p-2 md:px-3 text-primary hover:text-blue hover:bg-blue/10 transition-colors focus-ring"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z"
+                />
+              </svg>
+              <kbd className="hidden md:inline rounded-md bg-primary/5 px-1.5 py-0.5 text-[10px] font-semibold text-primary/50">
+                Ctrl K
+              </kbd>
+            </button>
+            {/* Desktop only: the burger menu carries the theme switch on phones. */}
+            <div className="hidden md:block">
+              <ThemeToggle />
+            </div>
           </div>
         </header>
 
@@ -356,6 +398,8 @@ export default function MainLayout() {
           <Outlet />
         </div>
       </main>
+
+      <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </div>
   );
 }

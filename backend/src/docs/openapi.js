@@ -910,6 +910,87 @@ const openapiSpec = {
         },
       },
     },
+    '/api/projects/search': {
+      get: {
+        tags: ['Projects'],
+        summary: "Search the user's projects, palette colors and standards",
+        description:
+          'One term (1-100 characters) matched against project names, color names/hex ' +
+          "('#' optional) and brush/typography standards, capped at 5 matches per " +
+          'category. Only the authenticated user’s live (non-trashed) content is searched.',
+        security: AUTH,
+        parameters: [
+          {
+            name: 'q',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', minLength: 1, maxLength: 100 },
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Grouped matches.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    projects: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: { id: { type: 'integer' }, name: { type: 'string' } },
+                      },
+                    },
+                    colors: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'integer' },
+                          name: { type: 'string', nullable: true },
+                          hex: { type: 'string' },
+                          projectId: { type: 'integer' },
+                          projectName: { type: 'string' },
+                        },
+                      },
+                    },
+                    brushNorms: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'integer' },
+                          name: { type: 'string' },
+                          brushName: { type: 'string', nullable: true },
+                          projectId: { type: 'integer' },
+                          projectName: { type: 'string' },
+                        },
+                      },
+                    },
+                    typographyNorms: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'integer' },
+                          fontFamily: { type: 'string' },
+                          fontUsage: { type: 'string', nullable: true },
+                          projectId: { type: 'integer' },
+                          projectName: { type: 'string' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { $ref: '#/components/responses/BadRequest' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+        },
+      },
+    },
     '/api/projects/trash': {
       get: {
         tags: ['Projects'],

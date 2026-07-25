@@ -48,6 +48,24 @@ const listProjects = async (req, res) => {
   }
 };
 
+// Global search (Ctrl+K): one term matched across the user's project names,
+// palette colors and standards. Scoping to the caller lives in the service.
+const searchProjects = async (req, res) => {
+  const userId = getAuthenticatedUserId(req);
+  if (!userId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+  try {
+    res.json(await projectsService.searchProjectContentForUser(userId, req.query?.q));
+  } catch (error) {
+    if (error.code === 'validation') {
+      return res.status(400).json({ error: error.message });
+    }
+    logProjectsControllerError(req, 'search', error);
+    res.status(500).json({ error: 'Database error.' });
+  }
+};
+
 // Create a new empty project for the authenticated user. Name validation
 // (shape + 2-50 chars) lives in the service, shared with rename.
 const createProject = async (req, res) => {
@@ -619,6 +637,7 @@ const updateTypographyNorm = async (req, res) => {
 
 module.exports = {
   listProjects,
+  searchProjects,
   createProject,
   duplicateProject,
   updateProjectName,

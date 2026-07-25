@@ -441,6 +441,82 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
   return { projects: fullProjects, pagination };
 };
 
+// Cap on matches returned per category by the global search, and the upper
+// bound on the search term (defense against absurdly long LIKE patterns).
+const SEARCH_RESULTS_PER_TYPE = 5;
+const SEARCH_QUERY_MAX_LENGTH = 100;
+
+// Global search (Ctrl+K) across the user's project names, palette colors
+// (name or hex, '#' optional) and brush/typography standards. Every query is
+// scoped to the owner and to live rows — the search can never surface another
+// user's content — and LIKE wildcards in the term are escaped. Throws
+// 'validation' for a blank or over-long query. SEARCH_RESULTS_PER_TYPE is an
+// internal constant, never user input, so interpolating it into LIMIT is safe.
+const searchProjectContentForUser = async (userId, rawQuery) => {
+  const query = typeof rawQuery === 'string' ? rawQuery.trim() : '';
+  if (!query || query.length > SEARCH_QUERY_MAX_LENGTH) {
+    throw new ProjectServiceError(
+      'validation',
+      `Search query must be 1-${SEARCH_QUERY_MAX_LENGTH} characters.`,
+    );
+  }
+  const like = `%${escapeLikeWildcards(query)}%`;
+  const hexLike = `%${escapeLikeWildcards(query.replace(/^#/, ''))}%`;
+
+  const [[projectRows], [colorRows], [brushRows], [typographyRows]] = await Promise.all([
+    db.query(
+      `SELECT id, name FROM projects WHERE user_id = ? AND deleted_at IS NULL AND name LIKE ? ORDER BY name ASC LIMIT ${SEARCH_RESULTS_PER_TYPE}`,
+      [userId, like],
+    ),
+    db.query(
+      `SELECT c.id, c.name, c.hex, c.project_id, p.name AS project_name
+       FROM project_palette c JOIN projects p ON p.id = c.project_id
+       WHERE p.user_id = ? AND p.deleted_at IS NULL AND c.deleted_at IS NULL AND (c.name LIKE ? OR c.hex LIKE ?)
+       ORDER BY c.name ASC LIMIT ${SEARCH_RESULTS_PER_TYPE}`,
+      [userId, like, hexLike],
+    ),
+    db.query(
+      `SELECT b.id, b.name, b.brush_name, b.project_id, p.name AS project_name
+       FROM project_brush_norms b JOIN projects p ON p.id = b.project_id
+       WHERE p.user_id = ? AND p.deleted_at IS NULL AND b.deleted_at IS NULL AND (b.name LIKE ? OR b.brush_name LIKE ?)
+       ORDER BY b.name ASC LIMIT ${SEARCH_RESULTS_PER_TYPE}`,
+      [userId, like, like],
+    ),
+    db.query(
+      `SELECT t.id, t.font_family, t.font_usage, t.project_id, p.name AS project_name
+       FROM project_typography_norms t JOIN projects p ON p.id = t.project_id
+       WHERE p.user_id = ? AND p.deleted_at IS NULL AND t.deleted_at IS NULL AND (t.font_family LIKE ? OR t.font_usage LIKE ?)
+       ORDER BY t.font_family ASC LIMIT ${SEARCH_RESULTS_PER_TYPE}`,
+      [userId, like, like],
+    ),
+  ]);
+
+  return {
+    projects: projectRows.map((row) => ({ id: row.id, name: row.name })),
+    colors: colorRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      hex: row.hex,
+      projectId: row.project_id,
+      projectName: row.project_name,
+    })),
+    brushNorms: brushRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      brushName: row.brush_name,
+      projectId: row.project_id,
+      projectName: row.project_name,
+    })),
+    typographyNorms: typographyRows.map((row) => ({
+      id: row.id,
+      fontFamily: row.font_family,
+      fontUsage: row.font_usage,
+      projectId: row.project_id,
+      projectName: row.project_name,
+    })),
+  };
+};
+
 // The one project-name rule, shared by creation and rename so the two can
 // never drift apart: a non-blank string whose trimmed length is 2-50 chars.
 // Returns the trimmed name; throws 'missing_name' (absent/blank/non-string)
@@ -1188,6 +1264,7 @@ module.exports = {
   ProjectServiceError,
   escapeLikeWildcards,
   validateProjectName,
+  searchProjectContentForUser,
   userOwnsProject,
   listProjectsForUser,
   createProjectForUser,
