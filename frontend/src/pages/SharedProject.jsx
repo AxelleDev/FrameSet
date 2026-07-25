@@ -216,7 +216,11 @@ export default function SharedProject() {
                 <p className="text-xs text-primary/60">
                   Made with FrameSet — the graphic reference for your projects.
                 </p>
-                <Button to="/register" variant="primary" className="text-sm">
+                <Button
+                  to="/register"
+                  variant="primary"
+                  className="text-sm shrink-0 whitespace-nowrap"
+                >
                   Create your own
                 </Button>
               </div>

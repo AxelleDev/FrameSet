@@ -587,7 +587,11 @@ export default function ProjectExport() {
                     {shareUrl}
                   </code>
                   <div className="flex gap-3 shrink-0">
-                    <Button onClick={handleCopyShareUrl} variant="primary">
+                    <Button
+                      onClick={handleCopyShareUrl}
+                      variant="primary"
+                      className="whitespace-nowrap"
+                    >
                       {copiedValue === shareUrl ? 'Copied!' : 'Copy link'}
                     </Button>
                     <Button onClick={handleDisableSharing} variant="ghost" loading={shareBusy}>
