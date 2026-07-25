@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useId } from 'react';
 import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 
@@ -21,6 +21,9 @@ export default function Modal({
   const panelRef = useRef(null);
   // Remembers the element focused before the modal opened, to restore it on close.
   const previouslyFocused = useRef(null);
+  // Unique title id, so aria-labelledby stays valid even if two modals ever
+  // coexist in the tree (a fixed id would collide).
+  const titleId = useId();
 
   // Focus the panel on open, and restore focus to the opener when it closes so
   // keyboard users are not dropped back at the top of the page.
@@ -101,7 +104,7 @@ export default function Modal({
         className={panelClassName}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={ariaLabelledby || (title ? 'modal-title' : undefined)}
+        aria-labelledby={ariaLabelledby || (title ? titleId : undefined)}
         tabIndex="-1"
         ref={panelRef}
         onKeyDown={handleKeyDown}
@@ -110,7 +113,7 @@ export default function Modal({
           <div className="flex items-start justify-between mb-6">
             <div>
               {title && (
-                <h4 id="modal-title" className="text-xl font-medium text-primary">
+                <h4 id={titleId} className="text-xl font-medium text-primary">
                   {title}
                 </h4>
               )}

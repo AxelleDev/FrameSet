@@ -77,6 +77,14 @@ const googleSignInLimiter = rateLimit({
   message: 'Too many attempts, please try again in a minute.',
 });
 
+// Logout: generous cap (multi-tab sign-outs are legitimate) that still bounds
+// the revocation writes a scripted caller could otherwise trigger freely.
+const logoutLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: maxFor(20),
+  message: 'Too many requests, please try again in a minute.',
+});
+
 router.post('/register', registerLimiter, authController.register);
 router.post('/login', loginLimiter, authController.login);
 router.post('/demo-login', loginLimiter, authController.demoLogin);
@@ -87,6 +95,6 @@ router.post('/resend-code', resendCodeLimiter, authController.resendCode);
 router.post('/forgot-password', forgotPasswordLimiter, authController.forgotPassword);
 router.post('/reset-password', resetPasswordLimiter, authController.resetPassword);
 router.post('/refresh', refreshLimiter, authController.refresh);
-router.post('/logout', authController.logout);
+router.post('/logout', logoutLimiter, authController.logout);
 
 module.exports = router;

@@ -81,7 +81,7 @@ documented in [backend/API.md](backend/API.md).
 
 ### Prerequisites
 
-- **Node.js ≥ 20** (see `.nvmrc`) and **npm**
+- **Node.js ≥ 20** (Node 22 recommended — see `.nvmrc`, the version CI runs) and **npm**
 - **MySQL 8** or **MariaDB** — your own install, or the bundled dev database:
   `docker compose up -d` (starts MySQL and creates `frameset_db` for you)
 

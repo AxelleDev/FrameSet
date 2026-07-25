@@ -40,6 +40,18 @@ updates:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      e2e:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
