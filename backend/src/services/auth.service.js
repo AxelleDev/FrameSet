@@ -101,8 +101,13 @@ const registerUser = async (
       [name, email, hashedPassword, initials, false, hashOtp(verificationCode), expires, now],
     );
 
-    try {
-      await mailService.sendMail({
+    // Not awaited: the account is already created, so the response must not wait
+    // on (nor fail with) the email send — a slow or unreachable mail provider
+    // would otherwise stall registration for the full send timeout. A failure is
+    // reported via onMailError and the user can request a new code via
+    // resend-code. Mirrors resendVerificationCode / startPasswordReset.
+    Promise.resolve(
+      mailService.sendMail({
         to: email,
         subject: 'Confirm your registration',
         text: `Your confirmation code is: ${verificationCode}\nThis code expires in 10 minutes.`,
@@ -111,13 +116,10 @@ const registerUser = async (
           message: 'Use the code below to confirm your email address.',
           code: verificationCode,
         }),
-      });
-    } catch (mailError) {
-      // The account is already created; a failed send must not 500 the user (which
-      // would strand them on a "duplicate email" retry). Report it and let them use
-      // resend-code. Mirrors startPasswordReset's onMailError contract.
+      }),
+    ).catch((mailError) => {
       if (onMailError) onMailError(mailError);
-    }
+    });
 
     return {
       email,

@@ -186,7 +186,13 @@ The two halves deploy independently — the API does **not** serve the frontend 
 Production checklist:
 
 - Set **`NODE_ENV=production`** on the API (enables secure cookies, HSTS, JSON
-  logs, and makes SMTP config mandatory).
+  logs, and makes an email-delivery config mandatory).
+- **Email delivery**: configure one path. On hosts that block outbound SMTP
+  (Railway, Render, Fly, …) SMTP will silently hang, so use the **Brevo HTTP
+  API**: set `BREVO_API_KEY` (a Brevo v3 API key) and `MAIL_FROM_ADDRESS` (an
+  address validated as a sender in Brevo). Where SMTP is open, the classic
+  `MAIL_HOST/PORT/SECURE/USER/PASS` still works. In production the app refuses to
+  boot unless one of the two is fully configured.
 - The API trusts **one** reverse-proxy hop by default (`trust proxy = 1`) so
   per-IP rate limiting stays per-client. If the chain is deeper — e.g. the
   frontend host proxies `/api` to the platform edge in front of the API — set

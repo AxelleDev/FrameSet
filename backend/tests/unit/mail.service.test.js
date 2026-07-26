@@ -14,7 +14,7 @@ jest.mock('nodemailer', () => ({
 const mailService = require('../../src/services/mail.service');
 
 describe('mail service', () => {
-  it('configures the SMTP transport from environment variables', () => {
+  it('configures the SMTP transport from environment variables, with fail-fast timeouts', () => {
     expect(nodemailer.createTransport).toHaveBeenCalledWith({
       host: process.env.MAIL_HOST,
       port: Number.parseInt(process.env.MAIL_PORT, 10),
@@ -23,6 +23,10 @@ describe('mail service', () => {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
       },
+      // Bounded so an unreachable SMTP fails in seconds instead of hanging ~2 min.
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
   });
 
