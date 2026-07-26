@@ -27,7 +27,7 @@ import TrashSection from '../components/TrashSection';
 import TrashRow from '../components/TrashRow';
 import PageHeader from '../components/PageHeader';
 import Seo from '../components/Seo';
-import { EditIcon, DeleteIcon } from '../components/icons';
+import { EditIcon, DeleteIcon, DuplicateIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 
 export default function ProjectNorms() {
@@ -221,6 +221,36 @@ export default function ProjectNorms() {
     e.preventDefault();
     if (!id || !normId) return;
     setConfirmDeleteNorm({ id: normId, type });
+  };
+
+  // Duplicate a single standard: recreate it with the same values via the add
+  // flow (so it's appended at the end, like any new standard). The name/usage
+  // gets a " (copy)" suffix. opacity is coerced to '' when absent so the
+  // backend treats it as "left blank" rather than rejecting a null.
+  const [duplicatingNormId, setDuplicatingNormId] = useState(null);
+  const handleDuplicateNorm = async (norm, type) => {
+    if (!id || duplicatingNormId) return;
+    setDuplicatingNormId(norm.id);
+    try {
+      const saved =
+        type === 'brush'
+          ? await addBrushNorm(id, {
+              name: `${norm.name} (copy)`.slice(0, 255),
+              value: norm.value,
+              unit: norm.unit,
+              brushName: norm.brushName,
+              opacity: norm.opacity ?? '',
+            })
+          : await addTypographyNorm(id, {
+              fontFamily: norm.fontFamily,
+              fontWeight: norm.fontWeight,
+              fontUsage: norm.fontUsage ? `${norm.fontUsage} (copy)`.slice(0, 255) : norm.fontUsage,
+              fontStyle: norm.fontStyle,
+            });
+      if (saved) showToast('Standard duplicated.');
+    } finally {
+      setDuplicatingNormId(null);
+    }
   };
 
   const [isAddingNorm, setIsAddingNorm] = useState(false);
@@ -425,6 +455,14 @@ export default function ProjectNorms() {
                             <EditIcon />
                           </ActionIconButton>
                           <ActionIconButton
+                            onClick={() => handleDuplicateNorm(norm, 'brush')}
+                            title="Duplicate standard"
+                            intent="edit"
+                            disabled={duplicatingNormId !== null}
+                          >
+                            <DuplicateIcon />
+                          </ActionIconButton>
+                          <ActionIconButton
                             onClick={(e) => handleDeleteNorm(e, norm.id, 'brush')}
                             title="Delete standard"
                             intent="delete"
@@ -482,6 +520,14 @@ export default function ProjectNorms() {
                             intent="edit"
                           >
                             <EditIcon />
+                          </ActionIconButton>
+                          <ActionIconButton
+                            onClick={() => handleDuplicateNorm(norm, 'typography')}
+                            title="Duplicate standard"
+                            intent="edit"
+                            disabled={duplicatingNormId !== null}
+                          >
+                            <DuplicateIcon />
                           </ActionIconButton>
                           <ActionIconButton
                             onClick={(e) => handleDeleteNorm(e, norm.id, 'typography')}
