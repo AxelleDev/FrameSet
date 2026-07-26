@@ -24,6 +24,7 @@ import TrashSection from '../components/TrashSection';
 import TrashRow from '../components/TrashRow';
 import { isValidHexValue } from '../utils/hex';
 import { formatColor, isColorFormat } from '../utils/colorFormats';
+import { generateHarmonies } from '../utils/colorHarmony';
 import { EditIcon, DeleteIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useClipboard from '../hooks/useClipboard';
@@ -328,6 +329,54 @@ export default function ProjectPalette() {
     }
   };
 
+  // Color-harmony generator: pick a base color, preview complementary/analogous/
+  // triad suggestions, and add the ones you like (same select-then-add flow as
+  // the image/file import above).
+  const [isHarmoniesOpen, setIsHarmoniesOpen] = useState(false);
+  const [harmonyBaseHex, setHarmonyBaseHex] = useState('');
+  const [selectedHarmonyKeys, setSelectedHarmonyKeys] = useState(() => new Set());
+
+  const openHarmonies = () => {
+    // Seed from the first palette color when there is one, else a pleasant default.
+    setHarmonyBaseHex(palette[0]?.hex || '#8994DF');
+    setSelectedHarmonyKeys(new Set());
+    setIsHarmoniesOpen(true);
+  };
+
+  // Recomputed from the (valid) base color; empty while the base isn't valid.
+  const harmonyGroups = isValidHexValue(harmonyBaseHex) ? generateHarmonies(harmonyBaseHex) : [];
+
+  const toggleHarmony = (key) =>
+    setSelectedHarmonyKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  // The { name, hex } of every currently-ticked suggestion, in display order.
+  const selectedHarmonyColors = harmonyGroups.flatMap((group) =>
+    group.colors
+      .map((color, index) => ({ color, key: `${group.id}-${index}` }))
+      .filter(({ key }) => selectedHarmonyKeys.has(key))
+      .map(({ color }) => color),
+  );
+
+  const confirmAddHarmonies = async () => {
+    if (selectedHarmonyColors.length === 0) return;
+    const room = Math.max(0, MAX_PALETTE_SIZE - palette.length);
+    if (room === 0) {
+      showToast(`The palette is full (maximum ${MAX_PALETTE_SIZE} colors).`, 'danger');
+      return;
+    }
+    const toAdd = selectedHarmonyColors.slice(0, room).map((c) => ({ name: c.name, hex: c.hex }));
+    const saved = await persistPalette([...palette, ...toAdd]);
+    if (saved) {
+      setIsHarmoniesOpen(false);
+      showToast(`${toAdd.length} color${toAdd.length > 1 ? 's' : ''} added.`);
+    }
+  };
+
   // Stage a color for deletion (by id). stopImmediatePropagation also prevents
   // sibling handlers (copy/drag) on the same swatch from firing.
   const handleDeleteColor = (e, colorId) => {
@@ -359,6 +408,9 @@ export default function ProjectPalette() {
                 onChange={handlePaletteFileSelected}
                 className="hidden"
               />
+              <Button type="button" variant="outline" onClick={openHarmonies}>
+                Harmonies
+              </Button>
               <Button type="button" variant="outline" onClick={openPaletteFilePicker}>
                 Import a palette
               </Button>
@@ -660,6 +712,77 @@ export default function ProjectPalette() {
           }}
           onPrimary={confirmAddImageColors}
           primaryDisabled={imageColors.filter((c) => c.selected).length === 0}
+        />
+      </FormModal>
+
+      <FormModal
+        isOpen={isHarmoniesOpen}
+        onClose={() => setIsHarmoniesOpen(false)}
+        title="Color harmonies"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-primary">
+            Pick a base color; select the suggestions you want to add.
+          </p>
+          <ColorInput
+            label="Base color"
+            initialHex={harmonyBaseHex}
+            initialFormat={displayFormat}
+            onChange={(hex) => {
+              setHarmonyBaseHex(hex || '');
+              // The suggestions change with the base, so drop any stale ticks.
+              setSelectedHarmonyKeys(new Set());
+            }}
+          />
+
+          {harmonyGroups.length > 0 ? (
+            <div className="space-y-4">
+              {harmonyGroups.map((group) => (
+                <div key={group.id}>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-primary/50">
+                    {group.label}
+                  </p>
+                  <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                    {group.colors.map((color, index) => {
+                      const key = `${group.id}-${index}`;
+                      const selected = selectedHarmonyKeys.has(key);
+                      return (
+                        <button
+                          type="button"
+                          key={key}
+                          onClick={() => toggleHarmony(key)}
+                          aria-pressed={selected}
+                          aria-label={`${color.name}, ${color.hex}`}
+                          className={`flex flex-col items-center gap-1 rounded-xl p-2 transition-all ${
+                            selected ? 'ring-2 ring-blue/40' : 'opacity-60 hover:opacity-100'
+                          }`}
+                        >
+                          <span
+                            className="h-12 w-full rounded-lg"
+                            style={{ backgroundColor: color.hex }}
+                          ></span>
+                          <span className="text-xs font-mono uppercase text-primary">
+                            {formatColor(color.hex, displayFormat)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-primary/50">
+              Enter a valid color above to see its harmonies.
+            </p>
+          )}
+        </div>
+        <ModalActions
+          secondaryLabel="Cancel"
+          primaryLabel={`Add (${selectedHarmonyColors.length})`}
+          onSecondary={() => setIsHarmoniesOpen(false)}
+          onPrimary={confirmAddHarmonies}
+          primaryDisabled={selectedHarmonyColors.length === 0}
         />
       </FormModal>
 
