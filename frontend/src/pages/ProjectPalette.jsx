@@ -23,7 +23,7 @@ import ColorInput from '../components/ColorInput';
 import TrashSection from '../components/TrashSection';
 import TrashRow from '../components/TrashRow';
 import { isValidHexValue } from '../utils/hex';
-import { isColorFormat } from '../utils/colorFormats';
+import { formatColor, isColorFormat } from '../utils/colorFormats';
 import { EditIcon, DeleteIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useClipboard from '../hooks/useClipboard';
@@ -412,101 +412,106 @@ export default function ProjectPalette() {
               measurement, and the dragged swatch is dimmed. Only the color
               square is the drag handle (see ColorTile), so the caption stays
               clickable/focusable. */}
-            {previewPalette.map((color, idx) => (
-              <ColorTile
-                key={color.id}
-                ref={registerItemRef(color.id)}
-                tabIndex={-1}
-                aria-label={`Color ${color.name}, ${color.hex}`}
-                hex={color.hex}
-                name={color.name}
-                displayFormat={displayFormat}
-                onCopy={(e) => handleCopyHex(e, color.hex)}
-                copied={copiedValue === color.hex}
-                onCopyValue={copy}
-                copiedValue={copiedValue}
-                className={color.id === draggedId ? 'opacity-30 z-40' : ''}
-                dragHandleProps={getDragHandlers(color, idx)}
-                dragging={color.id === draggedId}
-                overlay={
-                  <>
-                    <ActionIconButton
-                      onClick={(e) => handleDeleteColor(e, color.id)}
-                      title="Delete color"
-                      intent="delete"
-                      variant="light"
-                      className="absolute top-3 right-3 z-30"
-                    >
-                      <DeleteIcon />
-                    </ActionIconButton>
+            {previewPalette.map((color, idx) => {
+              // Clicking the swatch copies what's on screen (the display format),
+              // so "what you see is what you copy" stays true in any format.
+              const shownValue = formatColor(color.hex, displayFormat);
+              return (
+                <ColorTile
+                  key={color.id}
+                  ref={registerItemRef(color.id)}
+                  tabIndex={-1}
+                  aria-label={`Color ${color.name}, ${color.hex}`}
+                  hex={color.hex}
+                  name={color.name}
+                  displayFormat={displayFormat}
+                  onCopy={(e) => handleCopyHex(e, shownValue)}
+                  copied={copiedValue === shownValue}
+                  onCopyValue={copy}
+                  copiedValue={copiedValue}
+                  className={color.id === draggedId ? 'opacity-30 z-40' : ''}
+                  dragHandleProps={getDragHandlers(color, idx)}
+                  dragging={color.id === draggedId}
+                  overlay={
+                    <>
+                      <ActionIconButton
+                        onClick={(e) => handleDeleteColor(e, color.id)}
+                        title="Delete color"
+                        intent="delete"
+                        variant="light"
+                        className="absolute top-3 right-3 z-30"
+                      >
+                        <DeleteIcon />
+                      </ActionIconButton>
 
-                    <ActionIconButton
-                      onClick={() => openEditModal(idx)}
-                      title="Edit color"
-                      intent="edit"
-                      variant="light"
-                      className="absolute top-3 left-3 z-30"
-                    >
-                      <EditIcon />
-                    </ActionIconButton>
+                      <ActionIconButton
+                        onClick={() => openEditModal(idx)}
+                        title="Edit color"
+                        intent="edit"
+                        variant="light"
+                        className="absolute top-3 left-3 z-30"
+                      >
+                        <EditIcon />
+                      </ActionIconButton>
 
-                    {/* Reorder controls: keyboard-operable, non-drag alternative
+                      {/* Reorder controls: keyboard-operable, non-drag alternative
                       (WCAG 2.5.7). Visually hidden (srOnly) so sighted users
                       drag while assistive-tech users get "move left/right". */}
-                    <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
-                      <ActionIconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          moveColor(idx, idx - 1);
-                        }}
-                        title="Move color left"
-                        variant="light"
-                        srOnly
-                        disabled={idx === 0}
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                      <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
+                        <ActionIconButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveColor(idx, idx - 1);
+                          }}
+                          title="Move color left"
+                          variant="light"
+                          srOnly
+                          disabled={idx === 0}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M15 19l-7-7 7-7"
-                          />
-                        </svg>
-                      </ActionIconButton>
-                      <ActionIconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          moveColor(idx, idx + 1);
-                        }}
-                        title="Move color right"
-                        variant="light"
-                        srOnly
-                        disabled={idx === previewPalette.length - 1}
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M15 19l-7-7 7-7"
+                            />
+                          </svg>
+                        </ActionIconButton>
+                        <ActionIconButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveColor(idx, idx + 1);
+                          }}
+                          title="Move color right"
+                          variant="light"
+                          srOnly
+                          disabled={idx === previewPalette.length - 1}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </ActionIconButton>
-                    </div>
-                  </>
-                }
-              />
-            ))}
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </ActionIconButton>
+                      </div>
+                    </>
+                  }
+                />
+              );
+            })}
           </div>
 
           {trashedPaletteColors.length > 0 && (

@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useState } from 'react';
+import React, { useId, useState } from 'react';
 import PropTypes from 'prop-types';
 import ColorFormatToggle from './ColorFormatToggle';
 import TextInput from './TextInput';
@@ -52,11 +52,12 @@ export default function ColorInput({
     onChange?.(parseColorInput(nextText, nextFormat));
   };
 
-  // Report the seeded value once on mount so the parent knows the initial state.
-  useEffect(() => {
-    emit(text, format);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Deliberately NOT emitting on mount: the parent seeds the value itself (the
+  // edit modal from the color's own hex, the add modal as empty). Emitting the
+  // seeded value would re-derive it through the current format — and since HSL/
+  // HSB round-trips are lossy, merely opening the edit modal in one of those
+  // formats would drift a color by a shade. So the original is preserved until
+  // the user actually edits the field.
 
   const handleTextChange = (event) => {
     // Keep the hex field's leading '#' and character filtering behavior.

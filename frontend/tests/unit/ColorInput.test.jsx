@@ -4,11 +4,13 @@ import userEvent from '@testing-library/user-event';
 import ColorInput from '../../src/components/ColorInput';
 
 describe('ColorInput', () => {
-  it('seeds from initialHex and reports it on mount', () => {
+  it('seeds the field from initialHex without emitting until edited', () => {
+    // No mount emit: HSL/HSB round-trips are lossy, so re-deriving the seeded
+    // value would drift an existing color merely by opening the modal.
     const onChange = vi.fn();
     render(<ColorInput initialHex="#dbe7e5" onChange={onChange} />);
-    expect(onChange).toHaveBeenCalledWith('#DBE7E5');
     expect(screen.getByLabelText(/color value/i)).toHaveValue('#DBE7E5');
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('parses a hex the user types and reports the canonical value', async () => {

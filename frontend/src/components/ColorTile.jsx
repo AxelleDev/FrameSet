@@ -89,10 +89,19 @@ const ColorTile = React.forwardRef(function ColorTile(
     const step = event.key === 'ArrowDown' ? 1 : -1;
     items[(currentIndex + step + items.length) % items.length].focus();
   };
+  // Split the drag props: the SQUARE is the grab handle (draggable + drag
+  // start/end), but the WHOLE tile is the drop zone (dragover/drop). So you grab
+  // from the swatch, yet can release anywhere on the tile without the reorder
+  // snapping back — while the caption stays clickable/focusable.
+  const { draggable, onDragStart, onDragEnd, onDragOver, onDrop } = dragHandleProps || {};
+  const isDraggable = Boolean(dragHandleProps);
+
   return (
     <div
       ref={ref}
       className={`group relative flex flex-col outline-none ${className}`.trim()}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
       {...rest}
     >
       {/* No `overflow-hidden` on purpose: with `rounded-3xl` and the hover
@@ -100,13 +109,12 @@ const ColorTile = React.forwardRef(function ColorTile(
           copy overlay flashes square corners. `aspect-square` (not `flex-1`)
           so the swatch stays a true square regardless of the caption's
           height, instead of being squeezed into a rectangle to fit it. */}
-      {/* Only the square is the drag handle (and shows the grab cursor), so the
-          caption below — name, value and the format menu — stays normally
-          clickable and focusable instead of being swallowed by the drag. */}
       <div
-        {...dragHandleProps}
+        draggable={draggable}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
         className={`w-full aspect-square rounded-3xl relative transition-transform duration-slow group-hover:-translate-y-2 ${
-          dragHandleProps ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : ''
+          isDraggable ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : ''
         }`.trim()}
         style={{ backgroundColor: hex }}
       >
@@ -115,7 +123,7 @@ const ColorTile = React.forwardRef(function ColorTile(
           <button
             type="button"
             onClick={onCopy}
-            aria-label={`Copy ${hex}`}
+            aria-label={`Copy ${displayValue}`}
             className="absolute inset-0 flex items-center justify-center rounded-3xl opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
           >
             <CopyBadge isCopied={copied} />
