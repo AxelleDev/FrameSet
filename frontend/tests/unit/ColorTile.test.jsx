@@ -59,6 +59,25 @@ describe('ColorTile copy-formats menu', () => {
     expect(trigger).toHaveFocus();
   });
 
+  it('shows the caption value in the chosen display format', () => {
+    // With the menu trigger (onCopyValue provided).
+    const { rerender } = render(
+      <ColorTile hex="#FF0000" name="Reflet" onCopyValue={vi.fn()} displayFormat="rgb" />,
+    );
+    expect(
+      screen.getByRole('button', { name: /copy #FF0000 in another format/i }),
+    ).toHaveTextContent('rgb(255, 0, 0)');
+
+    // Plain-text caption (no menu): still respects the format.
+    rerender(<ColorTile hex="#FF0000" name="Reflet" displayFormat="hsl" />);
+    expect(screen.getByText('hsl(0, 100%, 50%)')).toBeInTheDocument();
+  });
+
+  it('defaults the caption to HEX when no display format is given', () => {
+    render(<ColorTile hex="#00FF00" name="Vert" />);
+    expect(screen.getByText('#00FF00')).toBeInTheDocument();
+  });
+
   it('shows a transient "Copied" state on the row whose value was just copied', async () => {
     const user = userEvent.setup();
     render(

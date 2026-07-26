@@ -3,7 +3,7 @@
 // Every change persists the whole ordered palette via updateProjectPalette and
 // adopts the server's canonical result. Colors are keyed by stable `id`, never
 // hex, so two colors may share a hex without colliding.
-import React, { useState, useEffect, useRef, useId } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useToast } from '../context/ToastContext';
 import { useParams } from 'react-router-dom';
@@ -18,9 +18,12 @@ import AddTile from '../components/AddTile';
 import PageHeader from '../components/PageHeader';
 import Seo from '../components/Seo';
 import ColorTile from '../components/ColorTile';
+import ColorFormatToggle from '../components/ColorFormatToggle';
+import ColorInput from '../components/ColorInput';
 import TrashSection from '../components/TrashSection';
 import TrashRow from '../components/TrashRow';
-import { normalizeHexInput, isValidHexValue, handleHexKeyDown } from '../utils/hex';
+import { isValidHexValue } from '../utils/hex';
+import { isColorFormat } from '../utils/colorFormats';
 import { EditIcon, DeleteIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useClipboard from '../hooks/useClipboard';
@@ -32,6 +35,9 @@ import { parsePaletteFile } from '../utils/paletteImport';
 
 // Keep in sync with the backend cap (MAX_PALETTE_SIZE in projects.service.js).
 const MAX_PALETTE_SIZE = 50;
+
+// Remembers the palette's display-format preference across visits/reloads.
+const PALETTE_FORMAT_KEY = 'frameset-palette-format';
 
 export default function ProjectPalette() {
   const { id } = useParams();
@@ -51,14 +57,8 @@ export default function ProjectPalette() {
 
   const [editIdx, setEditIdx] = useState(null);
   const [editColorName, setEditColorName] = useState('');
+  // Canonical hex ('#RRGGBB' when valid, '' otherwise) reported by ColorInput.
   const [editColorHex, setEditColorHex] = useState('');
-
-  // FormField's "Hex code" label can't use its usual auto-id cloning here: its
-  // child is a wrapping <div> (color swatch + text input side by side), so the
-  // generated id would land on that div — not labelable — leaving the actual
-  // text input with no accessible name. Wired manually instead.
-  const editHexFieldId = useId();
-  const newHexFieldId = useId();
 
   // Drag-and-drop reorder (FLIP animation + keyboard move + optimistic
   // persistence), shared with ProjectNorms and the dashboard's pinned section.
@@ -78,6 +78,25 @@ export default function ProjectPalette() {
 
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null);
   const { copy, copiedValue } = useClipboard({ timeout: 1200 });
+
+  // How palette colors are displayed (HEX / RGB / HSL / HSB). A pure display
+  // preference — never changes the stored colors — restored from and saved to
+  // localStorage so it sticks across visits.
+  const [displayFormat, setDisplayFormat] = useState(() => {
+    try {
+      const saved = localStorage.getItem(PALETTE_FORMAT_KEY);
+      return saved && isColorFormat(saved) ? saved : 'hex';
+    } catch {
+      return 'hex';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(PALETTE_FORMAT_KEY, displayFormat);
+    } catch {
+      /* ignore persistence errors (e.g. private mode) */
+    }
+  }, [displayFormat]);
 
   // Load this project's trashed colors so its trash section can appear (hidden when empty).
   useEffect(() => {
@@ -115,10 +134,13 @@ export default function ProjectPalette() {
 
   const editingOriginalColor = editIdx !== null ? palette[editIdx] : null;
   useUnsavedChangesWarning(
-    (isAddingColor && (newColorName.trim() !== '' || newColorHex.trim() !== '#')) ||
+    (isAddingColor && (newColorName.trim() !== '' || newColorHex !== '')) ||
       (editIdx !== null &&
         editingOriginalColor &&
-        (editColorName !== editingOriginalColor.name || editColorHex !== editingOriginalColor.hex)),
+        (editColorName !== editingOriginalColor.name ||
+          // ColorInput normalizes to uppercase hex; compare case-insensitively
+          // so merely opening the modal on a stored lowercase hex isn't "dirty".
+          editColorHex.toUpperCase() !== (editingOriginalColor.hex || '').toUpperCase())),
   );
 
   // Palette-import state, shared by the two sources: colors extracted from an
@@ -136,38 +158,23 @@ export default function ProjectPalette() {
   const fileInputRef = useRef(null);
   const paletteFileInputRef = useRef(null);
 
-  const handleEditHexChange = (e) => {
-    setEditColorHex(normalizeHexInput(e.target.value));
-  };
-
-  const handleNewHexChange = (e) => {
-    setNewColorHex(normalizeHexInput(e.target.value));
-  };
-
-  // Normalize pasted content before it lands in the field.
-  // Returns a paste handler bound to the given state setter.
-  const handleHexPaste = (setter) => (e) => {
-    e.preventDefault();
-    const paste = (e.clipboardData || window.clipboardData).getData('text') || '';
-    const cleaned = normalizeHexInput(paste);
-    setter(cleaned);
-  };
-
   useActiveProject(id);
 
   // Open the edit modal pre-filled from the color at the given index.
   const openEditModal = (idx) => {
     setEditIdx(idx);
     setEditColorName(palette[idx]?.name || '');
-    setEditColorHex(palette[idx]?.hex || '#');
+    setEditColorHex(palette[idx]?.hex || '');
   };
 
+  // ColorInput reports a canonical '#RRGGBB' hex (valid) or null; store '' when
+  // invalid so the save button and validity checks stay simple.
   const isValidEditHex = () => isValidHexValue(editColorHex);
   const isValidHex = () => isValidHexValue(newColorHex);
 
   const openAddModal = () => {
     setNewColorName('');
-    setNewColorHex('#');
+    setNewColorHex('');
     setIsAddingColor(true);
   };
 
@@ -180,11 +187,8 @@ export default function ProjectPalette() {
     const normalizedName = editColorName.trim();
     if (!normalizedName) return;
 
-    let newHex = editColorHex.trim();
-    if (!newHex.startsWith('#')) newHex = '#' + newHex;
-
     const nextPalette = palette.map((color, idx) =>
-      idx === editIdx ? { ...color, name: normalizedName, hex: newHex } : color,
+      idx === editIdx ? { ...color, name: normalizedName, hex: editColorHex } : color,
     );
 
     const saved = await persistPalette(nextPalette);
@@ -202,10 +206,7 @@ export default function ProjectPalette() {
     const normalizedName = newColorName.trim();
     if (!normalizedName) return;
 
-    let hex = newColorHex.trim();
-    if (!hex.startsWith('#')) hex = '#' + hex;
-
-    const nextPalette = [...palette, { name: normalizedName, hex }];
+    const nextPalette = [...palette, { name: normalizedName, hex: newColorHex }];
     const saved = await persistPalette(nextPalette);
     if (saved) {
       setIsAddingColor(false);
@@ -395,11 +396,22 @@ export default function ProjectPalette() {
             <p className="text-xs text-danger mb-4 text-right">{imageError}</p>
           )}
 
+          {/* Display-format switcher: changes how every swatch's value is shown
+              (the stored colors are untouched). Shown once there's a color. */}
+          {previewPalette.length > 0 && (
+            <div className="mb-4 flex items-center justify-end gap-2">
+              <span className="text-xs text-primary/50">Show as</span>
+              <ColorFormatToggle value={displayFormat} onChange={setDisplayFormat} />
+            </div>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
             <AddTile onClick={openAddModal} label="New color" className="aspect-square" />
 
             {/* Live (preview) order; each node is registered by id for FLIP
-              measurement, and the dragged swatch is dimmed. */}
+              measurement, and the dragged swatch is dimmed. Only the color
+              square is the drag handle (see ColorTile), so the caption stays
+              clickable/focusable. */}
             {previewPalette.map((color, idx) => (
               <ColorTile
                 key={color.id}
@@ -408,14 +420,14 @@ export default function ProjectPalette() {
                 aria-label={`Color ${color.name}, ${color.hex}`}
                 hex={color.hex}
                 name={color.name}
+                displayFormat={displayFormat}
                 onCopy={(e) => handleCopyHex(e, color.hex)}
                 copied={copiedValue === color.hex}
                 onCopyValue={copy}
                 copiedValue={copiedValue}
-                className={
-                  color.id === draggedId ? 'opacity-30 z-40 cursor-grabbing' : 'cursor-grab'
-                }
-                {...getDragHandlers(color, idx)}
+                className={color.id === draggedId ? 'opacity-30 z-40' : ''}
+                dragHandleProps={getDragHandlers(color, idx)}
+                dragging={color.id === draggedId}
                 overlay={
                   <>
                     <ActionIconButton
@@ -545,31 +557,14 @@ export default function ProjectPalette() {
               placeholder="Hair highlight"
             />
           </FormField>
-          <div>
-            <label htmlFor={editHexFieldId} className="block text-sm font-medium text-primary mb-2">
-              Hex code
-            </label>
-            <div className="flex gap-3">
-              <input
-                type="color"
-                value={isValidEditHex() ? editColorHex : '#ffffff'}
-                onChange={(e) => setEditColorHex(e.target.value.toUpperCase())}
-                aria-label="Pick a color"
-                className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0 focus-ring"
-              />
-              <TextInput
-                id={editHexFieldId}
-                type="text"
-                value={editColorHex}
-                onChange={handleEditHexChange}
-                onKeyDown={handleHexKeyDown}
-                onPaste={handleHexPaste(setEditColorHex)}
-                placeholder="#FF5500"
-                mono
-                className="flex-1"
-              />
-            </div>
-          </div>
+          {/* Enter the color in whichever format you like; the input defaults
+              to the palette's current display format. */}
+          <ColorInput
+            label="Color"
+            initialHex={palette[editIdx]?.hex || ''}
+            initialFormat={displayFormat}
+            onChange={(hex) => setEditColorHex(hex || '')}
+          />
         </div>
         <ModalActions
           secondaryLabel="Cancel"
@@ -591,31 +586,13 @@ export default function ProjectPalette() {
             />
           </FormField>
 
-          <div>
-            <label htmlFor={newHexFieldId} className="block text-sm font-medium text-primary mb-2">
-              Hex code
-            </label>
-            <div className="flex gap-3">
-              <input
-                type="color"
-                value={isValidHex() ? newColorHex : '#ffffff'}
-                onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
-                aria-label="Pick a color"
-                className="w-12 h-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0 focus-ring"
-              />
-              <TextInput
-                id={newHexFieldId}
-                type="text"
-                value={newColorHex}
-                onChange={handleNewHexChange}
-                onKeyDown={handleHexKeyDown}
-                onPaste={handleHexPaste(setNewColorHex)}
-                placeholder="#FF5500"
-                mono
-                className="flex-1"
-              />
-            </div>
-          </div>
+          {/* Enter the color in whichever format you like; the input defaults
+              to the palette's current display format. */}
+          <ColorInput
+            label="Color"
+            initialFormat={displayFormat}
+            onChange={(hex) => setNewColorHex(hex || '')}
+          />
         </div>
 
         <ModalActions

@@ -2,7 +2,7 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import CopyBadge from './CopyBadge';
 import { CheckCircleIcon } from './icons';
-import { getColorFormats } from '../utils/colorFormats';
+import { getColorFormats, formatColor } from '../utils/colorFormats';
 
 /**
  * The one color-swatch shape used everywhere a palette color is shown:
@@ -24,12 +24,17 @@ const ColorTile = React.forwardRef(function ColorTile(
     copied = false,
     onCopyValue,
     copiedValue = null,
+    displayFormat = 'hex',
+    dragHandleProps,
+    dragging = false,
     overlay,
     className = '',
     ...rest
   },
   ref,
 ) {
+  // The caption value shown under the name, in the chosen display format.
+  const displayValue = formatColor(hex, displayFormat);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
@@ -95,8 +100,14 @@ const ColorTile = React.forwardRef(function ColorTile(
           copy overlay flashes square corners. `aspect-square` (not `flex-1`)
           so the swatch stays a true square regardless of the caption's
           height, instead of being squeezed into a rectangle to fit it. */}
+      {/* Only the square is the drag handle (and shows the grab cursor), so the
+          caption below — name, value and the format menu — stays normally
+          clickable and focusable instead of being swallowed by the drag. */}
       <div
-        className="w-full aspect-square rounded-3xl relative transition-transform duration-slow group-hover:-translate-y-2"
+        {...dragHandleProps}
+        className={`w-full aspect-square rounded-3xl relative transition-transform duration-slow group-hover:-translate-y-2 ${
+          dragHandleProps ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : ''
+        }`.trim()}
         style={{ backgroundColor: hex }}
       >
         {overlay}
@@ -138,7 +149,7 @@ const ColorTile = React.forwardRef(function ColorTile(
               }}
               className="inline-flex items-center gap-1 text-xs text-primary font-mono mt-0.5 uppercase tracking-wide opacity-70 hover:opacity-100 group-hover:opacity-100 transition-opacity rounded focus-ring"
             >
-              {hex}
+              {displayValue}
               <svg
                 className="w-3 h-3"
                 fill="none"
@@ -201,7 +212,7 @@ const ColorTile = React.forwardRef(function ColorTile(
           </>
         ) : (
           <p className="text-xs text-primary font-mono mt-0.5 uppercase tracking-wide opacity-70 group-hover:opacity-100 transition-opacity">
-            {hex}
+            {displayValue}
           </p>
         )}
       </div>
@@ -216,6 +227,12 @@ ColorTile.propTypes = {
   copied: PropTypes.bool,
   onCopyValue: PropTypes.func,
   copiedValue: PropTypes.string,
+  // Display format for the caption value: 'hex' | 'rgb' | 'hsl' | 'hsb'.
+  displayFormat: PropTypes.string,
+  // Drag props (from useDragReorder) applied to the color square only, so the
+  // caption stays interactive. Also drives the grab/grabbing cursor.
+  dragHandleProps: PropTypes.object,
+  dragging: PropTypes.bool,
   overlay: PropTypes.node,
   className: PropTypes.string,
 };
