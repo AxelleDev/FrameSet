@@ -97,6 +97,49 @@ describe('ProjectNorms', () => {
     expect(projectState.deleteBrushNorm).toHaveBeenCalledWith('2', 5);
   });
 
+  it('duplicates a brush standard with a "(copy)" name and the same values', async () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [
+        { id: 5, name: 'Hair outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 0.9 },
+      ],
+      typographyNorms: [],
+    };
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Duplicate standard' }));
+
+    expect(projectState.addBrushNorm).toHaveBeenCalledWith('2', {
+      name: 'Hair outline (copy)',
+      value: '8',
+      unit: 'px',
+      brushName: 'Smooth',
+      opacity: 0.9,
+    });
+  });
+
+  it('duplicates a typography standard, suffixing the usage', async () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [],
+      typographyNorms: [
+        { id: 11, fontFamily: 'Inter', fontWeight: '700', fontUsage: 'Body', fontStyle: 'Italic' },
+      ],
+    };
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Duplicate standard' }));
+
+    expect(projectState.addTypographyNorm).toHaveBeenCalledWith('2', {
+      fontFamily: 'Inter',
+      fontWeight: '700',
+      fontUsage: 'Body (copy)',
+      fontStyle: 'Italic',
+    });
+  });
+
   it('shows the trash section (brush + typography together, newest first) and restores an item', async () => {
     projectState.trashedBrushNorms = [
       {

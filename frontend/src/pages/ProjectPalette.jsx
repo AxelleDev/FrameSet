@@ -25,7 +25,7 @@ import TrashRow from '../components/TrashRow';
 import { isValidHexValue } from '../utils/hex';
 import { formatColor, isColorFormat } from '../utils/colorFormats';
 import { generateHarmonies } from '../utils/colorHarmony';
-import { EditIcon, DeleteIcon } from '../components/icons';
+import { EditIcon, DeleteIcon, DuplicateIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useClipboard from '../hooks/useClipboard';
 import useActiveProject from '../hooks/useActiveProject';
@@ -377,6 +377,26 @@ export default function ProjectPalette() {
     }
   };
 
+  // Duplicate a single color: drop a copy ("<name> (copy)", same hex) right
+  // after the original, then persist the whole palette. Capped like every add.
+  const handleDuplicateColor = async (e, idx) => {
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    if (palette.length >= MAX_PALETTE_SIZE) {
+      showToast(`The palette is full (maximum ${MAX_PALETTE_SIZE} colors).`, 'danger');
+      return;
+    }
+    const original = palette[idx];
+    if (!original) return;
+    const copy = {
+      name: `${original.name || 'Color'} (copy)`.slice(0, 255),
+      hex: original.hex,
+    };
+    const next = [...palette.slice(0, idx + 1), copy, ...palette.slice(idx + 1)];
+    const saved = await persistPalette(next);
+    if (saved) showToast('Color duplicated.');
+  };
+
   // Stage a color for deletion (by id). stopImmediatePropagation also prevents
   // sibling handlers (copy/drag) on the same swatch from firing.
   const handleDeleteColor = (e, colorId) => {
@@ -504,6 +524,16 @@ export default function ProjectPalette() {
                         className="absolute top-3 left-3 z-30"
                       >
                         <EditIcon />
+                      </ActionIconButton>
+
+                      <ActionIconButton
+                        onClick={(e) => handleDuplicateColor(e, idx)}
+                        title="Duplicate color"
+                        intent="edit"
+                        variant="light"
+                        className="absolute top-14 left-3 z-30"
+                      >
+                        <DuplicateIcon />
                       </ActionIconButton>
 
                       {/* Reorder controls: keyboard-operable, non-drag alternative

@@ -93,6 +93,18 @@ describe('ProjectPalette', () => {
     ]);
   });
 
+  it('duplicates a single color right after the original', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Duplicate color' }));
+
+    expect(projectState.updateProjectPalette).toHaveBeenCalledWith('2', [
+      { id: 1, name: 'Reflet', hex: '#FF0000' },
+      { name: 'Reflet (copy)', hex: '#FF0000' },
+    ]);
+  });
+
   it('generates harmonies from a base color and adds a picked suggestion', async () => {
     const user = userEvent.setup();
     renderPage();
