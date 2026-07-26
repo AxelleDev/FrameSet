@@ -11,7 +11,7 @@
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-const rgbToHex = ({ r, g, b }) => {
+export const rgbToHex = ({ r, g, b }) => {
   const channel = (n) => clamp(Math.round(n), 0, 255).toString(16).padStart(2, '0');
   return `#${channel(r)}${channel(g)}${channel(b)}`.toUpperCase();
 };
@@ -32,7 +32,7 @@ const placeByHue = (hue, c, x, m) => {
 };
 
 // HSL (h 0-360, s/l 0-100) → RGB 0-255.
-const hslToRgb = (h, s, l) => {
+export const hslToRgb = (h, s, l) => {
   const hue = ((h % 360) + 360) % 360;
   const sat = clamp(s, 0, 100) / 100;
   const lig = clamp(l, 0, 100) / 100;
