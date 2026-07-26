@@ -19,7 +19,7 @@ const normalizeHex = (hex) => {
 };
 
 // RGB (0-255) -> HSL, hue in [0, 1] like rgbToHsb, s/l in [0, 1].
-const rgbToHsl = ({ r, g, b }) => {
+export const rgbToHsl = ({ r, g, b }) => {
   const red = r / 255;
   const green = g / 255;
   const blue = b / 255;

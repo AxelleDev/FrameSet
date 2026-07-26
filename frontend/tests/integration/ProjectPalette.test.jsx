@@ -93,6 +93,21 @@ describe('ProjectPalette', () => {
     ]);
   });
 
+  it('generates harmonies from a base color and adds a picked suggestion', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Harmonies' }));
+    // The base defaults to the first palette color (#FF0000); its complement is cyan.
+    await user.click(screen.getByRole('button', { name: 'Complementary, #00FFFF' }));
+    await user.click(screen.getByRole('button', { name: 'Add (1)' }));
+
+    expect(projectState.updateProjectPalette).toHaveBeenCalledWith('2', [
+      { id: 1, name: 'Reflet', hex: '#FF0000' },
+      { name: 'Complementary', hex: '#00FFFF' },
+    ]);
+  });
+
   it('edits a color in place, keeping its id', async () => {
     const user = userEvent.setup();
     renderPage();
