@@ -32,24 +32,24 @@ test.describe('read-only demo account', () => {
     await expect(page).toHaveURL(/\/palette$/);
 
     await expect(page.getByText('Eye Reflection')).toBeVisible();
-    expect(await page.locator('[aria-label^="Color "]').count()).toBe(7);
+    expect(await page.locator('[aria-label^="Color "]:not([role="group"])').count()).toBe(7);
 
     // Add a color: it should appear immediately, with no error toast — the
     // mutation never leaves the browser (see ProjectContext.jsx's isDemo branches).
     await page.getByRole('button', { name: 'New color' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Color name').fill('Session Only Color');
-    await dialog.getByLabel('Hex code').fill('123456');
+    await dialog.getByLabel('Color', { exact: true }).fill('123456');
     await dialog.getByRole('button', { name: 'Add' }).click();
 
     await expect(page.getByText('Session Only Color')).toBeVisible();
-    expect(await page.locator('[aria-label^="Color "]').count()).toBe(8);
+    expect(await page.locator('[aria-label^="Color "]:not([role="group"])').count()).toBe(8);
 
     // Reloading re-fetches the real (untouched) seeded data: the simulated
     // add never reached the server, so it's gone and the original 7 remain.
     await page.reload();
     await expect(page.getByText('Eye Reflection')).toBeVisible();
-    expect(await page.locator('[aria-label^="Color "]').count()).toBe(7);
+    expect(await page.locator('[aria-label^="Color "]:not([role="group"])').count()).toBe(7);
     await expect(page.getByText('Session Only Color')).not.toBeVisible();
   });
 
