@@ -72,3 +72,28 @@ export function getColorFormats(hex) {
     },
   ];
 }
+
+/**
+ * The selectable display formats (id + short label), in display order — the
+ * single source of truth for the palette's format toggle.
+ */
+export const COLOR_FORMATS = [
+  { id: 'hex', label: 'HEX' },
+  { id: 'rgb', label: 'RGB' },
+  { id: 'hsl', label: 'HSL' },
+  { id: 'hsb', label: 'HSB' },
+];
+
+const COLOR_FORMAT_IDS = new Set(COLOR_FORMATS.map((format) => format.id));
+
+/** Whether `id` is one of the supported display formats. */
+export const isColorFormat = (id) => COLOR_FORMAT_IDS.has(id);
+
+/**
+ * A single color's value in the requested format id ('hex' | 'rgb' | 'hsl' |
+ * 'hsb'), falling back to HEX for an unknown id.
+ */
+export function formatColor(hex, formatId = 'hex') {
+  const formats = getColorFormats(hex);
+  return (formats.find((format) => format.id === formatId) || formats[0]).value;
+}

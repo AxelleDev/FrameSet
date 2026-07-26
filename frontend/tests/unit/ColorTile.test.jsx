@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ColorTile from '../../src/components/ColorTile';
 
@@ -27,8 +27,23 @@ describe('ColorTile copy-formats menu', () => {
 
     await user.click(screen.getByRole('menuitem', { name: /rgb/i }));
     expect(onCopyValue).toHaveBeenCalledWith('rgb(255, 0, 0)');
-    // Picking a format closes the menu.
-    expect(screen.queryByRole('menu')).toBeNull();
+    // The menu stays open briefly so the "Copied!" confirmation is visible,
+    // instead of vanishing instantly (which read as "nothing happened").
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+  });
+
+  it('auto-closes the menu shortly after a format is picked', () => {
+    vi.useFakeTimers();
+    try {
+      render(<ColorTile hex="#FF0000" name="Reflet" onCopyValue={vi.fn()} />);
+      fireEvent.click(screen.getByRole('button', { name: /copy #FF0000 in another format/i }));
+      fireEvent.click(screen.getByRole('menuitem', { name: /rgb/i }));
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(1000));
+      expect(screen.queryByRole('menu')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('closes on Escape and returns focus to the trigger', async () => {
@@ -42,6 +57,25 @@ describe('ColorTile copy-formats menu', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('menu')).toBeNull();
     expect(trigger).toHaveFocus();
+  });
+
+  it('shows the caption value in the chosen display format', () => {
+    // With the menu trigger (onCopyValue provided).
+    const { rerender } = render(
+      <ColorTile hex="#FF0000" name="Reflet" onCopyValue={vi.fn()} displayFormat="rgb" />,
+    );
+    expect(
+      screen.getByRole('button', { name: /copy #FF0000 in another format/i }),
+    ).toHaveTextContent('rgb(255, 0, 0)');
+
+    // Plain-text caption (no menu): still respects the format.
+    rerender(<ColorTile hex="#FF0000" name="Reflet" displayFormat="hsl" />);
+    expect(screen.getByText('hsl(0, 100%, 50%)')).toBeInTheDocument();
+  });
+
+  it('defaults the caption to HEX when no display format is given', () => {
+    render(<ColorTile hex="#00FF00" name="Vert" />);
+    expect(screen.getByText('#00FF00')).toBeInTheDocument();
   });
 
   it('shows a transient "Copied" state on the row whose value was just copied', async () => {

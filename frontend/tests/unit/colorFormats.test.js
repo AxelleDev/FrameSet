@@ -4,7 +4,12 @@
  * values, matching the sliders drawing apps like Procreate expose.
  */
 import { describe, it, expect } from 'vitest';
-import { getColorFormats } from '../../src/utils/colorFormats';
+import {
+  getColorFormats,
+  formatColor,
+  isColorFormat,
+  COLOR_FORMATS,
+} from '../../src/utils/colorFormats';
 
 const byId = (formats, id) => formats.find((format) => format.id === id)?.value;
 
@@ -44,5 +49,31 @@ describe('getColorFormats', () => {
   it('gives every format a short label for the copy menu', () => {
     const formats = getColorFormats('#123456');
     expect(formats.map((f) => f.label)).toEqual(['HEX', 'RGB', 'HSL', 'HSB']);
+  });
+});
+
+describe('formatColor / COLOR_FORMATS / isColorFormat', () => {
+  it('exposes the four selectable formats in display order', () => {
+    expect(COLOR_FORMATS.map((f) => f.id)).toEqual(['hex', 'rgb', 'hsl', 'hsb']);
+    expect(COLOR_FORMATS.map((f) => f.label)).toEqual(['HEX', 'RGB', 'HSL', 'HSB']);
+  });
+
+  it('returns a color in the requested format', () => {
+    expect(formatColor('#FF0000', 'hex')).toBe('#FF0000');
+    expect(formatColor('#FF0000', 'rgb')).toBe('rgb(255, 0, 0)');
+    expect(formatColor('#FF0000', 'hsl')).toBe('hsl(0, 100%, 50%)');
+    expect(formatColor('#FF0000', 'hsb')).toBe('0°, 100%, 100%');
+  });
+
+  it('defaults to HEX for an unknown or missing format id', () => {
+    expect(formatColor('#00FF00')).toBe('#00FF00');
+    expect(formatColor('#00FF00', 'nope')).toBe('#00FF00');
+  });
+
+  it('recognizes only the supported format ids', () => {
+    expect(isColorFormat('rgb')).toBe(true);
+    expect(isColorFormat('hsb')).toBe(true);
+    expect(isColorFormat('cmyk')).toBe(false);
+    expect(isColorFormat('')).toBe(false);
   });
 });

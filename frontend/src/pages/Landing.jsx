@@ -11,6 +11,7 @@ import Badge from '../components/Badge';
 import Card from '../components/Card';
 import PublicTopBar from '../components/PublicTopBar';
 import ColorTile from '../components/ColorTile';
+import ColorFormatToggle from '../components/ColorFormatToggle';
 import IconCircle from '../components/IconCircle';
 import StandardCard from '../components/StandardCard';
 import BrushPreview from '../components/BrushPreview';
@@ -118,13 +119,19 @@ function StandardsMock() {
   );
 }
 
-/** Mockup for the "Color palette" feature — the real square swatch grid. */
+/** Mockup for the "Color palette" feature — the real square swatch grid, with a
+    live format toggle so visitors can flip the swatches between HEX/RGB/HSL/HSB. */
 function PaletteMock() {
+  const [format, setFormat] = useState('hex');
   return (
     <Card className="p-4 sm:p-6">
+      <div className="mb-3 flex items-center justify-end gap-2">
+        <span className="text-xs text-primary/50">Show as</span>
+        <ColorFormatToggle value={format} onChange={setFormat} />
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         {PALETTE.map((c) => (
-          <ColorTile key={c.hex} hex={c.hex} name={c.name} />
+          <ColorTile key={c.hex} hex={c.hex} name={c.name} displayFormat={format} />
         ))}
       </div>
     </Card>
@@ -212,7 +219,7 @@ const FEATURES = [
   },
   {
     title: 'Color palette',
-    text: "Build each project's reference palette by hand, extract it straight from an image, or import the .ase, .gpl or Procreate .swatches palette you already have. Reorder, tweak and copy any color — as HEX, RGB, HSL or HSB — in a click.",
+    text: "Build each project's reference palette by hand, extract it straight from an image, or import the .ase, .gpl or Procreate .swatches palette you already have. Reorder, tweak, and view or copy any color — as HEX, RGB, HSL or HSB — in a click.",
     Mock: PaletteMock,
   },
   {

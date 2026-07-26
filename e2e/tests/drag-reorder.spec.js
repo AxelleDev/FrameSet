@@ -14,7 +14,9 @@ const name = 'E2E Reorder User';
 const projectName = `E2E Reorder Project ${timestamp}`;
 
 const colorTileNames = async (page) =>
-  page.locator('[aria-label^="Color "]').evaluateAll((nodes) =>
+  // Exclude the format-toggle group (aria-label "Color display format") so only
+  // the color swatches are counted.
+  page.locator('[aria-label^="Color "]:not([role="group"])').evaluateAll((nodes) =>
     nodes.map((node) => {
       const match = /^Color (.+?), #/.exec(node.getAttribute('aria-label') || '');
       return match ? match[1] : null;
@@ -54,7 +56,7 @@ test.describe('drag-and-drop reorders the palette and it persists', () => {
       await page.getByRole('button', { name: 'New color' }).click();
       const dialog = page.getByRole('dialog');
       await dialog.getByLabel('Color name').fill(colorName);
-      await dialog.getByLabel('Hex code').fill(hex);
+      await dialog.getByLabel('Color', { exact: true }).fill(hex);
       await dialog.getByRole('button', { name: 'Add' }).click();
       await expect(page.getByText(colorName)).toBeVisible();
     }
