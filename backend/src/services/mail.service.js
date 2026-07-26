@@ -1,12 +1,20 @@
 /**
- * Mail service: wraps a nodemailer SMTP transport and a reusable branded HTML template.
- * Delivers verification/confirmation codes for registration, email-change and resend flows.
+ * Mail service: sends the branded transactional emails (verification codes,
+ * security alerts). Two delivery paths, chosen by config (see mail.config.js):
+ *   - Brevo HTTP API (BREVO_API_KEY): over HTTPS, so it works where outbound
+ *     SMTP is blocked (Railway and many PaaS block ports 25/465/587).
+ *   - SMTP transport (nodemailer): for hosts where SMTP is open, plus the
+ *     Ethereal fallback in development.
+ * The reusable branded HTML template is shared by both paths.
  */
 
 const path = require('path');
 const nodemailer = require('nodemailer');
 const {
   hasSmtpConfig,
+  useBrevoApi,
+  BREVO_API_KEY,
+  MAIL_FROM_ADDRESS,
   MAIL_HOST,
   MAIL_PORT,
   MAIL_SECURE,
@@ -23,10 +31,30 @@ const { isE2ETestMode } = require('../utils/testMode');
 const capturedEmailsByRecipient = new Map();
 const getLastEmail = (to) => capturedEmailsByRecipient.get(to) || null;
 
-// The brand logo is embedded inline via a CID attachment (see sendMail), which
-// renders reliably across email clients without needing a public image host.
+// The brand logo is embedded inline via a CID attachment on the SMTP path (see
+// sendViaSmtp), which renders reliably across clients. On the HTTP API path
+// (which has no CID inlining) the same cid reference is swapped for a public
+// URL served by the frontend.
 const LOGO_CID = 'frameset-logo';
 const LOGO_PATH = path.join(__dirname, '..', 'assets', 'frameset-logo.png');
+// Public logo URL for the HTTP API path: the frontend serves the logo at its
+// root, so reuse the configured frontend origin. Empty when unset (the image
+// simply doesn't render; the code and text still do).
+const LOGO_URL = process.env.FRONTEND_ORIGIN
+  ? `${process.env.FRONTEND_ORIGIN.replace(/\/$/, '')}/FrameSet_Logo.png`
+  : '';
+
+// Fail an unreachable SMTP server in a few seconds instead of hanging on
+// nodemailer's ~2-minute default (which would stall the whole request).
+const SMTP_TIMEOUTS = {
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
+};
+
+// Bound the Brevo HTTP API call the same way, so a slow/hung API can't stall a request.
+const BREVO_API_TIMEOUT_MS = 15000;
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
 // When SMTP is configured, build the transport eagerly from the env settings.
 // Otherwise (development with no email setup) it is created lazily from an
@@ -37,11 +65,12 @@ let transporter = hasSmtpConfig
       port: MAIL_PORT,
       secure: MAIL_SECURE,
       auth: { user: MAIL_USER, pass: MAIL_PASS },
+      ...SMTP_TIMEOUTS,
     })
   : null;
 
-// "From" address: the configured user, or the Ethereal test user once created.
-let mailFrom = hasSmtpConfig ? MAIL_USER : null;
+// "From" address: the configured sender, or the Ethereal test user once created.
+let mailFrom = MAIL_FROM_ADDRESS || (hasSmtpConfig ? MAIL_USER : null);
 
 // Display name shown in recipients' inboxes, for a consistent sender identity.
 const MAIL_FROM_NAME = 'FrameSet';
@@ -78,6 +107,7 @@ const getTransporter = async () => {
         port: account.smtp.port,
         secure: account.smtp.secure,
         auth: { user: account.user, pass: account.pass },
+        ...SMTP_TIMEOUTS,
       });
       return transporter;
     });
@@ -141,8 +171,8 @@ const buildTemplate = ({ title, message, code, footer }) => {
   `;
 };
 
-// Sends an email through the configured SMTP transport.
-const sendMail = async ({ to, subject, text, html }) => {
+// Sends through the SMTP transport (or Ethereal in dev), inlining the logo via a CID attachment.
+const sendViaSmtp = async ({ to, subject, text, html }) => {
   const transport = await getTransporter();
   const info = await transport.sendMail({
     from: formatFromAddress(mailFrom),
@@ -150,14 +180,8 @@ const sendMail = async ({ to, subject, text, html }) => {
     subject,
     text,
     html,
-    // Embed the brand logo inline (referenced as cid:frameset-logo in the HTML).
     attachments: [{ filename: 'frameset-logo.png', path: LOGO_PATH, cid: LOGO_CID }],
   });
-
-  if (isE2ETestMode) {
-    capturedEmailsByRecipient.set(to, { subject, text, html });
-    return;
-  }
 
   // In non-production, log the Ethereal preview URL so the email can be read
   // from the server console without a real inbox.
@@ -167,6 +191,52 @@ const sendMail = async ({ to, subject, text, html }) => {
       logger.info('mail.preview', { to, subject, previewUrl });
     }
   }
+};
+
+// Sends through the Brevo HTTP API (HTTPS), so delivery works where outbound
+// SMTP is blocked. The CID logo reference is swapped for the public logo URL,
+// since the API has no CID inlining. Throws on a non-2xx response or timeout.
+const sendViaBrevoApi = async ({ to, subject, text, html }) => {
+  const htmlContent = LOGO_URL ? html.split(`cid:${LOGO_CID}`).join(LOGO_URL) : html;
+
+  const response = await fetch(BREVO_API_URL, {
+    method: 'POST',
+    headers: {
+      'api-key': BREVO_API_KEY,
+      'content-type': 'application/json',
+      accept: 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: MAIL_FROM_NAME, email: mailFrom },
+      to: [{ email: to }],
+      subject,
+      htmlContent,
+      textContent: text,
+    }),
+    signal: AbortSignal.timeout(BREVO_API_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`Brevo API responded with ${response.status}: ${detail.slice(0, 300)}`);
+  }
+};
+
+// Sends an email through the configured delivery path. Rejects on failure so
+// callers can log it; nothing is retried here.
+const sendMail = async ({ to, subject, text, html }) => {
+  if (isE2ETestMode) {
+    // No network call at all: capture the content so a Playwright run can read it.
+    capturedEmailsByRecipient.set(to, { subject, text, html });
+    return;
+  }
+
+  if (useBrevoApi) {
+    await sendViaBrevoApi({ to, subject, text, html });
+    return;
+  }
+
+  await sendViaSmtp({ to, subject, text, html });
 };
 
 module.exports = {

@@ -157,8 +157,12 @@ const updateUserProfile = async (
       [trimmedName, trimmedEmail, hashOtp(pendingCode), expires, userId],
     );
 
-    try {
-      await mailService.sendMail({
+    // Not awaited: the pending email is already staged, so the response must not
+    // wait on (nor fail with) the send — a slow/unreachable provider would
+    // otherwise stall the request. A failure is reported via onMailError and the
+    // user can use "resend". Mirrors registerUser / startPasswordReset.
+    Promise.resolve(
+      mailService.sendMail({
         to: trimmedEmail,
         subject: 'Confirm your new email',
         text: `Your confirmation code is: ${pendingCode}\nThis code expires in 10 minutes.`,
@@ -167,10 +171,10 @@ const updateUserProfile = async (
           message: 'Use the code below to confirm your new email.',
           code: pendingCode,
         }),
-      });
-    } catch (mailError) {
+      }),
+    ).catch((mailError) => {
       if (onMailError) onMailError(mailError);
-    }
+    });
 
     return { name: trimmedName, email: currentEmail, pendingEmail: trimmedEmail };
   }
