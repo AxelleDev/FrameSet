@@ -39,10 +39,12 @@ from one drawing to the next.
   Deleted projects (and individual colors and standards) go to a trash and stay
   restorable for 30 days before being purged.
 - **Palettes** — colour management with drag-and-drop reordering. Build a palette
-  by hand, extract it from an image, or **import an existing palette file**
+  by hand, extract it from an image, **generate harmonies** (complementary,
+  analogous, triad) from any base colour, or **import an existing palette file**
   (Adobe `.ase`, Krita/GIMP `.gpl`, Procreate `.swatches` — parsed client-side,
-  drag-and-drop the file anywhere on the page). Copy any colour in one click as
-  **HEX, RGB, HSL or HSB** (the values Procreate's sliders expose).
+  drag-and-drop the file anywhere on the page). View the whole palette — and copy
+  any colour in one click — as **HEX, RGB, HSL or HSB** (the values Procreate's
+  sliders expose).
 - **Specs** — typographies (searchable Google Fonts picker) and brushes (size,
   opacity, usage…), also drag-and-drop reorderable.
 - **Export & share** — generate a PDF of the project's complete reference
