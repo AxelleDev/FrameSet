@@ -10,6 +10,7 @@ import Seo from '../components/Seo';
 import Spinner from '../components/Spinner';
 import SessionExpiryBanner from '../components/SessionExpiryBanner';
 import DemoAccountBanner from '../components/DemoAccountBanner';
+import OfflineBanner from '../components/OfflineBanner';
 import GlobalSearch from '../components/GlobalSearch';
 import { getHasUnsavedChanges } from '../utils/unsavedChangesStore';
 
@@ -393,6 +394,7 @@ export default function MainLayout() {
         </header>
 
         <div id="content" tabIndex={-1} className="p-4 md:p-8 max-w-7xl mx-auto pb-24 outline-none">
+          <OfflineBanner />
           <DemoAccountBanner />
           <SessionExpiryBanner />
           <Outlet />

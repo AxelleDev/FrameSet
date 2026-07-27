@@ -24,6 +24,13 @@ export default function useTheme() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    // Keep the browser/PWA title bar on theme: brand periwinkle in light, the
+    // dark canvas (--color-canvas in index.css) in dark. Same values live in
+    // index.html and theme-init.js.
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) {
+      themeColorMeta.setAttribute('content', theme === 'dark' ? '#16171E' : '#8994DF');
+    }
     try {
       localStorage.setItem(STORAGE_KEY, theme);
     } catch {

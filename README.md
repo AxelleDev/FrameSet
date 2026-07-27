@@ -183,9 +183,10 @@ The two halves deploy independently — the API does **not** serve the frontend 
 
 - **Frontend** — a static SPA (`frontend/`), built with `npm run build`. SPA
   fallback + security headers/CSP are configured for Vercel
-  ([`frontend/vercel.json`](frontend/vercel.json)); a Netlify redirect file
-  ([`frontend/public/_redirects`](frontend/public/_redirects)) is also provided —
-  keep the one matching your host.
+  ([`frontend/vercel.json`](frontend/vercel.json)); Netlify equivalents
+  ([`frontend/public/_redirects`](frontend/public/_redirects) and
+  [`frontend/public/_headers`](frontend/public/_headers)) are also provided —
+  keep the ones matching your host.
 - **Backend** — the Express API (`backend/`) runs as a plain Node service behind a
   reverse proxy that terminates HTTPS.
 
