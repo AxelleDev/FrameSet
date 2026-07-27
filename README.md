@@ -56,12 +56,16 @@ from one drawing to the next.
   which always has a keyboard alternative), a warning before leaving a page with
   unsaved changes, a heads-up before your session expires, and clear rate-limit
   feedback with a live countdown instead of a static "try again later".
+- **Installable app (PWA)** — install FrameSet from the browser on desktop,
+  iPad or phone and launch it like a native app. A service worker pre-caches
+  the app shell and fonts for instant startup, and new versions are picked up
+  automatically on the next visit.
 
 ---
 
 ## ✧･ﾟ: ✧･ﾟ Tech stack
 
-**Frontend** — React 18, Vite, React Router, Tailwind CSS, react-select, jsPDF
+**Frontend** — React 18, Vite, React Router, Tailwind CSS, react-select, jsPDF, vite-plugin-pwa
 **Backend** — Node.js, Express, MySQL, JWT, bcrypt, Helmet, Nodemailer
 **Quality** — Vitest (front), Jest + Supertest (back), GitHub Actions CI
 
