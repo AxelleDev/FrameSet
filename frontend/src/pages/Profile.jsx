@@ -18,6 +18,7 @@ import RateLimitAlert from '../components/RateLimitAlert';
 import PasswordInput from '../components/PasswordInput';
 import { isValidEmail } from '../utils/passwordRules';
 import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
+import useInstallPrompt from '../hooks/useInstallPrompt';
 
 export default function Profile() {
   const { user, updateUserProfile, logout, changePassword, deleteAccount } = useAuth();
@@ -46,6 +47,11 @@ export default function Profile() {
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+
+  // Install-the-app card: only rendered where installing is actually possible
+  // (Chromium's prompt, or manual instructions on iOS Safari), and hidden once
+  // the app already runs installed.
+  const { canInstall, showIosInstallGuide, promptInstall } = useInstallPrompt();
 
   // Critical actions (email change, deletion) go through a re-authentication
   // modal: which action is pending, and the profile payload waiting for it.
@@ -441,6 +447,54 @@ export default function Profile() {
             </div>
           )}
         </Card>
+
+        {(canInstall || showIosInstallGuide) && (
+          <Card className="p-6 sm:p-8">
+            <h2 className="text-lg font-medium text-primary mb-6 flex items-center">
+              <svg
+                className="w-5 h-5 mr-2 text-blue shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"
+                />
+              </svg>
+              Install the app
+            </h2>
+            {canInstall ? (
+              <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-primary">FrameSet as an app</p>
+                  <p className="text-xs text-primary/60 mt-1">
+                    Launch FrameSet in its own window, straight from your desktop or home screen.
+                  </p>
+                </div>
+                <Button
+                  onClick={promptInstall}
+                  variant="ghost"
+                  className="text-sm font-medium whitespace-nowrap shrink-0"
+                >
+                  Install app
+                </Button>
+              </div>
+            ) : (
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-primary">FrameSet as an app</p>
+                <p className="text-xs text-primary/60 mt-1">
+                  In Safari, tap the Share icon then &ldquo;Add to Home Screen&rdquo; to launch
+                  FrameSet like a native app.
+                </p>
+              </div>
+            )}
+          </Card>
+        )}
 
         <Card className="p-6 sm:p-8">
           <h2 className="text-lg font-medium text-primary mb-2">Danger zone</h2>
