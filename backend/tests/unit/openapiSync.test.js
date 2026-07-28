@@ -8,6 +8,9 @@
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret';
 process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_jwt_refresh_secret';
+process.env.TOTP_ENCRYPTION_KEY =
+  process.env.TOTP_ENCRYPTION_KEY ||
+  '20f766230f5b4740f5b620d2dde09488b110435c13395edb10e1fdcd5ddf2098';
 
 const app = require('../../src/app');
 const openapiSpec = require('../../src/docs/openapi');

@@ -1,5 +1,8 @@
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret';
 process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_jwt_refresh_secret';
+process.env.TOTP_ENCRYPTION_KEY =
+  process.env.TOTP_ENCRYPTION_KEY ||
+  '20f766230f5b4740f5b620d2dde09488b110435c13395edb10e1fdcd5ddf2098';
 process.env.MAIL_HOST = process.env.MAIL_HOST || 'smtp.test.local';
 process.env.MAIL_PORT = process.env.MAIL_PORT || '465';
 process.env.MAIL_SECURE = process.env.MAIL_SECURE || 'true';
@@ -20,6 +23,8 @@ const mailService = require('../../src/services/mail.service');
 const tokenService = require('../../src/services/token.service');
 const bcrypt = require('bcryptjs');
 const { hashOtp } = require('../../src/utils/otp');
+const { encryptSecret } = require('../../src/utils/encryption');
+const { generateTotpSecret, generateTotpCode } = require('../../src/utils/totp');
 
 jest.mock('../../src/database');
 jest.mock('../../src/services/token.service');
@@ -136,6 +141,185 @@ describe('authentication controller', () => {
       // The dummy comparison equalizes response time with the known-email path,
       // so response latency can't be used to enumerate registered emails.
       expect(compareSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('defers the session and returns a challenge token when 2FA is enabled', async () => {
+      db.query.mockResolvedValueOnce([
+        [
+          {
+            id: 1,
+            name: 'Jane Doe',
+            email: 'axelle@example.com',
+            password: 'hashed',
+            avatar_initials: 'JD',
+            is_verified: true,
+            totp_enabled: 1,
+          },
+        ],
+      ]);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+      const req = { body: { email: 'axelle@example.com', password: 'pass' } };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
+
+      await authController.login(req, res);
+
+      expect(res.cookie).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ success: true, requiresTotp: true }),
+      );
+      // Nothing about the account leaks before the second factor also succeeds.
+      const payload = res.json.mock.calls[0][0];
+      expect(payload.name).toBeUndefined();
+      expect(payload.email).toBeUndefined();
+      expect(typeof payload.challengeToken).toBe('string');
+    });
+  });
+
+  describe('login totp (2FA challenge)', () => {
+    const buildChallengeToken = (userId = 1) =>
+      jwt.sign({ id: userId, type: 'totp_challenge' }, process.env.JWT_SECRET, {
+        expiresIn: '5m',
+      });
+
+    it('issues the real session once the TOTP code checks out', async () => {
+      const secret = generateTotpSecret();
+      const code = generateTotpCode(secret);
+      db.query
+        .mockResolvedValueOnce([
+          [
+            {
+              totp_enabled: 1,
+              totp_secret_encrypted: encryptSecret(secret),
+              totp_last_used_step: null,
+            },
+          ],
+        ])
+        .mockResolvedValueOnce([{ affectedRows: 1 }]) // anti-replay: claim the time step
+        .mockResolvedValueOnce([
+          [
+            {
+              id: 1,
+              name: 'Jane Doe',
+              email: 'axelle@example.com',
+              avatar_initials: 'JD',
+              password_updated_at: null,
+              pending_email: null,
+              is_demo: 0,
+              has_password: 1,
+            },
+          ],
+        ]);
+      const req = { body: { challengeToken: buildChallengeToken(), code } };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
+
+      await authController.loginTotp(req, res);
+
+      expect(res.cookie).toHaveBeenCalledTimes(2);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ success: true, id: 1, name: 'Jane Doe' }),
+      );
+    });
+
+    it('accepts a recovery code as an alternative to the TOTP code', async () => {
+      const secret = generateTotpSecret();
+      const recoveryCode = 'ABCDE-FGHIJ-KLMNO-PQRST';
+      db.query
+        .mockResolvedValueOnce([
+          [{ totp_enabled: 1, totp_secret_encrypted: encryptSecret(secret) }],
+        ])
+        .mockResolvedValueOnce([[{ id: 42, code_hash: hashOtp(recoveryCode) }]])
+        .mockResolvedValueOnce([{ affectedRows: 1 }])
+        .mockResolvedValueOnce([
+          [
+            {
+              id: 1,
+              name: 'Jane Doe',
+              email: 'axelle@example.com',
+              avatar_initials: 'JD',
+              password_updated_at: null,
+              pending_email: null,
+              is_demo: 0,
+              has_password: 1,
+            },
+          ],
+        ]);
+      const req = { body: { challengeToken: buildChallengeToken(), code: recoveryCode } };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
+
+      await authController.loginTotp(req, res);
+
+      expect(res.cookie).toHaveBeenCalledTimes(2);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, id: 1 }));
+    });
+
+    it('rejects a wrong code with a generic 401, issuing no cookies', async () => {
+      const secret = generateTotpSecret();
+      db.query
+        .mockResolvedValueOnce([
+          [{ totp_enabled: 1, totp_secret_encrypted: encryptSecret(secret) }],
+        ])
+        .mockResolvedValueOnce([[]]); // no recovery code matches either
+      const req = { body: { challengeToken: buildChallengeToken(), code: '000000' } };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
+
+      await authController.loginTotp(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Incorrect code.' });
+      expect(res.cookie).not.toHaveBeenCalled();
+    });
+
+    it('rejects a missing, malformed or expired challenge token with 403', async () => {
+      const req = { body: { challengeToken: 'not-a-real-token', code: '123456' } };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
+
+      await authController.loginTotp(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(db.query).not.toHaveBeenCalled();
+    });
+
+    it('rejects a normal access/refresh token used in place of a challenge token', async () => {
+      // A token missing the `type: 'totp_challenge'` claim must never be
+      // accepted here, so an access token can't be replayed as a 2FA bypass.
+      const notAChallenge = jwt.sign({ id: 1 }, process.env.JWT_SECRET, { expiresIn: '5m' });
+      const req = { body: { challengeToken: notAChallenge, code: '123456' } };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        cookie: jest.fn(),
+        clearCookie: jest.fn(),
+      };
+
+      await authController.loginTotp(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(db.query).not.toHaveBeenCalled();
     });
   });
 

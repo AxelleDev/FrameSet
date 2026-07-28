@@ -43,9 +43,10 @@ limited), `500` (server), `503` (dependency unavailable).
 
 JSON body is capped at **10 kB**. Sensitive endpoints are **rate limited** per IP
 (or per user), e.g. login/register 5/min, code verification 10 / 10 min, code
-resend 3 / 10 min, project/norm creation (and duplication) 30/h, palette saves
-300/h, public share views 60/min. A `429` response includes a `Retry-After`
-header (seconds).
+resend 3 / 10 min, 2FA code entry (login and setup) 10 / 10 min, 2FA setup 5 /
+10 min, 2FA disable 3 / 10 min, project/norm creation (and duplication) 30/h,
+palette saves 300/h, public share views 60/min. A `429` response includes a
+`Retry-After` header (seconds).
 
 ### Demo account
 
@@ -67,33 +68,42 @@ interactive; nothing it does ever persists.
 
 ## Auth — `/api/auth`
 
-| Method | Path                    | Auth           | Body                               | Success                                                                                                                                                                              |
-| ------ | ----------------------- | -------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET`  | `/auth/csrf-token`      | –              | –                                  | `{ csrfToken }` (also sets the CSRF cookie)                                                                                                                                          |
-| `POST` | `/auth/register`        | –              | `{ name, email, password }`        | `{ success, id, name, email, avatarInitials, isVerified, passwordUpdatedAt }`                                                                                                        |
-| `POST` | `/auth/login`           | –              | `{ email, password }`              | sets auth cookies, `{ success, ...user }`                                                                                                                                            |
-| `POST` | `/auth/demo-login`      | –              | –                                  | sets auth cookies for the shared read-only demo account, `{ success, ...user }` (`isDemo: true`); `503` if no demo account is seeded                                                 |
-| `POST` | `/auth/google`          | –              | `{ credential }` (Google ID token) | sets auth cookies, `{ success, ...user }` — signs in, links to an existing email/password account, or creates a new (passwordless) account; `503` if Google sign-in isn't configured |
-| `POST` | `/auth/verify`          | –              | `{ email, code }`                  | `{ success }`                                                                                                                                                                        |
-| `POST` | `/auth/resend-code`     | –              | `{ email }`                        | `{ success }`                                                                                                                                                                        |
-| `POST` | `/auth/forgot-password` | –              | `{ email }`                        | `{ success }` (identical whether or not the email exists)                                                                                                                            |
-| `POST` | `/auth/reset-password`  | –              | `{ email, code, newPassword }`     | `{ success }`                                                                                                                                                                        |
-| `POST` | `/auth/refresh`         | refresh cookie | –                                  | rotates tokens, `{ success }`                                                                                                                                                        |
-| `POST` | `/auth/logout`          | –              | –                                  | revokes tokens, clears cookies, `{ success }`                                                                                                                                        |
+| Method | Path                    | Auth           | Body                                                                               | Success                                                                                                                                                                                                                                                                   |
+| ------ | ----------------------- | -------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/auth/csrf-token`      | –              | –                                                                                  | `{ csrfToken }` (also sets the CSRF cookie)                                                                                                                                                                                                                               |
+| `POST` | `/auth/register`        | –              | `{ name, email, password }`                                                        | `{ success, id, name, email, avatarInitials, isVerified, passwordUpdatedAt }`                                                                                                                                                                                             |
+| `POST` | `/auth/login`           | –              | `{ email, password }`                                                              | sets auth cookies, `{ success, ...user }` — or, if the account has 2FA enabled, no cookies yet and `{ success: true, requiresTotp: true, challengeToken }`                                                                                                                |
+| `POST` | `/auth/login/totp`      | –              | `{ challengeToken, code }` (`code` accepts a 6-digit TOTP code or a recovery code) | sets auth cookies, `{ success, ...user }`                                                                                                                                                                                                                                 |
+| `POST` | `/auth/demo-login`      | –              | –                                                                                  | sets auth cookies for the shared read-only demo account, `{ success, ...user }` (`isDemo: true`); `503` if no demo account is seeded                                                                                                                                      |
+| `POST` | `/auth/google`          | –              | `{ credential }` (Google ID token)                                                 | sets auth cookies, `{ success, ...user }` — signs in, links to an existing email/password account, or creates a new (passwordless) account; follows the same `requiresTotp` challenge flow as `/auth/login` when 2FA is enabled; `503` if Google sign-in isn't configured |
+| `POST` | `/auth/verify`          | –              | `{ email, code }`                                                                  | `{ success }`                                                                                                                                                                                                                                                             |
+| `POST` | `/auth/resend-code`     | –              | `{ email }`                                                                        | `{ success }`                                                                                                                                                                                                                                                             |
+| `POST` | `/auth/forgot-password` | –              | `{ email }`                                                                        | `{ success }` (identical whether or not the email exists)                                                                                                                                                                                                                 |
+| `POST` | `/auth/reset-password`  | –              | `{ email, code, newPassword }`                                                     | `{ success }`                                                                                                                                                                                                                                                             |
+| `POST` | `/auth/refresh`         | refresh cookie | –                                                                                  | rotates tokens, `{ success }`                                                                                                                                                                                                                                             |
+| `POST` | `/auth/logout`          | –              | –                                                                                  | revokes tokens, clears cookies, `{ success }`                                                                                                                                                                                                                             |
 
 Password policy: min 8 chars, at least one lowercase, one uppercase and one digit.
 
+`challengeToken` is a short-lived (5 min), purpose-scoped token — it only works
+against `/auth/login/totp` and can't be used as a session credential elsewhere.
+An accepted TOTP code is single-use: replaying it inside its own 30 s validity
+window is rejected (RFC 6238 §5.2), as is reusing a spent recovery code.
+
 ## Users — `/api/users`
 
-| Method   | Path                  | Auth | Body                               | Success                                                                                                |
-| -------- | --------------------- | ---- | ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `GET`    | `/users/count`        | –    | –                                  | `{ count }` (public stat)                                                                              |
-| `GET`    | `/users/profile`      | ✓    | –                                  | `{ id, name, email, avatarInitials, passwordUpdatedAt, pendingEmail, isDemo }`                         |
-| `PUT`    | `/users`              | ✓    | `{ name, email }`                  | `{ success, name, email, pendingEmail }` — an email change is staged as `pendingEmail` until confirmed |
-| `POST`   | `/users/password`     | ✓    | `{ currentPassword, newPassword }` | `{ success, passwordUpdatedAt }` (re-issues the session)                                               |
-| `POST`   | `/users/email/verify` | ✓    | `{ email, code }`                  | `{ success, user }`                                                                                    |
-| `POST`   | `/users/email/resend` | ✓    | `{ email }`                        | `{ success }`                                                                                          |
-| `DELETE` | `/users/me`           | ✓    | –                                  | `{ success }` (cascades to the user's projects)                                                        |
+| Method   | Path                  | Auth | Body                                   | Success                                                                                                |
+| -------- | --------------------- | ---- | -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `GET`    | `/users/count`        | –    | –                                      | `{ count }` (public stat)                                                                              |
+| `GET`    | `/users/profile`      | ✓    | –                                      | `{ id, name, email, avatarInitials, passwordUpdatedAt, pendingEmail, isDemo, totpEnabled }`            |
+| `PUT`    | `/users`              | ✓    | `{ name, email }`                      | `{ success, name, email, pendingEmail }` — an email change is staged as `pendingEmail` until confirmed |
+| `POST`   | `/users/password`     | ✓    | `{ currentPassword, newPassword }`     | `{ success, passwordUpdatedAt }` (re-issues the session)                                               |
+| `POST`   | `/users/email/verify` | ✓    | `{ email, code }`                      | `{ success, user }`                                                                                    |
+| `POST`   | `/users/email/resend` | ✓    | `{ email }`                            | `{ success }`                                                                                          |
+| `POST`   | `/users/totp/setup`   | ✓    | –                                      | `{ success, secret, otpauthUrl }` — starts (or restarts) enrollment; nothing is enabled yet            |
+| `POST`   | `/users/totp/confirm` | ✓    | `{ code }`                             | `{ success, recoveryCodes }` — verifies the first code and enables 2FA; codes are shown once           |
+| `POST`   | `/users/totp/disable` | ✓    | `{ currentPassword }` or Google reauth | `{ success }` — requires re-authentication, like other critical account actions                        |
+| `DELETE` | `/users/me`           | ✓    | –                                      | `{ success }` (cascades to the user's projects)                                                        |
 
 ## Projects — `/api/projects`
 

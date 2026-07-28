@@ -159,7 +159,7 @@ const authenticateUser = async ({ email: rawEmail, password: rawPassword }) => {
   }
 
   const [rows] = await db.query(
-    'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_verified, password FROM users WHERE email = ?',
+    'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_verified, totp_enabled, password FROM users WHERE email = ?',
     [email],
   );
   if (rows.length === 0) {
@@ -183,6 +183,13 @@ const authenticateUser = async ({ email: rawEmail, password: rawPassword }) => {
   const isMatch = await bcrypt.compare(password, userDb.password);
   if (!isMatch) {
     throw new AuthServiceError('invalid_credentials', null, userDb.id);
+  }
+
+  // Two-factor is enabled: the password alone is not enough. Return only the
+  // id — nothing else about the account is disclosed until the TOTP (or
+  // recovery code) challenge also succeeds (see twoFactor.service.verifyTotpChallenge).
+  if (userDb.totp_enabled) {
+    return { requiresTotp: true, id: userDb.id };
   }
 
   return {
@@ -212,6 +219,17 @@ const toSessionUser = (userDb) => ({
   hasPassword: Boolean(userDb.has_password),
   isDemo: Boolean(userDb.is_demo),
 });
+
+// Fetches a user's full session-user shape by id. Used once a TOTP (or
+// recovery code) challenge succeeds, to finally issue the session that
+// authenticateUser's requiresTotp branch deferred.
+const getSessionUserById = async (userId) => {
+  const [rows] = await db.query(`SELECT ${SESSION_USER_COLUMNS} FROM users WHERE id = ?`, [userId]);
+  if (rows.length === 0) {
+    throw new AuthServiceError('invalid_credentials');
+  }
+  return toSessionUser(rows[0]);
+};
 
 // Logs into the single shared, read-only demo account (see migration 019) —
 // no credentials needed, this is the "Try without an account" entry point.
@@ -260,12 +278,18 @@ const authenticateWithGoogle = async (rawCredential, { onMailError } = {}) => {
     throw new AuthServiceError('invalid_google_token');
   }
 
-  // 1) Known Google identity.
+  // 1) Known Google identity. A Google-verified identity counts as the first
+  // factor only: if the account has 2FA enabled, the TOTP challenge still
+  // applies — the same requiresTotp contract as authenticateUser, so no
+  // sign-in method can sidestep the second factor.
   const [byGoogleId] = await db.query(
-    `SELECT ${SESSION_USER_COLUMNS} FROM users WHERE google_id = ?`,
+    `SELECT ${SESSION_USER_COLUMNS}, totp_enabled FROM users WHERE google_id = ?`,
     [googleId],
   );
   if (byGoogleId.length > 0) {
+    if (byGoogleId[0].totp_enabled) {
+      return { requiresTotp: true, id: byGoogleId[0].id };
+    }
     return toSessionUser(byGoogleId[0]);
   }
 
@@ -273,9 +297,10 @@ const authenticateWithGoogle = async (rawCredential, { onMailError } = {}) => {
   // is proven owned by this Google user, which also settles any pending local
   // verification. google_id is only set when free so an already-linked account
   // is never silently re-linked to a different Google identity.
-  const [byEmail] = await db.query(`SELECT ${SESSION_USER_COLUMNS} FROM users WHERE email = ?`, [
-    email,
-  ]);
+  const [byEmail] = await db.query(
+    `SELECT ${SESSION_USER_COLUMNS}, totp_enabled FROM users WHERE email = ?`,
+    [email],
+  );
   if (byEmail.length > 0) {
     const userDb = byEmail[0];
     await db.query(
@@ -301,6 +326,12 @@ const authenticateWithGoogle = async (rawCredential, { onMailError } = {}) => {
     ).catch((mailError) => {
       if (onMailError) onMailError(mailError);
     });
+
+    // Linking google_id grants no session by itself — with 2FA enabled, the
+    // TOTP challenge still stands between this Google identity and a session.
+    if (userDb.totp_enabled) {
+      return { requiresTotp: true, id: userDb.id };
+    }
 
     return toSessionUser(userDb);
   }
@@ -558,6 +589,7 @@ module.exports = {
   authenticateUser,
   authenticateWithGoogle,
   loginAsDemo,
+  getSessionUserById,
   isRefreshTokenStale,
   verifyEmailCode,
   resendVerificationCode,

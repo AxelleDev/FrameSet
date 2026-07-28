@@ -52,6 +52,27 @@ const deleteAccountLimiter = rateLimit({
   handler: jsonLimitHandler('Too many attempts, try again in 10 minutes.'),
 });
 
+// TOTP setup: bounds how often a new secret can be generated.
+const totpSetupLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: maxFor(5),
+  handler: jsonLimitHandler('Too many attempts, try again in 10 minutes.'),
+});
+
+// TOTP confirm: limits brute-forcing the 6-digit code during enrollment.
+const totpConfirmLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: maxFor(10),
+  handler: jsonLimitHandler('Too many verification attempts, try again in 10 minutes.'),
+});
+
+// TOTP disable: a security-sensitive action, capped like account deletion.
+const totpDisableLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: maxFor(3),
+  handler: jsonLimitHandler('Too many attempts, try again in 10 minutes.'),
+});
+
 // User count: intentionally public (shown on the landing page) but rate limited,
 // since every call runs a COUNT(*) and it is otherwise a free DB-load vector.
 const userCountLimiter = rateLimit({
@@ -77,5 +98,9 @@ router.post(
   userController.resendPendingEmail,
 );
 router.delete('/me', authenticateToken, deleteAccountLimiter, userController.deleteAccount);
+
+router.post('/totp/setup', authenticateToken, totpSetupLimiter, userController.setupTotp);
+router.post('/totp/confirm', authenticateToken, totpConfirmLimiter, userController.confirmTotp);
+router.post('/totp/disable', authenticateToken, totpDisableLimiter, userController.disableTotp);
 
 module.exports = router;

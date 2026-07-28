@@ -1,7 +1,7 @@
 // Login page (route: /login): delegates auth to the context and navigates to the
 // dashboard on success; offers a verification shortcut on unverified-email failures.
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
 import AuthLogoLink from '../components/AuthLogoLink';
@@ -20,7 +20,8 @@ import useFormState from '../hooks/useFormState';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, loginWithGoogle, loginAsDemo } = useAuth();
+  const location = useLocation();
+  const { login, completeTotpLogin, loginWithGoogle, loginAsDemo } = useAuth();
 
   const { values: formData, setField } = useFormState({
     email: '',
@@ -31,12 +32,24 @@ export default function Login() {
   const [retryAfterSeconds, setRetryAfterSeconds] = useState(undefined);
   const [submitting, setSubmitting] = useState(false);
 
+  // Set once login() (or Google sign-in — possibly from the register page,
+  // which hands its challenge over via route state) reports the account has
+  // 2FA enabled: the first factor already checked out, and this challenge
+  // token is exchanged for the real session once the code below also
+  // succeeds (see handleTotpSubmit).
+  const [totpChallengeToken, setTotpChallengeToken] = useState(
+    location.state?.totpChallengeToken ?? null,
+  );
+  const [totpCode, setTotpCode] = useState('');
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false);
+
   const handleChange = (e) => {
     setField(e.target.name, e.target.value);
   };
 
   // Validate locally, then authenticate; on success go to the dashboard,
-  // otherwise show the returned business-error message inline.
+  // on a 2FA-enabled account switch to the code-entry step, otherwise show
+  // the returned business-error message inline.
   const handleLogin = async (e) => {
     e.preventDefault();
     if (submitting) return;
@@ -55,11 +68,48 @@ export default function Login() {
       setErrorCode('');
       setRetryAfterSeconds(undefined);
       navigate('/app/dashboard');
+    } else if (result.requiresTotp) {
+      setError('');
+      setErrorCode('');
+      setRetryAfterSeconds(undefined);
+      setTotpChallengeToken(result.challengeToken);
     } else if (result.message) {
       setError(result.message);
       setErrorCode(result.code || '');
       setRetryAfterSeconds(result.retryAfterSeconds);
     }
+  };
+
+  // Second step of a 2FA-enabled login: exchanges the challenge token plus a
+  // live authenticator code (or a single-use recovery code) for the session.
+  const handleTotpSubmit = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+
+    if (!totpCode.trim()) {
+      setError(useRecoveryCode ? 'Enter a recovery code.' : 'Enter your 6-digit code.');
+      return;
+    }
+
+    setSubmitting(true);
+    const result = await completeTotpLogin(totpChallengeToken, totpCode.trim());
+    setSubmitting(false);
+
+    if (result.success) {
+      navigate('/app/dashboard');
+    } else if (result.message) {
+      setError(result.message);
+      setRetryAfterSeconds(result.retryAfterSeconds);
+    }
+  };
+
+  // Abandons the 2FA step and returns to the email/password form.
+  const cancelTotpChallenge = () => {
+    setTotpChallengeToken(null);
+    setTotpCode('');
+    setUseRecoveryCode(false);
+    setError('');
+    setRetryAfterSeconds(undefined);
   };
 
   // Google sign-in: the GIS button hands us a verified-by-Google credential;
@@ -76,6 +126,13 @@ export default function Login() {
       setErrorCode('');
       setRetryAfterSeconds(undefined);
       navigate('/app/dashboard');
+    } else if (result.requiresTotp) {
+      // Google proved the identity, but the account has 2FA enabled: same
+      // code-entry step as a password login.
+      setError('');
+      setErrorCode('');
+      setRetryAfterSeconds(undefined);
+      setTotpChallengeToken(result.challengeToken);
     } else if (result.message) {
       setError(result.message);
       setErrorCode('');
@@ -140,8 +197,16 @@ export default function Login() {
           description="Sign in to your FrameSet workspace to manage your projects' standards and palettes."
         />
         <div className="mb-8 text-center">
-          <h2 className="text-2xl font-medium text-primary">Welcome back</h2>
-          <p className="text-primary text-sm mt-2">Pick up right where you left off.</p>
+          <h2 className="text-2xl font-medium text-primary">
+            {totpChallengeToken ? 'Two-factor authentication' : 'Welcome back'}
+          </h2>
+          <p className="text-primary text-sm mt-2">
+            {totpChallengeToken
+              ? useRecoveryCode
+                ? 'Enter one of your recovery codes.'
+                : 'Enter the 6-digit code from your authenticator app.'
+              : 'Pick up right where you left off.'}
+          </p>
         </div>
 
         {error && (
@@ -160,69 +225,107 @@ export default function Login() {
           </div>
         )}
 
-        <form className="space-y-4" onSubmit={handleLogin} noValidate>
-          <FormField label="Email" required>
-            <TextInput
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="email@example.com"
-              autoComplete="email"
-            />
-          </FormField>
-
-          <div>
-            <FormField label="Password" required>
-              <PasswordInput
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Your password"
-                autoComplete="current-password"
+        {totpChallengeToken ? (
+          <form className="space-y-4" onSubmit={handleTotpSubmit} noValidate>
+            <FormField label={useRecoveryCode ? 'Recovery code' : 'Verification code'} required>
+              <TextInput
+                type="text"
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value)}
+                placeholder={useRecoveryCode ? 'XXXXX-XXXXX-XXXXX-XXXXX' : '123456'}
+                autoComplete="one-time-code"
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- focus belongs in the code field once this step opens
+                autoFocus
               />
             </FormField>
-            <div className="mt-2 flex justify-end">
+
+            <Button type="submit" fullWidth className="mt-2" loading={submitting}>
+              Verify
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => setUseRecoveryCode((current) => !current)}
+              className="block w-full text-center text-xs text-blue hover:text-primary transition-colors rounded focus-ring"
+            >
+              {useRecoveryCode ? 'Use my authenticator app instead' : 'Use a recovery code instead'}
+            </button>
+
+            <button
+              type="button"
+              onClick={cancelTotpChallenge}
+              className="block w-full text-center text-xs text-primary/60 hover:text-primary transition-colors rounded focus-ring"
+            >
+              Back to sign in
+            </button>
+          </form>
+        ) : (
+          <>
+            <form className="space-y-4" onSubmit={handleLogin} noValidate>
+              <FormField label="Email" required>
+                <TextInput
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="email@example.com"
+                  autoComplete="email"
+                />
+              </FormField>
+
+              <div>
+                <FormField label="Password" required>
+                  <PasswordInput
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Your password"
+                    autoComplete="current-password"
+                  />
+                </FormField>
+                <div className="mt-2 flex justify-end">
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs text-blue hover:text-primary transition-colors rounded focus-ring"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+              </div>
+
+              <Button type="submit" fullWidth className="mt-2" loading={submitting}>
+                Sign in
+              </Button>
+            </form>
+
+            <Divider className="my-6" />
+
+            <GoogleSignInButton onCredential={handleGoogleCredential} disabled={submitting} />
+
+            <Button
+              type="button"
+              variant="outline"
+              fullWidth
+              className="mt-3"
+              onClick={handleDemoLogin}
+              disabled={submitting}
+            >
+              Try the demo — no account needed
+            </Button>
+
+            <TermsNotice />
+
+            <div className="mt-8 text-center">
+              <span className="text-sm text-primary">No account yet? </span>
               <Link
-                to="/forgot-password"
-                className="text-xs text-blue hover:text-primary transition-colors rounded focus-ring"
+                to="/register"
+                className="text-sm font-medium text-blue hover:text-primary transition-colors rounded focus-ring"
               >
-                Forgot password?
+                Create one
               </Link>
             </div>
-          </div>
-
-          <Button type="submit" fullWidth className="mt-2" loading={submitting}>
-            Sign in
-          </Button>
-        </form>
-
-        <Divider className="my-6" />
-
-        <GoogleSignInButton onCredential={handleGoogleCredential} disabled={submitting} />
-
-        <Button
-          type="button"
-          variant="outline"
-          fullWidth
-          className="mt-3"
-          onClick={handleDemoLogin}
-          disabled={submitting}
-        >
-          Try the demo — no account needed
-        </Button>
-
-        <TermsNotice />
-
-        <div className="mt-8 text-center">
-          <span className="text-sm text-primary">No account yet? </span>
-          <Link
-            to="/register"
-            className="text-sm font-medium text-blue hover:text-primary transition-colors rounded focus-ring"
-          >
-            Create one
-          </Link>
-        </div>
+          </>
+        )}
       </AuthCard>
     </AuthLayout>
   );

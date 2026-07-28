@@ -2,7 +2,7 @@
 // cookie placement so handlers can (re)establish a session without duplicating the wiring.
 
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET, JWT_EXPIRES } = require('../config/jwt.config');
+const { JWT_SECRET, JWT_EXPIRES, TOTP_CHALLENGE_EXPIRES } = require('../config/jwt.config');
 const { generateRefreshToken } = require('../services/token.service');
 const {
   ACCESS_TOKEN_COOKIE_NAME,
@@ -56,4 +56,35 @@ const clearAuthCookies = (res) => {
   });
 };
 
-module.exports = { createAccessToken, issueAuthCookies, clearAuthCookies };
+// Signed proof that a 2FA-enabled login's password step already succeeded,
+// while the session itself waits on the TOTP/recovery-code step. The `type`
+// claim keeps this cryptographically distinct from an access or refresh
+// token — verifyTotpChallengeToken rejects anything without it, so neither
+// token flavor can ever be replayed as the other.
+const createTotpChallengeToken = (userId) =>
+  jwt.sign({ id: userId, type: 'totp_challenge' }, JWT_SECRET, {
+    expiresIn: TOTP_CHALLENGE_EXPIRES,
+  });
+
+// Verifies a challenge token -> the user id it was issued for, or null if
+// invalid, expired, or not actually a challenge token.
+const verifyTotpChallengeToken = (token) => {
+  if (!token) return null;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+    if (decoded?.type !== 'totp_challenge' || !decoded.id) {
+      return null;
+    }
+    return decoded;
+  } catch {
+    return null;
+  }
+};
+
+module.exports = {
+  createAccessToken,
+  issueAuthCookies,
+  clearAuthCookies,
+  createTotpChallengeToken,
+  verifyTotpChallengeToken,
+};

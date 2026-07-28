@@ -81,6 +81,10 @@ export default function Register() {
       setError('');
       setRetryAfterSeconds(undefined);
       navigate('/app/dashboard');
+    } else if (result.requiresTotp) {
+      // The Google identity resolved to an existing account with 2FA enabled:
+      // hand the challenge over to the login page's code-entry step.
+      navigate('/login', { state: { totpChallengeToken: result.challengeToken } });
     } else if (result.message) {
       setError(result.message);
       setRetryAfterSeconds(result.retryAfterSeconds);

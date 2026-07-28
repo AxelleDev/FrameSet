@@ -109,6 +109,7 @@ jobs:
       DB_NAME: frameset_db
       JWT_SECRET: ci-only-jwt-secret-not-used-anywhere-else
       JWT_REFRESH_SECRET: ci-only-refresh-secret-not-used-anywhere-else
+      TOTP_ENCRYPTION_KEY: 20f766230f5b4740f5b620d2dde09488b110435c13395edb10e1fdcd5ddf2098
     steps:
       - name: Checkout
         uses: actions/checkout@v4

@@ -1,5 +1,8 @@
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret';
 process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_jwt_refresh_secret';
+process.env.TOTP_ENCRYPTION_KEY =
+  process.env.TOTP_ENCRYPTION_KEY ||
+  '20f766230f5b4740f5b620d2dde09488b110435c13395edb10e1fdcd5ddf2098';
 process.env.GOOGLE_CLIENT_ID = 'test-client-id.apps.googleusercontent.com';
 
 const mockVerifyIdToken = jest.fn();
@@ -137,6 +140,74 @@ describe('auth controller — Google sign-in', () => {
         hasPassword: false,
       }),
     );
+  });
+
+  it('defers the session behind the TOTP challenge when the account has 2FA enabled', async () => {
+    stubGooglePayload({ sub: 'g-123', email: 'jane@example.com', email_verified: true });
+    db.query.mockResolvedValueOnce([
+      [
+        {
+          id: 1,
+          name: 'Jane Doe',
+          email: 'jane@example.com',
+          avatar_initials: 'JD',
+          password_updated_at: null,
+          pending_email: null,
+          has_password: 0,
+          totp_enabled: 1,
+        },
+      ],
+    ]);
+
+    const req = { body: { credential: 'google-id-token' } };
+    const res = makeRes();
+    await authController.googleSignIn(req, res);
+
+    // Google is only the first factor: no cookies, no account details — just
+    // the same challenge-token contract as a password login.
+    expect(res.cookie).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      requiresTotp: true,
+      challengeToken: expect.any(String),
+    });
+  });
+
+  it('still requires the TOTP challenge when Google linking lands on a 2FA-enabled account', async () => {
+    stubGooglePayload({ sub: 'g-123', email: 'jane@example.com', email_verified: true });
+    db.query
+      .mockResolvedValueOnce([[]]) // no google_id match
+      .mockResolvedValueOnce([
+        [
+          {
+            id: 7,
+            name: 'Jane Doe',
+            email: 'jane@example.com',
+            avatar_initials: 'JD',
+            password_updated_at: new Date(),
+            pending_email: null,
+            has_password: 1,
+            totp_enabled: 1,
+          },
+        ],
+      ]) // email match
+      .mockResolvedValueOnce([{}]); // link UPDATE
+
+    const req = { body: { credential: 'google-id-token' } };
+    const res = makeRes();
+    await authController.googleSignIn(req, res);
+
+    // Linking still happens (and still alerts the owner) — but no session yet.
+    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('SET google_id = ?'), [
+      'g-123',
+      7,
+    ]);
+    expect(res.cookie).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      requiresTotp: true,
+      challengeToken: expect.any(String),
+    });
   });
 
   it('rejects a Google identity whose email Google has not verified', async () => {

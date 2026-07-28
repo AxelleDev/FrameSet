@@ -99,6 +99,11 @@ const openapiSpec = {
           passwordUpdatedAt: { type: 'string', format: 'date-time', nullable: true },
           pendingEmail: { type: 'string', format: 'email', nullable: true },
           isDemo: { type: 'boolean', example: false },
+          totpEnabled: {
+            type: 'boolean',
+            example: false,
+            description: 'Whether two-factor authentication is turned on for this account.',
+          },
         },
       },
       BrushNorm: {
@@ -305,6 +310,10 @@ const openapiSpec = {
       post: {
         tags: ['Auth'],
         summary: 'Sign in (sets auth cookies)',
+        description:
+          'When the account has two-factor authentication enabled, no cookies are set yet: the ' +
+          'response is `{ success, requiresTotp, challengeToken }` and the sign-in completes ' +
+          'via /api/auth/login/totp.',
         parameters: [CSRF_HEADER],
         requestBody: {
           required: true,
@@ -329,6 +338,50 @@ const openapiSpec = {
           },
           400: { $ref: '#/components/responses/ValidationError' },
           401: { $ref: '#/components/responses/Unauthorized' },
+          429: { $ref: '#/components/responses/RateLimited' },
+        },
+      },
+    },
+    '/api/auth/login/totp': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Complete a 2FA-enabled sign-in (sets auth cookies)',
+        description:
+          'Second step of signing in when the account has two-factor authentication enabled: ' +
+          '/api/auth/login (or /api/auth/google) returns `challengeToken` instead of a session ' +
+          'once the first factor checks out, and this endpoint exchanges it (plus a live TOTP ' +
+          'code, or a single-use recovery code) for the real session.',
+        parameters: [CSRF_HEADER],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['challengeToken', 'code'],
+                properties: {
+                  challengeToken: {
+                    type: 'string',
+                    description: 'The short-lived token returned by /api/auth/login.',
+                  },
+                  code: {
+                    type: 'string',
+                    description: 'A 6-digit TOTP code, or a dashed recovery code.',
+                    example: '123456',
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description:
+              'Signed in; sets `frameset_access_token` and `frameset_refresh_token` cookies.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } },
+          },
+          401: { description: 'Incorrect TOTP/recovery code.' },
+          403: { description: 'The challenge token is missing, invalid, or expired.' },
           429: { $ref: '#/components/responses/RateLimited' },
         },
       },
@@ -359,7 +412,11 @@ const openapiSpec = {
         summary: 'Sign in with Google (sets auth cookies)',
         description:
           'Verifies a Google ID token (from Google Identity Services) and signs the user in, ' +
-          'creating or linking the account as needed. Returns 503 when Google sign-in is not configured.',
+          'creating or linking the account as needed. When the account has two-factor ' +
+          'authentication enabled, no cookies are set yet: the response is ' +
+          '`{ success, requiresTotp, challengeToken }` and the sign-in completes via ' +
+          '/api/auth/login/totp, exactly like a password sign-in. ' +
+          'Returns 503 when Google sign-in is not configured.',
         parameters: [CSRF_HEADER],
         requestBody: {
           required: true,
@@ -763,6 +820,114 @@ const openapiSpec = {
             content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
           },
           401: { $ref: '#/components/responses/Unauthorized' },
+        },
+      },
+    },
+    '/api/users/totp/setup': {
+      post: {
+        tags: ['Users'],
+        summary: 'Start two-factor authentication enrollment',
+        description:
+          'Generates a new TOTP secret (not yet active) and returns it plus an `otpauth://` ' +
+          'URL to render as a QR code. Call /api/users/totp/confirm with a live code from the ' +
+          'authenticator app to finish enrollment. Throws 400 if 2FA is already enabled.',
+        security: AUTH,
+        parameters: [CSRF_HEADER],
+        responses: {
+          200: {
+            description: 'Pending secret generated.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    secret: { type: 'string', description: 'Base32-encoded shared secret.' },
+                    otpauthUrl: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+          400: { $ref: '#/components/responses/ValidationError' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          429: { $ref: '#/components/responses/RateLimited' },
+        },
+      },
+    },
+    '/api/users/totp/confirm': {
+      post: {
+        tags: ['Users'],
+        summary: 'Confirm two-factor enrollment',
+        description:
+          'Verifies one live code against the pending secret from /api/users/totp/setup; on ' +
+          'success 2FA is turned on and a set of single-use recovery codes is returned — this ' +
+          'is the only time they are ever shown.',
+        security: AUTH,
+        parameters: [CSRF_HEADER],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['code'],
+                properties: { code: { type: 'string', example: '123456' } },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Two-factor authentication enabled.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    recoveryCodes: { type: 'array', items: { type: 'string' } },
+                  },
+                },
+              },
+            },
+          },
+          400: { $ref: '#/components/responses/ValidationError' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          429: { $ref: '#/components/responses/RateLimited' },
+        },
+      },
+    },
+    '/api/users/totp/disable': {
+      post: {
+        tags: ['Users'],
+        summary: 'Disable two-factor authentication',
+        description:
+          'A critical action, so it requires re-authentication: `currentPassword` for accounts ' +
+          'with a password, or a fresh Google ID token (`googleCredential`) for Google-only ' +
+          'accounts. Clears the secret and every recovery code.',
+        security: AUTH,
+        parameters: [CSRF_HEADER],
+        requestBody: {
+          required: false,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  currentPassword: { type: 'string', format: 'password' },
+                  googleCredential: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Two-factor authentication disabled.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Success' } } },
+          },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          429: { $ref: '#/components/responses/RateLimited' },
         },
       },
     },

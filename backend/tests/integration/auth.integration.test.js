@@ -1,6 +1,9 @@
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'integration_jwt_secret';
 process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'integration_jwt_refresh_secret';
+process.env.TOTP_ENCRYPTION_KEY =
+  process.env.TOTP_ENCRYPTION_KEY ||
+  '20f766230f5b4740f5b620d2dde09488b110435c13395edb10e1fdcd5ddf2098';
 
 jest.mock('../../src/services/mail.service', () => ({
   sendMail: jest.fn().mockResolvedValue(true),
@@ -93,7 +96,7 @@ jest.mock('../../src/database', () => {
 
     if (
       normalizedSql ===
-      'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, (password IS NOT NULL) AS has_password FROM users WHERE id = ?'
+      'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, totp_enabled, (password IS NOT NULL) AS has_password FROM users WHERE id = ?'
     ) {
       const [id] = params;
       const user = users.find((item) => item.id === id);
@@ -112,6 +115,7 @@ jest.mock('../../src/database', () => {
             password_updated_at: user.password_updated_at,
             pending_email: user.pending_email,
             is_demo: user.is_demo ? 1 : 0,
+            totp_enabled: user.totp_enabled ? 1 : 0,
             has_password: user.password === null ? 0 : 1,
           },
         ],

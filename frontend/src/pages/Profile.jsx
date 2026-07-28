@@ -7,6 +7,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import AppModal from '../components/AppModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ReauthModal from '../components/ReauthModal';
+import TwoFactorSetupModal from '../components/TwoFactorSetupModal';
 import Card from '../components/Card';
 import Seo from '../components/Seo';
 import { formatRelativeTime } from '../utils/date';
@@ -21,7 +22,7 @@ import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 import useInstallPrompt from '../hooks/useInstallPrompt';
 
 export default function Profile() {
-  const { user, updateUserProfile, logout, changePassword, deleteAccount } = useAuth();
+  const { user, updateUserProfile, logout, changePassword, deleteAccount, disableTotp } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const isDemo = Boolean(user?.isDemo);
@@ -47,15 +48,17 @@ export default function Profile() {
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isTotpSetupOpen, setIsTotpSetupOpen] = useState(false);
 
   // Install-the-app card: only rendered where installing is actually possible
   // (Chromium's prompt, or manual instructions on iOS Safari), and hidden once
   // the app already runs installed.
   const { canInstall, showIosInstallGuide, promptInstall } = useInstallPrompt();
 
-  // Critical actions (email change, deletion) go through a re-authentication
-  // modal: which action is pending, and the profile payload waiting for it.
-  const [reauthAction, setReauthAction] = useState(null); // null | 'email-change' | 'delete'
+  // Critical actions (email change, deletion, disabling 2FA) go through a
+  // re-authentication modal: which action is pending, and the profile
+  // payload waiting for it (unused for disable-totp, which needs no payload).
+  const [reauthAction, setReauthAction] = useState(null); // null | 'email-change' | 'delete' | 'disable-totp'
   const [pendingProfileUpdate, setPendingProfileUpdate] = useState(null);
 
   // Keep the edit form fields in sync with the current user.
@@ -169,6 +172,20 @@ export default function Profile() {
       }
       setReauthAction(null);
       navigate('/login');
+      return { success: true };
+    }
+
+    if (reauthAction === 'disable-totp') {
+      const result = await disableTotp(credentials);
+      if (!result.success) {
+        return {
+          success: false,
+          message: result.message || 'Failed to disable two-factor authentication.',
+          retryAfterSeconds: result.retryAfterSeconds,
+        };
+      }
+      setReauthAction(null);
+      showToast('Two-factor authentication disabled.');
       return { success: true };
     }
 
@@ -448,6 +465,52 @@ export default function Profile() {
           )}
         </Card>
 
+        <Card className="p-6 sm:p-8">
+          <h2 className="text-lg font-medium text-primary mb-6 flex items-center">
+            <svg
+              className="w-5 h-5 mr-2 text-blue shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            Two-factor authentication
+          </h2>
+          {isDemo ? (
+            <p className="text-sm text-primary/60">Not available in the demo account.</p>
+          ) : (
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-primary">
+                  {user.totpEnabled ? 'Enabled' : 'Disabled'}
+                </p>
+                <p className="text-xs text-primary/60 mt-1">
+                  {user.totpEnabled
+                    ? 'Signing in also requires a code from your authenticator app.'
+                    : 'Add a code from an authenticator app as a second step at sign-in.'}
+                </p>
+              </div>
+              <Button
+                onClick={() =>
+                  user.totpEnabled ? setReauthAction('disable-totp') : setIsTotpSetupOpen(true)
+                }
+                variant="ghost"
+                className="text-sm font-medium whitespace-nowrap shrink-0"
+              >
+                {user.totpEnabled ? 'Disable' : 'Enable'}
+              </Button>
+            </div>
+          )}
+        </Card>
+
         {(canInstall || showIosInstallGuide) && (
           <Card className="p-6 sm:p-8">
             <h2 className="text-lg font-medium text-primary mb-6 flex items-center">
@@ -614,11 +677,25 @@ export default function Profile() {
         subtitle={
           reauthAction === 'delete'
             ? 'Deleting your account is irreversible — confirm it is really you.'
-            : 'Changing your account email — confirm it is really you.'
+            : reauthAction === 'disable-totp'
+              ? 'Turning off two-factor authentication — confirm it is really you.'
+              : 'Changing your account email — confirm it is really you.'
         }
-        confirmLabel={reauthAction === 'delete' ? 'Delete my account' : 'Save changes'}
-        danger={reauthAction === 'delete'}
+        confirmLabel={
+          reauthAction === 'delete'
+            ? 'Delete my account'
+            : reauthAction === 'disable-totp'
+              ? 'Disable 2FA'
+              : 'Save changes'
+        }
+        danger={reauthAction === 'delete' || reauthAction === 'disable-totp'}
         onConfirm={handleReauthConfirm}
+      />
+
+      <TwoFactorSetupModal
+        isOpen={isTotpSetupOpen}
+        onClose={() => setIsTotpSetupOpen(false)}
+        onEnabled={() => showToast('Two-factor authentication enabled.')}
       />
     </div>
   );
