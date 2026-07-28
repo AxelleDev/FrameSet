@@ -409,17 +409,15 @@ export default function ProjectNorms() {
 
   // Mobile: a dedicated header row instead of the hover overlay — there's no
   // hover on touch, so that overlay would otherwise sit permanently on top of
-  // the badge/title (see ActionIconButton's hover:none handling). Desktop
-  // keeps the original hover-revealed overlay.
+  // the badge/title (see ActionIconButton's hover:none handling). sm: switches
+  // the same buttons back to the original hover-revealed absolute overlay —
+  // one set of buttons, repositioned by breakpoint, not a duplicated one (a
+  // second copy would confuse both assistive tech and any test querying by
+  // accessible name).
   const renderNormActionRows = (norm, type) => (
-    <>
-      <div className="flex sm:hidden justify-end gap-2 mb-3 relative z-10">
-        {renderNormActions(norm, type)}
-      </div>
-      <div className="hidden sm:flex absolute top-3 right-3 gap-2 z-30">
-        {renderNormActions(norm, type)}
-      </div>
-    </>
+    <div className="flex justify-end gap-2 mb-3 relative z-10 sm:mb-0 sm:absolute sm:top-3 sm:right-3 sm:z-30">
+      {renderNormActions(norm, type)}
+    </div>
   );
 
   return (

@@ -274,11 +274,11 @@ export default function Dashboard() {
       {/* Mobile: a dedicated header row instead of the hover overlay below —
           there's no hover on touch, so that overlay would otherwise sit
           permanently on top of the title (see ActionIconButton's hover:none
-          handling). Desktop keeps the original hover-revealed overlay. */}
-      <div className="flex sm:hidden justify-end gap-2 mb-3 relative z-10">
-        {renderProjectActions(project)}
-      </div>
-      <div className="hidden sm:flex absolute top-4 right-4 gap-2 z-30">
+          handling). sm: switches the same buttons back to the original
+          hover-revealed absolute overlay — one set of buttons, repositioned
+          by breakpoint, not a duplicated one (a second copy would confuse
+          both assistive tech and any test querying by accessible name). */}
+      <div className="flex justify-end gap-2 mb-3 relative z-10 sm:mb-0 sm:absolute sm:top-4 sm:right-4 sm:z-30">
         {renderProjectActions(project)}
       </div>
       <div className="relative z-10 flex flex-col h-full min-h-[160px]">
