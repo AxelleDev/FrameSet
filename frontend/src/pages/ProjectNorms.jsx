@@ -377,6 +377,51 @@ export default function ProjectNorms() {
     </div>
   );
 
+  // The 3 action buttons, shared between the mobile header row and the
+  // desktop hover overlay (renderNormActionRows below) so they're only wired
+  // up once.
+  const renderNormActions = (norm, type) => (
+    <>
+      <ActionIconButton
+        onClick={() => openEditNorm(norm, type)}
+        title="Edit standard"
+        intent="edit"
+      >
+        <EditIcon />
+      </ActionIconButton>
+      <ActionIconButton
+        onClick={() => handleDuplicateNorm(norm, type)}
+        title="Duplicate standard"
+        intent="edit"
+        disabled={duplicatingNormId !== null}
+      >
+        <DuplicateIcon />
+      </ActionIconButton>
+      <ActionIconButton
+        onClick={(e) => handleDeleteNorm(e, norm.id, type)}
+        title="Delete standard"
+        intent="delete"
+      >
+        {loadingDelete === norm.id ? <Spinner size="sm" /> : <DeleteIcon />}
+      </ActionIconButton>
+    </>
+  );
+
+  // Mobile: a dedicated header row instead of the hover overlay — there's no
+  // hover on touch, so that overlay would otherwise sit permanently on top of
+  // the badge/title (see ActionIconButton's hover:none handling). Desktop
+  // keeps the original hover-revealed overlay.
+  const renderNormActionRows = (norm, type) => (
+    <>
+      <div className="flex sm:hidden justify-end gap-2 mb-3 relative z-10">
+        {renderNormActions(norm, type)}
+      </div>
+      <div className="hidden sm:flex absolute top-3 right-3 gap-2 z-30">
+        {renderNormActions(norm, type)}
+      </div>
+    </>
+  );
+
   return (
     <>
       <Seo title="Graphic standards" noindex />
@@ -448,30 +493,7 @@ export default function ProjectNorms() {
                     }
                     actions={
                       <>
-                        <div className="absolute top-3 right-3 flex gap-2 z-30">
-                          <ActionIconButton
-                            onClick={() => openEditNorm(norm, 'brush')}
-                            title="Edit standard"
-                            intent="edit"
-                          >
-                            <EditIcon />
-                          </ActionIconButton>
-                          <ActionIconButton
-                            onClick={() => handleDuplicateNorm(norm, 'brush')}
-                            title="Duplicate standard"
-                            intent="edit"
-                            disabled={duplicatingNormId !== null}
-                          >
-                            <DuplicateIcon />
-                          </ActionIconButton>
-                          <ActionIconButton
-                            onClick={(e) => handleDeleteNorm(e, norm.id, 'brush')}
-                            title="Delete standard"
-                            intent="delete"
-                          >
-                            {loadingDelete === norm.id ? <Spinner size="sm" /> : <DeleteIcon />}
-                          </ActionIconButton>
-                        </div>
+                        {renderNormActionRows(norm, 'brush')}
                         {renderMoveButtons(idx, brushDrag.previewItems.length, brushDrag.moveItem)}
                       </>
                     }
@@ -515,30 +537,7 @@ export default function ProjectNorms() {
                     }
                     actions={
                       <>
-                        <div className="absolute top-3 right-3 flex gap-2 z-30">
-                          <ActionIconButton
-                            onClick={() => openEditNorm(norm, 'typography')}
-                            title="Edit standard"
-                            intent="edit"
-                          >
-                            <EditIcon />
-                          </ActionIconButton>
-                          <ActionIconButton
-                            onClick={() => handleDuplicateNorm(norm, 'typography')}
-                            title="Duplicate standard"
-                            intent="edit"
-                            disabled={duplicatingNormId !== null}
-                          >
-                            <DuplicateIcon />
-                          </ActionIconButton>
-                          <ActionIconButton
-                            onClick={(e) => handleDeleteNorm(e, norm.id, 'typography')}
-                            title="Delete standard"
-                            intent="delete"
-                          >
-                            {loadingDelete === norm.id ? <Spinner size="sm" /> : <DeleteIcon />}
-                          </ActionIconButton>
-                        </div>
+                        {renderNormActionRows(norm, 'typography')}
                         {renderMoveButtons(
                           idx,
                           typographyDrag.previewItems.length,
