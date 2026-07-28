@@ -150,6 +150,7 @@ function ExportMock() {
   ];
   const paletteFormats = [
     { label: 'Photoshop / Illustrator', ext: '.ase' },
+    { label: 'Clip Studio Paint', ext: '.ase' },
     { label: 'Krita / GIMP', ext: '.gpl' },
     { label: 'Procreate', ext: '.swatches' },
   ];
@@ -181,7 +182,7 @@ function ExportMock() {
         <div className="space-y-2">
           {paletteFormats.map(({ label, ext }) => (
             <div
-              key={ext}
+              key={label}
               className="flex items-center justify-between gap-3 rounded-xl bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary"
             >
               <span className="flex items-center gap-2.5">
@@ -224,7 +225,7 @@ const FEATURES = [
   },
   {
     title: 'Export & share',
-    text: 'Turn your standards and palette into a clean PDF or a JSON file, import the palette straight into Photoshop, Krita or Procreate — or share a live read-only link that clients and collaborators can open without an account.',
+    text: 'Turn your standards and palette into a clean PDF or a JSON file, import the palette straight into Photoshop, Clip Studio Paint, Krita or Procreate — or share a live read-only link that clients and collaborators can open without an account.',
     Mock: ExportMock,
   },
 ];
