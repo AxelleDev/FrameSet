@@ -56,7 +56,8 @@ from one drawing to the next.
   `.ase` — also Clip Studio Paint's own color-set import format —, Krita/GIMP
   `.gpl`, Procreate `.swatches` — all generated client-side, no dependency,
   and re-importable the same way), or share a public read-only link
-  (revocable anytime) that anyone can open without an account.
+  (revocable anytime) that anyone can open without an account — with a
+  scannable, downloadable QR code for showing the sheet on a phone.
 - **Accessible & resilient** — keyboard-operable throughout (including drag-and-drop,
   which always has a keyboard alternative), a warning before leaving a page with
   unsaved changes, a heads-up before your session expires, and clear rate-limit
