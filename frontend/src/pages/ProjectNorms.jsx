@@ -29,6 +29,8 @@ import PageHeader from '../components/PageHeader';
 import Seo from '../components/Seo';
 import { EditIcon, DeleteIcon, DuplicateIcon } from '../components/icons';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
+import BrushNormFields from '../components/BrushNormFields';
+import TypographyNormFields from '../components/TypographyNormFields';
 
 export default function ProjectNorms() {
   const { id } = useParams();
@@ -592,122 +594,19 @@ export default function ProjectNorms() {
           >
             <div className="space-y-4">
               {editingType === 'brush' ? (
-                <>
-                  <FormField label="Brush usage">
-                    <TextInput
-                      type="text"
-                      value={brushForm.usage}
-                      onChange={(e) => setBrushField('usage', e.target.value)}
-                      placeholder="Hair outline"
-                    />
-                  </FormField>
-                  <FormField label="Brush name">
-                    <TextInput
-                      type="text"
-                      value={brushForm.name}
-                      onChange={(e) => setBrushField('name', e.target.value)}
-                      placeholder="Plume G"
-                    />
-                  </FormField>
-                  <FormField
-                    label="Size"
-                    error={
-                      brushForm.value !== '' && !isBrushValueValid
-                        ? 'Size must be a positive number (≤ 1000).'
-                        : undefined
-                    }
-                  >
-                    <TextInput
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={brushForm.value}
-                      onChange={(e) => setBrushField('value', e.target.value)}
-                      placeholder="8"
-                    />
-                  </FormField>
-                  <FormField label="Unit">
-                    <TextInput
-                      type="text"
-                      value={brushForm.unit}
-                      onChange={(e) => setBrushField('unit', e.target.value)}
-                      placeholder="px"
-                    />
-                  </FormField>
-                  <FormField label="Opacity (0 to 1)">
-                    <TextInput
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      max={1}
-                      value={brushForm.opacity}
-                      onChange={(e) => setBrushField('opacity', e.target.value)}
-                      placeholder="1.0"
-                    />
-                  </FormField>
-                </>
+                <BrushNormFields
+                  form={brushForm}
+                  setField={setBrushField}
+                  isValueValid={isBrushValueValid}
+                />
               ) : (
-                <>
-                  <FormField label="Font">
-                    <CustomSelect
-                      value={typoForm.fontFamily}
-                      onChange={(val) => {
-                        setTypoField('fontFamily', val);
-                        const selectedFont = googleFonts.find((f) => f.family === val);
-                        if (selectedFont) {
-                          loadGoogleFont(
-                            selectedFont.family,
-                            selectedFont.variants?.includes('regular')
-                              ? '400'
-                              : selectedFont.variants?.[0] || '400',
-                          );
-                        }
-                      }}
-                      options={
-                        googleFonts
-                          ? googleFonts.map((font) => ({
-                              value: font.family,
-                              label: font.family,
-                            }))
-                          : []
-                      }
-                      placeholder="Search fonts…"
-                      isLoading={loadingFonts}
-                      isDisabled={loadingFonts}
-                      noOptionsMessage={() => (loadingFonts ? 'Loading…' : 'No matching fonts')}
-                    />
-                  </FormField>
-                  {loadingFonts && (
-                    <div className="text-xs text-secondary mt-1">Loading fonts…</div>
-                  )}
-                  {errorFonts && (
-                    <div className="text-xs text-danger mt-1">Error loading fonts</div>
-                  )}
-                  <FormField label="Weight">
-                    <TextInput
-                      type="text"
-                      value={typoForm.fontWeight}
-                      onChange={(e) => setTypoField('fontWeight', e.target.value)}
-                      placeholder="700"
-                    />
-                  </FormField>
-                  <FormField label="Usage">
-                    <TextInput
-                      type="text"
-                      value={typoForm.fontUsage}
-                      onChange={(e) => setTypoField('fontUsage', e.target.value)}
-                      placeholder="Title"
-                    />
-                  </FormField>
-                  <FormField label="Style">
-                    <TextInput
-                      type="text"
-                      value={typoForm.fontStyle}
-                      onChange={(e) => setTypoField('fontStyle', e.target.value)}
-                      placeholder="Italic"
-                    />
-                  </FormField>
-                </>
+                <TypographyNormFields
+                  form={typoForm}
+                  setField={setTypoField}
+                  googleFonts={googleFonts}
+                  loading={loadingFonts}
+                  error={errorFonts}
+                />
               )}
             </div>
             <ModalActions
@@ -743,115 +642,19 @@ export default function ProjectNorms() {
             />
           </FormField>
           {addType === 'brush' ? (
-            <>
-              <FormField label="Brush usage">
-                <TextInput
-                  type="text"
-                  value={brushForm.usage}
-                  onChange={(e) => setBrushField('usage', e.target.value)}
-                  placeholder="Hair outline"
-                />
-              </FormField>
-              <FormField label="Brush name">
-                <TextInput
-                  type="text"
-                  value={brushForm.name}
-                  onChange={(e) => setBrushField('name', e.target.value)}
-                  placeholder="Plume G"
-                />
-              </FormField>
-              <FormField
-                label="Size (px)"
-                error={
-                  brushForm.value !== '' && !isBrushValueValid
-                    ? 'Size must be a positive number (≤ 1000).'
-                    : undefined
-                }
-              >
-                <TextInput
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={brushForm.value}
-                  onChange={(e) => setBrushField('value', e.target.value)}
-                  placeholder="8"
-                />
-              </FormField>
-              <FormField label="Unit">
-                <TextInput
-                  type="text"
-                  value={brushForm.unit}
-                  onChange={(e) => setBrushField('unit', e.target.value)}
-                  placeholder="px"
-                />
-              </FormField>
-              <FormField label="Opacity (0 to 1)">
-                <TextInput
-                  type="number"
-                  step="0.01"
-                  min={0}
-                  max={1}
-                  value={brushForm.opacity}
-                  onChange={(e) => setBrushField('opacity', e.target.value)}
-                  placeholder="1.0"
-                />
-              </FormField>
-            </>
+            <BrushNormFields
+              form={brushForm}
+              setField={setBrushField}
+              isValueValid={isBrushValueValid}
+            />
           ) : (
-            <>
-              <FormField label="Font">
-                <CustomSelect
-                  value={typoForm.fontFamily}
-                  onChange={(val) => {
-                    setTypoField('fontFamily', val);
-                    const selectedFont = googleFonts.find((f) => f.family === val);
-                    if (selectedFont) {
-                      loadGoogleFont(
-                        selectedFont.family,
-                        selectedFont.variants?.includes('regular')
-                          ? '400'
-                          : selectedFont.variants?.[0] || '400',
-                      );
-                    }
-                  }}
-                  options={
-                    googleFonts
-                      ? googleFonts.map((font) => ({ value: font.family, label: font.family }))
-                      : []
-                  }
-                  placeholder="Search fonts…"
-                  isLoading={loadingFonts}
-                  isDisabled={loadingFonts}
-                  noOptionsMessage={() => (loadingFonts ? 'Loading…' : 'No matching fonts')}
-                />
-              </FormField>
-              {loadingFonts && <div className="text-xs text-secondary mt-1">Loading fonts…</div>}
-              {errorFonts && <div className="text-xs text-danger mt-1">Error loading fonts</div>}
-              <FormField label="Weight">
-                <TextInput
-                  type="text"
-                  value={typoForm.fontWeight}
-                  onChange={(e) => setTypoField('fontWeight', e.target.value)}
-                  placeholder="700"
-                />
-              </FormField>
-              <FormField label="Usage">
-                <TextInput
-                  type="text"
-                  value={typoForm.fontUsage}
-                  onChange={(e) => setTypoField('fontUsage', e.target.value)}
-                  placeholder="Title"
-                />
-              </FormField>
-              <FormField label="Style">
-                <TextInput
-                  type="text"
-                  value={typoForm.fontStyle}
-                  onChange={(e) => setTypoField('fontStyle', e.target.value)}
-                  placeholder="Italic"
-                />
-              </FormField>
-            </>
+            <TypographyNormFields
+              form={typoForm}
+              setField={setTypoField}
+              googleFonts={googleFonts}
+              loading={loadingFonts}
+              error={errorFonts}
+            />
           )}
         </div>
         <ModalActions

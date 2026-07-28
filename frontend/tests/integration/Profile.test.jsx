@@ -244,6 +244,21 @@ describe('Profile', () => {
       expect(screen.getByText(/won.t be able to see these again/i)).toBeInTheDocument();
     });
 
+    it('shows how many recovery codes remain, with a warning when running low', () => {
+      authState.user.totpEnabled = true;
+      authState.user.recoveryCodesRemaining = 8;
+      const { unmount } = renderPage();
+      expect(screen.getByText(/8 recovery codes remaining\./)).toBeInTheDocument();
+      expect(screen.queryByText(/get a fresh set/i)).not.toBeInTheDocument();
+      unmount();
+
+      // At 1 left, the count switches to the singular warning wording.
+      authState.user.recoveryCodesRemaining = 1;
+      renderPage();
+      expect(screen.getByText(/1 recovery code remaining\./)).toBeInTheDocument();
+      expect(screen.getByText(/disable and re-enable 2fa to get a fresh set/i)).toBeInTheDocument();
+    });
+
     it('shows "Enabled" and a Disable button, which requires re-authentication', async () => {
       const user = userEvent.setup();
       authState.user.totpEnabled = true;

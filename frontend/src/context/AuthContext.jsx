@@ -486,7 +486,15 @@ export const AuthProvider = ({ children }) => {
           { onGlobalError: setGlobalError },
         );
         setUser((currentUser) =>
-          currentUser ? { ...currentUser, totpEnabled: true } : currentUser,
+          currentUser
+            ? {
+                ...currentUser,
+                totpEnabled: true,
+                // Freshly minted codes are all unused; keeps the profile's
+                // remaining-codes hint accurate without a profile refetch.
+                recoveryCodesRemaining: data.recoveryCodes?.length ?? 0,
+              }
+            : currentUser,
         );
         return { success: true, recoveryCodes: data.recoveryCodes };
       } catch (error) {
@@ -515,7 +523,9 @@ export const AuthProvider = ({ children }) => {
           onGlobalError: setGlobalError,
         });
         setUser((currentUser) =>
-          currentUser ? { ...currentUser, totpEnabled: false } : currentUser,
+          currentUser
+            ? { ...currentUser, totpEnabled: false, recoveryCodesRemaining: 0 }
+            : currentUser,
         );
         return { success: true };
       } catch (error) {

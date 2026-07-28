@@ -96,7 +96,7 @@ jest.mock('../../src/database', () => {
 
     if (
       normalizedSql ===
-      'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, totp_enabled, (password IS NOT NULL) AS has_password FROM users WHERE id = ?'
+      'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, totp_enabled, (password IS NOT NULL) AS has_password, (SELECT COUNT(*) FROM user_recovery_codes WHERE user_id = users.id AND used_at IS NULL) AS recovery_codes_remaining FROM users WHERE id = ?'
     ) {
       const [id] = params;
       const user = users.find((item) => item.id === id);
@@ -117,6 +117,7 @@ jest.mock('../../src/database', () => {
             is_demo: user.is_demo ? 1 : 0,
             totp_enabled: user.totp_enabled ? 1 : 0,
             has_password: user.password === null ? 0 : 1,
+            recovery_codes_remaining: 0,
           },
         ],
       ];

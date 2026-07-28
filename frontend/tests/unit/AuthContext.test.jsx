@@ -560,6 +560,8 @@ describe('AuthContext two-factor authentication', () => {
 
     expect(outcome).toEqual({ success: true, recoveryCodes: ['AAAAA-BBBBB'] });
     expect(result.current.user.totpEnabled).toBe(true);
+    // The fresh set is all unused — the profile's remaining-codes hint starts full.
+    expect(result.current.user.recoveryCodesRemaining).toBe(1);
   });
 
   it('confirmTotpSetup leaves 2FA off locally on an incorrect code', async () => {
@@ -583,7 +585,7 @@ describe('AuthContext two-factor authentication', () => {
   });
 
   it('disableTotp marks 2FA disabled locally after a successful re-auth', async () => {
-    const result = await renderSignedIn({ totpEnabled: true });
+    const result = await renderSignedIn({ totpEnabled: true, recoveryCodesRemaining: 5 });
     mockApiPost.mockResolvedValueOnce({ success: true });
 
     let outcome;
@@ -593,6 +595,7 @@ describe('AuthContext two-factor authentication', () => {
 
     expect(outcome).toEqual({ success: true });
     expect(result.current.user.totpEnabled).toBe(false);
+    expect(result.current.user.recoveryCodesRemaining).toBe(0);
     expect(mockApiPost).toHaveBeenCalledWith(
       '/users/totp/disable',
       { currentPassword: 'Pass1234' },

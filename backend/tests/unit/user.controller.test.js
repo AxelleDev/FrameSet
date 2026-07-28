@@ -54,6 +54,8 @@ describe('user controller', () => {
             password_updated_at: new Date('2026-01-01T00:00:00.000Z'),
             pending_email: null,
             has_password: 1,
+            totp_enabled: 1,
+            recovery_codes_remaining: 3,
           },
         ],
       ]);
@@ -64,7 +66,7 @@ describe('user controller', () => {
       await userController.getProfile(req, res);
 
       expect(db.query).toHaveBeenCalledWith(
-        'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, totp_enabled, (password IS NOT NULL) AS has_password FROM users WHERE id = ?',
+        'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, totp_enabled, (password IS NOT NULL) AS has_password, (SELECT COUNT(*) FROM user_recovery_codes WHERE user_id = users.id AND used_at IS NULL) AS recovery_codes_remaining FROM users WHERE id = ?',
         [1],
       );
       expect(res.json).toHaveBeenCalledWith(
@@ -74,6 +76,8 @@ describe('user controller', () => {
           email: 'axelle@example.com',
           avatarInitials: 'JD',
           hasPassword: true,
+          totpEnabled: true,
+          recoveryCodesRemaining: 3,
         }),
       );
     });

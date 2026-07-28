@@ -180,6 +180,14 @@ On every push / pull request to `main`, GitHub Actions runs three jobs:
 Workflow: `.github/workflows/ci.yml`. Dependency updates are proposed monthly by
 Dependabot (`.github/dependabot.yml`).
 
+> **Known advisory (accepted, not applicable):** `npm audit` flags
+> `react-router-dom` with GHSA-qwww-vcr4-c8h2, a CSRF bypass in React Router's
+> **RSC/framework mode**. FrameSet uses the classic `BrowserRouter` SPA mode with
+> no React Server Components and no server actions, so the vulnerable code path
+> is never reached. The proposed "fix" is a downgrade; instead, the frontend CI
+> audit gate is temporarily relaxed to `critical` (see the comment in `ci.yml`)
+> and will be restored to `high` as soon as a patched release ships.
+
 ---
 
 ## ✧･ﾟ: ✧･ﾟ Deployment
