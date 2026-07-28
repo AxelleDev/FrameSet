@@ -3,3 +3,5 @@ node_modules
 coverage
 package-lock.json
 public
+test-results
+playwright-report

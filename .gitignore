@@ -21,6 +21,6 @@ coverage/
 # Local database backups (npm run backup): never commit data dumps.
 backend/backups/
 
-# Playwright E2E test output
-e2e/test-results/
-e2e/playwright-report/
+# Playwright E2E test output (wherever it gets generated from)
+test-results/
+playwright-report/
