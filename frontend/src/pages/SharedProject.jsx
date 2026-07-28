@@ -70,7 +70,9 @@ export default function SharedProject() {
       />
       <PublicTopBar />
 
-      <main className="max-w-6xl mx-auto px-6">
+      {/* pt-8 sm:pt-12: the standard breathing room between the sticky top bar
+          and page content, shared with LegalPage. */}
+      <main className="max-w-6xl mx-auto px-6 pt-8 sm:pt-12">
         {status === 'loading' && (
           <div
             className="min-h-[50vh] flex items-center justify-center"
@@ -97,7 +99,7 @@ export default function SharedProject() {
 
         {status === 'ready' && sheet && (
           <div className="animate-fade-in">
-            <header className="pt-6 pb-10 sm:pt-10 sm:pb-14">
+            <header className="pb-10 sm:pb-14">
               <p className="text-xs uppercase tracking-widest text-blue font-semibold mb-3">
                 Shared reference sheet
               </p>

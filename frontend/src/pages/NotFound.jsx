@@ -18,7 +18,9 @@ export default function NotFound() {
       <Seo title="Page not found" noindex />
       <PublicTopBar />
 
-      <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+      {/* py-8: content is vertically centered, but on short viewports this
+          keeps it from ever butting against the sticky bar above. */}
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-8 text-center">
         <p className="text-6xl sm:text-7xl font-light tracking-tight text-blue">404</p>
         <h1 className="text-2xl font-medium mt-4">Page not found</h1>
         <p className="text-sm text-primary/60 mt-2 mb-8 max-w-sm">

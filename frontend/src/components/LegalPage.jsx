@@ -15,7 +15,10 @@ export default function LegalPage({ title, path, description, lastUpdated, child
       <Seo title={title} path={path} description={description} />
       <PublicTopBar />
 
-      <main className="flex-1 py-10 sm:py-14">
+      {/* pt-8 sm:pt-12: the standard breathing room between the sticky top bar
+          and page content, shared with SharedProject so no public page starts
+          flush against the bar. */}
+      <main className="flex-1 pt-8 sm:pt-12 pb-10 sm:pb-14">
         <div className="max-w-6xl mx-auto px-6">
           <div className="w-full max-w-2xl">
             <h1 className="text-3xl sm:text-4xl font-light tracking-tight">{title}</h1>

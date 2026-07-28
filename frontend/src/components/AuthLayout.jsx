@@ -16,7 +16,9 @@ export default function AuthLayout({ hero, children, swapOnMobile = false }) {
           PublicTopBar/PublicFooter/Landing's sections, so the form/hero column
           edges land at the exact same x-position as the logo above — not just
           the same max-width, but the padding on the same element too. */}
-      <main className="relative z-10 flex-1 w-full flex items-center pb-8">
+      {/* py-8: content is vertically centered, but on short viewports this
+          keeps the form from ever butting against the sticky bar above. */}
+      <main className="relative z-10 flex-1 w-full flex items-center py-8">
         <div className="w-full max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
           <div
             className={`flex flex-col justify-center space-y-6 animate-fade-in min-w-0 ${heroOrderClass}`}
