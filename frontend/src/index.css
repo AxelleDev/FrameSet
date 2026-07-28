@@ -55,6 +55,13 @@
     background-color: rgb(var(--color-secondary) / 0.4);
     border-radius: 20px;
   }
+
+  /* Text selection in the brand lavender instead of the browser's default
+     blue. Semi-transparent so the selected text keeps its own color and stays
+     readable in both themes (the tokens above swap underneath). */
+  ::selection {
+    background-color: rgb(var(--color-blue) / 0.35);
+  }
 }
 
 @layer components {

@@ -11,6 +11,7 @@ import { ProjectProvider } from './context/ProjectContext';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { getFriendlyMessage } from './utils/friendlyError';
 import ErrorBoundary from './components/ErrorBoundary';
+import CursorDot from './components/CursorDot';
 import { captureException } from './utils/monitoring';
 import MainLayout from './layouts/MainLayout';
 
@@ -139,6 +140,9 @@ function AppRoutes() {
 
   return (
     <>
+      {/* Site-wide decorative cursor follower (self-disables for touch and
+          reduced-motion users — see the component). */}
+      <CursorDot />
       <BrowserRouter>
         <RouteFocus />
         <Suspense fallback={<RouteFallback />}>

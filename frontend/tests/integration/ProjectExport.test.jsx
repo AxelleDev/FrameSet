@@ -34,6 +34,10 @@ vi.mock('jspdf', () => ({
   }),
 }));
 
+vi.mock('qrcode', () => ({
+  toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,fake-qr'),
+}));
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return { ...actual, useParams: () => ({ id: '2' }) };
@@ -226,5 +230,28 @@ describe('ProjectExport', () => {
 
     await user.click(screen.getByRole('button', { name: /disable/i }));
     expect(projectState.disableSharing).toHaveBeenCalledWith(2);
+  });
+
+  it('renders a QR code of the share link, downloadable as a PNG', async () => {
+    const user = userEvent.setup();
+    projectState.activeProject = {
+      ...projectState.activeProject,
+      shareToken: 'b'.repeat(32),
+    };
+    renderPage();
+
+    const qrImage = await screen.findByAltText(/qr code opening this project/i);
+    expect(qrImage).toHaveAttribute('src', 'data:image/png;base64,fake-qr');
+
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    await user.click(screen.getByRole('button', { name: /download qr code/i }));
+    expect(clickSpy).toHaveBeenCalled();
+    clickSpy.mockRestore();
+  });
+
+  it('shows no QR code while sharing is disabled', () => {
+    renderPage();
+    expect(screen.queryByAltText(/qr code/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /download qr code/i })).not.toBeInTheDocument();
   });
 });

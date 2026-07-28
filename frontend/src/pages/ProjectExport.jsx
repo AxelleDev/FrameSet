@@ -1,7 +1,7 @@
 // Project export page (/app/project/:id/export): download the style guide as a
 // jsPDF-built PDF or raw JSON (with a live preview), or share a public
 // read-only link to the reference sheet.
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -85,6 +85,44 @@ export default function ProjectExport() {
     } finally {
       setShareBusy(false);
     }
+  };
+
+  // QR code of the share link, for showing the sheet on a phone (conventions,
+  // client meetings) without dictating a URL out loud. Rendered from the same
+  // lazily-imported qrcode module the 2FA setup uses, so it never lands in the
+  // initial bundle; a failed/blocked import just leaves the QR out — the
+  // copyable link above it still works.
+  const [shareQrDataUrl, setShareQrDataUrl] = useState('');
+  useEffect(() => {
+    if (!shareUrl) {
+      setShareQrDataUrl('');
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { toDataURL } = await import('qrcode');
+        const dataUrl = await toDataURL(shareUrl, { margin: 1, width: 220 });
+        if (!cancelled) setShareQrDataUrl(dataUrl);
+      } catch {
+        /* the plain link still works */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [shareUrl]);
+
+  // Save the QR as a PNG (print it, drop it on a portfolio, tape it to a
+  // convention table…), named like every other export of this project.
+  const downloadShareQr = () => {
+    if (!shareQrDataUrl) return;
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute('href', shareQrDataUrl);
+    downloadAnchorNode.setAttribute('download', `${fileSlug}_share_qr.png`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
   };
 
   const handleCopyShareUrl = async () => {
@@ -594,25 +632,51 @@ export default function ProjectExport() {
               </p>
 
               {shareUrl ? (
-                <div className="w-full flex flex-col sm:flex-row gap-3">
-                  <code
-                    data-testid="share-url"
-                    className="flex-1 min-w-0 truncate rounded-2xl bg-primary/5 px-4 py-3 text-sm text-primary font-mono"
-                  >
-                    {shareUrl}
-                  </code>
-                  <div className="flex gap-3 shrink-0">
-                    <Button
-                      onClick={handleCopyShareUrl}
-                      variant="primary"
-                      className="whitespace-nowrap"
+                <div className="w-full space-y-6">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <code
+                      data-testid="share-url"
+                      className="flex-1 min-w-0 truncate rounded-2xl bg-primary/5 px-4 py-3 text-sm text-primary font-mono"
                     >
-                      {copiedValue === shareUrl ? 'Copied!' : 'Copy link'}
-                    </Button>
-                    <Button onClick={handleDisableSharing} variant="ghost" loading={shareBusy}>
-                      Disable
-                    </Button>
+                      {shareUrl}
+                    </code>
+                    <div className="flex gap-3 shrink-0">
+                      <Button
+                        onClick={handleCopyShareUrl}
+                        variant="primary"
+                        className="whitespace-nowrap"
+                      >
+                        {copiedValue === shareUrl ? 'Copied!' : 'Copy link'}
+                      </Button>
+                      <Button onClick={handleDisableSharing} variant="ghost" loading={shareBusy}>
+                        Disable
+                      </Button>
+                    </div>
                   </div>
+
+                  {shareQrDataUrl && (
+                    <div className="flex flex-col sm:flex-row items-center gap-5">
+                      {/* Always on a white tile: a QR needs dark-on-light
+                          contrast to scan reliably, dark mode included. */}
+                      <div className="shrink-0 rounded-2xl bg-white p-3 border border-primary/10">
+                        <img
+                          src={shareQrDataUrl}
+                          alt="QR code opening this project's shared reference sheet"
+                          width={132}
+                          height={132}
+                        />
+                      </div>
+                      <div className="flex flex-col items-center sm:items-start gap-3 text-center sm:text-left">
+                        <p className="text-sm text-primary/60 max-w-sm">
+                          Scan it to open this reference sheet on a phone — handy at a convention
+                          table or in a client meeting. It stops working if you disable the link.
+                        </p>
+                        <Button onClick={downloadShareQr} variant="outline" className="text-sm">
+                          Download QR code
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Button onClick={handleEnableSharing} variant="primary" loading={shareBusy}>

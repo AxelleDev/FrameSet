@@ -33,6 +33,10 @@ export default {
         // opened inside one, but below toasts so an open menu can't hide them.
         popover: '1055',
         toast: '1060',
+        // Decorative cursor-follower dot: topmost so it glides over every
+        // surface (modals, toasts included), but pointer-events: none — it can
+        // never intercept a click or hide information.
+        cursor: '1070',
       },
       // Named motion durations. Use these three everywhere instead of raw values.
       transitionDuration: {

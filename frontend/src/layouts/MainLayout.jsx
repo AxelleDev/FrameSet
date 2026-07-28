@@ -172,8 +172,18 @@ export default function MainLayout() {
       >
         {/* No close (×) button: the menu closes on backdrop tap or nav-item tap,
             staying consistent with the site's modals (none use a × either). */}
+        {/* Same affordance as the public pages' top-bar logo: a home link —
+            here "home" is the dashboard. Goes through guardNavigation so
+            unsaved changes get the same confirmation as the nav items. */}
         <div className="p-8 flex justify-center">
-          <Logo className="w-[65%] max-w-[260px] h-auto object-contain" />
+          <Link
+            to="/app/dashboard"
+            onClick={guardNavigation}
+            aria-label="Go to dashboard"
+            className="inline-flex w-[58%] max-w-[230px] rounded-lg transition-opacity hover:opacity-80 focus-ring"
+          >
+            <Logo className="w-full h-auto object-contain" />
+          </Link>
         </div>
 
         <nav aria-label="Main navigation" className="flex-1 overflow-y-auto py-6 px-4 space-y-1">

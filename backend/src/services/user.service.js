@@ -77,8 +77,11 @@ const getUserCount = async () => {
 // `password IS NOT NULL` only says whether a local password exists, so the UI
 // can adapt for Google-only accounts).
 const getUserProfile = async (userId) => {
+  // The unused-recovery-codes count rides along in the same query: it lets the
+  // profile warn a 2FA user who is running out of codes before they get locked
+  // out, without a second round-trip (always 0 when 2FA is off).
   const [rows] = await db.query(
-    'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, totp_enabled, (password IS NOT NULL) AS has_password FROM users WHERE id = ?',
+    'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, totp_enabled, (password IS NOT NULL) AS has_password, (SELECT COUNT(*) FROM user_recovery_codes WHERE user_id = users.id AND used_at IS NULL) AS recovery_codes_remaining FROM users WHERE id = ?',
     [userId],
   );
 
@@ -97,6 +100,7 @@ const getUserProfile = async (userId) => {
     hasPassword: Boolean(userDb.has_password),
     isDemo: Boolean(userDb.is_demo),
     totpEnabled: Boolean(userDb.totp_enabled),
+    recoveryCodesRemaining: Number(userDb.recovery_codes_remaining) || 0,
   };
 };
 

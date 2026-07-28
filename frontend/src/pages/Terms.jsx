@@ -101,7 +101,8 @@ export default function Terms() {
       <section>
         <h2>10. Contact</h2>
         <p>
-          Questions about these terms? See the contact section of the project, or read the{' '}
+          Questions about these terms? Write to{' '}
+          <a href="mailto:axelle.tempier@gmail.com">axelle.tempier@gmail.com</a>, or read the{' '}
           <Link to="/privacy">Privacy Policy</Link> for how your data is handled.
         </p>
       </section>

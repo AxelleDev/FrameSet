@@ -69,6 +69,7 @@ export default function useNormActions({
     // nextDemoId is deliberately not a dependency: it closes over a stable ref
     // (see nextDemoIdRef in ProjectContext) and is redefined every render, so
     // including it would give addNorm a new identity on every render too.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [isDemo, apiSegment, fieldName, kind, patchProject, setGlobalError],
   );
 

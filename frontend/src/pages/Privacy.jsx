@@ -99,8 +99,8 @@ export default function Privacy() {
         <p>
           Depending on where you live (e.g. under the GDPR), you may have rights of access,
           rectification, portability and erasure over your personal data. Most of these are
-          available directly in the app; for anything else, get in touch via the contact section of
-          the project.
+          available directly in the app; for anything else, write to{' '}
+          <a href="mailto:axelle.tempier@gmail.com">axelle.tempier@gmail.com</a>.
         </p>
       </section>
 

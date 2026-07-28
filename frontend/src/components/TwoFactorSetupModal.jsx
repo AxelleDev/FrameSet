@@ -76,7 +76,13 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onEnabled }) {
     return () => {
       cancelled = true;
     };
-  }, [isOpen, setupTotp]);
+    // setupTotp is intentionally excluded: it gets a new identity whenever
+    // confirmTotpSetup updates the user (enrollment just succeeded), which
+    // would otherwise re-run this effect and re-fetch setup right after
+    // success — immediately clobbering the recovery-codes step with an
+    // "already enabled" error.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleConfirm = async (e) => {
     e.preventDefault();
@@ -206,11 +212,13 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onEnabled }) {
             access to your authenticator app.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-2xl bg-primary/5 p-4 font-mono text-sm text-primary">
+          {/* A real list, so screen readers announce "list, 8 items" instead
+              of reading the codes as one undifferentiated blob. */}
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-2xl bg-primary/5 p-4 font-mono text-sm text-primary list-none">
             {recoveryCodes.map((recoveryCode) => (
-              <span key={recoveryCode}>{recoveryCode}</span>
+              <li key={recoveryCode}>{recoveryCode}</li>
             ))}
-          </div>
+          </ul>
 
           <Button
             type="button"

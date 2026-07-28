@@ -89,6 +89,12 @@ Password policy: min 8 chars, at least one lowercase, one uppercase and one digi
 against `/auth/login/totp` and can't be used as a session credential elsewhere.
 An accepted TOTP code is single-use: replaying it inside its own 30 s validity
 window is rejected (RFC 6238 §5.2), as is reusing a spent recovery code.
+The challenge token itself is deliberately **not** single-use (a stateless JWT,
+no server-side ledger): within its 5 minutes it allows several code attempts,
+which is what lets a user retry a mistyped code without redoing the password
+step. Brute force through that window is capped by the `/auth/login/totp` rate
+limit, and the token grants nothing on its own — it only ever converts a
+**valid** code into a session.
 
 ## Users — `/api/users`
 

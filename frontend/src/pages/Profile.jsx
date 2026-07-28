@@ -196,8 +196,8 @@ export default function Profile() {
     setIsLogoutConfirmOpen(true);
   };
 
-  const confirmLogout = () => {
-    logout();
+  const confirmLogout = async () => {
+    await logout();
     navigate('/login');
     setIsLogoutConfirmOpen(false);
   };
@@ -497,6 +497,21 @@ export default function Profile() {
                     ? 'Signing in also requires a code from your authenticator app.'
                     : 'Add a code from an authenticator app as a second step at sign-in.'}
                 </p>
+                {user.totpEnabled && (
+                  <p
+                    className={`text-xs mt-1 ${
+                      (user.recoveryCodesRemaining ?? 0) <= 2
+                        ? 'text-danger font-medium'
+                        : 'text-primary/60'
+                    }`}
+                  >
+                    {user.recoveryCodesRemaining === 1
+                      ? '1 recovery code remaining.'
+                      : `${user.recoveryCodesRemaining ?? 0} recovery codes remaining.`}
+                    {(user.recoveryCodesRemaining ?? 0) <= 2 &&
+                      ' Disable and re-enable 2FA to get a fresh set.'}
+                  </p>
+                )}
               </div>
               <Button
                 onClick={() =>
