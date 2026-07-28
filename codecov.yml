@@ -1,0 +1,22 @@
+# Coverage thresholds are already enforced locally and in CI by Jest
+# (backend/package.json) and Vitest (frontend/vite.config.js) — these checks
+# are informational only, so a coverage change never blocks a PR twice.
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+flags:
+  backend:
+    paths:
+      - backend/src
+  frontend:
+    paths:
+      - frontend/src
+
+comment:
+  layout: 'header, diff, flags, files'

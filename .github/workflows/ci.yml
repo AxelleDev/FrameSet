@@ -44,6 +44,17 @@ jobs:
       - name: Run backend tests (with coverage thresholds)
         run: npm test -- --coverage
 
+      # Uploads even if the test step above failed (a coverage drop is exactly
+      # the kind of run worth seeing on Codecov), but not if the job was cancelled.
+      - name: Upload backend coverage to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: backend/coverage
+          flags: backend
+          fail_ci_if_error: false
+
   frontend:
     name: Frontend Lint, Tests and Build
     runs-on: ubuntu-latest
@@ -82,6 +93,17 @@ jobs:
       # (a ratchet set just below current levels); plain `npm test` stays fast locally.
       - name: Run frontend tests (with coverage thresholds)
         run: npm test -- --coverage
+
+      # Uploads even if the test step above failed (a coverage drop is exactly
+      # the kind of run worth seeing on Codecov), but not if the job was cancelled.
+      - name: Upload frontend coverage to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: frontend/coverage
+          flags: frontend
+          fail_ci_if_error: false
 
       - name: Build frontend
         run: npm run build
