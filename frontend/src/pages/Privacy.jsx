@@ -9,7 +9,7 @@ export default function Privacy() {
       title="Privacy Policy"
       path="/privacy"
       description="What data FrameSet collects, why, and how it is protected."
-      lastUpdated="July 24, 2026"
+      lastUpdated="July 28, 2026"
     >
       <section>
         <h2>1. What we collect</h2>
@@ -18,7 +18,9 @@ export default function Privacy() {
           a bcrypt hash — never in clear text), and the content you create (projects, palettes,
           typography and brush specifications). If you sign in with Google, we store your Google
           account identifier and the name and email address Google shares with us; we never see your
-          Google password.
+          Google password. If you turn on two-factor authentication, we store your authenticator
+          secret encrypted (never in clear text) and your recovery codes hashed, the same way
+          passwords are.
         </p>
       </section>
 
@@ -71,10 +73,12 @@ export default function Privacy() {
       <section>
         <h2>6. How your data is protected</h2>
         <p>
-          Passwords are hashed with bcrypt, one-time codes are stored hashed, sessions use HttpOnly
-          cookies with short lifetimes and server-side revocation, and every sensitive action
-          (password or email change, new sign-in method) triggers a security alert email. All
-          traffic is encrypted in transit (HTTPS).
+          Passwords are hashed with bcrypt, one-time codes and recovery codes are stored hashed,
+          sessions use HttpOnly cookies with short lifetimes and server-side revocation, and every
+          sensitive action (password or email change, new sign-in method, enabling or disabling
+          two-factor authentication) triggers a security alert email. You can add an optional second
+          authentication factor (a code from an authenticator app) from your profile at any time.
+          All traffic is encrypted in transit (HTTPS).
         </p>
       </section>
 
