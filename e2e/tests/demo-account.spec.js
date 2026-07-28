@@ -38,7 +38,7 @@ test.describe('read-only demo account', () => {
     // mutation never leaves the browser (see ProjectContext.jsx's isDemo branches).
     await page.getByRole('button', { name: 'New color' }).click();
     const dialog = page.getByRole('dialog');
-    await dialog.getByLabel('Color name').fill('Session Only Color');
+    await dialog.getByLabel('Color usage').fill('Session Only Color');
     await dialog.getByLabel('Color', { exact: true }).fill('123456');
     await dialog.getByRole('button', { name: 'Add' }).click();
 
