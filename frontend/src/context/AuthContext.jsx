@@ -318,7 +318,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const data = await api.put(
           '/users',
-          { id: user.id, ...updates, ...(credentials || {}) },
+          { ...updates, ...(credentials || {}) },
           { onGlobalError: setGlobalError },
         );
         const updatedUser = {
@@ -385,7 +385,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const data = await api.post(
           '/users/password',
-          { id: user.id, currentPassword, newPassword },
+          { currentPassword, newPassword },
           { onGlobalError: setGlobalError },
         );
         const updatedUser = {

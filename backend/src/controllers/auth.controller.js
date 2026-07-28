@@ -259,7 +259,11 @@ const googleSignIn = async (req, res) => {
 // and revoke the old one. Rotation limits replay of a stolen token; aborts if the old
 // token can't be revoked so we never leave two valid tokens.
 const refresh = async (req, res) => {
-  const refreshToken = req.body?.refreshToken || getCookieValue(req, REFRESH_TOKEN_COOKIE_NAME);
+  // Cookie only: the frontend never sends this in the body, and accepting a
+  // body-supplied token would just widen the attack surface for no gain (a
+  // token in a request body is more likely to end up in a proxy/access log
+  // than one confined to an httpOnly cookie).
+  const refreshToken = getCookieValue(req, REFRESH_TOKEN_COOKIE_NAME);
 
   if (!refreshToken) {
     logger.warn('auth.refresh.validation_failed', {
@@ -392,7 +396,8 @@ const resendCode = async (req, res) => {
 // even on partial failure, so the client ends up logged out.
 const logout = async (req, res) => {
   const token = req.token || getAccessTokenFromRequest(req);
-  const refreshToken = req.body?.refreshToken || getCookieValue(req, REFRESH_TOKEN_COOKIE_NAME);
+  // Cookie only — see the identical note in refresh() above.
+  const refreshToken = getCookieValue(req, REFRESH_TOKEN_COOKIE_NAME);
   const refreshPayload = refreshToken ? verifyRefreshToken(refreshToken) : null;
   const accessPayload = verifyAccessToken(token, { ignoreExpiration: true });
   const authenticatedUserId = refreshPayload?.id || accessPayload?.id || null;

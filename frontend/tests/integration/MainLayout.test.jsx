@@ -43,29 +43,30 @@ describe('MainLayout unsaved-changes navigation guard', () => {
     expect(screen.getByText('Profile page')).toBeInTheDocument();
   });
 
-  it('blocks in-app navigation when dirty and the user cancels the confirm', async () => {
+  it('blocks in-app navigation when dirty and the user cancels the styled dialog', async () => {
     setHasUnsavedChanges(true);
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
     const user = userEvent.setup();
     renderLayout();
 
     await user.click(screen.getByRole('link', { name: /jane doe/i }));
 
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByText('You have unsaved changes. Leave this page without saving?'),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
     expect(screen.getByText('Dashboard page')).toBeInTheDocument();
-    confirmSpy.mockRestore();
   });
 
-  it('allows in-app navigation when dirty and the user confirms leaving', async () => {
+  it('allows in-app navigation when dirty and the user confirms leaving via the styled dialog', async () => {
     setHasUnsavedChanges(true);
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
     renderLayout();
 
     await user.click(screen.getByRole('link', { name: /jane doe/i }));
+    await user.click(screen.getByRole('button', { name: 'Leave' }));
 
     expect(screen.getByText('Profile page')).toBeInTheDocument();
-    confirmSpy.mockRestore();
   });
 });
 

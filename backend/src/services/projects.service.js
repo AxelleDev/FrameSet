@@ -997,23 +997,19 @@ const validateOrderedIds = (ids) => {
 // contract as replaceProjectPalette, but reorder-only (no add/edit/remove).
 // Ids that don't belong to this project (or are trashed) are silently
 // skipped, so a stale client array can't corrupt another project's ordering.
+// A single UPDATE ... CASE assigns every row's new position atomically
+// (no transaction needed — one statement can't leave a partial reorder behind).
 const reorderChildRows = async (table, projectId, orderedIds) => {
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-    for (let position = 0; position < orderedIds.length; position += 1) {
-      await connection.query(
-        `UPDATE ${table} SET position = ? WHERE id = ? AND project_id = ? AND deleted_at IS NULL`,
-        [position, orderedIds[position], projectId],
-      );
-    }
-    await connection.commit();
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
+  const caseClauses = orderedIds.map(() => 'WHEN ? THEN ?').join(' ');
+  const caseParams = orderedIds.flatMap((id, position) => [id, position]);
+  const idPlaceholders = orderedIds.map(() => '?').join(', ');
+
+  await db.query(
+    `UPDATE ${table} SET position = CASE id ${caseClauses} ELSE position END
+     WHERE project_id = ? AND deleted_at IS NULL AND id IN (${idPlaceholders})`,
+    [...caseParams, projectId, ...orderedIds],
+  );
+
   return { success: true };
 };
 
@@ -1066,25 +1062,20 @@ const unpinProjectForUser = async (userId, projectId) => {
 
 // Reorders the user's pinned projects to match the given id sequence. Ids
 // that aren't currently pinned by this user are silently skipped. Throws
-// 'validation' on a bad payload.
+// 'validation' on a bad payload. A single UPDATE ... CASE assigns every
+// project's new pin_position atomically, same approach as reorderChildRows.
 const reorderPinnedProjectsForUser = async (userId, ids) => {
   const orderedIds = validateOrderedIds(ids);
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-    for (let position = 0; position < orderedIds.length; position += 1) {
-      await connection.query(
-        'UPDATE projects SET pin_position = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL AND pin_position IS NOT NULL',
-        [position, orderedIds[position], userId],
-      );
-    }
-    await connection.commit();
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
+  const caseClauses = orderedIds.map(() => 'WHEN ? THEN ?').join(' ');
+  const caseParams = orderedIds.flatMap((id, position) => [id, position]);
+  const idPlaceholders = orderedIds.map(() => '?').join(', ');
+
+  await db.query(
+    `UPDATE projects SET pin_position = CASE id ${caseClauses} ELSE pin_position END
+     WHERE user_id = ? AND deleted_at IS NULL AND pin_position IS NOT NULL AND id IN (${idPlaceholders})`,
+    [...caseParams, userId, ...orderedIds],
+  );
+
   return { success: true };
 };
 

@@ -130,7 +130,7 @@ const changePassword = async (req, res) => {
       req.body || {},
       { onMailError: makeMailErrorLogger(req, 'change_password.notice_mail') },
     );
-    issueAuthCookies(res, { id: authenticatedUserId, email: req.user?.email });
+    issueAuthCookies(res, { id: authenticatedUserId });
     res.json({ success: true, passwordUpdatedAt });
   } catch (error) {
     handleServiceError(req, res, 'change_password', error);

@@ -20,7 +20,6 @@
     --color-primary: 60 61 72; /* #3C3D48 */
     --color-secondary: 107 107 107; /* #6B6B6B */
     --color-blue: 137 148 223; /* #8994DF */
-    --color-pink: 255 146 146; /* #FF9292 */
     --color-danger: 220 38 38; /* #DC2626 */
     --color-success: 62 157 123; /* #3E9D7B */
   }
@@ -31,7 +30,6 @@
     --color-primary: 232 233 240; /* #E8E9F0 */
     --color-secondary: 138 140 156; /* #8A8C9C */
     --color-blue: 137 148 223; /* #8994DF */
-    --color-pink: 255 146 146; /* #FF9292 */
     --color-danger: 248 113 113; /* #F87171 */
     --color-success: 110 200 165; /* #6EC8A5 */
   }

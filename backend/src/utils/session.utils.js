@@ -14,16 +14,20 @@ const {
   getCookieBaseOptions,
 } = require('./cookies.utils');
 
-// Signs a short-lived access token carrying minimal identity claims (id, email).
+// Signs a short-lived access token carrying only the id — the one claim any
+// server-side check actually reads (see getAuthenticatedUserId). An email
+// claim used to ride along too, but nothing ever read it back from the token
+// (profile/email always come from a fresh DB read), so it was just dead
+// weight that could go stale across an email change; dropped rather than kept in sync.
 const createAccessToken = (user) =>
-  jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+  jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 
 // Sets a fresh access + refresh token pair as httpOnly cookies on the response.
 const issueAuthCookies = (res, user) => {
   res.cookie(ACCESS_TOKEN_COOKIE_NAME, createAccessToken(user), getAccessTokenCookieOptions());
   res.cookie(
     REFRESH_TOKEN_COOKIE_NAME,
-    generateRefreshToken({ id: user.id, email: user.email }),
+    generateRefreshToken({ id: user.id }),
     getRefreshTokenCookieOptions(),
   );
   // Sessions issued before the refresh cookie was narrowed to /api/auth carry a

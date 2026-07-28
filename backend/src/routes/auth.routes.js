@@ -5,10 +5,15 @@
 
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
 const authController = require('../controllers/auth.controller');
 const { isE2ETestMode } = require('../utils/testMode');
 const { jsonLimitHandler } = require('../utils/rateLimitHandler');
+const { JWT_SECRET } = require('../config/jwt.config');
+const { getBearerToken } = require('../utils/auth.utils');
+const { ACCESS_TOKEN_COOKIE_NAME, getCookieValue } = require('../utils/cookies.utils');
 
+const { ipKeyGenerator } = rateLimit;
 const router = express.Router();
 
 // Raised (not disabled) in E2E test mode so repeated local Playwright runs
@@ -87,11 +92,37 @@ const googleSignInLimiter = rateLimit({
   handler: jsonLimitHandler('Too many attempts, please try again in a minute.'),
 });
 
+// Best-effort identity for the logout limiter: the same access token the
+// controller itself reads (bearer header or cookie), decoded leniently
+// (ignoring expiration — logout must work with an already-expired access
+// token). Falls back to the caller's IP when no token decodes. Keying by user
+// like every other per-user limiter means the quota follows the account
+// instead of a shared IP, so one busy user's multi-tab sign-outs on a NAT'd
+// network (office, school Wi-Fi) can't 429 everyone else behind it.
+const getLogoutRateLimitKey = (req) => {
+  const token = getBearerToken(req) || getCookieValue(req, ACCESS_TOKEN_COOKIE_NAME);
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET, {
+        ignoreExpiration: true,
+        algorithms: ['HS256'],
+      });
+      if (decoded?.id) {
+        return `logout:${decoded.id}`;
+      }
+    } catch {
+      // Undecodable token: fall through to the IP-keyed quota below.
+    }
+  }
+  return `logout:anonymous:${ipKeyGenerator(req.ip)}`;
+};
+
 // Logout: generous cap (multi-tab sign-outs are legitimate) that still bounds
 // the revocation writes a scripted caller could otherwise trigger freely.
 const logoutLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: maxFor(20),
+  keyGenerator: getLogoutRateLimitKey,
   handler: jsonLimitHandler('Too many requests, please try again in a minute.'),
 });
 

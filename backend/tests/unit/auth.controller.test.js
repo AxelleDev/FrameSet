@@ -196,7 +196,7 @@ describe('authentication controller', () => {
       tokenService.isTokenRevoked.mockResolvedValue(false);
       tokenService.generateRefreshToken.mockReturnValue('rotated-refresh-token');
       tokenService.revokeToken.mockResolvedValue(true);
-      const req = { body: { refreshToken: 'token' } };
+      const req = { headers: { cookie: 'frameset_refresh_token=token' } };
       const res = {
         json: jest.fn(),
         status: jest.fn().mockReturnThis(),
@@ -214,7 +214,7 @@ describe('authentication controller', () => {
       tokenService.verifyRefreshToken.mockReturnValue({ id: 1 });
       tokenService.isTokenRevoked.mockResolvedValue(true);
 
-      const req = { id: 'req-1', body: { refreshToken: 'token' } };
+      const req = { id: 'req-1', headers: { cookie: 'frameset_refresh_token=token' } };
       const res = {
         json: jest.fn(),
         status: jest.fn().mockReturnThis(),
@@ -237,7 +237,7 @@ describe('authentication controller', () => {
       // and must not issue a fresh pair.
       tokenService.revokeToken.mockResolvedValue(false);
 
-      const req = { id: 'req-refresh-1', body: { refreshToken: 'token' } };
+      const req = { id: 'req-refresh-1', headers: { cookie: 'frameset_refresh_token=token' } };
       const res = {
         json: jest.fn(),
         status: jest.fn().mockReturnThis(),
@@ -264,7 +264,7 @@ describe('authentication controller', () => {
       const req = {
         id: 'req-logout-1',
         token: accessToken,
-        body: { refreshToken: 'refresh-token' },
+        headers: { cookie: 'frameset_refresh_token=refresh-token' },
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
 
@@ -288,8 +288,10 @@ describe('authentication controller', () => {
 
       const req = {
         id: 'req-logout-2',
-        headers: { authorization: `Bearer ${expiredAccessToken}` },
-        body: { refreshToken: 'refresh-token' },
+        headers: {
+          authorization: `Bearer ${expiredAccessToken}`,
+          cookie: 'frameset_refresh_token=refresh-token',
+        },
       };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis(), clearCookie: jest.fn() };
 
@@ -345,6 +347,7 @@ describe('authentication controller', () => {
               email: 'a@b.com',
               is_verified: 0,
               verification_code: hashOtp('123456'),
+              verification_code_expires: new Date(Date.now() + 10 * 60 * 1000),
               otp_attempts: 0,
             },
           ],
@@ -440,6 +443,7 @@ describe('authentication controller', () => {
               id: 1,
               email: 'a@b.com',
               reset_code: hashOtp('123456'),
+              reset_code_expires: new Date(Date.now() + 10 * 60 * 1000),
               otp_attempts: 0,
             },
           ],

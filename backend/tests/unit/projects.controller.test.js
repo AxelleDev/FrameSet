@@ -1163,41 +1163,36 @@ describe('projects controller', () => {
   });
 
   describe('reorder norms', () => {
-    const makeConnection = () => ({
-      query: jest.fn().mockResolvedValue([{}]),
-      beginTransaction: jest.fn(),
-      commit: jest.fn(),
-      rollback: jest.fn(),
-      release: jest.fn(),
-    });
-
     it('reorders brush norms when owned', async () => {
       db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ownership
-      const connection = makeConnection();
-      db.getConnection.mockResolvedValueOnce(connection);
+      db.query.mockResolvedValueOnce([{}]); // the single CASE-based UPDATE
       const req = { params: { id: '1' }, user: { id: 1 }, body: [3, 1, 2] };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.reorderBrushNorms(req, res);
-      expect(connection.beginTransaction).toHaveBeenCalled();
-      expect(connection.query).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE project_brush_norms'),
-        [0, 3, '1'],
-      );
-      expect(connection.commit).toHaveBeenCalled();
-      expect(connection.release).toHaveBeenCalled();
+      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE project_brush_norms'), [
+        3,
+        0,
+        1,
+        1,
+        2,
+        2,
+        '1',
+        3,
+        1,
+        2,
+      ]);
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
 
     it('reorders typography norms when owned', async () => {
       db.query.mockResolvedValueOnce([[{ id: 1 }]]); // ownership
-      const connection = makeConnection();
-      db.getConnection.mockResolvedValueOnce(connection);
+      db.query.mockResolvedValueOnce([{}]); // the single CASE-based UPDATE
       const req = { params: { id: '1' }, user: { id: 1 }, body: [5, 6] };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.reorderTypographyNorms(req, res);
-      expect(connection.query).toHaveBeenCalledWith(
+      expect(db.query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE project_typography_norms'),
-        [0, 5, '1'],
+        [5, 0, 6, 1, '1', 5, 6],
       );
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
@@ -1208,7 +1203,7 @@ describe('projects controller', () => {
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.reorderBrushNorms(req, res);
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(db.getConnection).not.toHaveBeenCalled();
+      expect(db.query).toHaveBeenCalledTimes(1);
     });
 
     it('returns 400 for an empty reorder list', async () => {
@@ -1217,7 +1212,7 @@ describe('projects controller', () => {
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.reorderBrushNorms(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(db.getConnection).not.toHaveBeenCalled();
+      expect(db.query).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -1278,22 +1273,14 @@ describe('projects controller', () => {
     });
 
     it('reorders pinned projects', async () => {
-      const connection = {
-        query: jest.fn().mockResolvedValue([{}]),
-        beginTransaction: jest.fn(),
-        commit: jest.fn(),
-        rollback: jest.fn(),
-        release: jest.fn(),
-      };
-      db.getConnection.mockResolvedValueOnce(connection);
+      db.query.mockResolvedValueOnce([{}]); // the single CASE-based UPDATE
       const req = { user: { id: 1 }, body: [4, 2] };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.reorderPinnedProjects(req, res);
-      expect(connection.query).toHaveBeenCalledWith(
+      expect(db.query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE projects'),
-        [0, 4, 1],
+        [4, 0, 2, 1, 1, 4, 2],
       );
-      expect(connection.commit).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
 
@@ -1302,7 +1289,7 @@ describe('projects controller', () => {
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
       await projectsController.reorderPinnedProjects(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(db.getConnection).not.toHaveBeenCalled();
+      expect(db.query).not.toHaveBeenCalled();
     });
   });
 });

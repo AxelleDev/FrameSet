@@ -196,12 +196,15 @@ const confirmPendingEmail = async (userId, { email, code }, { onMailError } = {}
     throw new UserServiceError('no_pending', 'No pending email found.');
   }
   const userDb = rows[0];
+  // Expiry before match (see the identical note in auth.service's
+  // verifyEmailCode), so an expired code's response never reveals whether the
+  // guess was correct.
+  if (!userDb.pending_email_expires || new Date() > new Date(userDb.pending_email_expires)) {
+    throw new UserServiceError('code_expired', 'Code expired. Please request a new one.');
+  }
   if (!userDb.pending_email_code || !safeOtpEqual(code, userDb.pending_email_code)) {
     await registerFailedOtpAttempt(userDb, 'pending_email_code');
     throw new UserServiceError('invalid_code', 'Incorrect code.');
-  }
-  if (!userDb.pending_email_expires || new Date() > new Date(userDb.pending_email_expires)) {
-    throw new UserServiceError('code_expired', 'Code expired. Please request a new one.');
   }
 
   try {

@@ -369,15 +369,20 @@ const verifyEmailCode = async ({ email, code }) => {
   if (userDb.is_verified) {
     throw new AuthServiceError('validation', 'Incorrect code.');
   }
-  if (!userDb.verification_code || !safeOtpEqual(code, userDb.verification_code)) {
-    await registerFailedOtpAttempt(userDb, 'verification_code');
-    throw new AuthServiceError('validation', 'Incorrect code.');
-  }
+  // Expiry is checked before the code match (not after): otherwise a correct-
+  // but-expired guess would fall through to "Code expired" instead of
+  // "Incorrect code", telling an attacker their guess was right just too late.
+  // Checking expiry first makes an expired code's response identical
+  // regardless of whether the submitted code was ever correct.
   if (
     !userDb.verification_code_expires ||
     new Date() > new Date(userDb.verification_code_expires)
   ) {
     throw new AuthServiceError('validation', 'Code expired. Please request a new one.');
+  }
+  if (!userDb.verification_code || !safeOtpEqual(code, userDb.verification_code)) {
+    await registerFailedOtpAttempt(userDb, 'verification_code');
+    throw new AuthServiceError('validation', 'Incorrect code.');
   }
   await db.query(
     'UPDATE users SET is_verified = true, verification_code = NULL, verification_code_expires = NULL, otp_attempts = 0 WHERE email = ?',
@@ -508,12 +513,14 @@ const completePasswordReset = async (
   }
 
   const userDb = rows[0];
+  // Expiry before match (see the identical note in verifyEmailCode above), so
+  // an expired code's response never reveals whether the guess was correct.
+  if (!userDb.reset_code_expires || new Date() > new Date(userDb.reset_code_expires)) {
+    throw new AuthServiceError('validation', 'Code expired. Please request a new one.');
+  }
   if (!userDb.reset_code || !safeOtpEqual(code, userDb.reset_code)) {
     await registerFailedOtpAttempt(userDb, 'reset_code');
     throw new AuthServiceError('validation', 'Incorrect code.');
-  }
-  if (!userDb.reset_code_expires || new Date() > new Date(userDb.reset_code_expires)) {
-    throw new AuthServiceError('validation', 'Code expired. Please request a new one.');
   }
 
   const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
