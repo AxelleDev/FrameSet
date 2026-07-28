@@ -34,4 +34,8 @@ module.exports = {
   JWT_EXPIRES: ACCESS_TOKEN_MAX_AGE_MS / 1000,
   // Longer-lived refresh token; rotated and revocable server-side.
   JWT_REFRESH_EXPIRES: '7d',
+  // Very short-lived: only proves "the password already checked out" while a
+  // 2FA-enabled login waits for the TOTP/recovery-code step. Long enough to
+  // type a 6-digit code, short enough that a leaked token is useless soon after.
+  TOTP_CHALLENGE_EXPIRES: '5m',
 };

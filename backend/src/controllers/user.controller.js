@@ -5,6 +5,7 @@
  */
 
 const userService = require('../services/user.service');
+const twoFactorService = require('../services/twoFactor.service');
 const { getAuthenticatedUserId, createControllerLogger } = require('../utils/auth.utils');
 const { issueAuthCookies, clearAuthCookies } = require('../utils/session.utils');
 
@@ -15,7 +16,8 @@ const logUserControllerError = createControllerLogger('users');
 const makeMailErrorLogger = (req, operation) => (mailError) =>
   logUserControllerError(req, operation, mailError);
 
-// Maps a UserServiceError code to its HTTP status; the service message is surfaced as-is.
+// Maps a UserServiceError/TwoFactorServiceError code to its HTTP status; the
+// service message is surfaced as-is.
 const STATUS_BY_ERROR_CODE = {
   validation: 400,
   not_found: 404,
@@ -27,6 +29,9 @@ const STATUS_BY_ERROR_CODE = {
   no_password: 400,
   reauth_required: 401,
   reauth_failed: 401,
+  already_enabled: 400,
+  no_pending_setup: 400,
+  not_enabled: 400,
 };
 
 // Sends a business error as its mapped status, or logs and returns a generic 500.
@@ -37,7 +42,10 @@ const handleServiceError = (
   error,
   { serverErrorMessage = 'Server error.' } = {},
 ) => {
-  if (error instanceof userService.UserServiceError) {
+  if (
+    error instanceof userService.UserServiceError ||
+    error instanceof twoFactorService.TwoFactorServiceError
+  ) {
     return res.status(STATUS_BY_ERROR_CODE[error.code] || 400).json({ error: error.message });
   }
   logUserControllerError(req, operation, error);
@@ -155,6 +163,59 @@ const deleteAccount = async (req, res) => {
   }
 };
 
+// Starts TOTP enrollment: generates a secret (not yet active) and returns it
+// plus an otpauth:// URL for the frontend to render as a QR code.
+const setupTotp = async (req, res) => {
+  const authenticatedUserId = getAuthenticatedUserId(req);
+  if (!authenticatedUserId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+
+  try {
+    res.json(await twoFactorService.beginTotpSetup(authenticatedUserId));
+  } catch (error) {
+    handleServiceError(req, res, 'setup_totp', error);
+  }
+};
+
+// Confirms enrollment with one live code; on success returns the one-time
+// recovery codes (never retrievable again after this response).
+const confirmTotp = async (req, res) => {
+  const authenticatedUserId = getAuthenticatedUserId(req);
+  if (!authenticatedUserId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+
+  try {
+    const { recoveryCodes } = await twoFactorService.confirmTotpSetup(
+      authenticatedUserId,
+      req.body?.code,
+      { onMailError: makeMailErrorLogger(req, 'confirm_totp.notice_mail') },
+    );
+    res.json({ success: true, recoveryCodes });
+  } catch (error) {
+    handleServiceError(req, res, 'confirm_totp', error);
+  }
+};
+
+// Disables 2FA; a critical action, so it requires re-authentication
+// (currentPassword or googleCredential), same as email changes / account deletion.
+const disableTotp = async (req, res) => {
+  const authenticatedUserId = getAuthenticatedUserId(req);
+  if (!authenticatedUserId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+
+  try {
+    await twoFactorService.disableTotp(authenticatedUserId, req.body || {}, {
+      onMailError: makeMailErrorLogger(req, 'disable_totp.notice_mail'),
+    });
+    res.json({ success: true });
+  } catch (error) {
+    handleServiceError(req, res, 'disable_totp', error);
+  }
+};
+
 module.exports = {
   getUserCount,
   getProfile,
@@ -163,4 +224,7 @@ module.exports = {
   resendPendingEmail,
   changePassword,
   deleteAccount,
+  setupTotp,
+  confirmTotp,
+  disableTotp,
 };

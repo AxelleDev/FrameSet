@@ -5,8 +5,14 @@
 
 const jwt = require('jsonwebtoken');
 const authService = require('../services/auth.service');
+const twoFactorService = require('../services/twoFactor.service');
 const { getIdentifierFingerprint, getBearerToken } = require('../utils/auth.utils');
-const { issueAuthCookies, clearAuthCookies } = require('../utils/session.utils');
+const {
+  issueAuthCookies,
+  clearAuthCookies,
+  createTotpChallengeToken,
+  verifyTotpChallengeToken,
+} = require('../utils/session.utils');
 const { createCsrfToken } = require('../middleware/csrfProtection');
 const { verifyRefreshToken, revokeToken, isTokenRevoked } = require('../services/token.service');
 const { JWT_SECRET } = require('../config/jwt.config');
@@ -101,6 +107,23 @@ const login = async (req, res) => {
   try {
     const user = await authService.authenticateUser({ email, password });
 
+    // Password checked out, but the account has 2FA enabled: defer the
+    // session and hand back a short-lived challenge token instead of
+    // anything else about the account (see authenticateUser's requiresTotp
+    // branch — no name/email is disclosed at this point).
+    if (user.requiresTotp) {
+      logger.info('auth.login.totp_required', {
+        requestId: req.id,
+        userId: user.id,
+      });
+
+      return res.json({
+        success: true,
+        requiresTotp: true,
+        challengeToken: createTotpChallengeToken(user.id),
+      });
+    }
+
     logger.info('auth.login.success', {
       requestId: req.id,
       userId: user.id,
@@ -172,6 +195,53 @@ const login = async (req, res) => {
   }
 };
 
+// Completes a 2FA-enabled login: verifies the challenge token issued by
+// login() is genuine and unexpired, then the submitted code — a live TOTP
+// code or, failing that, a single-use recovery code (see
+// twoFactor.service.verifyTotpChallenge). Only on success does the real
+// session finally get issued.
+const loginTotp = async (req, res) => {
+  const { challengeToken, code } = req.body || {};
+
+  const challenge = verifyTotpChallengeToken(challengeToken);
+  if (!challenge) {
+    logger.warn('auth.login_totp.invalid_challenge', { requestId: req.id });
+    return res.status(403).json({ error: 'This session has expired. Please sign in again.' });
+  }
+
+  try {
+    const { usedRecoveryCode } = await twoFactorService.verifyTotpChallenge(challenge.id, code);
+    const user = await authService.getSessionUserById(challenge.id);
+
+    logger.info('auth.login_totp.success', {
+      requestId: req.id,
+      userId: user.id,
+      usedRecoveryCode,
+    });
+
+    issueAuthCookies(res, user);
+    res.json({ success: true, ...user });
+  } catch (error) {
+    if (error.code === 'invalid_code' || error.code === 'not_enabled') {
+      logger.warn('auth.login_totp.failed', {
+        requestId: req.id,
+        userId: challenge.id,
+        reason: error.code,
+      });
+
+      return res.status(401).json({ error: 'Incorrect code.' });
+    }
+
+    logger.error('auth.login_totp.error', {
+      requestId: req.id,
+      userId: challenge.id,
+      error,
+    });
+
+    res.status(500).json({ error: 'Server error.' });
+  }
+};
+
 // "Try without an account": logs into the single shared, read-only demo
 // account — no credentials needed. Same cookie-issuing/response shape as login.
 const demoLogin = async (req, res) => {
@@ -212,6 +282,22 @@ const googleSignIn = async (req, res) => {
         });
       },
     });
+
+    // Google proved the identity, but the account has 2FA enabled: same
+    // deferred-session contract as login() — a challenge token, no cookies,
+    // nothing else about the account disclosed yet.
+    if (user.requiresTotp) {
+      logger.info('auth.google.totp_required', {
+        requestId: req.id,
+        userId: user.id,
+      });
+
+      return res.json({
+        success: true,
+        requiresTotp: true,
+        challengeToken: createTotpChallengeToken(user.id),
+      });
+    }
 
     logger.info('auth.google.success', {
       requestId: req.id,
@@ -509,6 +595,7 @@ module.exports = {
   getCsrfToken,
   register,
   login,
+  loginTotp,
   demoLogin,
   googleSignIn,
   verify,

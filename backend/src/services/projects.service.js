@@ -959,7 +959,7 @@ const validatePalettePayload = (colors) => {
     }
     const nameCheck = sanitizeOptionalTextField(color?.name, { maxLength: 255 });
     if (nameCheck.error) {
-      throw new ProjectServiceError('validation', 'The color name is invalid.');
+      throw new ProjectServiceError('validation', 'The color usage is invalid.');
     }
     let colorId = null;
     if (color?.id !== undefined && color?.id !== null) {

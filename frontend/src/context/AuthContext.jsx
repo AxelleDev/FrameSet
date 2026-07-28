@@ -209,6 +209,15 @@ export const AuthProvider = ({ children }) => {
           { email, password },
           { onGlobalError: setGlobalError },
         );
+
+        // The account has 2FA enabled: the password checked out, but no
+        // session was issued yet. Hand the challenge token back to the
+        // caller (Login.jsx) instead of signing in — completeTotpLogin
+        // finishes the job once the user enters their code.
+        if (userData?.requiresTotp) {
+          return { success: false, requiresTotp: true, challengeToken: userData.challengeToken };
+        }
+
         setAuthenticatedUser(userData);
         return { success: true, data: userData };
       } catch (err) {
@@ -220,6 +229,30 @@ export const AuthProvider = ({ children }) => {
         // Surface the server error code (e.g. EMAIL_NOT_VERIFIED) so callers branch on
         // a stable identifier instead of matching the human-readable message text.
         return { success: false, message, code: err?.data?.code, retryAfterSeconds };
+      }
+    },
+    [setAuthenticatedUser],
+  );
+
+  // Completes a 2FA-enabled login: exchanges the challenge token from login()
+  // plus a live TOTP (or single-use recovery) code for the real session.
+  const completeTotpLogin = useCallback(
+    async (challengeToken, code) => {
+      try {
+        const userData = await api.post(
+          '/auth/login/totp',
+          { challengeToken, code },
+          { onGlobalError: setGlobalError },
+        );
+        setAuthenticatedUser(userData);
+        return { success: true, data: userData };
+      } catch (err) {
+        const { message, retryAfterSeconds } = handleApiError(
+          err,
+          setGlobalError,
+          'Incorrect code.',
+        );
+        return { success: false, message, retryAfterSeconds };
       }
     },
     [setAuthenticatedUser],
@@ -252,6 +285,11 @@ export const AuthProvider = ({ children }) => {
           { credential },
           { onGlobalError: setGlobalError },
         );
+        // Google is only the first factor on a 2FA-enabled account: no session
+        // yet — the caller must run the TOTP challenge, same as login().
+        if (userData?.requiresTotp) {
+          return { success: false, requiresTotp: true, challengeToken: userData.challengeToken };
+        }
         setAuthenticatedUser(userData);
         return { success: true, data: userData };
       } catch (err) {
@@ -409,6 +447,90 @@ export const AuthProvider = ({ children }) => {
     [user],
   );
 
+  // Starts two-factor enrollment: generates a secret (not yet active) and
+  // returns it plus an otpauth:// URL for the caller to render as a QR code.
+  const setupTotp = useCallback(async () => {
+    if (!user) {
+      return { success: false, message: 'You are not signed in.' };
+    }
+    if (user.isDemo) {
+      return { success: false, message: 'Not available in the demo account.' };
+    }
+
+    try {
+      const data = await api.post('/users/totp/setup', {}, { onGlobalError: setGlobalError });
+      return { success: true, secret: data.secret, otpauthUrl: data.otpauthUrl };
+    } catch (error) {
+      logger.error('auth.setupTotp.error', error);
+      const isBusinessError = error.status && error.status < 500;
+      return {
+        success: false,
+        message: isBusinessError ? error.data?.error || error.message : undefined,
+        retryAfterSeconds: error.retryAfterSeconds,
+      };
+    }
+  }, [user, setGlobalError]);
+
+  // Confirms enrollment with one live code; on success marks 2FA enabled
+  // locally and returns the one-time recovery codes (never retrievable again).
+  const confirmTotpSetup = useCallback(
+    async (code) => {
+      if (!user) {
+        return { success: false, message: 'You are not signed in.' };
+      }
+
+      try {
+        const data = await api.post(
+          '/users/totp/confirm',
+          { code },
+          { onGlobalError: setGlobalError },
+        );
+        setUser((currentUser) =>
+          currentUser ? { ...currentUser, totpEnabled: true } : currentUser,
+        );
+        return { success: true, recoveryCodes: data.recoveryCodes };
+      } catch (error) {
+        logger.error('auth.confirmTotpSetup.error', error);
+        const isBusinessError = error.status && error.status < 500;
+        return {
+          success: false,
+          message: isBusinessError ? error.data?.error || error.message : undefined,
+          retryAfterSeconds: error.retryAfterSeconds,
+        };
+      }
+    },
+    [user],
+  );
+
+  // Disables 2FA. A critical action: pass `credentials` ({ currentPassword }
+  // or { googleCredential }) to re-authenticate, same as updateUserProfile/deleteAccount.
+  const disableTotp = useCallback(
+    async (credentials) => {
+      if (!user) {
+        return { success: false, message: 'You are not signed in.' };
+      }
+
+      try {
+        await api.post('/users/totp/disable', credentials || {}, {
+          onGlobalError: setGlobalError,
+        });
+        setUser((currentUser) =>
+          currentUser ? { ...currentUser, totpEnabled: false } : currentUser,
+        );
+        return { success: true };
+      } catch (error) {
+        logger.error('auth.disableTotp.error', error);
+        const isBusinessError = error.status && error.status < 500;
+        return {
+          success: false,
+          message: isBusinessError ? error.data?.error || error.message : undefined,
+          retryAfterSeconds: error.retryAfterSeconds,
+        };
+      }
+    },
+    [user],
+  );
+
   // Confirms a new account's email with the code emailed at signup.
   const verifyEmail = useCallback(
     async (email, code) => {
@@ -555,6 +677,7 @@ export const AuthProvider = ({ children }) => {
       setGlobalError,
       sessionExpiringSoon,
       login,
+      completeTotpLogin,
       loginWithGoogle,
       loginAsDemo,
       register,
@@ -564,6 +687,9 @@ export const AuthProvider = ({ children }) => {
       updateUserProfile,
       changePassword,
       deleteAccount,
+      setupTotp,
+      confirmTotpSetup,
+      disableTotp,
       verifyEmail,
       resendVerificationCode,
       requestPasswordReset,
@@ -577,6 +703,7 @@ export const AuthProvider = ({ children }) => {
       globalError,
       sessionExpiringSoon,
       login,
+      completeTotpLogin,
       loginWithGoogle,
       loginAsDemo,
       register,
@@ -586,6 +713,9 @@ export const AuthProvider = ({ children }) => {
       updateUserProfile,
       changePassword,
       deleteAccount,
+      setupTotp,
+      confirmTotpSetup,
+      disableTotp,
       verifyEmail,
       resendVerificationCode,
       requestPasswordReset,

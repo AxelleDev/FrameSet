@@ -5,6 +5,9 @@ process.env.MAIL_USER = process.env.MAIL_USER || 'mail@test.local';
 process.env.MAIL_PASS = process.env.MAIL_PASS || 'test_mail_password';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret';
 process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_jwt_refresh_secret';
+process.env.TOTP_ENCRYPTION_KEY =
+  process.env.TOTP_ENCRYPTION_KEY ||
+  '20f766230f5b4740f5b620d2dde09488b110435c13395edb10e1fdcd5ddf2098';
 
 const userController = require('../../src/controllers/user.controller');
 const db = require('../../src/database');
@@ -12,6 +15,8 @@ const mailService = require('../../src/services/mail.service');
 const googleIdentity = require('../../src/services/googleIdentity.service');
 const bcrypt = require('bcryptjs');
 const { hashOtp } = require('../../src/utils/otp');
+const { encryptSecret } = require('../../src/utils/encryption');
+const { generateTotpSecret, generateTotpCode } = require('../../src/utils/totp');
 
 jest.mock('../../src/database');
 jest.mock('../../src/services/mail.service');
@@ -59,7 +64,7 @@ describe('user controller', () => {
       await userController.getProfile(req, res);
 
       expect(db.query).toHaveBeenCalledWith(
-        'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, (password IS NOT NULL) AS has_password FROM users WHERE id = ?',
+        'SELECT id, name, email, avatar_initials, password_updated_at, pending_email, is_demo, totp_enabled, (password IS NOT NULL) AS has_password FROM users WHERE id = ?',
         [1],
       );
       expect(res.json).toHaveBeenCalledWith(
@@ -327,6 +332,107 @@ describe('user controller', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.cookie).not.toHaveBeenCalled();
       expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('two-factor authentication', () => {
+    it('returns 401 for setup/confirm/disable when not authenticated', async () => {
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+      await userController.setupTotp({ body: {} }, res);
+      await userController.confirmTotp({ body: {} }, res);
+      await userController.disableTotp({ body: {} }, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.status).toHaveBeenCalledTimes(3);
+    });
+
+    it('setupTotp returns a fresh secret and otpauth URL', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ email: 'axelle@example.com', totp_enabled: 0 }]])
+        .mockResolvedValueOnce([{}]);
+      const req = { user: { id: 1 }, body: {} };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await userController.setupTotp(req, res);
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          secret: expect.any(String),
+          otpauthUrl: expect.stringContaining('otpauth://totp/'),
+        }),
+      );
+    });
+
+    it('setupTotp rejects re-enrollment while 2FA is already enabled', async () => {
+      db.query.mockResolvedValueOnce([[{ email: 'a@b.com', totp_enabled: 1 }]]);
+      const req = { user: { id: 1 }, body: {} };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await userController.setupTotp(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it('confirmTotp activates 2FA and returns the one-time recovery codes', async () => {
+      const secret = generateTotpSecret();
+      const code = generateTotpCode(secret);
+      db.query
+        .mockResolvedValueOnce([
+          [{ email: 'axelle@example.com', totp_pending_secret_encrypted: encryptSecret(secret) }],
+        ])
+        .mockResolvedValueOnce([{}])
+        .mockResolvedValueOnce([{}])
+        .mockResolvedValueOnce([{}]);
+      const req = { user: { id: 1 }, body: { code } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await userController.confirmTotp(req, res);
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ success: true, recoveryCodes: expect.any(Array) }),
+      );
+      expect(res.json.mock.calls[0][0].recoveryCodes).toHaveLength(8);
+    });
+
+    it('confirmTotp rejects an incorrect code with a generic 400', async () => {
+      const secret = generateTotpSecret();
+      db.query.mockResolvedValueOnce([
+        [{ email: 'a@b.com', totp_pending_secret_encrypted: encryptSecret(secret) }],
+      ]);
+      const req = { user: { id: 1 }, body: { code: '000000' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await userController.confirmTotp(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Incorrect code.' });
+    });
+
+    it('disableTotp clears 2FA after a correct current password', async () => {
+      const hashedPassword = await bcrypt.hash('Password1', 4);
+      db.query
+        .mockResolvedValueOnce([[{ email: 'a@b.com', password: hashedPassword, google_id: null }]])
+        .mockResolvedValueOnce([{}])
+        .mockResolvedValueOnce([{}]);
+      const req = { user: { id: 1 }, body: { currentPassword: 'Password1' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await userController.disableTotp(req, res);
+
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('disableTotp rejects a wrong current password with 401, changing nothing', async () => {
+      const hashedPassword = await bcrypt.hash('Password1', 4);
+      db.query.mockResolvedValueOnce([
+        [{ email: 'a@b.com', password: hashedPassword, google_id: null }],
+      ]);
+      const req = { user: { id: 1 }, body: { currentPassword: 'wrong' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await userController.disableTotp(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(db.query).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -116,15 +116,49 @@ describe('ProjectExport', () => {
     renderPage();
 
     await user.click(screen.getByRole('button', { name: /photoshop \/ illustrator/i }));
+    await user.click(screen.getByRole('button', { name: /clip studio paint/i }));
     await user.click(screen.getByRole('button', { name: /krita \/ gimp/i }));
     await user.click(screen.getByRole('button', { name: /procreate/i }));
 
-    expect(createUrl).toHaveBeenCalledTimes(3);
-    expect(clickSpy).toHaveBeenCalledTimes(3);
+    expect(createUrl).toHaveBeenCalledTimes(4);
+    expect(clickSpy).toHaveBeenCalledTimes(4);
     // Object URLs must be released after the click, or each export leaks memory.
-    expect(revokeUrl).toHaveBeenCalledTimes(3);
+    expect(revokeUrl).toHaveBeenCalledTimes(4);
 
     clickSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('downloads Photoshop/Illustrator and Clip Studio Paint as distinctly named .ase files', async () => {
+    // Same Adobe Swatch Exchange bytes (Clip Studio Paint imports .ase via its
+    // own Color Set > New from File) — only the filename must tell them apart,
+    // so grabbing both from the same page never overwrites one with the other.
+    const user = userEvent.setup();
+    projectState.activeProject = {
+      ...projectState.activeProject,
+      palette: [{ id: 1, name: 'Coral', hex: '#FF6B63' }],
+    };
+    vi.stubGlobal(
+      'URL',
+      Object.assign(Object.create(URL), {
+        createObjectURL: vi.fn().mockReturnValue('blob:mock'),
+        revokeObjectURL: vi.fn(),
+      }),
+    );
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const setAttributeSpy = vi.spyOn(HTMLAnchorElement.prototype, 'setAttribute');
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /photoshop \/ illustrator/i }));
+    await user.click(screen.getByRole('button', { name: /clip studio paint/i }));
+
+    const downloadedFilenames = setAttributeSpy.mock.calls
+      .filter(([attr]) => attr === 'download')
+      .map(([, value]) => value);
+
+    expect(downloadedFilenames).toEqual(['mon_projet_palette.ase', 'mon_projet_palette_csp.ase']);
+
+    setAttributeSpy.mockRestore();
     vi.unstubAllGlobals();
   });
 

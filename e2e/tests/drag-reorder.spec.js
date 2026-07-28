@@ -55,7 +55,7 @@ test.describe('drag-and-drop reorders the palette and it persists', () => {
     ]) {
       await page.getByRole('button', { name: 'New color' }).click();
       const dialog = page.getByRole('dialog');
-      await dialog.getByLabel('Color name').fill(colorName);
+      await dialog.getByLabel('Color usage').fill(colorName);
       await dialog.getByLabel('Color', { exact: true }).fill(hex);
       await dialog.getByRole('button', { name: 'Add' }).click();
       await expect(page.getByText(colorName)).toBeVisible();

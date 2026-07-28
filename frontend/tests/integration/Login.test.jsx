@@ -6,10 +6,11 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AuthContext } from '../../src/context/AuthContext';
 import Login from '../../src/pages/Login';
 
-const { mockNavigate, mockLogin, mockLoginAsDemo } = vi.hoisted(() => ({
+const { mockNavigate, mockLogin, mockLoginAsDemo, mockCompleteTotpLogin } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockLogin: vi.fn(),
   mockLoginAsDemo: vi.fn(),
+  mockCompleteTotpLogin: vi.fn(),
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -22,7 +23,13 @@ vi.mock('../../src/hooks/useUserCount', () => ({ default: () => 12 }));
 const renderPage = () =>
   render(
     <HelmetProvider>
-      <AuthContext.Provider value={{ login: mockLogin, loginAsDemo: mockLoginAsDemo }}>
+      <AuthContext.Provider
+        value={{
+          login: mockLogin,
+          loginAsDemo: mockLoginAsDemo,
+          completeTotpLogin: mockCompleteTotpLogin,
+        }}
+      >
         <MemoryRouter>
           <Login />
         </MemoryRouter>
@@ -35,6 +42,7 @@ describe('Login', () => {
     mockNavigate.mockReset();
     mockLogin.mockReset();
     mockLoginAsDemo.mockReset();
+    mockCompleteTotpLogin.mockReset();
   });
 
   it('refuses to submit empty fields', async () => {
@@ -91,5 +99,111 @@ describe('Login', () => {
 
     expect(await screen.findByText('The demo is not available.')).toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  describe('two-factor authentication step', () => {
+    const signInWithPassword = async (user) => {
+      await user.type(screen.getByPlaceholderText(/email@example/i), 'axelle@example.com');
+      await user.type(screen.getByPlaceholderText('Your password'), 'Pass1234');
+      await user.click(screen.getByRole('button', { name: /sign in/i }));
+    };
+
+    it('switches to the code-entry step when the account has 2FA enabled', async () => {
+      const user = userEvent.setup();
+      mockLogin.mockResolvedValue({ success: false, requiresTotp: true, challengeToken: 'tok-1' });
+      renderPage();
+
+      await signInWithPassword(user);
+
+      expect(await screen.findByText(/two-factor authentication/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/verification code/i)).toBeInTheDocument();
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('completes sign-in and redirects once the code is correct', async () => {
+      const user = userEvent.setup();
+      mockLogin.mockResolvedValue({ success: false, requiresTotp: true, challengeToken: 'tok-1' });
+      mockCompleteTotpLogin.mockResolvedValue({ success: true });
+      renderPage();
+
+      await signInWithPassword(user);
+      await user.type(await screen.findByLabelText(/verification code/i), '123456');
+      await user.click(screen.getByRole('button', { name: /verify/i }));
+
+      expect(mockCompleteTotpLogin).toHaveBeenCalledWith('tok-1', '123456');
+      await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/app/dashboard'));
+    });
+
+    it('shows an inline error for an incorrect code, without navigating', async () => {
+      const user = userEvent.setup();
+      mockLogin.mockResolvedValue({ success: false, requiresTotp: true, challengeToken: 'tok-1' });
+      mockCompleteTotpLogin.mockResolvedValue({ success: false, message: 'Incorrect code.' });
+      renderPage();
+
+      await signInWithPassword(user);
+      await user.type(await screen.findByLabelText(/verification code/i), '000000');
+      await user.click(screen.getByRole('button', { name: /verify/i }));
+
+      expect(await screen.findByText('Incorrect code.')).toBeInTheDocument();
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('switches to the recovery-code label and back', async () => {
+      const user = userEvent.setup();
+      mockLogin.mockResolvedValue({ success: false, requiresTotp: true, challengeToken: 'tok-1' });
+      renderPage();
+
+      await signInWithPassword(user);
+      await screen.findByLabelText(/verification code/i);
+
+      await user.click(screen.getByRole('button', { name: /use a recovery code instead/i }));
+      expect(screen.getByLabelText(/recovery code/i)).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /use my authenticator app instead/i }));
+      expect(screen.getByLabelText(/verification code/i)).toBeInTheDocument();
+    });
+
+    it('opens directly on the code-entry step when a challenge arrives via route state (Google on the register page)', async () => {
+      render(
+        <HelmetProvider>
+          <AuthContext.Provider
+            value={{
+              login: mockLogin,
+              loginAsDemo: mockLoginAsDemo,
+              completeTotpLogin: mockCompleteTotpLogin,
+            }}
+          >
+            <MemoryRouter
+              initialEntries={[{ pathname: '/login', state: { totpChallengeToken: 'tok-r' } }]}
+            >
+              <Login />
+            </MemoryRouter>
+          </AuthContext.Provider>
+        </HelmetProvider>,
+      );
+
+      expect(screen.getByLabelText(/verification code/i)).toBeInTheDocument();
+
+      const user = userEvent.setup();
+      mockCompleteTotpLogin.mockResolvedValue({ success: true });
+      await user.type(screen.getByLabelText(/verification code/i), '123456');
+      await user.click(screen.getByRole('button', { name: /verify/i }));
+
+      expect(mockCompleteTotpLogin).toHaveBeenCalledWith('tok-r', '123456');
+    });
+
+    it('"Back to sign in" returns to the email/password form', async () => {
+      const user = userEvent.setup();
+      mockLogin.mockResolvedValue({ success: false, requiresTotp: true, challengeToken: 'tok-1' });
+      renderPage();
+
+      await signInWithPassword(user);
+      await screen.findByLabelText(/verification code/i);
+
+      await user.click(screen.getByRole('button', { name: /back to sign in/i }));
+
+      expect(screen.getByRole('button', { name: /^sign in$/i })).toBeInTheDocument();
+      expect(screen.queryByLabelText(/verification code/i)).not.toBeInTheDocument();
+    });
   });
 });

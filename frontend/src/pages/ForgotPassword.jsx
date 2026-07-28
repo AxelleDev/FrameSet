@@ -6,7 +6,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import AuthLayout from '../components/AuthLayout';
-import AuthLogoLink from '../components/AuthLogoLink';
 import AuthCard from '../components/AuthCard';
 import FormField from '../components/FormField';
 import Button from '../components/Button';
@@ -89,7 +88,6 @@ export default function ForgotPassword() {
       swapOnMobile
       hero={
         <>
-          <AuthLogoLink />
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-primary leading-tight">
             Forgot your <br />
             <span className="font-bold text-primary">password?</span>

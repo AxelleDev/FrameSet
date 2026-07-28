@@ -56,8 +56,9 @@ describe('Landing', () => {
     // Two "Create account" CTAs by design: the hero and the bottom section.
     expect(screen.getAllByRole('link', { name: /create account/i })).toHaveLength(2);
     expect(screen.getByRole('button', { name: /try the demo/i })).toBeInTheDocument();
-    // The export mock advertises the three drawing-app palette formats.
+    // The export mock advertises the four drawing-app palette formats.
     expect(screen.getByText('Photoshop / Illustrator')).toBeInTheDocument();
+    expect(screen.getByText('Clip Studio Paint')).toBeInTheDocument();
     expect(screen.getByText('.gpl')).toBeInTheDocument();
     expect(screen.getByText('.swatches')).toBeInTheDocument();
   });

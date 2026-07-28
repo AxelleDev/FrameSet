@@ -38,11 +38,19 @@ describe('Profile', () => {
         email: 'axelle@example.com',
         avatarInitials: 'JD',
         passwordUpdatedAt: null,
+        totpEnabled: false,
       },
       updateUserProfile: vi.fn().mockResolvedValue({ success: true }),
       logout: vi.fn(),
       changePassword: vi.fn(),
       deleteAccount: vi.fn(),
+      setupTotp: vi.fn().mockResolvedValue({
+        success: true,
+        secret: 'ABCD1234EFGH5678',
+        otpauthUrl: 'otpauth://totp/FrameSet:axelle@example.com?secret=ABCD1234EFGH5678',
+      }),
+      confirmTotpSetup: vi.fn(),
+      disableTotp: vi.fn(),
     });
   });
 
@@ -201,6 +209,59 @@ describe('Profile', () => {
 
     expect(authState.deleteAccount).toHaveBeenCalledWith({ currentPassword: 'Sup3rSecret!' });
     expect(mockNavigate).toHaveBeenCalledWith('/login');
+  });
+
+  describe('two-factor authentication', () => {
+    it('shows "Disabled" and an Enable button, which opens the setup modal', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      expect(screen.getByText('Disabled')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: /^enable$/i }));
+
+      expect(authState.setupTotp).toHaveBeenCalledTimes(1);
+      expect(await screen.findByText(/enter this code manually/i)).toBeInTheDocument();
+      expect(screen.getByText('ABCD1234EFGH5678')).toBeInTheDocument();
+    });
+
+    it('confirming the code shows the one-time recovery codes', async () => {
+      const user = userEvent.setup();
+      authState.confirmTotpSetup.mockResolvedValue({
+        success: true,
+        recoveryCodes: ['AAAAA-BBBBB-CCCCC-DDDDD'],
+      });
+      renderPage();
+
+      await user.click(screen.getByRole('button', { name: /^enable$/i }));
+      await user.type(await screen.findByLabelText(/verification code/i), '123456');
+      const modalEnableButton = screen
+        .getAllByRole('button', { name: /^enable$/i })
+        .find((button) => button.getAttribute('type') === 'submit');
+      await user.click(modalEnableButton);
+
+      expect(authState.confirmTotpSetup).toHaveBeenCalledWith('123456');
+      expect(await screen.findByText('AAAAA-BBBBB-CCCCC-DDDDD')).toBeInTheDocument();
+      expect(screen.getByText(/won.t be able to see these again/i)).toBeInTheDocument();
+    });
+
+    it('shows "Enabled" and a Disable button, which requires re-authentication', async () => {
+      const user = userEvent.setup();
+      authState.user.totpEnabled = true;
+      authState.disableTotp.mockResolvedValue({ success: true });
+      renderPage();
+
+      expect(screen.getByText('Enabled')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: /^disable$/i }));
+
+      expect(authState.disableTotp).not.toHaveBeenCalled();
+      await user.type(await screen.findByLabelText(/current password/i), 'Sup3rSecret!');
+      const dialogDisable = screen
+        .getAllByRole('button', { name: /disable 2fa/i })
+        .find((button) => button.getAttribute('type') === 'submit');
+      await user.click(dialogDisable);
+
+      expect(authState.disableTotp).toHaveBeenCalledWith({ currentPassword: 'Sup3rSecret!' });
+    });
   });
 });
 

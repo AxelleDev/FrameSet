@@ -77,6 +77,14 @@ const forgotPasswordLimiter = rateLimit({
   handler: jsonLimitHandler('Too many requests, try again in 10 minutes.'),
 });
 
+// 2FA login challenge: limits brute-force guessing of the 6-digit TOTP code
+// (or a recovery code), same shape as the other code-guessing limiters above.
+const loginTotpLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: maxFor(10),
+  handler: jsonLimitHandler('Too many attempts, try again in 10 minutes.'),
+});
+
 // Token refresh: bounds how often clients can rotate tokens.
 const refreshLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -128,6 +136,7 @@ const logoutLimiter = rateLimit({
 
 router.post('/register', registerLimiter, authController.register);
 router.post('/login', loginLimiter, authController.login);
+router.post('/login/totp', loginTotpLimiter, authController.loginTotp);
 router.post('/demo-login', demoLoginLimiter, authController.demoLogin);
 router.post('/google', googleSignInLimiter, authController.googleSignIn);
 router.get('/csrf-token', authController.getCsrfToken);

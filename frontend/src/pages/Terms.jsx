@@ -9,7 +9,7 @@ export default function Terms() {
       title="Terms of Service"
       path="/terms"
       description="The terms that govern your use of FrameSet."
-      lastUpdated="July 24, 2026"
+      lastUpdated="July 28, 2026"
     >
       <section>
         <h2>1. About FrameSet</h2>
@@ -27,7 +27,9 @@ export default function Terms() {
           You can create an account with an email address and password, or by continuing with
           Google. You are responsible for keeping your credentials confidential and for the activity
           that happens under your account. You must provide accurate information and be legally able
-          to enter into this agreement.
+          to enter into this agreement. You may optionally enable two-factor authentication for
+          extra security; if you do, you are responsible for keeping your recovery codes safe — they
+          are the only way back into your account if you lose access to your authenticator app.
         </p>
       </section>
 

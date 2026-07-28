@@ -26,11 +26,15 @@ from one drawing to the next.
 
 - **Accounts & authentication** — sign up, log in (email/password or "Continue
   with Google"), e-mail verification and profile management (JWT, hashed
-  passwords, CSRF protection & rate-limiting). A "Try the demo" button signs
-  visitors straight into a shared, read-only account seeded with real project
-  data — content edits feel fully interactive but are simulated client-side
-  and never reach the database; every mutating request is also rejected
-  server-side regardless, as a second, independent guarantee.
+  passwords, CSRF protection & rate-limiting). Optional **two-factor
+  authentication (TOTP)** — enable it from your profile with any authenticator
+  app (Google Authenticator, Authy, 1Password…) via QR code or manual entry,
+  with one-time recovery codes for when you lose access to it. A "Try the
+  demo" button signs visitors straight into a shared, read-only account
+  seeded with real project data — content edits feel fully interactive but
+  are simulated client-side and never reach the database; every mutating
+  request is also rejected server-side regardless, as a second, independent
+  guarantee.
 - **Projects** — a dashboard to create, duplicate and manage multiple illustration
   projects (duplication copies the standards and palette, to reuse a setup as a base).
   Pin projects to keep them at the top, search by name once you have several, and
@@ -49,9 +53,10 @@ from one drawing to the next.
   opacity, usage…), also drag-and-drop reorderable.
 - **Export & share** — generate a PDF of the project's complete reference
   sheet, download the palette in your drawing app's native format (Adobe
-  `.ase`, Krita/GIMP `.gpl`, Procreate `.swatches` — all generated client-side,
-  no dependency, and re-importable the same way), or share a public read-only
-  link (revocable anytime) that anyone can open without an account.
+  `.ase` — also Clip Studio Paint's own color-set import format —, Krita/GIMP
+  `.gpl`, Procreate `.swatches` — all generated client-side, no dependency,
+  and re-importable the same way), or share a public read-only link
+  (revocable anytime) that anyone can open without an account.
 - **Accessible & resilient** — keyboard-operable throughout (including drag-and-drop,
   which always has a keyboard alternative), a warning before leaving a page with
   unsaved changes, a heads-up before your session expires, and clear rate-limit

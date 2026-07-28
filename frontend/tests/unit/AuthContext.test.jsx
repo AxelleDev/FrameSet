@@ -416,3 +416,207 @@ describe('AuthContext action error paths', () => {
     expect(result.current.user).toBeNull();
   });
 });
+
+describe('AuthContext two-factor authentication', () => {
+  beforeEach(() => {
+    mockApiGet.mockReset();
+    mockApiPost.mockReset();
+  });
+
+  const renderSignedOut = async () => {
+    const notFoundError = new Error('Missing token.');
+    notFoundError.status = 401;
+    mockApiGet.mockRejectedValueOnce(notFoundError);
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.authLoading).toBe(false));
+    return result;
+  };
+
+  const renderSignedIn = async (overrides = {}) => {
+    mockApiGet.mockResolvedValueOnce({
+      id: 7,
+      name: 'Jane',
+      email: 'jane@example.com',
+      totpEnabled: false,
+      ...overrides,
+    });
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.authLoading).toBe(false));
+    return result;
+  };
+
+  it('login defers the session and returns the challenge token when 2FA is enabled', async () => {
+    const result = await renderSignedOut();
+    mockApiPost.mockResolvedValueOnce({
+      success: true,
+      requiresTotp: true,
+      challengeToken: 'tok-1',
+    });
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.login('jane@example.com', 'Pass1234');
+    });
+
+    expect(outcome).toEqual({ success: false, requiresTotp: true, challengeToken: 'tok-1' });
+    expect(result.current.user).toBeNull();
+  });
+
+  it('loginWithGoogle defers the session behind the same challenge when 2FA is enabled', async () => {
+    const result = await renderSignedOut();
+    mockApiPost.mockResolvedValueOnce({
+      success: true,
+      requiresTotp: true,
+      challengeToken: 'tok-g',
+    });
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.loginWithGoogle('google-id-token');
+    });
+
+    expect(outcome).toEqual({ success: false, requiresTotp: true, challengeToken: 'tok-g' });
+    expect(result.current.user).toBeNull();
+  });
+
+  it('completeTotpLogin signs the user in on a correct code', async () => {
+    const result = await renderSignedOut();
+    mockApiPost.mockResolvedValueOnce({
+      id: 7,
+      name: 'Jane',
+      email: 'jane@example.com',
+      totpEnabled: true,
+    });
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.completeTotpLogin('tok-1', '123456');
+    });
+
+    expect(outcome.success).toBe(true);
+    expect(mockApiPost).toHaveBeenCalledWith(
+      '/auth/login/totp',
+      { challengeToken: 'tok-1', code: '123456' },
+      expect.anything(),
+    );
+    expect(result.current.user).toEqual(
+      expect.objectContaining({ id: 7, email: 'jane@example.com' }),
+    );
+  });
+
+  it('completeTotpLogin surfaces an incorrect-code business error inline', async () => {
+    const result = await renderSignedOut();
+    const businessError = new Error('Incorrect code.');
+    businessError.status = 401;
+    businessError.data = { error: 'Incorrect code.' };
+    mockApiPost.mockRejectedValueOnce(businessError);
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.completeTotpLogin('tok-1', '000000');
+    });
+
+    expect(outcome).toEqual({
+      success: false,
+      message: 'Incorrect code.',
+      retryAfterSeconds: undefined,
+    });
+    expect(result.current.user).toBeNull();
+  });
+
+  it('setupTotp refuses locally for the demo account, without calling the API', async () => {
+    const result = await renderSignedIn({ isDemo: true });
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.setupTotp();
+    });
+
+    expect(outcome).toEqual({ success: false, message: 'Not available in the demo account.' });
+    expect(mockApiPost).not.toHaveBeenCalled();
+  });
+
+  it('setupTotp returns the secret and otpauth URL', async () => {
+    const result = await renderSignedIn();
+    mockApiPost.mockResolvedValueOnce({ secret: 'ABCD1234', otpauthUrl: 'otpauth://totp/x' });
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.setupTotp();
+    });
+
+    expect(outcome).toEqual({ success: true, secret: 'ABCD1234', otpauthUrl: 'otpauth://totp/x' });
+    expect(mockApiPost).toHaveBeenCalledWith('/users/totp/setup', {}, expect.anything());
+  });
+
+  it('confirmTotpSetup marks 2FA enabled locally and returns the recovery codes', async () => {
+    const result = await renderSignedIn();
+    mockApiPost.mockResolvedValueOnce({ success: true, recoveryCodes: ['AAAAA-BBBBB'] });
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.confirmTotpSetup('123456');
+    });
+
+    expect(outcome).toEqual({ success: true, recoveryCodes: ['AAAAA-BBBBB'] });
+    expect(result.current.user.totpEnabled).toBe(true);
+  });
+
+  it('confirmTotpSetup leaves 2FA off locally on an incorrect code', async () => {
+    const result = await renderSignedIn();
+    const businessError = new Error('Incorrect code.');
+    businessError.status = 400;
+    businessError.data = { error: 'Incorrect code.' };
+    mockApiPost.mockRejectedValueOnce(businessError);
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.confirmTotpSetup('000000');
+    });
+
+    expect(outcome).toEqual({
+      success: false,
+      message: 'Incorrect code.',
+      retryAfterSeconds: undefined,
+    });
+    expect(result.current.user.totpEnabled).toBe(false);
+  });
+
+  it('disableTotp marks 2FA disabled locally after a successful re-auth', async () => {
+    const result = await renderSignedIn({ totpEnabled: true });
+    mockApiPost.mockResolvedValueOnce({ success: true });
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.disableTotp({ currentPassword: 'Pass1234' });
+    });
+
+    expect(outcome).toEqual({ success: true });
+    expect(result.current.user.totpEnabled).toBe(false);
+    expect(mockApiPost).toHaveBeenCalledWith(
+      '/users/totp/disable',
+      { currentPassword: 'Pass1234' },
+      expect.anything(),
+    );
+  });
+
+  it('disableTotp propagates a failed re-authentication without changing local state', async () => {
+    const result = await renderSignedIn({ totpEnabled: true });
+    const businessError = new Error('Current password is incorrect.');
+    businessError.status = 401;
+    businessError.data = { error: 'Current password is incorrect.' };
+    mockApiPost.mockRejectedValueOnce(businessError);
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.disableTotp({ currentPassword: 'wrong' });
+    });
+
+    expect(outcome).toEqual({
+      success: false,
+      message: 'Current password is incorrect.',
+      retryAfterSeconds: undefined,
+    });
+    expect(result.current.user.totpEnabled).toBe(true);
+  });
+});

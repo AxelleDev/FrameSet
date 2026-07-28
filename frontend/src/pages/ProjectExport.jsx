@@ -138,11 +138,15 @@ export default function ProjectExport() {
 
   // Palette-only exports, in the native formats of the main drawing tools so
   // the palette can be imported instead of re-picked color by color.
-  const downloadAse = () => {
+  // Adobe Swatch Exchange (.ase) is also Clip Studio Paint's own color-set
+  // import format (Edit > Color Set > New from File), so both entries below
+  // share this one builder — `suffix` just keeps their downloaded filenames
+  // apart when someone grabs both from the same page.
+  const downloadAse = (suffix = '') => {
     if (!hasPalette) return;
     downloadBlob(
       buildAsePalette(activeProject.palette),
-      `${fileSlug}_palette.ase`,
+      `${fileSlug}_palette${suffix}.ase`,
       'application/octet-stream',
     );
   };
@@ -520,12 +524,17 @@ export default function ProjectExport() {
               {hasPalette ? (
                 <div className="w-full mt-auto space-y-2">
                   {[
-                    { label: 'Photoshop / Illustrator', ext: '.ase', onClick: downloadAse },
+                    { label: 'Photoshop / Illustrator', ext: '.ase', onClick: () => downloadAse() },
+                    {
+                      label: 'Clip Studio Paint',
+                      ext: '.ase',
+                      onClick: () => downloadAse('_csp'),
+                    },
                     { label: 'Krita / GIMP', ext: '.gpl', onClick: downloadGpl },
                     { label: 'Procreate', ext: '.swatches', onClick: downloadSwatches },
                   ].map(({ label, ext, onClick }) => (
                     <button
-                      key={ext}
+                      key={label}
                       type="button"
                       onClick={onClick}
                       className="w-full flex items-center justify-between gap-3 rounded-xl bg-primary/5 hover:bg-blue/10 px-4 py-3 text-sm font-medium text-primary transition-colors focus-ring"
