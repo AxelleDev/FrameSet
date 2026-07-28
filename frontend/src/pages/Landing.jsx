@@ -1,15 +1,15 @@
 // Public landing page (route: /): the only fully public, indexable page.
 // Sets its own SEO head + Schema.org JSON-LD so it can be crawled and shared.
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Seo from '../components/Seo';
-import Logo from '../components/Logo';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import Card from '../components/Card';
 import PublicTopBar from '../components/PublicTopBar';
+import PublicFooter from '../components/PublicFooter';
 import ColorTile from '../components/ColorTile';
 import ColorFormatToggle from '../components/ColorFormatToggle';
 import IconCircle from '../components/IconCircle';
@@ -382,22 +382,7 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="relative border-t border-primary/10">
-        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-primary/60">
-          <Logo className="object-contain w-1/5 max-w-[80px] h-auto" />
-          {/* The legal pages must stay reachable from the public site, not only
-              from the sign-in/sign-up notice. */}
-          <nav aria-label="Legal" className="flex items-center gap-5">
-            <Link to="/terms" className="hover:text-primary transition-colors rounded focus-ring">
-              Terms of Service
-            </Link>
-            <Link to="/privacy" className="hover:text-primary transition-colors rounded focus-ring">
-              Privacy Policy
-            </Link>
-          </nav>
-          <p>© {new Date().getFullYear()} FrameSet. All rights reserved.</p>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

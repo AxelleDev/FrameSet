@@ -8,12 +8,12 @@
 // badges and typography), so a shared link and the in-app editor never look
 // like two different products.
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import Card from '../components/Card';
 import Seo from '../components/Seo';
-import Logo from '../components/Logo';
 import PublicTopBar from '../components/PublicTopBar';
+import PublicFooter from '../components/PublicFooter';
 import Button from '../components/Button';
 import ColorTile from '../components/ColorTile';
 import StandardCard from '../components/StandardCard';
@@ -70,7 +70,7 @@ export default function SharedProject() {
       />
       <PublicTopBar />
 
-      <main className="max-w-5xl mx-auto px-6 pb-16">
+      <main className="max-w-6xl mx-auto px-6">
         {status === 'loading' && (
           <div
             className="min-h-[50vh] flex items-center justify-center"
@@ -83,7 +83,6 @@ export default function SharedProject() {
 
         {(status === 'not-found' || status === 'error') && (
           <div className="min-h-[50vh] flex flex-col items-center justify-center text-center">
-            <Logo className="w-20 h-auto mb-8" />
             <h1 className="text-2xl font-medium mb-2">
               {status === 'not-found' ? 'This link is no longer active' : 'Something went wrong'}
             </h1>
@@ -206,30 +205,23 @@ export default function SharedProject() {
               )}
             </div>
 
-            <footer className="mt-16 pt-8 border-t border-primary/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <Link
-                to="/"
-                aria-label="Discover FrameSet"
-                className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-ring w-16"
+            <footer className="mt-16 pt-8 pb-10 border-t border-primary/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-primary/60">
+                Made with FrameSet — the graphic reference for your projects.
+              </p>
+              <Button
+                to="/register"
+                variant="primary"
+                className="text-sm shrink-0 whitespace-nowrap"
               >
-                <Logo className="object-contain w-full h-auto" />
-              </Link>
-              <div className="flex items-center gap-3">
-                <p className="text-xs text-primary/60">
-                  Made with FrameSet — the graphic reference for your projects.
-                </p>
-                <Button
-                  to="/register"
-                  variant="primary"
-                  className="text-sm shrink-0 whitespace-nowrap"
-                >
-                  Create your own
-                </Button>
-              </div>
+                Create your own
+              </Button>
             </footer>
           </div>
         )}
       </main>
+
+      <PublicFooter />
     </div>
   );
 }

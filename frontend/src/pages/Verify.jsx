@@ -6,7 +6,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
-import AuthLogoLink from '../components/AuthLogoLink';
 import AuthCard from '../components/AuthCard';
 import Seo from '../components/Seo';
 import FormField from '../components/FormField';
@@ -100,7 +99,6 @@ export default function Verify() {
       swapOnMobile
       hero={
         <>
-          <AuthLogoLink />
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-primary leading-tight">
             Confirm <br />
             <span className="font-bold text-primary">your email.</span>

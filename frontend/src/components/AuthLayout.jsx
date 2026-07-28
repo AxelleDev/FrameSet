@@ -12,8 +12,12 @@ export default function AuthLayout({ hero, children, swapOnMobile = false }) {
   return (
     <div className="relative min-h-dvh w-full flex flex-col bg-canvas text-primary">
       <PublicTopBar />
-      <main className="relative z-10 flex-1 w-full flex items-center justify-center px-4 sm:px-8 pb-8">
-        <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+      {/* Same max-w-6xl mx-auto px-6 container, applied on the same element, as
+          PublicTopBar/PublicFooter/Landing's sections, so the form/hero column
+          edges land at the exact same x-position as the logo above — not just
+          the same max-width, but the padding on the same element too. */}
+      <main className="relative z-10 flex-1 w-full flex items-center pb-8">
+        <div className="w-full max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
           <div
             className={`flex flex-col justify-center space-y-6 animate-fade-in min-w-0 ${heroOrderClass}`}
           >
