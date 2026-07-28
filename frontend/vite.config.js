@@ -89,6 +89,9 @@ export default defineConfig({
     // coverage grows — never lower them.
     coverage: {
       provider: 'v8',
+      // lcov isn't in Vitest's default reporter set (text/html/clover/json) but
+      // is the format Codecov's upload action expects.
+      reporter: ['text', 'lcov'],
       thresholds: {
         statements: 71,
         branches: 59,

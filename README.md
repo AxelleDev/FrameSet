@@ -5,8 +5,20 @@
 	</picture>
 	<p><b>FRAMESET — The graphic reference, built for digital illustration.</b></p>
 	<p>
+		<a href="https://frameset-taupe.vercel.app/">
+			<img src="https://img.shields.io/badge/website-frameset--taupe.vercel.app-black?logo=vercel&logoColor=white" alt="Website" />
+		</a>
 		<a href="https://github.com/AxelleDev/FrameSet/actions/workflows/ci.yml">
-			<img src="https://github.com/AxelleDev/FrameSet/actions/workflows/ci.yml/badge.svg" alt="CI status" />
+			<img src="https://img.shields.io/github/actions/workflow/status/AxelleDev/FrameSet/ci.yml?branch=main&label=CI&logo=github" alt="CI status" />
+		</a>
+		<a href="https://codecov.io/gh/AxelleDev/FrameSet">
+			<img src="https://img.shields.io/codecov/c/github/AxelleDev/FrameSet?label=coverage&logo=codecov&logoColor=white" alt="Coverage" />
+		</a>
+		<a href="LICENSE">
+			<img src="https://img.shields.io/badge/license-proprietary-blue" alt="License" />
+		</a>
+		<a href=".nvmrc">
+			<img src="https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white" alt="Node version" />
 		</a>
 	</p>
 </div>
