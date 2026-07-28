@@ -76,7 +76,13 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onEnabled }) {
     return () => {
       cancelled = true;
     };
-  }, [isOpen, setupTotp]);
+    // setupTotp is intentionally excluded: it gets a new identity whenever
+    // confirmTotpSetup updates the user (enrollment just succeeded), which
+    // would otherwise re-run this effect and re-fetch setup right after
+    // success — immediately clobbering the recovery-codes step with an
+    // "already enabled" error.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleConfirm = async (e) => {
     e.preventDefault();

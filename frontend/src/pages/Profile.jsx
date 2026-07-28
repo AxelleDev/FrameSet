@@ -196,8 +196,8 @@ export default function Profile() {
     setIsLogoutConfirmOpen(true);
   };
 
-  const confirmLogout = () => {
-    logout();
+  const confirmLogout = async () => {
+    await logout();
     navigate('/login');
     setIsLogoutConfirmOpen(false);
   };
