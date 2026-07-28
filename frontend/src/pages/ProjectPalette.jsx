@@ -529,7 +529,11 @@ export default function ProjectPalette() {
                         title="Duplicate color"
                         intent="edit"
                         variant="light"
-                        className="absolute top-14 left-3 z-30"
+                        // top-14 clears the edit button above it at its normal 36px
+                        // size, but touch devices grow that button to 44px (see
+                        // ActionIconButton), which closes the gap to zero; push
+                        // this one down to match on hover:none.
+                        className="absolute top-14 [@media(hover:none)]:top-16 left-3 z-30"
                       >
                         <DuplicateIcon />
                       </ActionIconButton>
