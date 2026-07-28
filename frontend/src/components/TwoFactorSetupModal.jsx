@@ -206,11 +206,13 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onEnabled }) {
             access to your authenticator app.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-2xl bg-primary/5 p-4 font-mono text-sm text-primary">
+          {/* A real list, so screen readers announce "list, 8 items" instead
+              of reading the codes as one undifferentiated blob. */}
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-2xl bg-primary/5 p-4 font-mono text-sm text-primary list-none">
             {recoveryCodes.map((recoveryCode) => (
-              <span key={recoveryCode}>{recoveryCode}</span>
+              <li key={recoveryCode}>{recoveryCode}</li>
             ))}
-          </div>
+          </ul>
 
           <Button
             type="button"

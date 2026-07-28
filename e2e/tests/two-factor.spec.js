@@ -64,7 +64,7 @@ test.describe('two-factor authentication', () => {
 
     // Recovery codes appear exactly once — capture them for the later tests.
     await expect(page.getByText(/won't be able to see these again/i)).toBeVisible();
-    recoveryCodes = await dialog.locator('span', { hasText: /^[0-9A-F]{5}-/ }).allTextContents();
+    recoveryCodes = await dialog.locator('li', { hasText: /^[0-9A-F]{5}-/ }).allTextContents();
     expect(recoveryCodes.length).toBeGreaterThan(0);
     await dialog.getByRole('button', { name: /saved my recovery codes/i }).click();
 
