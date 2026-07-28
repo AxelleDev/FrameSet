@@ -342,7 +342,7 @@ export default function Profile() {
                   autoComplete="nickname"
                 />
               </FormField>
-              <FormField label="Email address">
+              <FormField label="Email">
                 <TextInput
                   type="email"
                   value={editForm.email}

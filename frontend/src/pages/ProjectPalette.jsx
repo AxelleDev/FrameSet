@@ -634,7 +634,7 @@ export default function ProjectPalette() {
 
       <FormModal isOpen={editIdx !== null} onClose={() => setEditIdx(null)} title="Edit color">
         <div className="space-y-4">
-          <FormField label="Color name">
+          <FormField label="Color usage">
             <TextInput
               type="text"
               value={editColorName}
@@ -662,7 +662,7 @@ export default function ProjectPalette() {
 
       <FormModal isOpen={isAddingColor} onClose={() => setIsAddingColor(false)} title="New color">
         <div className="space-y-4">
-          <FormField label="Color name">
+          <FormField label="Color usage">
             <TextInput
               type="text"
               value={newColorName}

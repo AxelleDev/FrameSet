@@ -82,7 +82,7 @@ describe('ProjectPalette', () => {
     renderPage();
 
     await user.click(screen.getByRole('button', { name: 'New color' }));
-    await user.type(screen.getByLabelText(/color name/i), 'Sunset');
+    await user.type(screen.getByLabelText(/color usage/i), 'Sunset');
     // The color field (defaults to HEX) normalizes as you type (leading '#', uppercase).
     await user.type(screen.getByLabelText('Color'), 'aabbcc');
     await user.click(screen.getByRole('button', { name: /^add$/i }));

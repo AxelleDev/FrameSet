@@ -133,7 +133,7 @@ const openapiSpec = {
         type: 'object',
         properties: {
           id: { type: 'integer', example: 5 },
-          name: { type: 'string', nullable: true, example: 'Primary' },
+          name: { type: 'string', nullable: true, example: 'Hair highlight' },
           hex: {
             type: 'string',
             pattern: '^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$',
@@ -933,7 +933,7 @@ const openapiSpec = {
         tags: ['Projects'],
         summary: "Search the user's projects, palette colors and standards",
         description:
-          'One term (1-100 characters) matched against project names, color names/hex ' +
+          'One term (1-100 characters) matched against project names, color usage/hex ' +
           "('#' optional) and brush/typography standards, capped at 5 matches per " +
           'category. Only the authenticated user’s live (non-trashed) content is searched.',
         security: AUTH,
