@@ -14,7 +14,6 @@ export default {
         primary: 'rgb(var(--color-primary) / <alpha-value>)',
         secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
         blue: 'rgb(var(--color-blue) / <alpha-value>)',
-        pink: 'rgb(var(--color-pink) / <alpha-value>)',
         danger: 'rgb(var(--color-danger) / <alpha-value>)',
         success: 'rgb(var(--color-success) / <alpha-value>)',
       },

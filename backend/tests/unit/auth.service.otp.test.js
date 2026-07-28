@@ -67,6 +67,7 @@ describe('auth service — OTP security hardening', () => {
             email: 'a@b.com',
             is_verified: 0,
             verification_code: hashOtp('654321'),
+            verification_code_expires: new Date(Date.now() + 10 * 60 * 1000),
             otp_attempts: 4,
           },
         ],

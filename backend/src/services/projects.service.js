@@ -133,14 +133,20 @@ const sanitizeOptionalTextField = (value, { maxLength }) => {
 const buildInvalidHexColorError = (value) =>
   `Invalid color: the hex value "${value}" is not a valid format (#RGB or #RRGGBB).`;
 
-// Validates a hex color (leading '#', #RGB/#RRGGBB). Returns { value } or { error }.
+// Leading '#' plus exactly 3 or 6 hex digits. Deliberately narrower than
+// validator.isHexColor (which also accepts the 4/8-digit #RGBA/#RRGGBBAA
+// forms): an alpha channel would silently survive storage but isn't handled by
+// the HSL/HSB conversions or the PDF/palette-file exporters downstream.
+const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+// Validates a hex color (leading '#', #RGB/#RRGGBB only). Returns { value } or { error }.
 const validateHexColorField = (value) => {
   if (typeof value !== 'string') {
     return { error: 'invalid_hex' };
   }
 
   const trimmedValue = validator.trim(value);
-  if (!trimmedValue.startsWith('#') || !validator.isHexColor(trimmedValue)) {
+  if (!HEX_COLOR_PATTERN.test(trimmedValue)) {
     return { error: 'invalid_hex' };
   }
 
@@ -346,7 +352,7 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
 
   const projectsQuery = await runTimedQuery({
     label: 'projects',
-    sql: `SELECT id, name, share_token, pin_position, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE user_id = ? AND deleted_at IS NULL ${searchClause} ORDER BY (pin_position IS NULL) ASC, pin_position ASC, created_at DESC LIMIT ? OFFSET ?`,
+    sql: `SELECT id, name, share_token, pin_position, last_edited FROM projects WHERE user_id = ? AND deleted_at IS NULL ${searchClause} ORDER BY (pin_position IS NULL) ASC, pin_position ASC, created_at DESC LIMIT ? OFFSET ?`,
     params: [userId, ...searchParam, pageSize, offset],
   });
 
@@ -421,7 +427,9 @@ const listProjectsForUser = async (userId, requestId, options = {}) => {
     return {
       id: project.id,
       name: project.name,
-      lastEdited: project.lastEditedFormatted || 'Just now',
+      // ISO timestamp, formatted client-side in the viewer's own timezone
+      // (see frontend/src/utils/date.js) rather than baked into the SQL layer.
+      lastEdited: project.last_edited ? new Date(project.last_edited).toISOString() : 'Just now',
       shareToken: project.share_token || null,
       pinned: project.pin_position !== null,
       brushNorms,
@@ -765,7 +773,7 @@ const fetchLiveProjectChildren = async (projectId) => {
 // owner and to live projects; throws 'not_found' otherwise.
 const getProjectByIdForUser = async (userId, projectId) => {
   const [rows] = await db.query(
-    'SELECT id, name, share_token, pin_position, DATE_FORMAT(last_edited, "%d/%m %H:%i") as lastEditedFormatted FROM projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
+    'SELECT id, name, share_token, pin_position, last_edited FROM projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
     [projectId, userId],
   );
   if (rows.length === 0) {
@@ -778,7 +786,9 @@ const getProjectByIdForUser = async (userId, projectId) => {
   return {
     id: project.id,
     name: project.name,
-    lastEdited: project.lastEditedFormatted || 'Just now',
+    // ISO timestamp, formatted client-side in the viewer's own timezone
+    // (see frontend/src/utils/date.js) rather than baked into the SQL layer.
+    lastEdited: project.last_edited ? new Date(project.last_edited).toISOString() : 'Just now',
     shareToken: project.share_token || null,
     pinned: project.pin_position !== null,
     brushNorms,
@@ -987,23 +997,19 @@ const validateOrderedIds = (ids) => {
 // contract as replaceProjectPalette, but reorder-only (no add/edit/remove).
 // Ids that don't belong to this project (or are trashed) are silently
 // skipped, so a stale client array can't corrupt another project's ordering.
+// A single UPDATE ... CASE assigns every row's new position atomically
+// (no transaction needed — one statement can't leave a partial reorder behind).
 const reorderChildRows = async (table, projectId, orderedIds) => {
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-    for (let position = 0; position < orderedIds.length; position += 1) {
-      await connection.query(
-        `UPDATE ${table} SET position = ? WHERE id = ? AND project_id = ? AND deleted_at IS NULL`,
-        [position, orderedIds[position], projectId],
-      );
-    }
-    await connection.commit();
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
+  const caseClauses = orderedIds.map(() => 'WHEN ? THEN ?').join(' ');
+  const caseParams = orderedIds.flatMap((id, position) => [id, position]);
+  const idPlaceholders = orderedIds.map(() => '?').join(', ');
+
+  await db.query(
+    `UPDATE ${table} SET position = CASE id ${caseClauses} ELSE position END
+     WHERE project_id = ? AND deleted_at IS NULL AND id IN (${idPlaceholders})`,
+    [...caseParams, projectId, ...orderedIds],
+  );
+
   return { success: true };
 };
 
@@ -1056,25 +1062,20 @@ const unpinProjectForUser = async (userId, projectId) => {
 
 // Reorders the user's pinned projects to match the given id sequence. Ids
 // that aren't currently pinned by this user are silently skipped. Throws
-// 'validation' on a bad payload.
+// 'validation' on a bad payload. A single UPDATE ... CASE assigns every
+// project's new pin_position atomically, same approach as reorderChildRows.
 const reorderPinnedProjectsForUser = async (userId, ids) => {
   const orderedIds = validateOrderedIds(ids);
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-    for (let position = 0; position < orderedIds.length; position += 1) {
-      await connection.query(
-        'UPDATE projects SET pin_position = ? WHERE id = ? AND user_id = ? AND deleted_at IS NULL AND pin_position IS NOT NULL',
-        [position, orderedIds[position], userId],
-      );
-    }
-    await connection.commit();
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
+  const caseClauses = orderedIds.map(() => 'WHEN ? THEN ?').join(' ');
+  const caseParams = orderedIds.flatMap((id, position) => [id, position]);
+  const idPlaceholders = orderedIds.map(() => '?').join(', ');
+
+  await db.query(
+    `UPDATE projects SET pin_position = CASE id ${caseClauses} ELSE pin_position END
+     WHERE user_id = ? AND deleted_at IS NULL AND pin_position IS NOT NULL AND id IN (${idPlaceholders})`,
+    [...caseParams, userId, ...orderedIds],
+  );
+
   return { success: true };
 };
 

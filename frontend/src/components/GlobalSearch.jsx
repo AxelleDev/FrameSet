@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import Modal from './Modal';
 import TextInput from './TextInput';
 import Spinner from './Spinner';
+import ConfirmDialog from './ConfirmDialog';
 import api from '../services/api';
 import logger from '../utils/logger';
 import { getHasUnsavedChanges } from '../utils/unsavedChangesStore';
@@ -56,6 +57,8 @@ export default function GlobalSearch({ isOpen, onClose }) {
   const [failed, setFailed] = useState(false);
   const navigate = useNavigate();
   const panelRef = useRef(null);
+  // Path awaiting confirmation from the unsaved-changes dialog below (see goTo).
+  const [pendingPath, setPendingPath] = useState(null);
 
   // Fresh field every time the palette opens.
   useEffect(() => {
@@ -101,17 +104,25 @@ export default function GlobalSearch({ isOpen, onClose }) {
     };
   }, [isOpen, query]);
 
-  // Same guard as the sidebar links: leaving a dirty page needs confirmation.
+  // Same guard as the sidebar links: leaving a dirty page needs confirmation,
+  // via the same styled dialog rather than the browser's own window.confirm.
   const goTo = (path) => {
-    if (
-      getHasUnsavedChanges() &&
-      !window.confirm('You have unsaved changes. Leave this page without saving?')
-    ) {
+    if (getHasUnsavedChanges()) {
+      setPendingPath(path);
       return;
     }
     onClose();
     navigate(path);
   };
+
+  const confirmPendingPath = () => {
+    const path = pendingPath;
+    setPendingPath(null);
+    onClose();
+    navigate(path);
+  };
+
+  const cancelPendingPath = () => setPendingPath(null);
 
   // Arrow keys move through the input + result rows as one list.
   const handleKeyDown = (event) => {
@@ -134,119 +145,132 @@ export default function GlobalSearch({ isOpen, onClose }) {
     projects.length + colors.length + brushNorms.length + typographyNorms.length > 0;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Search"
-      subtitle="Projects, colors and standards — Esc to close."
-      showClose={false}
-      panelClassName="bg-surface w-full max-w-xl rounded-3xl p-4 sm:p-6 max-h-[85dvh] overflow-y-auto"
-    >
-      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- keydown implements the list's arrow-key pattern, not a click substitute */}
-      <div ref={panelRef} onKeyDown={handleKeyDown}>
-        <TextInput
-          type="search"
-          role="searchbox"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search projects, colors, standards…"
-          aria-label="Search projects, colors and standards"
-          // eslint-disable-next-line jsx-a11y/no-autofocus -- focus belongs in the field when a search palette opens
-          autoFocus
-        />
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Search"
+        subtitle="Projects, colors and standards — Esc to close."
+        showClose={false}
+        panelClassName="bg-surface w-full max-w-xl rounded-3xl p-4 sm:p-6 max-h-[85dvh] overflow-y-auto"
+      >
+        {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- keydown implements the list's arrow-key pattern, not a click substitute */}
+        <div ref={panelRef} onKeyDown={handleKeyDown}>
+          <TextInput
+            type="search"
+            role="searchbox"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search projects, colors, standards…"
+            aria-label="Search projects, colors and standards"
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- focus belongs in the field when a search palette opens
+            autoFocus
+          />
 
-        <div className="mt-2" role="status" aria-live="polite">
-          {searching && (
-            <div className="flex items-center gap-2 px-3 py-3 text-sm text-primary/60">
-              <Spinner size="sm" /> Searching…
-            </div>
-          )}
+          <div className="mt-2" role="status" aria-live="polite">
+            {searching && (
+              <div className="flex items-center gap-2 px-3 py-3 text-sm text-primary/60">
+                <Spinner size="sm" /> Searching…
+              </div>
+            )}
 
-          {failed && !searching && (
-            <p className="px-3 py-3 text-sm text-danger">
-              The search failed. Check your connection and try again.
-            </p>
-          )}
+            {failed && !searching && (
+              <p className="px-3 py-3 text-sm text-danger">
+                The search failed. Check your connection and try again.
+              </p>
+            )}
 
-          {!searching && !failed && results && !hasMatches && (
-            <p className="px-3 py-3 text-sm text-primary/60">No matches for “{query.trim()}”.</p>
-          )}
+            {!searching && !failed && results && !hasMatches && (
+              <p className="px-3 py-3 text-sm text-primary/60">No matches for “{query.trim()}”.</p>
+            )}
 
-          {!searching && !failed && hasMatches && (
-            <div className="space-y-1">
-              {projects.length > 0 && (
-                <>
-                  <GroupHeading>Projects</GroupHeading>
-                  {projects.map((project) => (
-                    <ResultRow
-                      key={`project-${project.id}`}
-                      label={project.name}
-                      onSelect={() => goTo(`/app/project/${project.id}/norms`)}
-                    />
-                  ))}
-                </>
-              )}
+            {!searching && !failed && hasMatches && (
+              <div className="space-y-1">
+                {projects.length > 0 && (
+                  <>
+                    <GroupHeading>Projects</GroupHeading>
+                    {projects.map((project) => (
+                      <ResultRow
+                        key={`project-${project.id}`}
+                        label={project.name}
+                        onSelect={() => goTo(`/app/project/${project.id}/norms`)}
+                      />
+                    ))}
+                  </>
+                )}
 
-              {colors.length > 0 && (
-                <>
-                  <GroupHeading>Colors</GroupHeading>
-                  {colors.map((color) => (
-                    <ResultRow
-                      key={`color-${color.id}`}
-                      leading={
-                        <span
-                          aria-hidden="true"
-                          className="h-5 w-5 shrink-0 rounded-full ring-1 ring-primary/10"
-                          style={{ backgroundColor: color.hex }}
-                        />
-                      }
-                      label={
-                        <>
-                          {color.name || color.hex}
-                          <span className="ml-2 font-mono text-xs text-primary/50">
-                            {color.hex}
-                          </span>
-                        </>
-                      }
-                      context={color.projectName}
-                      onSelect={() => goTo(`/app/project/${color.projectId}/palette`)}
-                    />
-                  ))}
-                </>
-              )}
+                {colors.length > 0 && (
+                  <>
+                    <GroupHeading>Colors</GroupHeading>
+                    {colors.map((color) => (
+                      <ResultRow
+                        key={`color-${color.id}`}
+                        leading={
+                          <span
+                            aria-hidden="true"
+                            className="h-5 w-5 shrink-0 rounded-full ring-1 ring-primary/10"
+                            style={{ backgroundColor: color.hex }}
+                          />
+                        }
+                        label={
+                          <>
+                            {color.name || color.hex}
+                            <span className="ml-2 font-mono text-xs text-primary/50">
+                              {color.hex}
+                            </span>
+                          </>
+                        }
+                        context={color.projectName}
+                        onSelect={() => goTo(`/app/project/${color.projectId}/palette`)}
+                      />
+                    ))}
+                  </>
+                )}
 
-              {brushNorms.length > 0 && (
-                <>
-                  <GroupHeading>Brushes</GroupHeading>
-                  {brushNorms.map((norm) => (
-                    <ResultRow
-                      key={`brush-${norm.id}`}
-                      label={norm.name}
-                      context={norm.projectName}
-                      onSelect={() => goTo(`/app/project/${norm.projectId}/norms`)}
-                    />
-                  ))}
-                </>
-              )}
+                {brushNorms.length > 0 && (
+                  <>
+                    <GroupHeading>Brushes</GroupHeading>
+                    {brushNorms.map((norm) => (
+                      <ResultRow
+                        key={`brush-${norm.id}`}
+                        label={norm.name}
+                        context={norm.projectName}
+                        onSelect={() => goTo(`/app/project/${norm.projectId}/norms`)}
+                      />
+                    ))}
+                  </>
+                )}
 
-              {typographyNorms.length > 0 && (
-                <>
-                  <GroupHeading>Typography</GroupHeading>
-                  {typographyNorms.map((norm) => (
-                    <ResultRow
-                      key={`typo-${norm.id}`}
-                      label={norm.fontFamily}
-                      context={norm.fontUsage || norm.projectName}
-                      onSelect={() => goTo(`/app/project/${norm.projectId}/norms`)}
-                    />
-                  ))}
-                </>
-              )}
-            </div>
-          )}
+                {typographyNorms.length > 0 && (
+                  <>
+                    <GroupHeading>Typography</GroupHeading>
+                    {typographyNorms.map((norm) => (
+                      <ResultRow
+                        key={`typo-${norm.id}`}
+                        label={norm.fontFamily}
+                        context={norm.fontUsage || norm.projectName}
+                        onSelect={() => goTo(`/app/project/${norm.projectId}/norms`)}
+                      />
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </Modal>
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={pendingPath !== null}
+        title="Leave this page?"
+        message="You have unsaved changes. Leave this page without saving?"
+        confirmLabel="Leave"
+        cancelLabel="Cancel"
+        onConfirm={confirmPendingPath}
+        onCancel={cancelPendingPath}
+        primaryVariant="primary"
+      />
+    </>
   );
 }
 

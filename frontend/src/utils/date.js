@@ -16,16 +16,21 @@ const MONTH_ABBREVIATIONS = [
   'Dec',
 ];
 
-// Formats a project's `lastEdited` for the "Edited " prefix: the API sends
-// "DD/MM HH:MM" or a sentinel; renders an unambiguous "on 2 Jul at 14:30" (not
-// "02/07", which reads as a US date) or "just now".
+// Formats a project's `lastEdited` for the "Edited " prefix: the API sends an
+// ISO timestamp (or the 'Just now' sentinel for a project just created/renamed
+// locally). Rendered in the viewer's OWN timezone (not the server's) as an
+// unambiguous "on 2 Jul at 14:30" (not "02/07", which reads as a US date).
 export function formatModified(value) {
   if (!value) return '';
-  const match = /^(\d{2})\/(\d{2})\s+(\d{2}:\d{2})$/.exec(value);
-  if (!match) return 'just now';
-  const [, day, month, time] = match;
-  const monthName = MONTH_ABBREVIATIONS[Number(month) - 1] || month;
-  return `on ${Number(day)} ${monthName} at ${time}`;
+  if (String(value).trim().toLowerCase() === 'just now') return 'just now';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'just now';
+
+  const day = date.getDate();
+  const monthName = MONTH_ABBREVIATIONS[date.getMonth()];
+  const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  return `on ${day} ${monthName} at ${time}`;
 }
 
 // Coarse "time ago" label from a date/ISO string; "Never changed" for missing or

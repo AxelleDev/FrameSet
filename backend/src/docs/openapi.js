@@ -147,7 +147,7 @@ const openapiSpec = {
         properties: {
           id: { type: 'integer', example: 1 },
           name: { type: 'string', example: 'Neo-Tokyo Editorial' },
-          lastEdited: { type: 'string', example: '30/06 15:16' },
+          lastEdited: { type: 'string', example: '2026-06-30T15:16:00.000Z' },
           shareToken: {
             type: 'string',
             nullable: true,

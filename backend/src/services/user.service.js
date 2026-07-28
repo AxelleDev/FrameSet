@@ -196,12 +196,15 @@ const confirmPendingEmail = async (userId, { email, code }, { onMailError } = {}
     throw new UserServiceError('no_pending', 'No pending email found.');
   }
   const userDb = rows[0];
+  // Expiry before match (see the identical note in auth.service's
+  // verifyEmailCode), so an expired code's response never reveals whether the
+  // guess was correct.
+  if (!userDb.pending_email_expires || new Date() > new Date(userDb.pending_email_expires)) {
+    throw new UserServiceError('code_expired', 'Code expired. Please request a new one.');
+  }
   if (!userDb.pending_email_code || !safeOtpEqual(code, userDb.pending_email_code)) {
     await registerFailedOtpAttempt(userDb, 'pending_email_code');
     throw new UserServiceError('invalid_code', 'Incorrect code.');
-  }
-  if (!userDb.pending_email_expires || new Date() > new Date(userDb.pending_email_expires)) {
-    throw new UserServiceError('code_expired', 'Code expired. Please request a new one.');
   }
 
   try {
@@ -269,16 +272,21 @@ const resendPendingEmail = async (userId, { email }) => {
     [hashOtp(newCode), expires, userDb.id],
   );
 
-  await mailService.sendMail({
-    to: email,
-    subject: 'New confirmation code',
-    text: `Your new confirmation code is: ${newCode}\nThis code expires in 10 minutes.`,
-    html: mailService.buildTemplate({
-      title: 'New confirmation code',
-      message: 'Here is your new code to confirm your email.',
-      code: newCode,
+  // Not awaited: the new code is already stored, so the response must not wait
+  // on (nor fail with) the send — a slow/unreachable mail provider would
+  // otherwise stall the request. Mirrors resendVerificationCode / registerUser.
+  Promise.resolve(
+    mailService.sendMail({
+      to: email,
+      subject: 'New confirmation code',
+      text: `Your new confirmation code is: ${newCode}\nThis code expires in 10 minutes.`,
+      html: mailService.buildTemplate({
+        title: 'New confirmation code',
+        message: 'Here is your new code to confirm your email.',
+        code: newCode,
+      }),
     }),
-  });
+  ).catch(() => {});
 };
 
 // Change the password. Re-verifies the current password with bcrypt (defense against a

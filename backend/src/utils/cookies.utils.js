@@ -1,6 +1,8 @@
 // Auth/CSRF cookie names, lifetimes and security flags, set consistently everywhere.
 // Also a dependency-free cookie reader for requests not parsed by cookie-parser.
 
+const { ACCESS_TOKEN_MAX_AGE_MS } = require('../config/jwt.config');
+
 const ACCESS_TOKEN_COOKIE_NAME = 'frameset_access_token';
 const REFRESH_TOKEN_COOKIE_NAME = 'frameset_refresh_token';
 const CSRF_TOKEN_COOKIE_NAME = 'frameset_csrf_token';
@@ -15,7 +17,8 @@ const REFRESH_TOKEN_COOKIE_PATH = '/api/auth';
 // sessions issued before the change; safe to remove once those have expired.
 const LEGACY_REFRESH_TOKEN_COOKIE_PATH = '/';
 
-const ACCESS_TOKEN_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+// ACCESS_TOKEN_MAX_AGE_MS is imported (not redeclared) so this cookie's maxAge
+// and the JWT's own expiry (JWT_EXPIRES in jwt.config.js) can never drift apart.
 const REFRESH_TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const CSRF_TOKEN_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 

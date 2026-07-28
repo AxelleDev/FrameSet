@@ -3,14 +3,15 @@ import { formatModified, formatRelativeTime } from '../../src/utils/date';
 
 describe('date utils', () => {
   describe('formatModified', () => {
-    it('renders an unambiguous "on D Mon at HH:MM"', () => {
-      expect(formatModified('02/07 14:30')).toBe('on 2 Jul at 14:30');
-      expect(formatModified('15/03 10:00')).toBe('on 15 Mar at 10:00');
+    it('renders an unambiguous "on D Mon at HH:MM" from an ISO timestamp', () => {
+      expect(formatModified('2026-07-02T14:30:00.000Z')).toBe('on 2 Jul at 14:30');
+      expect(formatModified('2026-03-15T10:00:00.000Z')).toBe('on 15 Mar at 10:00');
     });
 
-    it('returns "" for empty and "just now" for a sentinel', () => {
+    it('returns "" for empty and "just now" for a sentinel or invalid value', () => {
       expect(formatModified('')).toBe('');
       expect(formatModified('Just now')).toBe('just now');
+      expect(formatModified('not-a-date')).toBe('just now');
     });
   });
 

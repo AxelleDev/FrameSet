@@ -112,8 +112,10 @@ app.use(
     exposedHeaders: ['Retry-After'],
   }),
 );
-// Cap JSON body size to limit the impact of oversized/malicious payloads.
-app.use(express.json({ limit: '10kb' }));
+// Cap JSON body size to limit the impact of oversized/malicious payloads. 100kb
+// comfortably covers the largest legitimate payload (a full 50-color palette
+// with 255-char names, ~15kb) while still rejecting anything grossly oversized.
+app.use(express.json({ limit: '100kb' }));
 
 // Request correlation + access logging: assign/honor an x-request-id, echo it
 // back, and log each completed request with timing at a status-derived severity.

@@ -1,3 +1,9 @@
+// cookies.utils now derives ACCESS_TOKEN_MAX_AGE_MS from jwt.config (so the
+// cookie's maxAge and the JWT's own expiry can never drift apart), which
+// validates these at import time.
+process.env.JWT_SECRET = 'test_jwt_secret';
+process.env.JWT_REFRESH_SECRET = 'test_jwt_refresh_secret';
+
 const { ensureCsrfCookie, csrfProtection } = require('../../src/middleware/csrfProtection');
 const { CSRF_TOKEN_COOKIE_NAME } = require('../../src/utils/cookies.utils');
 

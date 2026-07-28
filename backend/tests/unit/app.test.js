@@ -122,7 +122,7 @@ describe('application middleware', () => {
   });
 
   describe('JSON size limit', () => {
-    it('returns 413 for a JSON payload exceeding 10 KB', async () => {
+    it('returns 413 for a JSON payload exceeding 100 KB', async () => {
       const largePayload = JSON.stringify({ data: 'x'.repeat(200 * 1024) });
 
       const res = await request(app)
@@ -133,7 +133,7 @@ describe('application middleware', () => {
       expect(res.status).toBe(413);
     });
 
-    it('accepts a JSON payload smaller than 10 KB', async () => {
+    it('accepts a JSON payload smaller than 100 KB', async () => {
       const smallPayload = JSON.stringify({ email: 'test@test.com', password: 'Password1' });
 
       const res = await request(app)

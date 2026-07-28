@@ -4,9 +4,12 @@
  */
 
 const jwt = require('jsonwebtoken');
-const db = require('../database');
 const { JWT_SECRET } = require('../config/jwt.config');
-const { isTokenRevoked, isTokenStaleByPasswordChange } = require('../services/token.service');
+const {
+  isTokenRevoked,
+  getUserAuthState,
+  isPasswordChangedAfterIssuance,
+} = require('../services/token.service');
 const { ACCESS_TOKEN_COOKIE_NAME, getCookieValue } = require('../utils/cookies.utils');
 const { getBearerToken } = require('../utils/auth.utils');
 
@@ -41,23 +44,28 @@ async function authenticateToken(req, res, next) {
       return res.status(403).json({ error: 'Invalid or expired token.' });
     }
 
+    // One query covers both checks below (password_updated_at + is_demo live
+    // on the same users row): the password-staleness check, needed on every
+    // request, and the demo read-only check, needed only on writes. Merged so
+    // a mutating request pays one round trip here instead of two.
+    const { found, passwordUpdatedAt, isDemo } = await getUserAuthState(user.id);
+    if (!found) {
+      return res.status(403).json({ error: 'Invalid or expired token.' });
+    }
+
     // Reject tokens issued before the user's last password change/reset, so a
     // password change invalidates every previously-issued session.
-    const stale = await isTokenStaleByPasswordChange(user.id, user.iat);
-    if (stale) {
+    if (isPasswordChangedAfterIssuance(passwordUpdatedAt, user.iat)) {
       return res.status(403).json({ error: 'Invalid or expired token.' });
     }
 
     // The demo account (see migration 019) is read-only: reject any mutating
     // request server-side, so it can't be bypassed from devtools or a direct
-    // API call. Only checked on writes — GETs never pay this extra lookup.
-    if (MUTATING_METHODS.has(req.method)) {
-      const [rows] = await db.query('SELECT is_demo FROM users WHERE id = ?', [user.id]);
-      if (rows[0]?.is_demo) {
-        return res.status(403).json({
-          error: 'Demo accounts are read-only. Create a free account to save your own work.',
-        });
-      }
+    // API call.
+    if (MUTATING_METHODS.has(req.method) && isDemo) {
+      return res.status(403).json({
+        error: 'Demo accounts are read-only. Create a free account to save your own work.',
+      });
     }
   } catch (error) {
     // Fail closed: if the revocation store is unavailable, deny rather than

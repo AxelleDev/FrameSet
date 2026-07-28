@@ -33,9 +33,7 @@ import useDragReorder from '../hooks/useDragReorder';
 import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 import { extractColorsFromImage } from '../utils/extractColors';
 import { parsePaletteFile } from '../utils/paletteImport';
-
-// Keep in sync with the backend cap (MAX_PALETTE_SIZE in projects.service.js).
-const MAX_PALETTE_SIZE = 50;
+import { MAX_PALETTE_SIZE } from '../constants/backendContract';
 
 // Remembers the palette's display-format preference across visits/reloads.
 const PALETTE_FORMAT_KEY = 'frameset-palette-format';

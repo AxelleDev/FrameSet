@@ -1,6 +1,6 @@
 // Main application layout.
 import React, { useState, useEffect, useRef } from 'react';
-import { Outlet, NavLink, Link, useLocation, Navigate } from 'react-router-dom';
+import { Outlet, NavLink, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectContext';
 import Avatar from '../components/Avatar';
@@ -12,6 +12,7 @@ import SessionExpiryBanner from '../components/SessionExpiryBanner';
 import DemoAccountBanner from '../components/DemoAccountBanner';
 import OfflineBanner from '../components/OfflineBanner';
 import GlobalSearch from '../components/GlobalSearch';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { getHasUnsavedChanges } from '../utils/unsavedChangesStore';
 
 /**
@@ -28,8 +29,12 @@ export default function MainLayout() {
   // fetches show their own inline spinner instead.
   const loading = authLoading || (projectsLoading && projects.length === 0);
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // Path awaiting confirmation from the unsaved-changes dialog below (see
+  // guardNavigation); null when no navigation is pending.
+  const [pendingNavigationPath, setPendingNavigationPath] = useState(null);
   const asideRef = useRef(null);
 
   // Ctrl+K / Cmd+K opens the global search from anywhere in the app shell.
@@ -51,16 +56,27 @@ export default function MainLayout() {
   // beforeunload (useUnsavedChangesWarning) only fires on a real document
   // unload, never on client-side route changes — so in-app nav clicks (the
   // sidebar, the Workspace breadcrumb) need their own confirmation, checked
-  // synchronously against whatever page is currently mounted and dirty.
+  // synchronously against whatever page is currently mounted and dirty. Blocks
+  // the default navigation and opens the styled dialog below instead of the
+  // browser's own window.confirm; the resolved href carries the destination.
   const guardNavigation = (e) => {
-    if (
-      getHasUnsavedChanges() &&
-      !window.confirm('You have unsaved changes. Leave this page without saving?')
-    ) {
-      e.preventDefault();
+    if (!getHasUnsavedChanges()) {
+      closeMobileMenu();
       return;
     }
+    e.preventDefault();
+    setPendingNavigationPath(e.currentTarget.getAttribute('href'));
+  };
+
+  const confirmPendingNavigation = () => {
+    const path = pendingNavigationPath;
+    setPendingNavigationPath(null);
     closeMobileMenu();
+    if (path) navigate(path);
+  };
+
+  const cancelPendingNavigation = () => {
+    setPendingNavigationPath(null);
   };
 
   // Always close the drawer when the route changes (defensive; nav items also close it).
@@ -402,6 +418,17 @@ export default function MainLayout() {
       </main>
 
       <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+
+      <ConfirmDialog
+        isOpen={pendingNavigationPath !== null}
+        title="Leave this page?"
+        message="You have unsaved changes. Leave this page without saving?"
+        confirmLabel="Leave"
+        cancelLabel="Cancel"
+        onConfirm={confirmPendingNavigation}
+        onCancel={cancelPendingNavigation}
+        primaryVariant="primary"
+      />
     </div>
   );
 }
