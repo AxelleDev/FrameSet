@@ -14,17 +14,16 @@ import React, {
 import api, { setSessionExpiredHandler, setSessionRefreshedHandler } from '../services/api';
 import logger from '../utils/logger';
 import { handleApiError } from '../utils/apiError';
+import { SESSION_MAX_AGE_MS } from '../constants/backendContract';
 
 export const AuthContext = createContext(null);
 
-// Mirrors the backend's refresh-token cookie lifetime (see
-// REFRESH_TOKEN_MAX_AGE_MS in backend/src/utils/cookies.utils.js): every
-// successful refresh rotates the refresh token and slides this window forward,
-// so an active user practically never hits it. It's the real "you'll be signed
-// out" boundary — the access token (2h) refreshes silently and is never
-// user-visible. Warn a bit ahead of it so an idle-but-open tab gets a chance to
-// stay signed in before losing unsaved work.
-const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+// SESSION_MAX_AGE_MS mirrors the backend's refresh-token cookie lifetime:
+// every successful refresh rotates the refresh token and slides this window
+// forward, so an active user practically never hits it. It's the real
+// "you'll be signed out" boundary — the access token (2h) refreshes silently
+// and is never user-visible. Warn a bit ahead of it so an idle-but-open tab
+// gets a chance to stay signed in before losing unsaved work.
 const SESSION_WARNING_BEFORE_MS = 10 * 60 * 1000;
 const SESSION_CHECK_INTERVAL_MS = 60 * 1000;
 

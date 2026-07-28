@@ -8,6 +8,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const projectsController = require('../controllers/projects.controller');
 const { isE2ETestMode } = require('../utils/testMode');
+const { jsonLimitHandler } = require('../utils/rateLimitHandler');
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ const router = express.Router();
 const shareViewLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: isE2ETestMode ? 10000 : 60,
-  message: 'Too many requests, please try again in a minute.',
+  handler: jsonLimitHandler('Too many requests, please try again in a minute.'),
 });
 
 router.get('/:token', shareViewLimiter, projectsController.getSharedProject);

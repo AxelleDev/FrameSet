@@ -9,6 +9,7 @@ const rateLimit = require('express-rate-limit');
 const userController = require('../controllers/user.controller');
 const authenticateToken = require('../middleware/authenticateToken');
 const { isE2ETestMode } = require('../utils/testMode');
+const { jsonLimitHandler } = require('../utils/rateLimitHandler');
 
 const router = express.Router();
 
@@ -20,35 +21,35 @@ const maxFor = (normalMax) => (isE2ETestMode ? 10000 : normalMax);
 const passwordChangeLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: maxFor(5),
-  message: 'Too many attempts, please try again in a minute.',
+  handler: jsonLimitHandler('Too many attempts, please try again in a minute.'),
 });
 
 // Profile update: bounds rapid repeated profile edits / email-change triggers.
 const updateProfileLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: maxFor(10),
-  message: 'Too many updates, please try again in a minute.',
+  handler: jsonLimitHandler('Too many updates, please try again in a minute.'),
 });
 
 // Pending-email verification: limits brute-forcing of the confirmation code.
 const pendingEmailVerifyLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: maxFor(10),
-  message: 'Too many verification attempts, try again in 10 minutes.',
+  handler: jsonLimitHandler('Too many verification attempts, try again in 10 minutes.'),
 });
 
 // Pending-email resend: strict cap to avoid email-spam abuse.
 const pendingEmailResendLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: maxFor(3),
-  message: 'Too many resend requests, try again in 10 minutes.',
+  handler: jsonLimitHandler('Too many resend requests, try again in 10 minutes.'),
 });
 
 // Account deletion: strict cap on a destructive, irreversible operation.
 const deleteAccountLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: maxFor(3),
-  message: 'Too many attempts, try again in 10 minutes.',
+  handler: jsonLimitHandler('Too many attempts, try again in 10 minutes.'),
 });
 
 // User count: intentionally public (shown on the landing page) but rate limited,
@@ -56,7 +57,7 @@ const deleteAccountLimiter = rateLimit({
 const userCountLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: maxFor(30),
-  message: 'Too many requests, please try again in a minute.',
+  handler: jsonLimitHandler('Too many requests, please try again in a minute.'),
 });
 
 router.get('/count', userCountLimiter, userController.getUserCount);

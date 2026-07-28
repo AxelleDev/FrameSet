@@ -269,16 +269,21 @@ const resendPendingEmail = async (userId, { email }) => {
     [hashOtp(newCode), expires, userDb.id],
   );
 
-  await mailService.sendMail({
-    to: email,
-    subject: 'New confirmation code',
-    text: `Your new confirmation code is: ${newCode}\nThis code expires in 10 minutes.`,
-    html: mailService.buildTemplate({
-      title: 'New confirmation code',
-      message: 'Here is your new code to confirm your email.',
-      code: newCode,
+  // Not awaited: the new code is already stored, so the response must not wait
+  // on (nor fail with) the send — a slow/unreachable mail provider would
+  // otherwise stall the request. Mirrors resendVerificationCode / registerUser.
+  Promise.resolve(
+    mailService.sendMail({
+      to: email,
+      subject: 'New confirmation code',
+      text: `Your new confirmation code is: ${newCode}\nThis code expires in 10 minutes.`,
+      html: mailService.buildTemplate({
+        title: 'New confirmation code',
+        message: 'Here is your new code to confirm your email.',
+        code: newCode,
+      }),
     }),
-  });
+  ).catch(() => {});
 };
 
 // Change the password. Re-verifies the current password with bcrypt (defense against a

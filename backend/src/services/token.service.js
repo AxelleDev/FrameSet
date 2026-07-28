@@ -81,10 +81,23 @@ async function isTokenRevoked(userId, token) {
   }
 }
 
+// Pure comparison shared by isTokenStaleByPasswordChange (below) and
+// authenticateToken's merged user-state query: whether a password change
+// postdates a token's issuance. A 5s leeway absorbs app/DB clock skew so a
+// freshly re-issued token isn't wrongly rejected. A missing changedAt (no
+// password has ever been set) can never make a token stale.
+function isPasswordChangedAfterIssuance(passwordUpdatedAt, tokenIatSeconds) {
+  if (!tokenIatSeconds || !passwordUpdatedAt) {
+    return false;
+  }
+
+  const changedAtSeconds = Math.floor(new Date(passwordUpdatedAt).getTime() / 1000);
+  return changedAtSeconds > tokenIatSeconds + 5;
+}
+
 // Whether a token predates the user's last password change (iat vs
 // password_updated_at), invalidating every session minted before a change/reset.
-// A 5s leeway absorbs app/DB clock skew so a freshly re-issued token isn't wrongly
-// rejected; a missing user counts as invalidated. Throws CREDENTIALS_CHECK_FAILED on DB error.
+// A missing user counts as invalidated. Throws CREDENTIALS_CHECK_FAILED on DB error.
 async function isTokenStaleByPasswordChange(userId, tokenIatSeconds) {
   if (userId === null || userId === undefined) {
     return true;
@@ -102,17 +115,42 @@ async function isTokenStaleByPasswordChange(userId, tokenIatSeconds) {
       return true;
     }
 
-    const changedAt = rows[0].password_updated_at;
-    if (!changedAt) {
-      return false;
-    }
-
-    const changedAtSeconds = Math.floor(new Date(changedAt).getTime() / 1000);
-    return changedAtSeconds > tokenIatSeconds + 5;
+    return isPasswordChangedAfterIssuance(rows[0].password_updated_at, tokenIatSeconds);
   } catch (error) {
     const credentialsCheckError = new Error('CREDENTIALS_CHECK_FAILED');
     credentialsCheckError.cause = error;
     throw credentialsCheckError;
+  }
+}
+
+// Merged read for the authenticateToken hot path: previously a mutating
+// request ran the staleness check's own query (password_updated_at) AND a
+// separate query for is_demo — two round trips on top of the revocation
+// check. One query now covers both, since both live on the same users row.
+// Throws USER_STATE_CHECK_FAILED on DB error (fail closed, same as above).
+async function getUserAuthState(userId) {
+  if (userId === null || userId === undefined) {
+    return { found: false, passwordUpdatedAt: null, isDemo: false };
+  }
+
+  try {
+    const [rows] = await db.query(
+      'SELECT password_updated_at, is_demo FROM users WHERE id = ? LIMIT 1',
+      [userId],
+    );
+    if (rows.length === 0) {
+      return { found: false, passwordUpdatedAt: null, isDemo: false };
+    }
+
+    return {
+      found: true,
+      passwordUpdatedAt: rows[0].password_updated_at,
+      isDemo: Boolean(rows[0].is_demo),
+    };
+  } catch (error) {
+    const userStateCheckError = new Error('USER_STATE_CHECK_FAILED');
+    userStateCheckError.cause = error;
+    throw userStateCheckError;
   }
 }
 
@@ -135,5 +173,7 @@ module.exports = {
   revokeToken,
   isTokenRevoked,
   isTokenStaleByPasswordChange,
+  isPasswordChangedAfterIssuance,
+  getUserAuthState,
   cleanupExpiredRevokedTokens,
 };

@@ -15,16 +15,18 @@ import React, {
 import api from '../services/api';
 import { useAuth } from './AuthContext';
 import logger from '../utils/logger';
+import useNormActions from '../hooks/useNormActions';
+import {
+  PROJECT_NAME_MAX_LENGTH,
+  PROJECT_DUPLICATE_SUFFIX,
+  DEMO_SHARE_TOKEN,
+} from '../constants/backendContract';
 
 export const ProjectContext = createContext(null);
 
 // Pagination defaults; the page size mirrors the backend default so the very
 // first request and its follow-ups stay consistent.
 const DEFAULT_PAGINATION = { page: 1, pageSize: 12, total: 0, totalPages: 1 };
-
-// The share token seeded for the demo project (migration 019's INSERT INTO
-// projects ... share_token). Reused by enableSharing's demo simulation.
-const DEMO_SHARE_TOKEN = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4';
 
 export const ProjectProvider = ({ children }) => {
   const { user, authLoading, setGlobalError } = useAuth();
@@ -455,15 +457,14 @@ export const ProjectProvider = ({ children }) => {
       if (isDemo) {
         const source = projects.find((project) => String(project.id) === String(id));
         if (!source) return null;
-        const suffix = ' (copy)';
         const baseName =
-          source.name.length + suffix.length > 50
-            ? source.name.slice(0, 50 - suffix.length)
+          source.name.length + PROJECT_DUPLICATE_SUFFIX.length > PROJECT_NAME_MAX_LENGTH
+            ? source.name.slice(0, PROJECT_NAME_MAX_LENGTH - PROJECT_DUPLICATE_SUFFIX.length)
             : source.name;
         const newProject = {
           ...source,
           id: nextDemoId(),
-          name: baseName + suffix,
+          name: baseName + PROJECT_DUPLICATE_SUFFIX,
           lastEdited: 'Just now',
           shareToken: null,
           pinned: false,
@@ -869,504 +870,53 @@ export const ProjectProvider = ({ children }) => {
     [isDemo, setGlobalError],
   );
 
-  // Adds a brush norm using the server-assigned id; keeps normsCount in sync.
-  const addBrushNorm = useCallback(
-    async (projectId, norm) => {
-      if (isDemo) {
-        const normWithId = { ...norm, id: nextDemoId() };
-        setProjects((prevProjects) =>
-          prevProjects.map((project) =>
-            String(project.id) === String(projectId)
-              ? {
-                  ...project,
-                  brushNorms: [...(project.brushNorms || []), normWithId],
-                  normsCount: (project.normsCount || 0) + 1,
-                }
-              : project,
-          ),
-        );
-        return normWithId;
-      }
+  // Brush and typography standards have an identical CRUD lifecycle (add,
+  // trash, restore, permanent delete, update, reorder); useNormActions
+  // implements it once and is instantiated per kind here, rather than
+  // maintaining two ~250-line copies of the same logic.
+  const {
+    addNorm: addBrushNorm,
+    fetchTrashedNorms: fetchTrashedBrushNorms,
+    deleteNorm: deleteBrushNorm,
+    restoreNorm: restoreBrushNorm,
+    deleteNormPermanently: deleteBrushNormPermanently,
+    updateNorm: updateBrushNorm,
+    reorderNorms: reorderBrushNorms,
+  } = useNormActions({
+    kind: 'BrushNorm',
+    fieldName: 'brushNorms',
+    apiSegment: 'brush-norms',
+    isDemo,
+    projects,
+    setProjects,
+    setGlobalError,
+    nextDemoId,
+    trashedItems: trashedBrushNorms,
+    setTrashedItems: setTrashedBrushNorms,
+    trashedItemsRef: trashedBrushNormsRef,
+  });
 
-      try {
-        const data = await api.post(`/projects/${projectId}/brush-norms`, norm, {
-          onGlobalError: setGlobalError,
-        });
-        const normWithId = { ...norm, id: data.id };
-        setProjects((prevProjects) =>
-          prevProjects.map((project) =>
-            String(project.id) === String(projectId)
-              ? {
-                  ...project,
-                  brushNorms: [...(project.brushNorms || []), normWithId],
-                  normsCount: (project.normsCount || 0) + 1,
-                }
-              : project,
-          ),
-        );
-        return normWithId;
-      } catch (error) {
-        setGlobalError(error?.message || 'Failed to add the standard.');
-        logger.error('projects.addBrushNorm.error', error);
-        return null;
-      }
-    },
-    [isDemo, setGlobalError],
-  );
-
-  // Adds a typography norm using the server-assigned id; bumps normsCount.
-  const addTypographyNorm = useCallback(
-    async (projectId, norm) => {
-      if (isDemo) {
-        const normWithId = { ...norm, id: nextDemoId() };
-        setProjects((prevProjects) =>
-          prevProjects.map((project) =>
-            String(project.id) === String(projectId)
-              ? {
-                  ...project,
-                  typographyNorms: [...(project.typographyNorms || []), normWithId],
-                  normsCount: (project.normsCount || 0) + 1,
-                }
-              : project,
-          ),
-        );
-        return normWithId;
-      }
-
-      try {
-        const data = await api.post(`/projects/${projectId}/typography-norms`, norm, {
-          onGlobalError: setGlobalError,
-        });
-        const normWithId = { ...norm, id: data.id };
-        setProjects((prevProjects) =>
-          prevProjects.map((project) =>
-            String(project.id) === String(projectId)
-              ? {
-                  ...project,
-                  typographyNorms: [...(project.typographyNorms || []), normWithId],
-                  normsCount: (project.normsCount || 0) + 1,
-                }
-              : project,
-          ),
-        );
-        return normWithId;
-      } catch (error) {
-        setGlobalError(error?.message || 'Failed to add the standard.');
-        logger.error('projects.addTypographyNorm.error', error);
-        return null;
-      }
-    },
-    [isDemo, setGlobalError],
-  );
-
-  // Fetches a project's trashed brush norms (small list, with days left).
-  const fetchTrashedBrushNorms = useCallback(
-    async (projectId, { silent = false } = {}) => {
-      if (!projectId) {
-        setTrashedBrushNorms([]);
-        return [];
-      }
-      // The demo account's norm trash is simulated locally (see deleteBrushNorm).
-      if (isDemo) {
-        return trashedBrushNormsRef.current;
-      }
-      try {
-        const options = silent ? undefined : { onGlobalError: setGlobalError };
-        const data = await api.get(`/projects/${projectId}/brush-norms/trash`, options);
-        const fetched = data?.norms || [];
-        setTrashedBrushNorms(fetched);
-        return fetched;
-      } catch (error) {
-        logger.error('projects.fetchTrashedBrushNorms.error', error);
-        return [];
-      }
-    },
-    [isDemo, setGlobalError],
-  );
-
-  // Fetches a project's trashed typography norms (small list, with days left).
-  const fetchTrashedTypographyNorms = useCallback(
-    async (projectId, { silent = false } = {}) => {
-      if (!projectId) {
-        setTrashedTypographyNorms([]);
-        return [];
-      }
-      if (isDemo) {
-        return trashedTypographyNormsRef.current;
-      }
-      try {
-        const options = silent ? undefined : { onGlobalError: setGlobalError };
-        const data = await api.get(`/projects/${projectId}/typography-norms/trash`, options);
-        const fetched = data?.norms || [];
-        setTrashedTypographyNorms(fetched);
-        return fetched;
-      } catch (error) {
-        logger.error('projects.fetchTrashedTypographyNorms.error', error);
-        return [];
-      }
-    },
-    [isDemo, setGlobalError],
-  );
-
-  /** Moves a brush norm to the trash (soft delete) and decrements normsCount.
-      The trash list is refreshed silently so the page's trash section stays accurate. */
-  const deleteBrushNorm = useCallback(
-    async (projectId, normId) => {
-      const normIdNum = Number(normId);
-
-      if (isDemo) {
-        const project = projects.find((p) => String(p.id) === String(projectId));
-        const target = project?.brushNorms?.find((norm) => Number(norm.id) === normIdNum);
-        setProjects((prevProjects) =>
-          prevProjects.map((p) =>
-            String(p.id) === String(projectId)
-              ? {
-                  ...p,
-                  brushNorms: p.brushNorms.filter((norm) => Number(norm.id) !== normIdNum),
-                  normsCount: (p.normsCount || 0) - 1,
-                }
-              : p,
-          ),
-        );
-        if (target) {
-          setTrashedBrushNorms((prev) => [{ ...target, daysLeft: 30 }, ...prev]);
-        }
-        return true;
-      }
-
-      try {
-        await api.delete(`/projects/${projectId}/brush-norms/${normIdNum}`, null, {
-          onGlobalError: setGlobalError,
-        });
-        setProjects((prevProjects) =>
-          prevProjects.map((project) =>
-            String(project.id) === String(projectId)
-              ? {
-                  ...project,
-                  brushNorms: project.brushNorms.filter((norm) => Number(norm.id) !== normIdNum),
-                  normsCount: (project.normsCount || 0) - 1,
-                }
-              : project,
-          ),
-        );
-        fetchTrashedBrushNorms(projectId, { silent: true });
-        return true;
-      } catch (error) {
-        setGlobalError(error?.message || 'Failed to delete the standard.');
-        logger.error('projects.deleteBrushNorm.error', error);
-        return false;
-      }
-    },
-    [isDemo, projects, setGlobalError, fetchTrashedBrushNorms],
-  );
-
-  /** Moves a typography norm to the trash (soft delete) and decrements normsCount. */
-  const deleteTypographyNorm = useCallback(
-    async (projectId, normId) => {
-      const normIdNum = Number(normId);
-
-      if (isDemo) {
-        const project = projects.find((p) => String(p.id) === String(projectId));
-        const target = project?.typographyNorms?.find((norm) => Number(norm.id) === normIdNum);
-        setProjects((prevProjects) =>
-          prevProjects.map((p) =>
-            String(p.id) === String(projectId)
-              ? {
-                  ...p,
-                  typographyNorms: p.typographyNorms.filter(
-                    (norm) => Number(norm.id) !== normIdNum,
-                  ),
-                  normsCount: (p.normsCount || 0) - 1,
-                }
-              : p,
-          ),
-        );
-        if (target) {
-          setTrashedTypographyNorms((prev) => [{ ...target, daysLeft: 30 }, ...prev]);
-        }
-        return true;
-      }
-
-      try {
-        await api.delete(`/projects/${projectId}/typography-norms/${normIdNum}`, null, {
-          onGlobalError: setGlobalError,
-        });
-        setProjects((prevProjects) =>
-          prevProjects.map((project) =>
-            String(project.id) === String(projectId)
-              ? {
-                  ...project,
-                  typographyNorms: project.typographyNorms.filter(
-                    (norm) => Number(norm.id) !== normIdNum,
-                  ),
-                  normsCount: (project.normsCount || 0) - 1,
-                }
-              : project,
-          ),
-        );
-        fetchTrashedTypographyNorms(projectId, { silent: true });
-        return true;
-      } catch (error) {
-        setGlobalError(error?.message || 'Failed to delete the standard.');
-        logger.error('projects.deleteTypographyNorm.error', error);
-        return false;
-      }
-    },
-    [isDemo, projects, setGlobalError, fetchTrashedTypographyNorms],
-  );
-
-  // Restores a trashed brush norm, appending it back to the project's local
-  // standards using the data already held in the trash list, and bumps
-  // normsCount. Returns true on success.
-  const restoreBrushNorm = useCallback(
-    async (projectId, normId) => {
-      const applyRestore = () => {
-        const restored = trashedBrushNorms.find((norm) => String(norm.id) === String(normId));
-        setTrashedBrushNorms((prev) => prev.filter((norm) => String(norm.id) !== String(normId)));
-        if (restored) {
-          setProjects((prevProjects) =>
-            prevProjects.map((project) =>
-              String(project.id) === String(projectId)
-                ? {
-                    ...project,
-                    brushNorms: [...(project.brushNorms || []), restored],
-                    normsCount: (project.normsCount || 0) + 1,
-                  }
-                : project,
-            ),
-          );
-        }
-      };
-
-      if (isDemo) {
-        applyRestore();
-        return true;
-      }
-
-      try {
-        await api.post(
-          `/projects/${projectId}/brush-norms/${normId}/restore`,
-          {},
-          { onGlobalError: setGlobalError },
-        );
-        applyRestore();
-        return true;
-      } catch (error) {
-        setGlobalError(error?.message || 'Failed to restore the standard.');
-        logger.error('projects.restoreBrushNorm.error', error);
-        return false;
-      }
-    },
-    [isDemo, trashedBrushNorms, setGlobalError],
-  );
-
-  // Restores a trashed typography norm the same way as restoreBrushNorm.
-  const restoreTypographyNorm = useCallback(
-    async (projectId, normId) => {
-      const applyRestore = () => {
-        const restored = trashedTypographyNorms.find((norm) => String(norm.id) === String(normId));
-        setTrashedTypographyNorms((prev) =>
-          prev.filter((norm) => String(norm.id) !== String(normId)),
-        );
-        if (restored) {
-          setProjects((prevProjects) =>
-            prevProjects.map((project) =>
-              String(project.id) === String(projectId)
-                ? {
-                    ...project,
-                    typographyNorms: [...(project.typographyNorms || []), restored],
-                    normsCount: (project.normsCount || 0) + 1,
-                  }
-                : project,
-            ),
-          );
-        }
-      };
-
-      if (isDemo) {
-        applyRestore();
-        return true;
-      }
-
-      try {
-        await api.post(
-          `/projects/${projectId}/typography-norms/${normId}/restore`,
-          {},
-          { onGlobalError: setGlobalError },
-        );
-        applyRestore();
-        return true;
-      } catch (error) {
-        setGlobalError(error?.message || 'Failed to restore the standard.');
-        logger.error('projects.restoreTypographyNorm.error', error);
-        return false;
-      }
-    },
-    [isDemo, trashedTypographyNorms, setGlobalError],
-  );
-
-  // Permanently deletes a TRASHED brush norm (irreversible). Returns true on success.
-  const deleteBrushNormPermanently = useCallback(
-    async (projectId, normId) => {
-      if (isDemo) {
-        setTrashedBrushNorms((prev) => prev.filter((norm) => String(norm.id) !== String(normId)));
-        return true;
-      }
-
-      try {
-        await api.delete(`/projects/${projectId}/brush-norms/${normId}/permanent`, null, {
-          onGlobalError: setGlobalError,
-        });
-        setTrashedBrushNorms((prev) => prev.filter((norm) => String(norm.id) !== String(normId)));
-        return true;
-      } catch (error) {
-        setGlobalError(error?.message || 'Failed to delete the standard.');
-        logger.error('projects.deleteBrushNormPermanently.error', error);
-        return false;
-      }
-    },
-    [isDemo, setGlobalError],
-  );
-
-  // Permanently deletes a TRASHED typography norm (irreversible). Returns true on success.
-  const deleteTypographyNormPermanently = useCallback(
-    async (projectId, normId) => {
-      if (isDemo) {
-        setTrashedTypographyNorms((prev) =>
-          prev.filter((norm) => String(norm.id) !== String(normId)),
-        );
-        return true;
-      }
-
-      try {
-        await api.delete(`/projects/${projectId}/typography-norms/${normId}/permanent`, null, {
-          onGlobalError: setGlobalError,
-        });
-        setTrashedTypographyNorms((prev) =>
-          prev.filter((norm) => String(norm.id) !== String(normId)),
-        );
-        return true;
-      } catch (error) {
-        setGlobalError(error?.message || 'Failed to delete the standard.');
-        logger.error('projects.deleteTypographyNormPermanently.error', error);
-        return false;
-      }
-    },
-    [isDemo, setGlobalError],
-  );
-
-  /** Updates fields of an existing brush norm, merging `updates` locally. */
-  const updateBrushNorm = useCallback(
-    async (projectId, normId, updates) => {
-      const applyUpdate = () =>
-        setProjects((prevProjects) =>
-          prevProjects.map((project) =>
-            String(project.id) === String(projectId)
-              ? {
-                  ...project,
-                  brushNorms: project.brushNorms.map((norm) =>
-                    Number(norm.id) === Number(normId) ? { ...norm, ...updates } : norm,
-                  ),
-                }
-              : project,
-          ),
-        );
-
-      if (isDemo) {
-        applyUpdate();
-        return true;
-      }
-
-      try {
-        await api.put(`/projects/${projectId}/brush-norms/${normId}`, updates, {
-          onGlobalError: setGlobalError,
-        });
-        applyUpdate();
-        return true;
-      } catch (error) {
-        setGlobalError(error?.message || 'Failed to update the standard.');
-        logger.error('projects.updateBrushNorm.error', error);
-        return false;
-      }
-    },
-    [isDemo, setGlobalError],
-  );
-
-  /** Updates fields of an existing typography norm, merging `updates` locally. */
-  const updateTypographyNorm = useCallback(
-    async (projectId, normId, updates) => {
-      const applyUpdate = () =>
-        setProjects((prevProjects) =>
-          prevProjects.map((project) =>
-            String(project.id) === String(projectId)
-              ? {
-                  ...project,
-                  typographyNorms: project.typographyNorms.map((norm) =>
-                    Number(norm.id) === Number(normId) ? { ...norm, ...updates } : norm,
-                  ),
-                }
-              : project,
-          ),
-        );
-
-      if (isDemo) {
-        applyUpdate();
-        return true;
-      }
-
-      try {
-        await api.put(`/projects/${projectId}/typography-norms/${normId}`, updates, {
-          onGlobalError: setGlobalError,
-        });
-        applyUpdate();
-        return true;
-      } catch (error) {
-        setGlobalError(error?.message || 'Failed to update the standard.');
-        logger.error('projects.updateTypographyNorm.error', error);
-        return false;
-      }
-    },
-    [isDemo, setGlobalError],
-  );
-
-  // Reorders a project's brush standards. Only bumps the request server-side;
-  // the caller (the drag hook) owns the optimistic local order.
-  const reorderBrushNorms = useCallback(
-    async (projectId, orderedIds) => {
-      if (isDemo) return true;
-
-      try {
-        await api.post(`/projects/${projectId}/brush-norms/reorder`, orderedIds, {
-          onGlobalError: setGlobalError,
-        });
-        return true;
-      } catch (error) {
-        setGlobalError(error?.message || 'Failed to reorder the standards.');
-        logger.error('projects.reorderBrushNorms.error', error);
-        return false;
-      }
-    },
-    [isDemo, setGlobalError],
-  );
-
-  // Reorders a project's typography standards, same contract as reorderBrushNorms.
-  const reorderTypographyNorms = useCallback(
-    async (projectId, orderedIds) => {
-      if (isDemo) return true;
-
-      try {
-        await api.post(`/projects/${projectId}/typography-norms/reorder`, orderedIds, {
-          onGlobalError: setGlobalError,
-        });
-        return true;
-      } catch (error) {
-        setGlobalError(error?.message || 'Failed to reorder the standards.');
-        logger.error('projects.reorderTypographyNorms.error', error);
-        return false;
-      }
-    },
-    [isDemo, setGlobalError],
-  );
+  const {
+    addNorm: addTypographyNorm,
+    fetchTrashedNorms: fetchTrashedTypographyNorms,
+    deleteNorm: deleteTypographyNorm,
+    restoreNorm: restoreTypographyNorm,
+    deleteNormPermanently: deleteTypographyNormPermanently,
+    updateNorm: updateTypographyNorm,
+    reorderNorms: reorderTypographyNorms,
+  } = useNormActions({
+    kind: 'TypographyNorm',
+    fieldName: 'typographyNorms',
+    apiSegment: 'typography-norms',
+    isDemo,
+    projects,
+    setProjects,
+    setGlobalError,
+    nextDemoId,
+    trashedItems: trashedTypographyNorms,
+    setTrashedItems: setTrashedTypographyNorms,
+    trashedItemsRef: trashedTypographyNormsRef,
+  });
 
   // Memoized context value so consumers only re-render when state/actions change.
   const value = useMemo(

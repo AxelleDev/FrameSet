@@ -7,6 +7,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const authController = require('../controllers/auth.controller');
 const { isE2ETestMode } = require('../utils/testMode');
+const { jsonLimitHandler } = require('../utils/rateLimitHandler');
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ const maxFor = (normalMax) => (isE2ETestMode ? 10000 : normalMax);
 const loginLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: maxFor(5),
-  message: 'Too many attempts, please try again in a minute.',
+  handler: jsonLimitHandler('Too many attempts, please try again in a minute.'),
 });
 
 // Demo login: same shape of cap as a normal login, but its own instance so
@@ -28,14 +29,14 @@ const loginLimiter = rateLimit({
 const demoLoginLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: maxFor(5),
-  message: 'Too many attempts, please try again in a minute.',
+  handler: jsonLimitHandler('Too many attempts, please try again in a minute.'),
 });
 
 // Register: per-IP limit to slow spam signups, independent from login.
 const registerLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: maxFor(5),
-  message: 'Too many attempts, please try again in a minute.',
+  handler: jsonLimitHandler('Too many attempts, please try again in a minute.'),
 });
 
 // Email verification: limits brute-force guessing of the 6-digit code. A dedicated
@@ -44,7 +45,7 @@ const registerLimiter = rateLimit({
 const verifyCodeLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: maxFor(10),
-  message: 'Too many verification attempts, try again in 10 minutes.',
+  handler: jsonLimitHandler('Too many verification attempts, try again in 10 minutes.'),
 });
 
 // Password reset: limits brute-force guessing of the reset code. Separate instance
@@ -52,7 +53,7 @@ const verifyCodeLimiter = rateLimit({
 const resetPasswordLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: maxFor(10),
-  message: 'Too many attempts, try again in 10 minutes.',
+  handler: jsonLimitHandler('Too many attempts, try again in 10 minutes.'),
 });
 
 // Verification-code resend: strict cap to prevent using the service as an email-spam
@@ -60,7 +61,7 @@ const resetPasswordLimiter = rateLimit({
 const resendCodeLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: maxFor(3),
-  message: 'Too many resend requests, try again in 10 minutes.',
+  handler: jsonLimitHandler('Too many resend requests, try again in 10 minutes.'),
 });
 
 // Forgot-password: strict cap on reset-code emails. Separate instance from the
@@ -68,14 +69,14 @@ const resendCodeLimiter = rateLimit({
 const forgotPasswordLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: maxFor(3),
-  message: 'Too many requests, try again in 10 minutes.',
+  handler: jsonLimitHandler('Too many requests, try again in 10 minutes.'),
 });
 
 // Token refresh: bounds how often clients can rotate tokens.
 const refreshLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: maxFor(10),
-  message: 'Too many refresh requests, please try again in a minute.',
+  handler: jsonLimitHandler('Too many refresh requests, please try again in a minute.'),
 });
 
 // Google sign-in: each call verifies a Google ID token and may create/link an
@@ -83,7 +84,7 @@ const refreshLimiter = rateLimit({
 const googleSignInLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: maxFor(10),
-  message: 'Too many attempts, please try again in a minute.',
+  handler: jsonLimitHandler('Too many attempts, please try again in a minute.'),
 });
 
 // Logout: generous cap (multi-tab sign-outs are legitimate) that still bounds
@@ -91,7 +92,7 @@ const googleSignInLimiter = rateLimit({
 const logoutLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: maxFor(20),
-  message: 'Too many requests, please try again in a minute.',
+  handler: jsonLimitHandler('Too many requests, please try again in a minute.'),
 });
 
 router.post('/register', registerLimiter, authController.register);

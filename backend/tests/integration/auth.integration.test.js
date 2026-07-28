@@ -150,6 +150,19 @@ jest.mock('../../src/database', () => {
       return [user ? [{ password_updated_at: user.password_updated_at }] : []];
     }
 
+    // Merged read used by authenticateToken (see token.service.getUserAuthState):
+    // one query covers both the password-staleness check and the demo
+    // read-only check, instead of the two separate queries above/below.
+    if (normalizedSql === 'SELECT password_updated_at, is_demo FROM users WHERE id = ? LIMIT 1') {
+      const [id] = params;
+      const user = users.find((item) => item.id === id);
+      return [
+        user
+          ? [{ password_updated_at: user.password_updated_at, is_demo: user.is_demo ? 1 : 0 }]
+          : [],
+      ];
+    }
+
     throw new Error(`Unhandled SQL in auth integration test: ${normalizedSql}`);
   });
 

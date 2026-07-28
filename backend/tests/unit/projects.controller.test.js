@@ -40,7 +40,7 @@ describe('projects controller', () => {
             name: 'Deep Linked',
             share_token: 'aa11bb22cc33dd44ee55ff6677889900',
             pin_position: 0,
-            lastEditedFormatted: '15/03 10:00',
+            last_edited: '2026-03-15T10:00:00.000Z',
           },
         ],
       ]);
@@ -76,7 +76,7 @@ describe('projects controller', () => {
       expect(res.json).toHaveBeenCalledWith({
         id: 42,
         name: 'Deep Linked',
-        lastEdited: '15/03 10:00',
+        lastEdited: '2026-03-15T10:00:00.000Z',
         shareToken: 'aa11bb22cc33dd44ee55ff6677889900',
         pinned: true,
         brushNorms: [
@@ -120,7 +120,7 @@ describe('projects controller', () => {
     it('returns the projects for the user', async () => {
       db.query.mockResolvedValueOnce([[{ total: 1 }]]); // COUNT(*) for pagination
       db.query.mockResolvedValueOnce([
-        [{ id: 1, name: 'Project1', lastEditedFormatted: '15/03 10:00', pin_position: null }],
+        [{ id: 1, name: 'Project1', last_edited: '2026-03-15T10:00:00.000Z', pin_position: null }],
       ]);
       db.query.mockResolvedValueOnce([
         [
@@ -200,7 +200,7 @@ describe('projects controller', () => {
           {
             id: 1,
             name: 'Project1',
-            lastEdited: '15/03 10:00',
+            lastEdited: '2026-03-15T10:00:00.000Z',
             shareToken: null,
             pinned: false,
             brushNorms: [
@@ -265,7 +265,7 @@ describe('projects controller', () => {
       const projectsRows = Array.from({ length: 10 }, (_, index) => ({
         id: index + 1,
         name: `Project ${index + 1}`,
-        lastEditedFormatted: '15/03 10:00',
+        last_edited: '2026-03-15T10:00:00.000Z',
       }));
 
       db.query
