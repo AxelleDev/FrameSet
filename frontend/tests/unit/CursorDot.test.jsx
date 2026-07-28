@@ -42,6 +42,19 @@ describe('CursorDot', () => {
     expect(dot.style.opacity).not.toBe('1');
   });
 
+  it('registers the click squish without breaking visibility', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query) =>
+      mediaQueryList(query === '(pointer: fine)'),
+    );
+    render(<CursorDot />);
+    const dot = screen.getByTestId('cursor-dot');
+
+    fireEvent.mouseMove(window, { clientX: 50, clientY: 50 });
+    fireEvent.mouseDown(window);
+    fireEvent.mouseUp(window);
+    expect(dot.style.opacity).toBe('1');
+  });
+
   it('hides when the pointer leaves the window', () => {
     vi.spyOn(window, 'matchMedia').mockImplementation((query) =>
       mediaQueryList(query === '(pointer: fine)'),
