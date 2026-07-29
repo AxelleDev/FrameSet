@@ -229,66 +229,48 @@ export default function Dashboard() {
     }
   };
 
-  // The 4 action buttons, shared between the mobile header row and the
-  // desktop hover overlay below (renderProjectCard) so they're only wired up
-  // once.
-  const renderProjectActions = (project) => (
-    <>
-      <ActionIconButton
-        onClick={(e) => handlePinToggle(e, project)}
-        title={project.pinned ? 'Unpin project' : 'Pin project'}
-        intent="edit"
-        disabled={pinningId !== null}
-      >
-        <PinIcon filled={project.pinned} />
-      </ActionIconButton>
-      <ActionIconButton
-        onClick={(e) => openEditProject(e, project)}
-        title="Edit project"
-        intent="edit"
-      >
-        <EditIcon />
-      </ActionIconButton>
-      <ActionIconButton
-        onClick={(e) => handleDuplicateProject(e, project.id)}
-        title="Duplicate project"
-        intent="edit"
-        disabled={duplicatingId !== null}
-      >
-        <DuplicateIcon />
-      </ActionIconButton>
-      <ActionIconButton
-        onClick={(e) => handleDeleteProject(e, project.id)}
-        title="Delete project"
-        intent="delete"
-      >
-        <DeleteIcon />
-      </ActionIconButton>
-    </>
-  );
-
   // Shared card body for both the pinned and regular sections. moveButtons is
   // only passed for the pinned section (its keyboard-operable drag-alternative).
   const renderProjectCard = (project, moveButtons) => (
     <Card key={project.id} clickable className="group p-6 overflow-hidden">
-      {/* Mobile: a dedicated header row instead of the hover overlay below —
-          there's no hover on touch, so that overlay would otherwise sit
-          permanently on top of the title (see ActionIconButton's hover:none
-          handling). sm: switches the same buttons back to the original
-          hover-revealed absolute overlay — one set of buttons, repositioned
-          by breakpoint, not a duplicated one (a second copy would confuse
-          both assistive tech and any test querying by accessible name). */}
-      <div className="flex justify-end gap-2 mb-3 relative z-10 sm:mb-0 sm:absolute sm:top-4 sm:right-4 sm:z-30">
-        {renderProjectActions(project)}
+      <div className="absolute top-4 right-4 flex gap-2 z-30">
+        <ActionIconButton
+          onClick={(e) => handlePinToggle(e, project)}
+          title={project.pinned ? 'Unpin project' : 'Pin project'}
+          intent="edit"
+          disabled={pinningId !== null}
+        >
+          <PinIcon filled={project.pinned} />
+        </ActionIconButton>
+        <ActionIconButton
+          onClick={(e) => openEditProject(e, project)}
+          title="Edit project"
+          intent="edit"
+        >
+          <EditIcon />
+        </ActionIconButton>
+        <ActionIconButton
+          onClick={(e) => handleDuplicateProject(e, project.id)}
+          title="Duplicate project"
+          intent="edit"
+          disabled={duplicatingId !== null}
+        >
+          <DuplicateIcon />
+        </ActionIconButton>
+        <ActionIconButton
+          onClick={(e) => handleDeleteProject(e, project.id)}
+          title="Delete project"
+          intent="delete"
+        >
+          <DeleteIcon />
+        </ActionIconButton>
       </div>
       <div className="relative z-10 flex flex-col h-full min-h-[160px]">
         {/* Stretched-link: the title is the only "open project" control, and its
             ::after overlay makes the whole card body clickable — without making the
             container itself a button (which would nest the edit/delete buttons and
-            break ARIA). The action buttons sit above the overlay (z-30). pr-8 only
-            applies from sm: on mobile the actions are their own row above, not an
-            overlay, so the title doesn't need to make room for them. */}
-        <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors sm:pr-8">
+            break ARIA). The action buttons sit above the overlay (z-30). */}
+        <h3 className="text-xl font-semibold text-primary mt-2 mb-1 group-hover:text-blue transition-colors pr-8">
           <button
             type="button"
             onClick={() => openProject(project.id)}

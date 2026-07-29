@@ -124,7 +124,7 @@ const ColorTile = React.forwardRef(function ColorTile(
             type="button"
             onClick={onCopy}
             aria-label={`Copy ${displayValue}`}
-            className="absolute inset-0 flex items-center justify-center rounded-3xl opacity-0 group-hover:opacity-100 focus-visible:opacity-100 active:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+            className="absolute inset-0 flex items-center justify-center rounded-3xl opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-active:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
           >
             <CopyBadge isCopied={copied} />
           </button>
