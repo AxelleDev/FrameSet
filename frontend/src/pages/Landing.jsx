@@ -109,10 +109,12 @@ function TypeCard() {
   );
 }
 
-/** Mockup for the "Graphic standards" feature — two real standard cards. */
+/** Mockup for the "Graphic standards" feature — two real standard cards.
+    aria-hidden: purely decorative, so its sample titles ("Hair outline") never
+    pollute the page outline screen readers navigate by. */
 function StandardsMock() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div aria-hidden="true" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <BrushCard />
       <TypeCard />
     </div>
@@ -155,7 +157,9 @@ function ExportMock() {
     { label: 'Procreate', ext: '.swatches' },
   ];
   return (
-    <div className="space-y-4">
+    // aria-hidden: decorative mockup (nothing interactive inside), so its
+    // sample headings never pollute the outline screen readers navigate by.
+    <div aria-hidden="true" className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {cards.map((c) => (
           <Card key={c.title} className="p-5">

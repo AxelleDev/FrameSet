@@ -9,7 +9,10 @@ import { Helmet } from 'react-helmet-async';
  * so canonical/OG URLs are correct.
  */
 const SITE_NAME = 'FrameSet';
-const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://frameset.app').replace(/\/$/, '');
+const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://frameset-taupe.vercel.app').replace(
+  /\/$/,
+  '',
+);
 const DEFAULT_DESCRIPTION =
   "FrameSet keeps every project's graphic standards and color palette in one place.";
 // Brand logo as a safe default that always exists; swap for a dedicated

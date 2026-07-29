@@ -69,9 +69,7 @@ test.describe('two-factor authentication', () => {
     await dialog.getByRole('button', { name: /saved my recovery codes/i }).click();
 
     await expect(page.getByText('Enabled', { exact: true })).toBeVisible();
-    await expect(
-      page.getByText(`${recoveryCodes.length} recovery codes remaining.`),
-    ).toBeVisible();
+    await expect(page.getByText(`${recoveryCodes.length} recovery codes remaining.`)).toBeVisible();
   });
 
   test('signing in now demands the authenticator code, and rejects a wrong one', async () => {

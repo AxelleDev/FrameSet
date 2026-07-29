@@ -150,10 +150,11 @@ npm run dev            # app on http://localhost:5173
 ### End-to-end tests (Playwright)
 
 `e2e/` runs real user journeys — the critical path (register, verify by
-email, create a project, add content, share it publicly, export a PDF,
-delete the account), password reset, project trash/restore, and
-drag-and-drop palette reordering — against a real browser, backend and
-database. One-time setup:
+email, create a project, add content, share it publicly, export a PDF and
+a JSON, delete the account), password reset, two-factor authentication
+(enrollment, login challenge, recovery codes), the read-only demo account,
+project trash/restore, palette file import (.gpl) and drag-and-drop palette
+reordering — against a real browser, backend and database. One-time setup:
 
 ```bash
 cd e2e

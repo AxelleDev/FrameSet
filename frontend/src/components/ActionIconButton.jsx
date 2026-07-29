@@ -46,6 +46,12 @@ export default function ActionIconButton({
   // pattern as the skip link): a mouse user reorders by dragging, so this stays out
   // of their way, but a keyboard-only user — sighted or not — needs to both reach
   // AND see it, so it must render fully (not just be exposed to assistive tech).
+  //
+  // Touch (hover:none) gets a third path: HTML5 drag never fires on touch, so
+  // these buttons are the ONLY way to reorder there. They join the app's
+  // press-and-hold reveal (like the other card actions), sized up to 44px.
+  // pointer-events stays off while invisible so a hidden button never steals a
+  // tap aimed at what's underneath (e.g. a color tile's copy overlay).
   if (srOnly) {
     return (
       <button
@@ -53,7 +59,7 @@ export default function ActionIconButton({
         disabled={disabled}
         title={title}
         aria-label={title}
-        className={`sr-only focus:not-sr-only focus:absolute focus:z-40 w-9 h-9 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white focus-ring disabled:opacity-30 disabled:cursor-not-allowed ${className}`.trim()}
+        className={`sr-only focus:not-sr-only focus:absolute focus:z-40 [@media(hover:none)]:not-sr-only [@media(hover:none)]:w-11 [@media(hover:none)]:h-11 [@media(hover:none)]:opacity-0 [@media(hover:none)]:pointer-events-none [@media(hover:none)]:group-hover:opacity-100 [@media(hover:none)]:group-hover:pointer-events-auto [@media(hover:none)]:group-active:opacity-100 [@media(hover:none)]:group-active:pointer-events-auto w-9 h-9 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white transition-opacity focus-ring disabled:opacity-30 disabled:cursor-not-allowed ${className}`.trim()}
       >
         {icon}
       </button>
