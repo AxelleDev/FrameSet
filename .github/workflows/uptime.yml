@@ -4,7 +4,8 @@
 #
 # Setup: define a repository variable HEALTH_CHECK_URL (Settings → Secrets and
 # variables → Actions → Variables) pointing at the deployed probe, e.g.
-# https://api.frameset.app/health. The workflow is skipped while it is unset.
+# https://frameset-production.up.railway.app/health. The workflow is skipped
+# while it is unset.
 #
 # Notes:
 # - GitHub pauses scheduled workflows after 60 days without repository
