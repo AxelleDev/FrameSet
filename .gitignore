@@ -24,3 +24,6 @@ backend/backups/
 # Playwright E2E test output (wherever it gets generated from)
 test-results/
 playwright-report/
+
+# Browser-tooling session artifacts (screenshots/snapshots from MCP-driven runs)
+.playwright-mcp/
