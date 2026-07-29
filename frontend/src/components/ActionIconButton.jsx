@@ -14,7 +14,9 @@ const VARIANT_CLASSES = {
   light: 'bg-white/20',
 };
 
-// Small circular icon button for row/card actions; stays hidden until the parent `group` is hovered.
+// Small circular icon button for row/card actions; stays hidden until the parent
+// `group` is hovered — or, on touch (no hover), press-and-held (see group-active
+// below), so it never sits permanently on top of the card's content.
 export default function ActionIconButton({
   onClick,
   title,
@@ -64,7 +66,7 @@ export default function ActionIconButton({
       disabled={disabled}
       title={title}
       aria-label={title}
-      className={`w-9 h-9 [@media(hover:none)]:w-11 [@media(hover:none)]:h-11 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-all duration-base hover:scale-110 focus-ring disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white/20 ${className}`.trim()}
+      className={`w-9 h-9 [@media(hover:none)]:w-11 [@media(hover:none)]:h-11 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-active:opacity-100 transition-all duration-base hover:scale-110 focus-ring disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white/20 ${className}`.trim()}
     >
       {icon}
     </button>
