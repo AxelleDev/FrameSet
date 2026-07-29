@@ -113,6 +113,79 @@ describe('Dashboard', () => {
     releaseDuplicate({ id: 5, name: 'Neo-Tokyo (copy)' });
   });
 
+  it('renames a project through the edit modal', async () => {
+    projectState.projects = [
+      { id: 3, name: 'Neo-Tokyo', lastEdited: 'Just now', normsCount: 0, palette: [] },
+    ];
+    projectState.updateProjectName = vi.fn().mockResolvedValue(true);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Edit project' }));
+    const input = await screen.findByLabelText('Project name');
+    await user.clear(input);
+    await user.type(input, 'Neo-Kyoto');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(projectState.updateProjectName).toHaveBeenCalledWith(3, { name: 'Neo-Kyoto' }),
+    );
+    // The modal closed on success.
+    await waitFor(() => expect(screen.queryByLabelText('Project name')).not.toBeInTheDocument());
+  });
+
+  it('refuses to save a blank project name', async () => {
+    projectState.projects = [
+      { id: 3, name: 'Neo-Tokyo', lastEdited: 'Just now', normsCount: 0, palette: [] },
+    ];
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Edit project' }));
+    const input = await screen.findByLabelText('Project name');
+    // An empty field disables Save outright; a whitespace-only name is the
+    // sneaky case that must be caught by the trim() check instead.
+    await user.clear(input);
+    await user.type(input, '   ');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Give your project a name.')).toBeInTheDocument();
+    expect(projectState.updateProjectName).not.toHaveBeenCalled();
+  });
+
+  it('keeps the modal open and explains when the rename fails', async () => {
+    projectState.projects = [
+      { id: 3, name: 'Neo-Tokyo', lastEdited: 'Just now', normsCount: 0, palette: [] },
+    ];
+    projectState.updateProjectName = vi.fn().mockResolvedValue(false);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Edit project' }));
+    const input = await screen.findByLabelText('Project name');
+    await user.clear(input);
+    await user.type(input, 'Neo-Kyoto');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(
+      await screen.findByText('Something went wrong updating the project.'),
+    ).toBeInTheDocument();
+    // Still open, with the typed name preserved for a retry.
+    expect(screen.getByLabelText('Project name')).toHaveValue('Neo-Kyoto');
+  });
+
+  it('opens a project when its title is clicked', async () => {
+    projectState.projects = [
+      { id: 3, name: 'Neo-Tokyo', lastEdited: 'Just now', normsCount: 0, palette: [] },
+    ];
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Neo-Tokyo' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/app/project/3/norms');
+  });
+
   it('hides the trash section when the trash is empty', () => {
     renderPage();
     expect(screen.queryByText('Trash')).not.toBeInTheDocument();

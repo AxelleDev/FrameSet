@@ -494,6 +494,12 @@ const logout = async (req, res) => {
   }
 
   try {
+    // Revocation is deliberately best-effort: revokeToken never throws, and its
+    // `false` conflates "DB error" with "already revoked" (the INSERT IGNORE
+    // lost-claim case), so failing the logout on `false` would break legitimate
+    // logout-after-rotation races. Clearing the cookies below is the primary
+    // logout mechanism either way; a token that slipped past revocation stays
+    // bounded by its own short expiry.
     const revokeTasks = [];
 
     if (token && accessPayload?.id === authenticatedUserId) {

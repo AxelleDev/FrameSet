@@ -97,6 +97,58 @@ describe('ProjectNorms', () => {
     expect(projectState.deleteBrushNorm).toHaveBeenCalledWith('2', 5);
   });
 
+  it('edits a brush standard through the pre-filled modal', async () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [
+        { id: 5, name: 'Hair outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 0.9 },
+      ],
+      typographyNorms: [],
+    };
+    projectState.updateBrushNorm = vi.fn().mockResolvedValue(true);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Edit standard' }));
+    // The modal opens pre-filled from the standard being edited.
+    const usageInput = await screen.findByLabelText('Brush usage');
+    expect(usageInput).toHaveValue('Hair outline');
+    const sizeInput = screen.getByLabelText('Size (px)');
+    await user.clear(sizeInput);
+    await user.type(sizeInput, '12');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(projectState.updateBrushNorm).toHaveBeenCalledWith('2', 5, {
+      name: 'Hair outline',
+      value: '12',
+      unit: 'px',
+      brushName: 'Smooth',
+      opacity: 0.9,
+    });
+    // The modal closed on success.
+    expect(screen.queryByLabelText('Brush usage')).not.toBeInTheDocument();
+  });
+
+  it('keeps the edit modal open when the save fails, preserving the edits', async () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [{ id: 5, name: 'Hair outline', value: '8', unit: 'px', opacity: 0.9 }],
+      typographyNorms: [],
+    };
+    projectState.updateBrushNorm = vi.fn().mockResolvedValue(false);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Edit standard' }));
+    const sizeInput = await screen.findByLabelText('Size (px)');
+    await user.clear(sizeInput);
+    await user.type(sizeInput, '12');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    // Still open, with the typed value preserved for a retry.
+    expect(screen.getByLabelText('Size (px)')).toHaveValue(12);
+  });
+
   it('duplicates a brush standard with a "(copy)" name and the same values', async () => {
     projectState.activeProject = {
       id: '2',

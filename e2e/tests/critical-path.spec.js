@@ -138,6 +138,23 @@ test.describe('critical path: register, verify, project, share, export', () => {
     expect(buffer.length).toBeGreaterThan(1000);
   });
 
+  test('exports a real JSON file carrying the project content', async () => {
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Download JSON' }).click(),
+    ]);
+
+    const filePath = await download.path();
+    expect(filePath).toBeTruthy();
+
+    // Valid JSON, and it actually contains the content created above — not an
+    // empty shell with the right file extension.
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    expect(data.name).toBe(projectName);
+    expect(data.palette.map((color) => color.name)).toContain(colorName);
+    expect(data.brushNorms.map((norm) => norm.name)).toContain('Line art');
+  });
+
   test('cleans up: deletes the account', async () => {
     await page.goto('/app/profile');
     await page.getByRole('button', { name: 'Delete my account' }).click();
