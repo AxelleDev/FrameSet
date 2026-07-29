@@ -12,7 +12,10 @@
     <link rel="preload" href="/fonts/Figtree.woff2" as="font" type="font/woff2" crossorigin />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#8994DF" />
-    <!-- Installed-app (PWA) hints for iOS, which ignores parts of the manifest -->
+    <!-- Installed-app (PWA) hints for iOS, which ignores parts of the manifest.
+         The standard mobile-web-app-capable rides along: Chrome deprecates the
+         apple- prefixed one on its own and warns without it. -->
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="FrameSet" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
