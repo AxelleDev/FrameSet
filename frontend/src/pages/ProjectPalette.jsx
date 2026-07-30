@@ -30,6 +30,7 @@ import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useClipboard from '../hooks/useClipboard';
 import useActiveProject from '../hooks/useActiveProject';
 import useDragReorder from '../hooks/useDragReorder';
+import useLongPressReveal from '../hooks/useLongPressReveal';
 import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 import { extractColorsFromImage } from '../utils/extractColors';
 import { parsePaletteFile } from '../utils/paletteImport';
@@ -74,6 +75,10 @@ export default function ProjectPalette() {
     getId: (color) => color.id,
     onPersist: (nextPalette) => updateProjectPalette(id, nextPalette),
   });
+
+  // Touch counterpart of the tiles' hover-revealed actions: long-press a tile
+  // to show them (see useLongPressReveal), instead of a tap-graze flashing them.
+  const { getRevealProps } = useLongPressReveal();
 
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null);
   const { copy, copiedValue } = useClipboard({ timeout: 1200 });
@@ -492,6 +497,7 @@ export default function ProjectPalette() {
                   ref={registerItemRef(color.id)}
                   tabIndex={-1}
                   aria-label={`Color ${color.name}, ${color.hex}`}
+                  {...getRevealProps(color.id)}
                   hex={color.hex}
                   name={color.name}
                   displayFormat={displayFormat}

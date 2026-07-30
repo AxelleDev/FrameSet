@@ -24,9 +24,16 @@ export default function StandardCard({
   preview,
   actions,
   className = '',
+  revealProps,
 }) {
   return (
-    <Card className={`p-6 relative group flex flex-col justify-between h-full ${className}`.trim()}>
+    // revealProps (see useLongPressReveal) lets pages with hover-revealed
+    // `actions` make them long-pressable on touch; read-only pages (Landing,
+    // Shared sheet) simply don't pass it.
+    <Card
+      className={`p-6 relative group flex flex-col justify-between h-full ${className}`.trim()}
+      {...revealProps}
+    >
       {actions}
       <div className="mb-4">
         <Badge color={badgeColor} className="mb-2">
@@ -65,4 +72,5 @@ StandardCard.propTypes = {
   preview: PropTypes.node,
   actions: PropTypes.node,
   className: PropTypes.string,
+  revealProps: PropTypes.object,
 };

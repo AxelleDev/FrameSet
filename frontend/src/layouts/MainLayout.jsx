@@ -314,7 +314,7 @@ export default function MainLayout() {
                 </div>
               </div>
               <svg
-                className={`w-4 h-4 text-blue transition-all ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-active:opacity-100'}`}
+                className={`w-4 h-4 text-blue transition-all ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
