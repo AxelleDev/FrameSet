@@ -22,6 +22,7 @@ import EmptyState from '../components/EmptyState';
 import { EditIcon, DuplicateIcon, DeleteIcon, PinIcon } from '../components/icons';
 import { formatModified } from '../utils/date';
 import useDragReorder from '../hooks/useDragReorder';
+import useLongPressReveal from '../hooks/useLongPressReveal';
 import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 
 // The search bar only earns its place once there's enough to actually filter.
@@ -229,10 +230,19 @@ export default function Dashboard() {
     }
   };
 
+  // Touch counterpart of the cards' hover-revealed actions: long-press a card
+  // to show them (see useLongPressReveal), instead of a tap-graze flashing them.
+  const { getRevealProps } = useLongPressReveal();
+
   // Shared card body for both the pinned and regular sections. moveButtons is
   // only passed for the pinned section (its keyboard-operable drag-alternative).
   const renderProjectCard = (project, moveButtons) => (
-    <Card key={project.id} clickable className="group p-6 overflow-hidden">
+    <Card
+      key={project.id}
+      clickable
+      className="group p-6 overflow-hidden"
+      {...getRevealProps(project.id)}
+    >
       <div className="absolute top-4 right-4 flex gap-2 z-30">
         <ActionIconButton
           onClick={(e) => handlePinToggle(e, project)}

@@ -119,12 +119,14 @@ const ColorTile = React.forwardRef(function ColorTile(
         style={{ backgroundColor: hex }}
       >
         {overlay}
+        {/* `copied` forces the overlay visible so a touch user's plain tap
+            (no hover, no long-press) still gets its "Copied!" feedback. */}
         {onCopy && (
           <button
             type="button"
             onClick={onCopy}
             aria-label={`Copy ${displayValue}`}
-            className="absolute inset-0 flex items-center justify-center rounded-3xl opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-active:opacity-100 transition-opacity bg-black/15 cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+            className={`absolute inset-0 flex items-center justify-center rounded-3xl opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-data-[revealed]:opacity-100 ${copied ? 'opacity-100' : ''} transition-opacity bg-black/15 cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white`.trim()}
           >
             <CopyBadge isCopied={copied} />
           </button>

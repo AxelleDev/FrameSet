@@ -8,6 +8,7 @@ import { loadGoogleFont } from '../utils/loadGoogleFont';
 import useFormState from '../hooks/useFormState';
 import useActiveProject from '../hooks/useActiveProject';
 import useDragReorder from '../hooks/useDragReorder';
+import useLongPressReveal from '../hooks/useLongPressReveal';
 import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 import { useProjects } from '../context/ProjectContext';
 import { useToast } from '../context/ToastContext';
@@ -60,6 +61,10 @@ export default function ProjectNorms() {
 
   // Drag-and-drop reorder for each standard type, independently ordered (same
   // FLIP + keyboard-move behavior as the palette's colors).
+  // Touch counterpart of the cards' hover-revealed actions: long-press a card
+  // to show them (see useLongPressReveal), instead of a tap-graze flashing them.
+  const { getRevealProps } = useLongPressReveal();
+
   const brushDrag = useDragReorder({
     items: activeProject?.brushNorms,
     getId: (norm) => norm.id,
@@ -433,6 +438,7 @@ export default function ProjectNorms() {
                     title={norm.name}
                     value={norm.value}
                     unit={norm.unit}
+                    revealProps={getRevealProps(`brush-${norm.id}`)}
                     detail={
                       <div className="text-xs text-secondary mb-2">
                         Opacity:{' '}
@@ -499,6 +505,7 @@ export default function ProjectNorms() {
                     valueTitle={norm.fontFamily}
                     valueTruncate
                     unit={norm.fontWeight}
+                    revealProps={getRevealProps(`typo-${norm.id}`)}
                     detail={
                       norm.fontStyle && (
                         <div className="mb-2">

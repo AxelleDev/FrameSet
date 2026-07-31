@@ -15,8 +15,10 @@ const VARIANT_CLASSES = {
 };
 
 // Small circular icon button for row/card actions; stays hidden until the parent
-// `group` is hovered — or, on touch (no hover), press-and-held (see group-active
-// below), so it never sits permanently on top of the card's content.
+// `group` is hovered — or, on touch (no hover), long-pressed: the page marks the
+// held card with data-revealed (see useLongPressReveal) and the
+// group-data-[revealed] variants below light these up. Never permanently on
+// top of the card's content, and never on a mere graze.
 export default function ActionIconButton({
   onClick,
   title,
@@ -59,7 +61,7 @@ export default function ActionIconButton({
         disabled={disabled}
         title={title}
         aria-label={title}
-        className={`sr-only focus:not-sr-only focus:absolute focus:z-40 [@media(hover:none)]:not-sr-only [@media(hover:none)]:w-11 [@media(hover:none)]:h-11 [@media(hover:none)]:opacity-0 [@media(hover:none)]:pointer-events-none [@media(hover:none)]:group-hover:opacity-100 [@media(hover:none)]:group-hover:pointer-events-auto [@media(hover:none)]:group-active:opacity-100 [@media(hover:none)]:group-active:pointer-events-auto w-9 h-9 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white transition-opacity focus-ring disabled:opacity-30 disabled:cursor-not-allowed ${className}`.trim()}
+        className={`sr-only focus:not-sr-only focus:absolute focus:z-40 [@media(hover:none)]:not-sr-only [@media(hover:none)]:w-11 [@media(hover:none)]:h-11 [@media(hover:none)]:opacity-0 [@media(hover:none)]:pointer-events-none [@media(hover:none)]:group-data-[revealed]:opacity-100 [@media(hover:none)]:group-data-[revealed]:pointer-events-auto w-9 h-9 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white transition-opacity focus-ring disabled:opacity-30 disabled:cursor-not-allowed ${className}`.trim()}
       >
         {icon}
       </button>
@@ -72,7 +74,7 @@ export default function ActionIconButton({
       disabled={disabled}
       title={title}
       aria-label={title}
-      className={`w-9 h-9 [@media(hover:none)]:w-11 [@media(hover:none)]:h-11 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-active:opacity-100 transition-all duration-base hover:scale-110 focus-ring disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white/20 ${className}`.trim()}
+      className={`w-9 h-9 [@media(hover:none)]:w-11 [@media(hover:none)]:h-11 flex items-center justify-center ${variantClass} ${intentClass} backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 group-data-[revealed]:opacity-100 transition-all duration-base hover:scale-110 focus-ring disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white/20 ${className}`.trim()}
     >
       {icon}
     </button>
