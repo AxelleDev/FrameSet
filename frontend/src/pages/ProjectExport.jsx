@@ -408,7 +408,7 @@ export default function ProjectExport() {
       // specimen for typography.
       const cols = 2;
       const cellW = 82.5;
-      const cardH = 47;
+      const cardH = 54;
       const gap = 5;
       const pad = 6;
       const textMaxWidth = cellW - pad * 2;
@@ -422,7 +422,7 @@ export default function ProjectExport() {
         const x = 20 + col * (cellW + gap);
 
         doc.setFillColor(...PDF_CANVAS);
-        doc.roundedRect(x, y, cellW, cardH, 5, 5, 'F');
+        doc.roundedRect(x, y, cellW, cardH, 7, 7, 'F');
 
         // Category badge, as the site's pill: tinted fill + matching text
         // (blue for Typography, neutral for Brush — same mapping as the pages).
@@ -433,15 +433,15 @@ export default function ProjectExport() {
         const badgeLabel = card.category.toUpperCase();
         const badgeTextW = doc.getTextWidth(badgeLabel);
         doc.setFillColor(...blendPdfColor(badgeTone, 0.1, PDF_CANVAS));
-        doc.roundedRect(x + pad, y + pad - 3.5, badgeTextW + 7, 5.2, 2.6, 2.6, 'F');
+        doc.roundedRect(x + pad, y + pad, badgeTextW + 7, 5.2, 2.6, 2.6, 'F');
         doc.setTextColor(...badgeTone);
-        doc.text(badgeLabel, x + pad + 3.5, y + pad, { charSpace: 0.4 });
+        doc.text(badgeLabel, x + pad + 3.5, y + pad + 3.6, { charSpace: 0.4 });
 
         // Usage title: small caps feel (uppercase + tracking), like the cards'.
         doc.setFontSize(8.5);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...PDF_PRIMARY);
-        doc.text(truncateToWidth(card.name.toUpperCase(), textMaxWidth), x + pad, y + pad + 9, {
+        doc.text(truncateToWidth(card.name.toUpperCase(), textMaxWidth), x + pad, y + pad + 11, {
           charSpace: 0.3,
         });
 
@@ -455,19 +455,19 @@ export default function ProjectExport() {
           unitWidth = doc.getTextWidth(card.unit);
         }
 
-        doc.setFontSize(15);
+        doc.setFontSize(16);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...PDF_PRIMARY);
         const valueMaxWidth = textMaxWidth - (card.unit ? unitWidth + 2 : 0);
         const valueText = truncateToWidth(`${card.value}`, valueMaxWidth);
-        doc.text(valueText, x + pad, y + pad + 17);
+        doc.text(valueText, x + pad, y + pad + 19.5);
         const valueWidth = doc.getTextWidth(valueText);
 
         if (card.unit) {
           doc.setFontSize(9);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(...PDF_BLUE);
-          doc.text(card.unit, x + pad + valueWidth + 2, y + pad + 17);
+          doc.text(card.unit, x + pad + valueWidth + 2, y + pad + 19.5);
         }
 
         if (card.detail) {
@@ -475,14 +475,14 @@ export default function ProjectExport() {
           // The site renders a typography style ("Italic") in italics — do too.
           doc.setFont('helvetica', isTypography ? 'italic' : 'normal');
           doc.setTextColor(...PDF_SECONDARY);
-          doc.text(truncateToWidth(card.detail, textMaxWidth), x + pad, y + pad + 22.5);
+          doc.text(truncateToWidth(card.detail, textMaxWidth), x + pad, y + pad + 25);
         }
 
         // Preview strip (the h-16 bg-blue/5 rounded box on the site).
-        const stripH = 13;
-        const stripY = y + cardH - pad - stripH;
-        doc.setFillColor(...blendPdfColor(PDF_BLUE, 0.05, PDF_CANVAS));
-        doc.roundedRect(x + pad, stripY, cellW - pad * 2, stripH, 3, 3, 'F');
+        const stripH = 13.5;
+        const stripY = y + cardH - 5.5 - stripH;
+        doc.setFillColor(...blendPdfColor(PDF_BLUE, 0.1, PDF_CANVAS));
+        doc.roundedRect(x + pad, stripY, cellW - pad * 2, stripH, 4.5, 4.5, 'F');
 
         if (card.preview.kind === 'brush') {
           // The brush bar: 16mm wide (the site's w-16), as thick as the norm's
@@ -494,7 +494,7 @@ export default function ProjectExport() {
             6.5,
           );
           const opacity = Math.min(Math.max(card.preview.opacity, 0), 1);
-          const stripBg = blendPdfColor(PDF_BLUE, 0.05, PDF_CANVAS);
+          const stripBg = blendPdfColor(PDF_BLUE, 0.1, PDF_CANVAS);
           doc.setFillColor(...blendPdfColor(PDF_PRIMARY, opacity, stripBg));
           doc.roundedRect(
             x + cellW / 2 - barW / 2,
@@ -535,7 +535,7 @@ export default function ProjectExport() {
       doc.setDrawColor(...PDF_LIGHT_RULE);
       doc.line(20, 278, 190, 278);
       if (logoDataUrl) {
-        const logoH = 6;
+        const logoH = 7;
         const logoW = logoH * (2244 / 1148); // the source PNG's aspect ratio
         doc.addImage(logoDataUrl, 'PNG', 20, 281, logoW, logoH);
       }
