@@ -73,6 +73,14 @@ const totpDisableLimiter = rateLimit({
   handler: jsonLimitHandler('Too many attempts, try again in 10 minutes.'),
 });
 
+// Recovery-code regeneration: same sensitivity (it rotates sign-in
+// credentials), same cap as the disable above.
+const totpRecoveryCodesLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: maxFor(3),
+  handler: jsonLimitHandler('Too many attempts, try again in 10 minutes.'),
+});
+
 // User count: intentionally public (shown on the landing page) but rate limited,
 // since every call runs a COUNT(*) and it is otherwise a free DB-load vector.
 const userCountLimiter = rateLimit({
@@ -102,5 +110,11 @@ router.delete('/me', authenticateToken, deleteAccountLimiter, userController.del
 router.post('/totp/setup', authenticateToken, totpSetupLimiter, userController.setupTotp);
 router.post('/totp/confirm', authenticateToken, totpConfirmLimiter, userController.confirmTotp);
 router.post('/totp/disable', authenticateToken, totpDisableLimiter, userController.disableTotp);
+router.post(
+  '/totp/recovery-codes',
+  authenticateToken,
+  totpRecoveryCodesLimiter,
+  userController.regenerateRecoveryCodes,
+);
 
 module.exports = router;

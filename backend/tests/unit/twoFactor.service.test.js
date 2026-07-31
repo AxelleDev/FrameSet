@@ -167,6 +167,62 @@ describe('twoFactor service', () => {
     });
   });
 
+  describe('regenerateRecoveryCodes', () => {
+    it('mints a fresh set after re-auth, wiping the previous codes first', async () => {
+      db.query
+        .mockResolvedValueOnce([
+          [{ email: 'axelle@example.com', password: 'hashed', google_id: null, totp_enabled: 1 }],
+        ]) // lookup
+        .mockResolvedValueOnce([{}]) // DELETE old recovery codes
+        .mockResolvedValueOnce([{}]); // INSERT new recovery codes
+      userService.verifyUserIdentity.mockResolvedValueOnce(undefined);
+
+      const { recoveryCodes } = await twoFactorService.regenerateRecoveryCodes(1, {
+        currentPassword: 'Password1',
+      });
+
+      expect(recoveryCodes).toHaveLength(twoFactorService.RECOVERY_CODE_COUNT);
+      expect(new Set(recoveryCodes).size).toBe(twoFactorService.RECOVERY_CODE_COUNT);
+      expect(db.query.mock.calls[1][0]).toMatch(/DELETE FROM user_recovery_codes/);
+      expect(db.query.mock.calls[2][0]).toMatch(/INSERT INTO user_recovery_codes/);
+      expect(mailService.sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'axelle@example.com',
+          subject: expect.stringContaining('regenerated'),
+        }),
+      );
+    });
+
+    it('refuses when 2FA is not enabled', async () => {
+      db.query.mockResolvedValueOnce([
+        [{ email: 'a@b.com', password: 'hashed', google_id: null, totp_enabled: 0 }],
+      ]);
+
+      await expect(
+        twoFactorService.regenerateRecoveryCodes(1, { currentPassword: 'Password1' }),
+      ).rejects.toMatchObject({ code: 'not_enabled' });
+      expect(userService.verifyUserIdentity).not.toHaveBeenCalled();
+      expect(db.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('propagates a failed re-authentication without touching the codes', async () => {
+      db.query.mockResolvedValueOnce([
+        [{ email: 'a@b.com', password: 'hashed', google_id: null, totp_enabled: 1 }],
+      ]);
+      userService.verifyUserIdentity.mockRejectedValueOnce(
+        new userService.UserServiceError(
+          'invalid_current_password',
+          'Current password is incorrect.',
+        ),
+      );
+
+      await expect(
+        twoFactorService.regenerateRecoveryCodes(1, { currentPassword: 'wrong' }),
+      ).rejects.toMatchObject({ code: 'invalid_current_password' });
+      expect(db.query).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('verifyTotpChallenge', () => {
     it('succeeds with a live TOTP code and records its time step against replay', async () => {
       const secret = generateTotpSecret();

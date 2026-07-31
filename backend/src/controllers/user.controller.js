@@ -216,6 +216,26 @@ const disableTotp = async (req, res) => {
   }
 };
 
+// Mints a fresh set of recovery codes (re-authentication required); the old
+// ones stop working immediately and the new ones are shown exactly once.
+const regenerateRecoveryCodes = async (req, res) => {
+  const authenticatedUserId = getAuthenticatedUserId(req);
+  if (!authenticatedUserId) {
+    return res.status(401).json({ error: 'User not authenticated.' });
+  }
+
+  try {
+    const { recoveryCodes } = await twoFactorService.regenerateRecoveryCodes(
+      authenticatedUserId,
+      req.body || {},
+      { onMailError: makeMailErrorLogger(req, 'regenerate_recovery_codes.notice_mail') },
+    );
+    res.json({ success: true, recoveryCodes });
+  } catch (error) {
+    handleServiceError(req, res, 'regenerate_recovery_codes', error);
+  }
+};
+
 module.exports = {
   getUserCount,
   getProfile,
@@ -227,4 +247,5 @@ module.exports = {
   setupTotp,
   confirmTotp,
   disableTotp,
+  regenerateRecoveryCodes,
 };

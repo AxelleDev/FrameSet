@@ -541,6 +541,37 @@ export const AuthProvider = ({ children }) => {
     [user],
   );
 
+  // Mints a fresh set of recovery codes (re-authentication required); the old
+  // ones die instantly and the new ones are returned for a one-time display.
+  const regenerateRecoveryCodes = useCallback(
+    async (credentials) => {
+      if (!user) {
+        return { success: false, message: 'You are not signed in.' };
+      }
+
+      try {
+        const data = await api.post('/users/totp/recovery-codes', credentials || {}, {
+          onGlobalError: setGlobalError,
+        });
+        setUser((currentUser) =>
+          currentUser
+            ? { ...currentUser, recoveryCodesRemaining: data.recoveryCodes?.length ?? 0 }
+            : currentUser,
+        );
+        return { success: true, recoveryCodes: data.recoveryCodes };
+      } catch (error) {
+        logger.error('auth.regenerateRecoveryCodes.error', error);
+        const isBusinessError = error.status && error.status < 500;
+        return {
+          success: false,
+          message: isBusinessError ? error.data?.error || error.message : undefined,
+          retryAfterSeconds: error.retryAfterSeconds,
+        };
+      }
+    },
+    [user],
+  );
+
   // Confirms a new account's email with the code emailed at signup.
   const verifyEmail = useCallback(
     async (email, code) => {
@@ -700,6 +731,7 @@ export const AuthProvider = ({ children }) => {
       setupTotp,
       confirmTotpSetup,
       disableTotp,
+      regenerateRecoveryCodes,
       verifyEmail,
       resendVerificationCode,
       requestPasswordReset,
@@ -726,6 +758,7 @@ export const AuthProvider = ({ children }) => {
       setupTotp,
       confirmTotpSetup,
       disableTotp,
+      regenerateRecoveryCodes,
       verifyEmail,
       resendVerificationCode,
       requestPasswordReset,

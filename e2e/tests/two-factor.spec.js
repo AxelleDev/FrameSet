@@ -1,8 +1,9 @@
 // Two-factor authentication journey: enroll from the profile (QR/manual
 // secret -> live code -> recovery codes), sign in with an authenticator code,
-// fall back to a single-use recovery code, then disable 2FA and confirm the
-// plain password sign-in is restored. Codes are computed for real from the
-// enrollment secret (see helpers/totp.js) — nothing is mocked.
+// fall back to a single-use recovery code, regenerate a fresh set (old codes
+// die instantly), then disable 2FA and confirm the plain password sign-in is
+// restored. Codes are computed for real from the enrollment secret (see
+// helpers/totp.js) — nothing is mocked.
 const { test, expect } = require('@playwright/test');
 const { BACKEND_URL } = require('../env');
 const { registerVerifyAndLogin, deleteAccount } = require('./helpers/auth');
@@ -114,6 +115,39 @@ test.describe('two-factor authentication', () => {
     await expect(page.getByText(/incorrect code/i)).toBeVisible();
 
     await page.getByLabel('Recovery code').fill(recoveryCodes[1]);
+    await page.getByRole('button', { name: 'Verify' }).click();
+    await expect(page).toHaveURL(/\/app\/dashboard/);
+  });
+
+  test('regenerating the recovery codes kills the old set and shows a fresh one', async () => {
+    await page.goto('/app/profile');
+    await page.getByRole('button', { name: 'Regenerate codes' }).click();
+
+    // Re-authentication first, then the fresh codes shown once.
+    const reauthDialog = page.getByRole('dialog');
+    await reauthDialog.getByLabel('Current password').fill(password);
+    await reauthDialog.getByRole('button', { name: 'Regenerate', exact: true }).click();
+
+    const codesDialog = page.getByRole('dialog', { name: /save your recovery codes/i });
+    // allTextContents doesn't wait, so first let the full set render.
+    const codeItems = codesDialog.locator('li', { hasText: /^[0-9A-F]{5}-/ });
+    await expect(codeItems).toHaveCount(recoveryCodes.length);
+    const newCodes = await codeItems.allTextContents();
+    expect(newCodes).not.toContain(recoveryCodes[2]);
+    await codesDialog.getByRole('button', { name: /saved my recovery codes/i }).click();
+
+    // The full count is restored (two old codes were spent above).
+    await expect(page.getByText(`${newCodes.length} recovery codes remaining.`)).toBeVisible();
+
+    // An old, never-used code is now dead; a code from the new set works.
+    await signOut(page);
+    await submitCredentials(page);
+    await page.getByRole('button', { name: /use a recovery code instead/i }).click();
+    await page.getByLabel('Recovery code').fill(recoveryCodes[2]);
+    await page.getByRole('button', { name: 'Verify' }).click();
+    await expect(page.getByText(/incorrect code/i)).toBeVisible();
+
+    await page.getByLabel('Recovery code').fill(newCodes[0]);
     await page.getByRole('button', { name: 'Verify' }).click();
     await expect(page).toHaveURL(/\/app\/dashboard/);
   });

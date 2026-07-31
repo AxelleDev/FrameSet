@@ -331,4 +331,55 @@ module.exports = {
       },
     },
   },
+  '/api/users/totp/recovery-codes': {
+    post: {
+      tags: ['Users'],
+      summary: 'Regenerate the two-factor recovery codes',
+      description:
+        'Mints a fresh set of single-use recovery codes and invalidates every previous one — ' +
+        'the enrolled authenticator is untouched. A critical action, so it requires ' +
+        're-authentication: `currentPassword` for accounts with a password, or a fresh Google ' +
+        'ID token (`googleCredential`) for Google-only accounts. The new codes are returned ' +
+        'once and never retrievable again.',
+      security: AUTH,
+      parameters: [CSRF_HEADER],
+      requestBody: {
+        required: false,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                currentPassword: { type: 'string', format: 'password' },
+                googleCredential: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'The fresh single-use recovery codes, shown once.',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean', example: true },
+                  recoveryCodes: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    example: ['1F2A3-B4C5D-6E7F8-9A0B1'],
+                  },
+                },
+              },
+            },
+          },
+        },
+        400: { description: 'Two-factor authentication is not enabled.' },
+        401: { $ref: '#/components/responses/Unauthorized' },
+        429: { $ref: '#/components/responses/RateLimited' },
+      },
+    },
+  },
 };
