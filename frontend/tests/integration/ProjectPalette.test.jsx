@@ -149,6 +149,27 @@ describe('ProjectPalette', () => {
     ]);
   });
 
+  it('warns when a picked harmony suggestion is already in the palette', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Harmonies' }));
+    // Base cyan -> its complementary is #FF0000, which "Reflet" already uses.
+    const baseInput = screen.getByLabelText('Base color');
+    await user.clear(baseInput);
+    await user.type(baseInput, '00ffff');
+    await user.click(screen.getByRole('button', { name: 'Complementary, #FF0000' }));
+
+    expect(await screen.findByText(/already in the palette/i)).toBeInTheDocument();
+
+    // Informative only — the duplicate can still be added.
+    await user.click(screen.getByRole('button', { name: 'Add (1)' }));
+    expect(projectState.updateProjectPalette).toHaveBeenCalledWith('2', [
+      { id: 1, name: 'Reflet', hex: '#FF0000' },
+      { name: 'Complementary', hex: '#FF0000' },
+    ]);
+  });
+
   it('edits a color in place, keeping its id', async () => {
     const user = userEvent.setup();
     renderPage();

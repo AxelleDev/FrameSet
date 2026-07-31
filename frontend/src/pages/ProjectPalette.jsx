@@ -762,6 +762,19 @@ export default function ProjectPalette() {
             ))}
           </div>
           {imageError && <p className="text-xs text-danger">{imageError}</p>}
+          {(() => {
+            // Heads-up, not a blocker: imported colors can duplicate the palette.
+            const duplicateCount = imageColors.filter(
+              (c) => c.selected && findDuplicateColor(palette, c.hex),
+            ).length;
+            return duplicateCount > 0 ? (
+              <Alert variant="info">
+                {duplicateCount === 1
+                  ? '1 selected color is already in the palette — you can still add it.'
+                  : `${duplicateCount} selected colors are already in the palette — you can still add them.`}
+              </Alert>
+            ) : null;
+          })()}
         </div>
         <ModalActions
           secondaryLabel="Cancel"
@@ -836,6 +849,20 @@ export default function ProjectPalette() {
               Enter a valid color above to see its harmonies.
             </p>
           )}
+          {(() => {
+            // Heads-up, not a blocker: a suggestion can duplicate the palette
+            // (e.g. the base color's complementary is already in it).
+            const duplicateCount = selectedHarmonyColors.filter((color) =>
+              findDuplicateColor(palette, color.hex),
+            ).length;
+            return duplicateCount > 0 ? (
+              <Alert variant="info">
+                {duplicateCount === 1
+                  ? '1 selected color is already in the palette — you can still add it.'
+                  : `${duplicateCount} selected colors are already in the palette — you can still add them.`}
+              </Alert>
+            ) : null;
+          })()}
         </div>
         <ModalActions
           secondaryLabel="Cancel"
