@@ -112,15 +112,24 @@ export function buildStyleGuidePdf(
     y += 10;
   };
 
-  // ---- Color palette ------------------------------------------------------
-  if (palette.length > 0) {
-    // Never orphan a section title at the very bottom of a page.
-    if (y > CONTENT_BOTTOM - 60) {
+  // Keep-together pagination: a section that fits on one full page never gets
+  // split — better a clean chapter-like break than a lone orphan row on a
+  // near-empty continuation page. Sections taller than a page still flow,
+  // with their row-atomic breaks.
+  const SECTION_TITLE_H = 10;
+  const startSection = (label, bodyHeight) => {
+    const sectionH = SECTION_TITLE_H + bodyHeight;
+    const fitsHere = y + sectionH <= CONTENT_BOTTOM;
+    const fitsOnFreshPage = sectionH <= CONTENT_BOTTOM - MARGIN;
+    if ((!fitsHere && fitsOnFreshPage) || y > CONTENT_BOTTOM - 60) {
       doc.addPage();
       y = MARGIN;
     }
-    sectionTitle('Color palette');
+    sectionTitle(label);
+  };
 
+  // ---- Color palette ------------------------------------------------------
+  if (palette.length > 0) {
     // Adaptive grid: pick the column count that balances the rows and lets
     // the tiles fill the full content width — 6 colors read as one full row
     // of 6, not a 4 + 2 with a hole (max 6 per row, min 4 columns' worth of
@@ -136,17 +145,16 @@ export function buildStyleGuidePdf(
     const nameLineH = cols >= 6 ? 3.8 : 4.2;
     const nameFontSize = cols >= 6 ? 8 : 9;
     const hexFontSize = cols >= 6 ? 7 : 8;
-    // Rows are laid out one at a time: names are measured first so the whole
-    // row shares one height (max 2 lines) — every hex in a row sits on the
-    // same baseline, and a row of short names doesn't reserve phantom space
-    // for wraps that never happened.
-    let rowH = 0;
+
+    // Rows are measured up front (names wrap, max 2 lines) so the whole row
+    // shares one height — every hex in a row sits on the same baseline, a row
+    // of short names doesn't reserve phantom space, and the section's total
+    // height is known before anything is drawn (see startSection).
+    doc.setFontSize(nameFontSize);
+    doc.setFont('helvetica', 'bold');
+    const rowsData = [];
     for (let rowStart = 0; rowStart < palette.length; rowStart += cols) {
       const rowColors = palette.slice(rowStart, rowStart + cols);
-
-      // Measure at the name font, since wrap widths depend on it.
-      doc.setFontSize(nameFontSize);
-      doc.setFont('helvetica', 'bold');
       const rowNameLines = rowColors.map((color) => {
         let nameLines = doc.splitTextToSize(color.name, squareSize);
         if (nameLines.length > 2) {
@@ -161,10 +169,24 @@ export function buildStyleGuidePdf(
         return nameLines;
       });
       const rowLineCount = Math.max(1, ...rowNameLines.map((lines) => lines.length));
-      rowH = squareSize + 6 + nameLineH * rowLineCount + 7;
+      rowsData.push({
+        rowColors,
+        rowNameLines,
+        rowLineCount,
+        rowH: squareSize + 6 + nameLineH * rowLineCount + 7,
+      });
+    }
 
+    startSection(
+      'Color palette',
+      rowsData.reduce((total, row) => total + row.rowH, 0),
+    );
+
+    let rowH = 0;
+    rowsData.forEach(({ rowColors, rowNameLines, rowLineCount, rowH: thisRowH }, rowIndex) => {
+      rowH = thisRowH;
       // Row-atomic page break: the whole row moves, it never splits.
-      if (rowStart > 0) y += rowH;
+      if (rowIndex > 0) y += rowH;
       if (y + rowH > CONTENT_BOTTOM) {
         doc.addPage();
         y = MARGIN;
@@ -205,7 +227,7 @@ export function buildStyleGuidePdf(
           { align: 'center' },
         );
       });
-    }
+    });
     y += rowH + 10;
   }
 
@@ -235,12 +257,6 @@ export function buildStyleGuidePdf(
   ];
 
   if (standardCards.length > 0) {
-    if (y > CONTENT_BOTTOM - 60) {
-      doc.addPage();
-      y = MARGIN;
-    }
-    sectionTitle('Graphic standards');
-
     // StandardCard, transposed: a soft canvas-tinted card (no hairline box)
     // with a category badge pill, the uppercase usage title, the big light
     // value + blue unit, a detail line, and the same preview strip the site
@@ -251,6 +267,9 @@ export function buildStyleGuidePdf(
     const cellW = (CONTENT_WIDTH - gap) / cols;
     const cardH = 54;
     const pad = 6;
+
+    const cardRows = Math.ceil(standardCards.length / cols);
+    startSection('Graphic standards', cardRows * cardH + (cardRows - 1) * gap);
     const textMaxWidth = cellW - pad * 2;
     standardCards.forEach((card, i) => {
       const col = i % cols;
