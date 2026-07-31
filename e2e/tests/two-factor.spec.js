@@ -129,10 +129,10 @@ test.describe('two-factor authentication', () => {
     await reauthDialog.getByRole('button', { name: 'Regenerate', exact: true }).click();
 
     const codesDialog = page.getByRole('dialog', { name: /save your recovery codes/i });
-    const newCodes = await codesDialog
-      .locator('li', { hasText: /^[0-9A-F]{5}-/ })
-      .allTextContents();
-    expect(newCodes.length).toBe(recoveryCodes.length);
+    // allTextContents doesn't wait, so first let the full set render.
+    const codeItems = codesDialog.locator('li', { hasText: /^[0-9A-F]{5}-/ });
+    await expect(codeItems).toHaveCount(recoveryCodes.length);
+    const newCodes = await codeItems.allTextContents();
     expect(newCodes).not.toContain(recoveryCodes[2]);
     await codesDialog.getByRole('button', { name: /saved my recovery codes/i }).click();
 
