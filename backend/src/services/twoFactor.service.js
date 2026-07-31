@@ -178,6 +178,53 @@ const disableTotp = async (
   return { success: true };
 };
 
+// Mints a fresh set of recovery codes, invalidating every previous one —
+// the escape hatch for a user running low without touching their enrolled
+// authenticator. A critical action, so it requires re-authentication
+// (currentPassword or googleCredential), like disabling 2FA does. The new
+// codes are returned once and never retrievable again. Throws 'not_enabled'
+// when 2FA is off (there is nothing to regenerate for).
+const regenerateRecoveryCodes = async (
+  userId,
+  { currentPassword, googleCredential } = {},
+  { onMailError } = {},
+) => {
+  const [rows] = await db.query(
+    'SELECT email, password, google_id, totp_enabled FROM users WHERE id = ?',
+    [userId],
+  );
+  if (rows.length === 0) {
+    throw new TwoFactorServiceError('not_found', 'User not found.');
+  }
+  if (!rows[0].totp_enabled) {
+    throw new TwoFactorServiceError('not_enabled', 'Two-factor authentication is not enabled.');
+  }
+  await verifyUserIdentity(rows[0], { currentPassword, googleCredential });
+
+  // storeRecoveryCodes deletes every previous code before inserting the new
+  // set, so a stolen old code dies the moment the user regenerates.
+  const recoveryCodes = await storeRecoveryCodes(userId);
+
+  Promise.resolve(
+    mailService.sendMail({
+      to: rows[0].email,
+      subject: 'Your two-factor recovery codes were regenerated',
+      text: 'A new set of two-factor recovery codes was just generated for your FrameSet account, and the previous ones no longer work. If this was not you, reset your password immediately.',
+      html: mailService.buildTemplate({
+        title: 'Your two-factor recovery codes were regenerated',
+        message:
+          'A new set of two-factor recovery codes was just generated for your FrameSet account, and the previous ones no longer work. If this was not you, reset your password immediately from the login page.',
+        footer:
+          'You are receiving this security alert because a sign-in credential on your account changed.',
+      }),
+    }),
+  ).catch((mailError) => {
+    if (onMailError) onMailError(mailError);
+  });
+
+  return { recoveryCodes };
+};
+
 // Marks one unused recovery code as consumed. Scoped to the user and to
 // not-yet-used rows, so a code can never be replayed. Returns whether a row
 // matched (i.e. the code was valid and unused).
@@ -252,5 +299,6 @@ module.exports = {
   beginTotpSetup,
   confirmTotpSetup,
   disableTotp,
+  regenerateRecoveryCodes,
   verifyTotpChallenge,
 };

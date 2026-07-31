@@ -438,5 +438,52 @@ describe('user controller', () => {
       expect(res.status).toHaveBeenCalledWith(401);
       expect(db.query).toHaveBeenCalledTimes(1);
     });
+
+    it('regenerateRecoveryCodes returns a fresh set after a correct current password', async () => {
+      const hashedPassword = await bcrypt.hash('Password1', 4);
+      db.query
+        .mockResolvedValueOnce([
+          [{ email: 'a@b.com', password: hashedPassword, google_id: null, totp_enabled: 1 }],
+        ])
+        .mockResolvedValueOnce([{}]) // DELETE old codes
+        .mockResolvedValueOnce([{}]); // INSERT new codes
+      const req = { user: { id: 1 }, body: { currentPassword: 'Password1' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await userController.regenerateRecoveryCodes(req, res);
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          recoveryCodes: expect.arrayContaining([expect.stringMatching(/^[0-9A-F]{5}-/)]),
+        }),
+      );
+    });
+
+    it('regenerateRecoveryCodes rejects a wrong current password with 401', async () => {
+      const hashedPassword = await bcrypt.hash('Password1', 4);
+      db.query.mockResolvedValueOnce([
+        [{ email: 'a@b.com', password: hashedPassword, google_id: null, totp_enabled: 1 }],
+      ]);
+      const req = { user: { id: 1 }, body: { currentPassword: 'wrong' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await userController.regenerateRecoveryCodes(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(db.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('regenerateRecoveryCodes answers 400 when 2FA is off', async () => {
+      db.query.mockResolvedValueOnce([
+        [{ email: 'a@b.com', password: 'hashed', google_id: null, totp_enabled: 0 }],
+      ]);
+      const req = { user: { id: 1 }, body: { currentPassword: 'Password1' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await userController.regenerateRecoveryCodes(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
   });
 });

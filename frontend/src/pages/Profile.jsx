@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate, Link } from 'react-router-dom';
 import AppModal from '../components/AppModal';
+import RecoveryCodesPanel from '../components/RecoveryCodesPanel';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ReauthModal from '../components/ReauthModal';
 import TwoFactorSetupModal from '../components/TwoFactorSetupModal';
@@ -22,7 +23,15 @@ import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 import useInstallPrompt from '../hooks/useInstallPrompt';
 
 export default function Profile() {
-  const { user, updateUserProfile, logout, changePassword, deleteAccount, disableTotp } = useAuth();
+  const {
+    user,
+    updateUserProfile,
+    logout,
+    changePassword,
+    deleteAccount,
+    disableTotp,
+    regenerateRecoveryCodes,
+  } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const isDemo = Boolean(user?.isDemo);
@@ -49,6 +58,9 @@ export default function Profile() {
 
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isTotpSetupOpen, setIsTotpSetupOpen] = useState(false);
+  // Freshly regenerated recovery codes, shown once then discarded (null when
+  // no regeneration is pending display).
+  const [freshRecoveryCodes, setFreshRecoveryCodes] = useState(null);
 
   // Install-the-app card: only rendered where installing is actually possible
   // (Chromium's prompt, or manual instructions on iOS Safari), and hidden once
@@ -186,6 +198,22 @@ export default function Profile() {
       }
       setReauthAction(null);
       showToast('Two-factor authentication disabled.');
+      return { success: true };
+    }
+
+    if (reauthAction === 'regenerate-codes') {
+      const result = await regenerateRecoveryCodes(credentials);
+      if (!result.success) {
+        return {
+          success: false,
+          message: result.message || 'Failed to regenerate the recovery codes.',
+          retryAfterSeconds: result.retryAfterSeconds,
+        };
+      }
+      setReauthAction(null);
+      // The fresh codes are shown once in their own modal (see below); the
+      // old ones are already dead server-side.
+      setFreshRecoveryCodes(result.recoveryCodes || []);
       return { success: true };
     }
 
@@ -509,19 +537,30 @@ export default function Profile() {
                       ? '1 recovery code remaining.'
                       : `${user.recoveryCodesRemaining ?? 0} recovery codes remaining.`}
                     {(user.recoveryCodesRemaining ?? 0) <= 2 &&
-                      ' Disable and re-enable 2FA to get a fresh set.'}
+                      ' Regenerate them before you run out.'}
                   </p>
                 )}
               </div>
-              <Button
-                onClick={() =>
-                  user.totpEnabled ? setReauthAction('disable-totp') : setIsTotpSetupOpen(true)
-                }
-                variant="ghost"
-                className="text-sm font-medium whitespace-nowrap shrink-0"
-              >
-                {user.totpEnabled ? 'Disable' : 'Enable'}
-              </Button>
+              <div className="flex gap-2 shrink-0">
+                {user.totpEnabled && (
+                  <Button
+                    onClick={() => setReauthAction('regenerate-codes')}
+                    variant="ghost"
+                    className="text-sm font-medium whitespace-nowrap"
+                  >
+                    Regenerate codes
+                  </Button>
+                )}
+                <Button
+                  onClick={() =>
+                    user.totpEnabled ? setReauthAction('disable-totp') : setIsTotpSetupOpen(true)
+                  }
+                  variant="ghost"
+                  className="text-sm font-medium whitespace-nowrap"
+                >
+                  {user.totpEnabled ? 'Disable' : 'Enable'}
+                </Button>
+              </div>
             </div>
           )}
         </Card>
@@ -694,18 +733,41 @@ export default function Profile() {
             ? 'Deleting your account is irreversible — confirm it is really you.'
             : reauthAction === 'disable-totp'
               ? 'Turning off two-factor authentication — confirm it is really you.'
-              : 'Changing your account email — confirm it is really you.'
+              : reauthAction === 'regenerate-codes'
+                ? 'Regenerating your recovery codes invalidates the previous ones — confirm it is really you.'
+                : 'Changing your account email — confirm it is really you.'
         }
         confirmLabel={
           reauthAction === 'delete'
             ? 'Delete my account'
             : reauthAction === 'disable-totp'
               ? 'Disable 2FA'
-              : 'Save changes'
+              : reauthAction === 'regenerate-codes'
+                ? 'Regenerate'
+                : 'Save changes'
         }
         danger={reauthAction === 'delete' || reauthAction === 'disable-totp'}
         onConfirm={handleReauthConfirm}
       />
+
+      <AppModal
+        isOpen={freshRecoveryCodes !== null}
+        onClose={() => setFreshRecoveryCodes(null)}
+        title="Save your recovery codes"
+        subtitle="You won't be able to see these again."
+        showClose={false}
+        panelClassName="max-w-lg"
+      >
+        {freshRecoveryCodes !== null && (
+          <RecoveryCodesPanel
+            codes={freshRecoveryCodes}
+            onDone={() => {
+              setFreshRecoveryCodes(null);
+              showToast('Recovery codes regenerated.');
+            }}
+          />
+        )}
+      </AppModal>
 
       <TwoFactorSetupModal
         isOpen={isTotpSetupOpen}

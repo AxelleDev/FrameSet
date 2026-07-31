@@ -249,14 +249,42 @@ describe('Profile', () => {
       authState.user.recoveryCodesRemaining = 8;
       const { unmount } = renderPage();
       expect(screen.getByText(/8 recovery codes remaining\./)).toBeInTheDocument();
-      expect(screen.queryByText(/get a fresh set/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/before you run out/i)).not.toBeInTheDocument();
       unmount();
 
       // At 1 left, the count switches to the singular warning wording.
       authState.user.recoveryCodesRemaining = 1;
       renderPage();
       expect(screen.getByText(/1 recovery code remaining\./)).toBeInTheDocument();
-      expect(screen.getByText(/disable and re-enable 2fa to get a fresh set/i)).toBeInTheDocument();
+      expect(screen.getByText(/regenerate them before you run out/i)).toBeInTheDocument();
+    });
+
+    it('regenerates the recovery codes after re-authentication and shows them once', async () => {
+      const user = userEvent.setup();
+      authState.user.totpEnabled = true;
+      authState.user.recoveryCodesRemaining = 2;
+      authState.regenerateRecoveryCodes = vi.fn().mockResolvedValue({
+        success: true,
+        recoveryCodes: ['11111-22222-33333-44444', '55555-66666-77777-88888'],
+      });
+      renderPage();
+
+      await user.click(screen.getByRole('button', { name: /regenerate codes/i }));
+
+      // Re-authentication comes first — nothing regenerated yet.
+      expect(authState.regenerateRecoveryCodes).not.toHaveBeenCalled();
+      await user.type(await screen.findByLabelText(/current password/i), 'Sup3rSecret!');
+      const dialogConfirm = screen
+        .getAllByRole('button', { name: /^regenerate$/i })
+        .find((button) => button.getAttribute('type') === 'submit');
+      await user.click(dialogConfirm);
+
+      expect(authState.regenerateRecoveryCodes).toHaveBeenCalledWith({
+        currentPassword: 'Sup3rSecret!',
+      });
+      // The fresh codes are displayed exactly once.
+      expect(await screen.findByText('11111-22222-33333-44444')).toBeInTheDocument();
+      expect(screen.getByText(/won.t be able to see these again/i)).toBeInTheDocument();
     });
 
     it('shows "Enabled" and a Disable button, which requires re-authentication', async () => {

@@ -44,7 +44,8 @@ limited), `500` (server), `503` (dependency unavailable).
 JSON body is capped at **10 kB**. Sensitive endpoints are **rate limited** per IP
 (or per user), e.g. login/register 5/min, code verification 10 / 10 min, code
 resend 3 / 10 min, 2FA code entry (login and setup) 10 / 10 min, 2FA setup 5 /
-10 min, 2FA disable 3 / 10 min, project/norm creation (and duplication) 30/h,
+10 min, 2FA disable 3 / 10 min, recovery-code regeneration 3 / 10 min,
+project/norm creation (and duplication) 30/h,
 palette saves 300/h, public share views 60/min. A `429` response includes a
 `Retry-After` header (seconds).
 
@@ -98,18 +99,19 @@ limit, and the token grants nothing on its own — it only ever converts a
 
 ## Users — `/api/users`
 
-| Method   | Path                  | Auth | Body                                   | Success                                                                                                |
-| -------- | --------------------- | ---- | -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `GET`    | `/users/count`        | –    | –                                      | `{ count }` (public stat)                                                                              |
-| `GET`    | `/users/profile`      | ✓    | –                                      | `{ id, name, email, avatarInitials, passwordUpdatedAt, pendingEmail, isDemo, totpEnabled }`            |
-| `PUT`    | `/users`              | ✓    | `{ name, email }`                      | `{ success, name, email, pendingEmail }` — an email change is staged as `pendingEmail` until confirmed |
-| `POST`   | `/users/password`     | ✓    | `{ currentPassword, newPassword }`     | `{ success, passwordUpdatedAt }` (re-issues the session)                                               |
-| `POST`   | `/users/email/verify` | ✓    | `{ email, code }`                      | `{ success, user }`                                                                                    |
-| `POST`   | `/users/email/resend` | ✓    | `{ email }`                            | `{ success }`                                                                                          |
-| `POST`   | `/users/totp/setup`   | ✓    | –                                      | `{ success, secret, otpauthUrl }` — starts (or restarts) enrollment; nothing is enabled yet            |
-| `POST`   | `/users/totp/confirm` | ✓    | `{ code }`                             | `{ success, recoveryCodes }` — verifies the first code and enables 2FA; codes are shown once           |
-| `POST`   | `/users/totp/disable` | ✓    | `{ currentPassword }` or Google reauth | `{ success }` — requires re-authentication, like other critical account actions                        |
-| `DELETE` | `/users/me`           | ✓    | –                                      | `{ success }` (cascades to the user's projects)                                                        |
+| Method   | Path                         | Auth | Body                                   | Success                                                                                                |
+| -------- | ---------------------------- | ---- | -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `GET`    | `/users/count`               | –    | –                                      | `{ count }` (public stat)                                                                              |
+| `GET`    | `/users/profile`             | ✓    | –                                      | `{ id, name, email, avatarInitials, passwordUpdatedAt, pendingEmail, isDemo, totpEnabled }`            |
+| `PUT`    | `/users`                     | ✓    | `{ name, email }`                      | `{ success, name, email, pendingEmail }` — an email change is staged as `pendingEmail` until confirmed |
+| `POST`   | `/users/password`            | ✓    | `{ currentPassword, newPassword }`     | `{ success, passwordUpdatedAt }` (re-issues the session)                                               |
+| `POST`   | `/users/email/verify`        | ✓    | `{ email, code }`                      | `{ success, user }`                                                                                    |
+| `POST`   | `/users/email/resend`        | ✓    | `{ email }`                            | `{ success }`                                                                                          |
+| `POST`   | `/users/totp/setup`          | ✓    | –                                      | `{ success, secret, otpauthUrl }` — starts (or restarts) enrollment; nothing is enabled yet            |
+| `POST`   | `/users/totp/confirm`        | ✓    | `{ code }`                             | `{ success, recoveryCodes }` — verifies the first code and enables 2FA; codes are shown once           |
+| `POST`   | `/users/totp/disable`        | ✓    | `{ currentPassword }` or Google reauth | `{ success }` — requires re-authentication, like other critical account actions                        |
+| `POST`   | `/users/totp/recovery-codes` | ✓    | `{ currentPassword }` or Google reauth | `{ success, recoveryCodes }` — fresh set shown once; every previous code stops working immediately     |
+| `DELETE` | `/users/me`                  | ✓    | –                                      | `{ success }` (cascades to the user's projects)                                                        |
 
 ## Projects — `/api/projects`
 

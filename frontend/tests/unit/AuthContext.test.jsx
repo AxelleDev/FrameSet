@@ -603,6 +603,47 @@ describe('AuthContext two-factor authentication', () => {
     );
   });
 
+  it('regenerateRecoveryCodes returns the fresh set and updates the local count', async () => {
+    const result = await renderSignedIn({ totpEnabled: true, recoveryCodesRemaining: 1 });
+    mockApiPost.mockResolvedValueOnce({
+      success: true,
+      recoveryCodes: ['AAAAA-BBBBB', 'CCCCC-DDDDD'],
+    });
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.regenerateRecoveryCodes({ currentPassword: 'Pass1234' });
+    });
+
+    expect(outcome).toEqual({ success: true, recoveryCodes: ['AAAAA-BBBBB', 'CCCCC-DDDDD'] });
+    expect(mockApiPost).toHaveBeenCalledWith(
+      '/users/totp/recovery-codes',
+      { currentPassword: 'Pass1234' },
+      expect.anything(),
+    );
+    expect(result.current.user.recoveryCodesRemaining).toBe(2);
+  });
+
+  it('regenerateRecoveryCodes propagates a failed re-auth without touching the count', async () => {
+    const result = await renderSignedIn({ totpEnabled: true, recoveryCodesRemaining: 1 });
+    const businessError = new Error('Current password is incorrect.');
+    businessError.status = 401;
+    businessError.data = { error: 'Current password is incorrect.' };
+    mockApiPost.mockRejectedValueOnce(businessError);
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.regenerateRecoveryCodes({ currentPassword: 'wrong' });
+    });
+
+    expect(outcome).toEqual({
+      success: false,
+      message: 'Current password is incorrect.',
+      retryAfterSeconds: undefined,
+    });
+    expect(result.current.user.recoveryCodesRemaining).toBe(1);
+  });
+
   it('disableTotp propagates a failed re-authentication without changing local state', async () => {
     const result = await renderSignedIn({ totpEnabled: true });
     const businessError = new Error('Current password is incorrect.');

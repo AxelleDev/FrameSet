@@ -41,7 +41,8 @@ from one drawing to the next.
   passwords, CSRF protection & rate-limiting). Optional **two-factor
   authentication (TOTP)** — enable it from your profile with any authenticator
   app (Google Authenticator, Authy, 1Password…) via QR code or manual entry,
-  with one-time recovery codes for when you lose access to it. A "Try the
+  with one-time recovery codes for when you lose access to it — regenerate a
+  fresh set anytime from your profile (the old ones stop working). A "Try the
   demo" button signs visitors straight into a shared, read-only account
   seeded with real project data — content edits feel fully interactive but
   are simulated client-side and never reach the database; every mutating

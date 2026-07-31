@@ -14,7 +14,7 @@ import FormField from './FormField';
 import TextInput from './TextInput';
 import Button from './Button';
 import RateLimitAlert from './RateLimitAlert';
-import useClipboard from '../hooks/useClipboard';
+import RecoveryCodesPanel from './RecoveryCodesPanel';
 
 const STEP_TITLES = {
   loading: 'Set up two-factor authentication',
@@ -33,7 +33,6 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onEnabled }) {
   const [error, setError] = useState('');
   const [retryAfterSeconds, setRetryAfterSeconds] = useState(undefined);
   const [busy, setBusy] = useState(false);
-  const { copy, copiedValue } = useClipboard();
 
   // Starts a fresh enrollment every time the modal opens.
   useEffect(() => {
@@ -206,33 +205,7 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onEnabled }) {
       )}
 
       {step === 'recovery-codes' && (
-        <div className="space-y-4">
-          <p className="text-sm text-primary">
-            Store these somewhere safe. Each code works once, and gets you back in if you lose
-            access to your authenticator app.
-          </p>
-
-          {/* A real list, so screen readers announce "list, 8 items" instead
-              of reading the codes as one undifferentiated blob. */}
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-2xl bg-primary/5 p-4 font-mono text-sm text-primary list-none">
-            {recoveryCodes.map((recoveryCode) => (
-              <li key={recoveryCode}>{recoveryCode}</li>
-            ))}
-          </ul>
-
-          <Button
-            type="button"
-            variant="outline"
-            fullWidth
-            onClick={() => copy(recoveryCodes.join('\n'))}
-          >
-            {copiedValue ? 'Copied!' : 'Copy all codes'}
-          </Button>
-
-          <Button type="button" variant="primary" fullWidth onClick={handleDone}>
-            I&apos;ve saved my recovery codes
-          </Button>
-        </div>
+        <RecoveryCodesPanel codes={recoveryCodes} onDone={handleDone} />
       )}
     </AppModal>
   );
