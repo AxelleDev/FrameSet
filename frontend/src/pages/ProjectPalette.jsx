@@ -8,6 +8,7 @@ import { useProjects } from '../context/ProjectContext';
 import { useToast } from '../context/ToastContext';
 import { useParams } from 'react-router-dom';
 import FormModal from '../components/FormModal';
+import Alert from '../components/Alert';
 import FormField from '../components/FormField';
 import TextInput from '../components/TextInput';
 import Button from '../components/Button';
@@ -23,6 +24,7 @@ import ColorInput from '../components/ColorInput';
 import TrashSection from '../components/TrashSection';
 import TrashRow from '../components/TrashRow';
 import { isValidHexValue } from '../utils/hex';
+import { findDuplicateColor } from '../utils/duplicates';
 import { formatColor, isColorFormat } from '../utils/colorFormats';
 import { generateHarmonies } from '../utils/colorHarmony';
 import { EditIcon, DeleteIcon, DuplicateIcon } from '../components/icons';
@@ -660,6 +662,17 @@ export default function ProjectPalette() {
             initialFormat={displayFormat}
             onChange={(hex) => setEditColorHex(hex || '')}
           />
+          {(() => {
+            // Heads-up, not a blocker: a duplicate color can be deliberate.
+            const duplicate = findDuplicateColor(palette, editColorHex, {
+              excludeId: palette[editIdx]?.id,
+            });
+            return duplicate ? (
+              <Alert variant="info">
+                &ldquo;{duplicate.name}&rdquo; already uses this color — you can still save it.
+              </Alert>
+            ) : null;
+          })()}
         </div>
         <ModalActions
           secondaryLabel="Cancel"
@@ -688,6 +701,15 @@ export default function ProjectPalette() {
             initialFormat={displayFormat}
             onChange={(hex) => setNewColorHex(hex || '')}
           />
+          {(() => {
+            // Heads-up, not a blocker: a duplicate color can be deliberate.
+            const duplicate = findDuplicateColor(palette, newColorHex);
+            return duplicate ? (
+              <Alert variant="info">
+                &ldquo;{duplicate.name}&rdquo; already uses this color — you can still add it.
+              </Alert>
+            ) : null;
+          })()}
         </div>
 
         <ModalActions

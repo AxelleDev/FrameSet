@@ -9,6 +9,7 @@ import useFormState from '../hooks/useFormState';
 import useActiveProject from '../hooks/useActiveProject';
 import useDragReorder from '../hooks/useDragReorder';
 import useLongPressReveal from '../hooks/useLongPressReveal';
+import { findDuplicateByName } from '../utils/duplicates';
 import useUnsavedChangesWarning from '../hooks/useUnsavedChangesWarning';
 import { useProjects } from '../context/ProjectContext';
 import { useToast } from '../context/ToastContext';
@@ -24,6 +25,7 @@ import StandardCard from '../components/StandardCard';
 import BrushPreview from '../components/BrushPreview';
 import TypographyPreview from '../components/TypographyPreview';
 import Spinner from '../components/Spinner';
+import Alert from '../components/Alert';
 import TrashSection from '../components/TrashSection';
 import TrashRow from '../components/TrashRow';
 import PageHeader from '../components/PageHeader';
@@ -349,6 +351,30 @@ export default function ProjectNorms() {
   // Reorder controls: keyboard-operable, non-drag alternative (WCAG 2.5.7).
   // Visually hidden (srOnly) so sighted users drag while assistive-tech users
   // get "move left/right", same pattern as the palette's color tiles.
+  // Heads-up shown in the add/edit modals when a standard with the same usage
+  // already exists — informative only, never blocking: a duplicate usage can
+  // be deliberate (e.g. two "Shading" brushes with different sizes).
+  const renderDuplicateNormHint = (type, excludeId) => {
+    const duplicate =
+      type === 'brush'
+        ? findDuplicateByName(activeProject?.brushNorms, brushForm.usage, {
+            getValue: (norm) => norm.name,
+            excludeId,
+          })
+        : findDuplicateByName(activeProject?.typographyNorms, typoForm.fontUsage, {
+            getValue: (norm) => norm.fontUsage,
+            excludeId,
+          });
+    if (!duplicate) return null;
+    return (
+      <Alert variant="info">
+        A {type === 'brush' ? 'brush' : 'typography'} standard called &ldquo;
+        {type === 'brush' ? duplicate.name : duplicate.fontUsage}&rdquo; already exists — you can
+        still save this one.
+      </Alert>
+    );
+  };
+
   const renderMoveButtons = (idx, length, moveItem) => (
     <div className="absolute bottom-3 inset-x-3 flex justify-between z-30">
       <ActionIconButton
@@ -615,6 +641,7 @@ export default function ProjectNorms() {
                   error={errorFonts}
                 />
               )}
+              {renderDuplicateNormHint(editingType, editingNorm?.id)}
             </div>
             <ModalActions
               secondaryLabel="Cancel"
@@ -663,6 +690,7 @@ export default function ProjectNorms() {
               error={errorFonts}
             />
           )}
+          {renderDuplicateNormHint(addType)}
         </div>
         <ModalActions
           secondaryLabel="Cancel"

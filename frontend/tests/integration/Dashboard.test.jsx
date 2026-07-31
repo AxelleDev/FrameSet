@@ -70,6 +70,37 @@ describe('Dashboard', () => {
     await waitFor(() => expect(projectState.addProject).toHaveBeenCalledWith('Mon Projet'));
   });
 
+  it('warns about a duplicate project name without blocking the creation', async () => {
+    const user = userEvent.setup();
+    projectState.projects = [
+      { id: 3, name: 'Neo-Tokyo', lastEdited: 'Just now', normsCount: 0, palette: [] },
+    ];
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: '+ Create project' }));
+    const input = await screen.findByPlaceholderText(/neo-tokyo/i);
+    await user.type(input, 'neo-tokyo '); // case/space-insensitive match
+
+    expect(await screen.findByText(/already have a project called/i)).toBeInTheDocument();
+
+    // The warning is informative only — creating the duplicate still works.
+    await user.click(screen.getByRole('button', { name: 'Create project' }));
+    await waitFor(() => expect(projectState.addProject).toHaveBeenCalledWith('neo-tokyo '));
+  });
+
+  it('does not warn when renaming a project to its own name', async () => {
+    const user = userEvent.setup();
+    projectState.projects = [
+      { id: 3, name: 'Neo-Tokyo', lastEdited: 'Just now', normsCount: 0, palette: [] },
+    ];
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Edit project' }));
+    await screen.findByDisplayValue('Neo-Tokyo');
+
+    expect(screen.queryByText(/already have a project called/i)).not.toBeInTheDocument();
+  });
+
   it('duplicates a project from its card', async () => {
     projectState.projects = [
       { id: 3, name: 'Neo-Tokyo', lastEdited: 'Just now', normsCount: 0, palette: [] },
