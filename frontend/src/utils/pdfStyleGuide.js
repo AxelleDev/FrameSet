@@ -170,6 +170,15 @@ export function buildStyleGuidePdf(
     sectionTitle(label);
   };
 
+  // A brand-new project exports a graceful near-empty sheet, with the same
+  // wording as the Shared reference sheet's empty state.
+  if (palette.length === 0 && brushNorms.length === 0 && typographyNorms.length === 0) {
+    doc.setFontSize(10);
+    setF('normal');
+    doc.setTextColor(...SECONDARY);
+    doc.text('This reference sheet is empty for now.', MARGIN, y + 6);
+  }
+
   // ---- Color palette ------------------------------------------------------
   if (palette.length > 0) {
     // Adaptive grid: pick the column count that balances the rows and lets
