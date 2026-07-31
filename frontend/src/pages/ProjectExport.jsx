@@ -309,10 +309,19 @@ export default function ProjectExport() {
       doc.text('Color palette', 20, y);
       y += 10;
 
-      const cols = 4;
-      const cellW = 42.5;
-      const squareSize = 36;
-      const nameLineH = 4.2;
+      // Adaptive grid: pick the column count that balances the rows and lets
+      // the tiles fill the full content width — 6 colors read as one full row
+      // of 6, not a 4 + 2 with a hole (max 6 per row, min 4 so a tiny palette
+      // never turns into billboard-sized tiles).
+      const MAX_COLS = 6;
+      const count = activeProject.palette.length;
+      const rows = Math.ceil(count / MAX_COLS);
+      const cols = Math.max(Math.ceil(count / rows), Math.min(count, 4));
+      const cellW = 170 / cols;
+      const squareSize = cellW - 5;
+      const nameLineH = cols >= 6 ? 3.8 : 4.2;
+      const nameFontSize = cols >= 6 ? 8 : 9;
+      const hexFontSize = cols >= 6 ? 7 : 8;
       // Fixed row height reserves room for up to 2 wrapped name lines + the hex
       // line, so a long name (wrapped) can never overlap the hex line below it.
       const rowH = squareSize + 6 + nameLineH * 2 + 7;
@@ -325,11 +334,21 @@ export default function ProjectExport() {
         }
         const x = 20 + col * cellW;
 
-        // Generous radius, like ColorTile's rounded-3xl swatches.
+        // Radius scaled to the tile (ColorTile's rounded-3xl look at any size).
+        // Near-white colors get a hairline border, or they would melt into the
+        // white page (the site's canvas background does this job on screen).
+        const [r, g, b] = [1, 3, 5].map((o) => parseInt(color.hex.slice(o, o + 2), 16) / 255);
+        const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
         doc.setFillColor(color.hex);
-        doc.roundedRect(x, y, squareSize, squareSize, 6, 6, 'F');
+        if (luminance > 0.93) {
+          doc.setDrawColor(...PDF_LIGHT_RULE);
+          doc.setLineWidth(0.3);
+          doc.roundedRect(x, y, squareSize, squareSize, squareSize * 0.16, squareSize * 0.16, 'FD');
+        } else {
+          doc.roundedRect(x, y, squareSize, squareSize, squareSize * 0.16, squareSize * 0.16, 'F');
+        }
 
-        doc.setFontSize(9);
+        doc.setFontSize(nameFontSize);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...PDF_PRIMARY);
         let nameLines = doc.splitTextToSize(color.name, squareSize);
@@ -348,7 +367,7 @@ export default function ProjectExport() {
           });
         });
 
-        doc.setFontSize(8);
+        doc.setFontSize(hexFontSize);
         doc.setFont('courier', 'normal');
         doc.setTextColor(...PDF_SECONDARY);
         doc.text(

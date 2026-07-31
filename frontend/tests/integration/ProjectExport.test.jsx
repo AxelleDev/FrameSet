@@ -15,6 +15,7 @@ const { projectState, pdfDoc } = vi.hoisted(() => ({
     setTextColor: vi.fn(),
     setDrawColor: vi.fn(),
     setFillColor: vi.fn(),
+    setLineWidth: vi.fn(),
     text: vi.fn(),
     line: vi.fn(),
     roundedRect: vi.fn(),
