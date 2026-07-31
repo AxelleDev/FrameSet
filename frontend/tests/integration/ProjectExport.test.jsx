@@ -15,6 +15,7 @@ const { projectState, pdfDoc } = vi.hoisted(() => ({
     setTextColor: vi.fn(),
     setDrawColor: vi.fn(),
     setFillColor: vi.fn(),
+    setLineWidth: vi.fn(),
     text: vi.fn(),
     line: vi.fn(),
     roundedRect: vi.fn(),
@@ -22,6 +23,8 @@ const { projectState, pdfDoc } = vi.hoisted(() => ({
     addImage: vi.fn(),
     splitTextToSize: vi.fn((value) => [String(value)]),
     getTextWidth: vi.fn(() => 10),
+    getNumberOfPages: vi.fn(() => 1),
+    setPage: vi.fn(),
     save: vi.fn(),
   },
 }));
@@ -36,6 +39,12 @@ vi.mock('jspdf', () => ({
 
 vi.mock('qrcode', () => ({
   toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,fake-qr'),
+}));
+
+// The specimen-font loader calls the API; failing fast here exercises its
+// fallback path (specimens in the app font) without the real client's retries.
+vi.mock('../../src/services/api', () => ({
+  default: { get: vi.fn().mockRejectedValue(new Error('offline')) },
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -198,6 +207,10 @@ describe('ProjectExport', () => {
     expect(drawnText).toContain('Color palette');
     expect(drawnText).toContain('Graphic standards');
     expect(drawnText).toContain('Made by Jane Doe');
+    // The "Made with FrameSet" credit is stamped per page (see the setPage
+    // loop), not just once at the end of the content.
+    expect(drawnText).toContain('Made with FrameSet — the graphic reference for your projects.');
+    expect(pdfDoc.setPage).toHaveBeenCalledWith(1);
     // No logo loaded -> no image embedded, and that must not block the export.
     expect(pdfDoc.addImage).not.toHaveBeenCalled();
 

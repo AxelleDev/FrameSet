@@ -39,8 +39,46 @@ const getGoogleFontsCatalog = async () => {
 };
 
 // Resets the in-memory cache (used by tests).
-const resetCatalogCache = () => {
-  catalogCache = { items: null, fetchedAt: 0 };
+// Download URLs for one family's font files (TTFs on fonts.gstatic.com),
+// fetched on demand so the catalog response can stay trimmed to what the
+// picker needs. Used by the PDF export to embed a typography norm's actual
+// face in its AaBbCc specimen. Cached per family; returns null for an
+// unknown/invalid family or when no key is configured.
+const filesCache = new Map();
+
+const getGoogleFontFiles = async (rawFamily) => {
+  const family = typeof rawFamily === 'string' ? rawFamily.trim() : '';
+  if (!family || family.length > 100) {
+    return null;
+  }
+  const apiKey = process.env.GOOGLE_FONTS_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
+
+  const now = Date.now();
+  const cached = filesCache.get(family);
+  if (cached && now - cached.fetchedAt < CACHE_TTL_MS) {
+    return cached.files;
+  }
+
+  const url = `https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}&family=${encodeURIComponent(
+    family,
+  )}&fields=items(family,files)`;
+  const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  if (!response.ok) {
+    throw new Error(`Google Fonts API responded with ${response.status}`);
+  }
+
+  const data = await response.json();
+  const files = data.items?.[0]?.files || null;
+  filesCache.set(family, { files, fetchedAt: now });
+  return files;
 };
 
-module.exports = { getGoogleFontsCatalog, resetCatalogCache };
+const resetCatalogCache = () => {
+  catalogCache = { items: null, fetchedAt: 0 };
+  filesCache.clear();
+};
+
+module.exports = { getGoogleFontsCatalog, getGoogleFontFiles, resetCatalogCache };

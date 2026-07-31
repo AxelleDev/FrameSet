@@ -14,6 +14,8 @@ import Button from '../components/Button';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useActiveProject from '../hooks/useActiveProject';
 import useClipboard from '../hooks/useClipboard';
+import api from '../services/api';
+import { buildStyleGuidePdf } from '../utils/pdfStyleGuide';
 import {
   buildAsePalette,
   buildGplPalette,
@@ -41,6 +43,87 @@ const loadImageDataUrl = (src) =>
     img.onerror = () => resolve(null);
     img.src = src;
   });
+
+// The Figtree faces embedded in the style-guide PDF (converted once from the
+// site's own font files — see public/fonts/pdf). Loaded only when a PDF is
+// actually generated; any failure falls back to helvetica rather than
+// blocking the export.
+const PDF_FONT_FILES = [
+  ['Figtree-Light.ttf', 'light'],
+  ['Figtree-Regular.ttf', 'normal'],
+  ['Figtree-Medium.ttf', 'medium'],
+  ['Figtree-Bold.ttf', 'bold'],
+  ['Figtree-Italic.ttf', 'italic'],
+];
+const bytesToBase64 = (buffer) => {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+};
+
+const loadPdfFonts = async () => {
+  try {
+    return await Promise.all(
+      PDF_FONT_FILES.map(async ([file, style]) => {
+        const res = await fetch(`/fonts/pdf/${file}`);
+        if (!res.ok) throw new Error(`font ${file}: HTTP ${res.status}`);
+        return { vfsName: file, style, base64: bytesToBase64(await res.arrayBuffer()) };
+      }),
+    );
+  } catch {
+    return undefined;
+  }
+};
+
+// Picks the download URL matching a norm's weight/style as closely as the
+// family offers, ending on whatever exists (better a slightly-off weight than
+// no real face at all).
+const pickFontFileUrl = (files, weight, style) => {
+  const wantsItalic = /italic/i.test(style || '');
+  const w = `${weight || ''}`.trim();
+  const candidates = wantsItalic
+    ? [w && w !== '400' ? `${w}italic` : 'italic', 'italic', 'regular']
+    : [!w || w === '400' ? 'regular' : w, 'regular'];
+  const key = candidates.find((candidate) => candidate && files[candidate]);
+  const url = key ? files[key] : Object.values(files)[0];
+  // Google returns http:// URLs; upgrade so the fetch never mixes content.
+  return url ? url.replace(/^http:/, 'https:') : null;
+};
+
+// Fetches the real face of each typography norm (the backend's files proxy
+// gives the URL, fonts.gstatic.com serves the TTF) so the PDF's AaBbCc
+// specimens render in their own fonts, like the site's live previews. Any
+// failure just skips that family — the specimen falls back to the app font.
+const loadSpecimenFonts = async (typographyNorms) => {
+  const families = [...new Set((typographyNorms || []).map((n) => n.fontFamily).filter(Boolean))];
+  const entries = await Promise.all(
+    families.map(async (family) => {
+      try {
+        const norm = typographyNorms.find((n) => n.fontFamily === family);
+        const { files } = await api.get(`/fonts/files?family=${encodeURIComponent(family)}`);
+        const url = pickFontFileUrl(files || {}, norm?.fontWeight, norm?.fontStyle);
+        if (!url) return null;
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        return [
+          family,
+          {
+            vfsName: `${family.replace(/[^a-z0-9]/gi, '_')}.ttf`,
+            base64: bytesToBase64(await res.arrayBuffer()),
+          },
+        ];
+      } catch {
+        return null;
+      }
+    }),
+  );
+  const map = Object.fromEntries(entries.filter(Boolean));
+  return Object.keys(map).length > 0 ? map : undefined;
+};
 
 export default function ProjectExport() {
   const { id } = useParams();
@@ -212,251 +295,29 @@ export default function ProjectExport() {
     }
   };
 
-  // Brand colors mirrored from index.css (light theme, since the PDF page is
-  // always white) so the export reads as the same product as the app and the
-  // Shared reference sheet: --color-primary #3C3D48, --color-blue #8994DF,
-  // --color-secondary #6B6B6B.
-  const PDF_PRIMARY = [60, 61, 72];
-  const PDF_BLUE = [137, 148, 223];
-  const PDF_SECONDARY = [107, 107, 107];
-  const PDF_LIGHT_RULE = [225, 226, 235];
-
-  // Build and download the style-guide PDF. Drawn imperatively with jsPDF: `y`
-  // is the running vertical cursor (mm), advanced per section/row, with a page
-  // break whenever it nears the page bottom. Section order and hierarchy
-  // (palette tiles with centered name/hex, then standards as bordered cards
-  // with a category label, a big value line and a detail line) mirror the
-  // Shared reference sheet and the in-app Palette/Standards pages, so the PDF,
-  // the public share link and the editor all read as the same document.
+  // Build and download the style-guide PDF (drawn by utils/pdfStyleGuide so
+  // the PDF design lab previews exactly what ships here).
   const downloadPdf = async () => {
     if (!activeProject) return;
 
     // Load jsPDF on demand to keep its ~hundreds of KB out of the initial bundle;
     // the footer logo loads in parallel (light-mode file: the PDF page is always white).
-    const [{ jsPDF }, logoDataUrl] = await Promise.all([
+    const [{ jsPDF }, logoDataUrl, fonts, typographyFonts] = await Promise.all([
       import('jspdf'),
       loadImageDataUrl('/FrameSet_Logo.png'),
+      loadPdfFonts(),
+      loadSpecimenFonts(activeProject.typographyNorms),
     ]);
-    const doc = new jsPDF();
-    let y = 20;
 
-    // Truncates `text` (at the currently active font/size) with an ellipsis so
-    // it fits within `maxWidth`. jsPDF's own `maxWidth` option wraps to a new
-    // line instead of truncating, which would silently overlap the
-    // fixed-position content drawn below it in these single-line layouts.
-    const truncateToWidth = (text, maxWidth) => {
-      if (doc.getTextWidth(text) <= maxWidth) return text;
-      let truncated = text;
-      while (truncated.length > 1 && doc.getTextWidth(`${truncated}…`) > maxWidth) {
-        truncated = truncated.slice(0, -1);
-      }
-      return `${truncated}…`;
-    };
-
-    // Header: project name + generation date, then a divider rule.
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...PDF_PRIMARY);
-    doc.text(activeProject.name, 20, y);
-    y += 8;
-
-    // Same "Made by <name>" credit as the Shared reference sheet, then the
-    // generation date.
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...PDF_SECONDARY);
-    if (user?.name) {
-      doc.text(`Made by ${user.name}`, 20, y);
-      y += 6;
-    }
-    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 20, y);
-    y += 14;
-
-    doc.setDrawColor(...PDF_LIGHT_RULE);
-    doc.line(20, y, 190, y);
-    y += 14;
-
-    // Section: color palette — a grid of SQUARE flat color tiles (name + hex
-    // centered below), matching the ColorTile component used everywhere else
-    // a palette shows up (Landing, ProjectPalette, the Shared reference sheet).
-    if (activeProject.palette.length > 0) {
-      if (y > 250) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...PDF_PRIMARY);
-      doc.text('Color palette', 20, y);
-      y += 12;
-
-      const cols = 4;
-      const cellW = 42.5;
-      const squareSize = 34;
-      const nameLineH = 4.2;
-      // Fixed row height reserves room for up to 2 wrapped name lines + the hex
-      // line, so a long name (wrapped) can never overlap the hex line below it.
-      const rowH = squareSize + 6 + nameLineH * 2 + 7;
-      activeProject.palette.forEach((color, i) => {
-        const col = i % cols;
-        if (col === 0 && i > 0) y += rowH;
-        if (y + rowH > 280) {
-          doc.addPage();
-          y = 20;
-        }
-        const x = 20 + col * cellW;
-
-        doc.setFillColor(color.hex);
-        doc.roundedRect(x, y, squareSize, squareSize, 3, 3, 'F');
-
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...PDF_PRIMARY);
-        let nameLines = doc.splitTextToSize(color.name, squareSize);
-        if (nameLines.length > 2) {
-          // More than 2 lines: keep the first two and ellipsize the second so
-          // the hex line's position (fixed at 2 lines' worth of height) stays correct.
-          let secondLine = nameLines[1];
-          while (secondLine.length > 1 && doc.getTextWidth(`${secondLine}…`) > squareSize) {
-            secondLine = secondLine.slice(0, -1);
-          }
-          nameLines = [nameLines[0], `${secondLine}…`];
-        }
-        nameLines.forEach((line, li) => {
-          doc.text(line, x + squareSize / 2, y + squareSize + 6 + li * nameLineH, {
-            align: 'center',
-          });
-        });
-
-        doc.setFontSize(8);
-        doc.setFont('courier', 'normal');
-        doc.setTextColor(...PDF_SECONDARY);
-        doc.text(
-          color.hex.toUpperCase(),
-          x + squareSize / 2,
-          y + squareSize + 6 + nameLines.length * nameLineH + 3,
-          { align: 'center' },
-        );
-      });
-      y += rowH + 10;
-    }
-
-    // Section: graphic standards — brush norms then typography norms (same
-    // order as the Shared reference sheet), each as a bordered card with a
-    // category label, a big value/unit line and a detail line.
-    const standardCards = [
-      ...(activeProject.brushNorms || []).map((n) => ({
-        category: 'Brush',
-        name: n.name,
-        value: `${n.value}`,
-        unit: n.unit || '',
-        detail: n.opacity !== undefined && n.opacity !== null ? `Opacity: ${n.opacity}` : null,
-      })),
-      ...(activeProject.typographyNorms || []).map((n) => ({
-        category: 'Typography',
-        name: n.fontUsage || n.fontFamily,
-        value: n.fontFamily,
-        unit: n.fontWeight || '',
-        detail: n.fontStyle || null,
-      })),
-    ];
-
-    if (standardCards.length > 0) {
-      if (y > 250) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...PDF_PRIMARY);
-      doc.text('Graphic standards', 20, y);
-      y += 12;
-
-      const cols = 2;
-      const cellW = 85;
-      const cardH = 30;
-      const gap = 5;
-      const textMaxWidth = cellW - 10;
-      standardCards.forEach((card, i) => {
-        const col = i % cols;
-        if (col === 0 && i > 0) y += cardH + gap;
-        if (y + cardH > 280) {
-          doc.addPage();
-          y = 20;
-        }
-        const x = 20 + col * (cellW + gap);
-
-        doc.setDrawColor(...PDF_LIGHT_RULE);
-        doc.roundedRect(x, y, cellW, cardH, 3, 3, 'S');
-
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...PDF_BLUE);
-        doc.text(card.category.toUpperCase(), x + 5, y + 7);
-
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...PDF_PRIMARY);
-        doc.text(truncateToWidth(card.name, textMaxWidth), x + 5, y + 13);
-
-        // Measure the unit first, at its own font, so the value can be
-        // truncated to leave it exactly enough room. jsPDF has no CSS-style
-        // "shrink to fit" layout, so this order is what keeps them from overlapping.
-        let unitWidth = 0;
-        if (card.unit) {
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'normal');
-          unitWidth = doc.getTextWidth(card.unit);
-        }
-
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...PDF_PRIMARY);
-        const valueMaxWidth = textMaxWidth - (card.unit ? unitWidth + 2 : 0);
-        const valueText = truncateToWidth(`${card.value}`, valueMaxWidth);
-        doc.text(valueText, x + 5, y + 21);
-        const valueWidth = doc.getTextWidth(valueText);
-
-        if (card.unit) {
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(...PDF_BLUE);
-          doc.text(card.unit, x + 5 + valueWidth + 2, y + 21);
-        }
-
-        if (card.detail) {
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(...PDF_SECONDARY);
-          doc.text(truncateToWidth(card.detail, textMaxWidth), x + 5, y + 27);
-        }
-      });
-      y += cardH + 10;
-    }
-
-    // Footer: same "Made with FrameSet" credit (logo + line) as the Shared
-    // reference sheet's footer — no CTA button here, this is the owner's own copy.
-    const footerH = 16;
-    if (y + footerH > 285) {
-      doc.addPage();
-      y = 20;
-    }
-    doc.setDrawColor(...PDF_LIGHT_RULE);
-    doc.line(20, y, 190, y);
-    y += 10;
-
-    if (logoDataUrl) {
-      const logoH = 7;
-      const logoW = logoH * (2244 / 1148); // the source PNG's aspect ratio
-      doc.addImage(logoDataUrl, 'PNG', 20, y - 5, logoW, logoH);
-    }
-    // Right-aligned against the page's right margin, same side as the
-    // "Create your own" button on the Shared reference sheet's footer.
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...PDF_SECONDARY);
-    doc.text('Made with FrameSet — the graphic reference for your projects.', 190, y, {
-      align: 'right',
+    const doc = buildStyleGuidePdf(new jsPDF(), {
+      name: activeProject.name,
+      palette: activeProject.palette || [],
+      brushNorms: activeProject.brushNorms || [],
+      typographyNorms: activeProject.typographyNorms || [],
+      userName: user?.name,
+      logoDataUrl,
+      fonts,
+      typographyFonts,
     });
 
     // Save with the same filesystem-safe base name as every other export.

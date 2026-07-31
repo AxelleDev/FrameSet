@@ -39,4 +39,42 @@ module.exports = {
       },
     },
   },
+  '/api/fonts/files': {
+    get: {
+      tags: ['Fonts'],
+      summary: "One family's font-file download URLs (for the PDF export's specimens)",
+      security: AUTH,
+      parameters: [
+        {
+          name: 'family',
+          in: 'query',
+          required: true,
+          schema: { type: 'string' },
+          description: 'Exact Google Fonts family name, e.g. "Parisienne".',
+        },
+      ],
+      responses: {
+        200: {
+          description: 'Variant name to TTF download URL, as Google exposes them.',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  files: {
+                    type: 'object',
+                    additionalProperties: { type: 'string', format: 'uri' },
+                    example: { regular: 'https://fonts.gstatic.com/s/parisienne/….ttf' },
+                  },
+                },
+              },
+            },
+          },
+        },
+        401: { $ref: '#/components/responses/Unauthorized' },
+        404: { description: 'Unknown font family (or no catalog key configured).' },
+        502: { description: 'The upstream Google Fonts API could not be reached.' },
+      },
+    },
+  },
 };
