@@ -15,6 +15,7 @@ import AddTile from '../components/AddTile';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
+import { findDuplicateByName } from '../utils/duplicates';
 import Seo from '../components/Seo';
 import TrashSection from '../components/TrashSection';
 import TrashRow from '../components/TrashRow';
@@ -520,6 +521,18 @@ export default function Dashboard() {
               autoFocus
             />
           </FormField>
+          {(() => {
+            // Heads-up, not a blocker: a duplicate name can be deliberate.
+            const duplicate = findDuplicateByName(projects, newProjectName, {
+              getValue: (project) => project.name,
+            });
+            return duplicate ? (
+              <Alert variant="info">
+                You already have a project called &ldquo;{duplicate.name}&rdquo; — you can still
+                create another one.
+              </Alert>
+            ) : null;
+          })()}
         </div>
 
         <ModalActions
@@ -558,6 +571,19 @@ export default function Dashboard() {
               {editProjectError}
             </Alert>
           )}
+          {(() => {
+            // Heads-up, not a blocker: a duplicate name can be deliberate.
+            const duplicate = findDuplicateByName(projects, editProjectName, {
+              getValue: (project) => project.name,
+              excludeId: editProjectId,
+            });
+            return duplicate ? (
+              <Alert variant="info">
+                You already have a project called &ldquo;{duplicate.name}&rdquo; — you can still use
+                this name.
+              </Alert>
+            ) : null;
+          })()}
         </div>
 
         <ModalActions

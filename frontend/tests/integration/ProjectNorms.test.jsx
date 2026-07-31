@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -127,6 +127,47 @@ describe('ProjectNorms', () => {
     });
     // The modal closed on success.
     expect(screen.queryByLabelText('Brush usage')).not.toBeInTheDocument();
+  });
+
+  it('warns about a duplicate brush usage without blocking the add', async () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [
+        { id: 5, name: 'Hair outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 0.9 },
+      ],
+      typographyNorms: [],
+    };
+    projectState.addBrushNorm = vi.fn().mockResolvedValue({ id: 6 });
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    const usageInput = await screen.findByLabelText('Brush usage');
+    await user.type(usageInput, 'hair outline'); // case-insensitive match
+
+    expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
+
+    // Informative only — adding the duplicate still works.
+    await user.type(screen.getByLabelText('Size (px)'), '4');
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add' }));
+    expect(projectState.addBrushNorm).toHaveBeenCalled();
+  });
+
+  it('does not warn when editing a standard kept on its own usage', async () => {
+    projectState.activeProject = {
+      id: '2',
+      brushNorms: [
+        { id: 5, name: 'Hair outline', value: '8', unit: 'px', brushName: 'Smooth', opacity: 0.9 },
+      ],
+      typographyNorms: [],
+    };
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Edit standard' }));
+    await screen.findByLabelText('Brush usage');
+
+    expect(screen.queryByText(/already exists/i)).not.toBeInTheDocument();
   });
 
   it('keeps the edit modal open when the save fails, preserving the edits', async () => {
