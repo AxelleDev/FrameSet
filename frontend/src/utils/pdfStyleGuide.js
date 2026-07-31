@@ -173,7 +173,7 @@ export function buildStyleGuidePdf(
         rowColors,
         rowNameLines,
         rowLineCount,
-        rowH: squareSize + 6 + nameLineH * rowLineCount + 7,
+        rowH: squareSize + 5.5 + nameLineH * rowLineCount + 9.5,
       });
     }
 
@@ -212,7 +212,7 @@ export function buildStyleGuidePdf(
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...PRIMARY);
         rowNameLines[col].forEach((line, li) => {
-          doc.text(line, x + squareSize / 2, y + squareSize + 6 + li * nameLineH, {
+          doc.text(line, x + squareSize / 2, y + squareSize + 5.5 + li * nameLineH, {
             align: 'center',
           });
         });
@@ -223,7 +223,7 @@ export function buildStyleGuidePdf(
         doc.text(
           color.hex.toUpperCase(),
           x + squareSize / 2,
-          y + squareSize + 6 + nameLineH * rowLineCount + 3,
+          y + squareSize + 5.5 + nameLineH * rowLineCount + 1.5,
           { align: 'center' },
         );
       });
@@ -284,18 +284,23 @@ export function buildStyleGuidePdf(
       }
       const x = MARGIN + col * (cellW + gap);
 
-      doc.setFillColor(...CANVAS);
-      doc.roundedRect(x, y, cellW, cardH, 7, 7, 'F');
+      // White cards with a hairline border, like the site's surface cards
+      // (the hairline stands in for their soft shadow on the white page).
+      const isTypography = card.category === 'Typography';
+      const cardBg = [255, 255, 255];
+      doc.setFillColor(...cardBg);
+      doc.setDrawColor(...LIGHT_RULE);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(x, y, cellW, cardH, 7, 7, 'FD');
 
       // Category badge, as the site's pill: tinted fill + matching text
       // (blue for Typography, neutral for Brush — same mapping as the pages).
-      const isTypography = card.category === 'Typography';
       const badgeTone = isTypography ? BLUE : PRIMARY;
       doc.setFontSize(6.5);
       doc.setFont('helvetica', 'bold');
       const badgeLabel = card.category.toUpperCase();
       const badgeTextW = doc.getTextWidth(badgeLabel) + 0.4 * badgeLabel.length;
-      doc.setFillColor(...blend(badgeTone, 0.1, CANVAS));
+      doc.setFillColor(...blend(badgeTone, 0.1, cardBg));
       doc.roundedRect(x + pad, y + pad, badgeTextW + 7, 5.2, 2.6, 2.6, 'F');
       doc.setTextColor(...badgeTone);
       doc.text(badgeLabel, x + pad + 3.5, y + pad + 3.7, { charSpace: 0.4 });
@@ -343,8 +348,8 @@ export function buildStyleGuidePdf(
 
       // Preview strip (the h-16 bg-blue/5 rounded box on the site).
       const stripH = 13.5;
-      const stripY = y + cardH - 5.5 - stripH;
-      const stripBg = blend(BLUE, 0.1, CANVAS);
+      const stripY = y + cardH - pad - stripH;
+      const stripBg = blend(BLUE, 0.08, cardBg);
       doc.setFillColor(...stripBg);
       doc.roundedRect(x + pad, stripY, cellW - pad * 2, stripH, 4.5, 4.5, 'F');
 
