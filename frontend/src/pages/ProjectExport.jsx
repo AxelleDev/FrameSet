@@ -43,6 +43,37 @@ const loadImageDataUrl = (src) =>
     img.src = src;
   });
 
+// The Figtree faces embedded in the style-guide PDF (converted once from the
+// site's own font files — see public/fonts/pdf). Loaded only when a PDF is
+// actually generated; any failure falls back to helvetica rather than
+// blocking the export.
+const PDF_FONT_FILES = [
+  ['Figtree-Light.ttf', 'light'],
+  ['Figtree-Regular.ttf', 'normal'],
+  ['Figtree-Medium.ttf', 'medium'],
+  ['Figtree-Bold.ttf', 'bold'],
+  ['Figtree-Italic.ttf', 'italic'],
+];
+const loadPdfFonts = async () => {
+  try {
+    return await Promise.all(
+      PDF_FONT_FILES.map(async ([file, style]) => {
+        const res = await fetch(`/fonts/pdf/${file}`);
+        if (!res.ok) throw new Error(`font ${file}: HTTP ${res.status}`);
+        const bytes = new Uint8Array(await res.arrayBuffer());
+        let binary = '';
+        const CHUNK = 0x8000;
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+        }
+        return { vfsName: file, style, base64: btoa(binary) };
+      }),
+    );
+  } catch {
+    return undefined;
+  }
+};
+
 export default function ProjectExport() {
   const { id } = useParams();
   const {
@@ -220,9 +251,10 @@ export default function ProjectExport() {
 
     // Load jsPDF on demand to keep its ~hundreds of KB out of the initial bundle;
     // the footer logo loads in parallel (light-mode file: the PDF page is always white).
-    const [{ jsPDF }, logoDataUrl] = await Promise.all([
+    const [{ jsPDF }, logoDataUrl, fonts] = await Promise.all([
       import('jspdf'),
       loadImageDataUrl('/FrameSet_Logo.png'),
+      loadPdfFonts(),
     ]);
 
     const doc = buildStyleGuidePdf(new jsPDF(), {
@@ -232,6 +264,7 @@ export default function ProjectExport() {
       typographyNorms: activeProject.typographyNorms || [],
       userName: user?.name,
       logoDataUrl,
+      fonts,
     });
 
     // Save with the same filesystem-safe base name as every other export.

@@ -49,9 +49,36 @@ export function buildStyleGuidePdf(
     userName,
     logoDataUrl,
     generatedOn = new Date().toLocaleDateString(),
+    fonts,
   },
 ) {
   let y = MARGIN;
+
+  // Embed the site's Figtree faces when provided (see the page's font loader);
+  // helvetica stays as the drop-in fallback so a failed font fetch can never
+  // block the export. Figtree carries the site's exact weights — including
+  // the light and medium the built-in fonts simply don't have.
+  const family = (() => {
+    if (!fonts || fonts.length === 0) return 'helvetica';
+    try {
+      fonts.forEach(({ vfsName, style, base64 }) => {
+        doc.addFileToVFS(vfsName, base64);
+        doc.addFont(vfsName, 'Figtree', style);
+      });
+      return 'Figtree';
+    } catch {
+      return 'helvetica';
+    }
+  })();
+  const HELVETICA_STYLES = {
+    light: 'normal',
+    normal: 'normal',
+    medium: 'bold',
+    bold: 'bold',
+    italic: 'italic',
+  };
+  const setF = (style) =>
+    doc.setFont(family, family === 'Figtree' ? style : HELVETICA_STYLES[style] || 'normal');
 
   // Truncates `text` (at the currently active font/size) with an ellipsis so
   // it fits within `maxWidth`. jsPDF's own `maxWidth` option wraps to a new
@@ -75,13 +102,13 @@ export function buildStyleGuidePdf(
   // (generation date right-aligned on the same line — the one PDF-only bit,
   // since a printed document has no "last edited" to lean on).
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
+  setF('bold');
   doc.setTextColor(...BLUE);
   doc.text('REFERENCE SHEET', MARGIN, y, { charSpace: 0.6 });
   y += 9;
 
   doc.setFontSize(25);
-  doc.setFont('helvetica', 'normal');
+  setF('light');
   doc.setTextColor(...PRIMARY);
   const allTitleLines = doc.splitTextToSize(name, CONTENT_WIDTH);
   const titleLines = allTitleLines.slice(0, 2);
@@ -96,7 +123,7 @@ export function buildStyleGuidePdf(
   y += 1;
 
   doc.setFontSize(9.5);
-  doc.setFont('helvetica', 'normal');
+  setF('normal');
   doc.setTextColor(...SECONDARY);
   if (userName) {
     doc.text(`Made by ${userName}`, MARGIN, y);
@@ -106,7 +133,7 @@ export function buildStyleGuidePdf(
 
   const sectionTitle = (label) => {
     doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
+    setF('medium');
     doc.setTextColor(...PRIMARY);
     doc.text(label, MARGIN, y);
     y += 10;
@@ -151,7 +178,7 @@ export function buildStyleGuidePdf(
     // of short names doesn't reserve phantom space, and the section's total
     // height is known before anything is drawn (see startSection).
     doc.setFontSize(nameFontSize);
-    doc.setFont('helvetica', 'bold');
+    setF('bold');
     const rowsData = [];
     for (let rowStart = 0; rowStart < palette.length; rowStart += cols) {
       const rowColors = palette.slice(rowStart, rowStart + cols);
@@ -209,7 +236,7 @@ export function buildStyleGuidePdf(
         }
 
         doc.setFontSize(nameFontSize);
-        doc.setFont('helvetica', 'bold');
+        setF('bold');
         doc.setTextColor(...PRIMARY);
         rowNameLines[col].forEach((line, li) => {
           doc.text(line, x + squareSize / 2, y + squareSize + 5.5 + li * nameLineH, {
@@ -297,7 +324,7 @@ export function buildStyleGuidePdf(
       // (blue for Typography, neutral for Brush — same mapping as the pages).
       const badgeTone = isTypography ? BLUE : PRIMARY;
       doc.setFontSize(6.5);
-      doc.setFont('helvetica', 'bold');
+      setF('bold');
       const badgeLabel = card.category.toUpperCase();
       const badgeTextW = doc.getTextWidth(badgeLabel) + 0.4 * badgeLabel.length;
       doc.setFillColor(...blend(badgeTone, 0.1, cardBg));
@@ -307,7 +334,7 @@ export function buildStyleGuidePdf(
 
       // Usage title: small caps feel (uppercase + tracking), like the cards'.
       doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'bold');
+      setF('medium');
       doc.setTextColor(...PRIMARY);
       doc.text(truncateToWidth(card.name.toUpperCase(), textMaxWidth, 0.3), x + pad, y + pad + 11, {
         charSpace: 0.3,
@@ -319,12 +346,12 @@ export function buildStyleGuidePdf(
       let unitWidth = 0;
       if (card.unit) {
         doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
+        setF('medium');
         unitWidth = doc.getTextWidth(card.unit);
       }
 
       doc.setFontSize(16);
-      doc.setFont('helvetica', 'normal');
+      setF('light');
       doc.setTextColor(...PRIMARY);
       const valueMaxWidth = textMaxWidth - (card.unit ? unitWidth + 2 : 0);
       const valueText = truncateToWidth(`${card.value}`, valueMaxWidth);
@@ -333,7 +360,7 @@ export function buildStyleGuidePdf(
 
       if (card.unit) {
         doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
+        setF('medium');
         doc.setTextColor(...BLUE);
         doc.text(card.unit, x + pad + valueWidth + 2, y + pad + 19.5);
       }
@@ -341,7 +368,7 @@ export function buildStyleGuidePdf(
       if (card.detail) {
         doc.setFontSize(7.5);
         // The site renders a typography style ("Italic") in italics — do too.
-        doc.setFont('helvetica', isTypography ? 'italic' : 'normal');
+        setF(isTypography ? 'italic' : 'normal');
         doc.setTextColor(...SECONDARY);
         doc.text(truncateToWidth(card.detail, textMaxWidth), x + pad, y + pad + 25);
       }
@@ -374,7 +401,7 @@ export function buildStyleGuidePdf(
           'F',
         );
         doc.setFontSize(6);
-        doc.setFont('helvetica', 'bold');
+        setF('bold');
         doc.setTextColor(...BLUE);
         doc.text(
           truncateToWidth(card.preview.brushName.toUpperCase(), cellW - pad * 2 - 8, 0.4),
@@ -385,8 +412,8 @@ export function buildStyleGuidePdf(
       } else {
         // The AaBbCc specimen. Helvetica stands in for the actual family
         // (jsPDF can't load arbitrary web fonts), but the style carries over.
-        doc.setFontSize(12);
-        doc.setFont('helvetica', card.preview.fontStyle ? 'italic' : 'normal');
+        doc.setFontSize(13);
+        setF(card.preview.fontStyle ? 'italic' : 'normal');
         doc.setTextColor(...PRIMARY);
         doc.text('AaBbCc', x + cellW / 2, stripY + stripH / 2 + 2, { align: 'center' });
       }
@@ -409,7 +436,7 @@ export function buildStyleGuidePdf(
       doc.addImage(logoDataUrl, 'PNG', MARGIN, 281, logoW, logoH);
     }
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
+    setF('normal');
     doc.setTextColor(...SECONDARY);
     doc.text(
       'Made with FrameSet — the graphic reference for your projects.',
