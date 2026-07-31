@@ -128,8 +128,11 @@ export function buildStyleGuidePdf(
     const MAX_COLS = 6;
     const rows = Math.ceil(palette.length / MAX_COLS);
     const cols = Math.max(Math.ceil(palette.length / rows), 4);
-    const cellW = CONTENT_WIDTH / cols;
-    const squareSize = cellW - 5;
+    // Gap lives only BETWEEN columns: the first tile sits flush on the left
+    // margin and the last one flush on the right, like every other block.
+    const TILE_GAP = 5;
+    const squareSize = (CONTENT_WIDTH - TILE_GAP * (cols - 1)) / cols;
+    const tileStep = squareSize + TILE_GAP;
     const nameLineH = cols >= 6 ? 3.8 : 4.2;
     const nameFontSize = cols >= 6 ? 8 : 9;
     const hexFontSize = cols >= 6 ? 7 : 8;
@@ -168,7 +171,7 @@ export function buildStyleGuidePdf(
       }
 
       rowColors.forEach((color, col) => {
-        const x = MARGIN + col * cellW;
+        const x = MARGIN + col * tileStep;
 
         // Radius scaled to the tile (ColorTile's rounded-3xl look at any
         // size). Near-white colors get a hairline border, or they would melt
@@ -276,7 +279,7 @@ export function buildStyleGuidePdf(
       doc.setFillColor(...blend(badgeTone, 0.1, CANVAS));
       doc.roundedRect(x + pad, y + pad, badgeTextW + 7, 5.2, 2.6, 2.6, 'F');
       doc.setTextColor(...badgeTone);
-      doc.text(badgeLabel, x + pad + 3.5, y + pad + 3.6, { charSpace: 0.4 });
+      doc.text(badgeLabel, x + pad + 3.5, y + pad + 3.7, { charSpace: 0.4 });
 
       // Usage title: small caps feel (uppercase + tracking), like the cards'.
       doc.setFontSize(8.5);
@@ -361,7 +364,7 @@ export function buildStyleGuidePdf(
         doc.setFontSize(12);
         doc.setFont('helvetica', card.preview.fontStyle ? 'italic' : 'normal');
         doc.setTextColor(...PRIMARY);
-        doc.text('AaBbCc', x + cellW / 2, stripY + stripH / 2 + 1.5, { align: 'center' });
+        doc.text('AaBbCc', x + cellW / 2, stripY + stripH / 2 + 2, { align: 'center' });
       }
     });
     y += cardH + 10;
