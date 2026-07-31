@@ -41,6 +41,12 @@ vi.mock('qrcode', () => ({
   toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,fake-qr'),
 }));
 
+// The specimen-font loader calls the API; failing fast here exercises its
+// fallback path (specimens in the app font) without the real client's retries.
+vi.mock('../../src/services/api', () => ({
+  default: { get: vi.fn().mockRejectedValue(new Error('offline')) },
+}));
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return { ...actual, useParams: () => ({ id: '2' }) };

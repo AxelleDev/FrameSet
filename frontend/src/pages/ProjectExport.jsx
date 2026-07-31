@@ -14,6 +14,7 @@ import Button from '../components/Button';
 import ProjectStatePlaceholder from '../components/ProjectStatePlaceholder';
 import useActiveProject from '../hooks/useActiveProject';
 import useClipboard from '../hooks/useClipboard';
+import api from '../services/api';
 import { buildStyleGuidePdf } from '../utils/pdfStyleGuide';
 import {
   buildAsePalette,
@@ -54,24 +55,74 @@ const PDF_FONT_FILES = [
   ['Figtree-Bold.ttf', 'bold'],
   ['Figtree-Italic.ttf', 'italic'],
 ];
+const bytesToBase64 = (buffer) => {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+};
+
 const loadPdfFonts = async () => {
   try {
     return await Promise.all(
       PDF_FONT_FILES.map(async ([file, style]) => {
         const res = await fetch(`/fonts/pdf/${file}`);
         if (!res.ok) throw new Error(`font ${file}: HTTP ${res.status}`);
-        const bytes = new Uint8Array(await res.arrayBuffer());
-        let binary = '';
-        const CHUNK = 0x8000;
-        for (let i = 0; i < bytes.length; i += CHUNK) {
-          binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-        }
-        return { vfsName: file, style, base64: btoa(binary) };
+        return { vfsName: file, style, base64: bytesToBase64(await res.arrayBuffer()) };
       }),
     );
   } catch {
     return undefined;
   }
+};
+
+// Picks the download URL matching a norm's weight/style as closely as the
+// family offers, ending on whatever exists (better a slightly-off weight than
+// no real face at all).
+const pickFontFileUrl = (files, weight, style) => {
+  const wantsItalic = /italic/i.test(style || '');
+  const w = `${weight || ''}`.trim();
+  const candidates = wantsItalic
+    ? [w && w !== '400' ? `${w}italic` : 'italic', 'italic', 'regular']
+    : [!w || w === '400' ? 'regular' : w, 'regular'];
+  const key = candidates.find((candidate) => candidate && files[candidate]);
+  const url = key ? files[key] : Object.values(files)[0];
+  // Google returns http:// URLs; upgrade so the fetch never mixes content.
+  return url ? url.replace(/^http:/, 'https:') : null;
+};
+
+// Fetches the real face of each typography norm (the backend's files proxy
+// gives the URL, fonts.gstatic.com serves the TTF) so the PDF's AaBbCc
+// specimens render in their own fonts, like the site's live previews. Any
+// failure just skips that family — the specimen falls back to the app font.
+const loadSpecimenFonts = async (typographyNorms) => {
+  const families = [...new Set((typographyNorms || []).map((n) => n.fontFamily).filter(Boolean))];
+  const entries = await Promise.all(
+    families.map(async (family) => {
+      try {
+        const norm = typographyNorms.find((n) => n.fontFamily === family);
+        const { files } = await api.get(`/fonts/files?family=${encodeURIComponent(family)}`);
+        const url = pickFontFileUrl(files || {}, norm?.fontWeight, norm?.fontStyle);
+        if (!url) return null;
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        return [
+          family,
+          {
+            vfsName: `${family.replace(/[^a-z0-9]/gi, '_')}.ttf`,
+            base64: bytesToBase64(await res.arrayBuffer()),
+          },
+        ];
+      } catch {
+        return null;
+      }
+    }),
+  );
+  const map = Object.fromEntries(entries.filter(Boolean));
+  return Object.keys(map).length > 0 ? map : undefined;
 };
 
 export default function ProjectExport() {
@@ -251,10 +302,11 @@ export default function ProjectExport() {
 
     // Load jsPDF on demand to keep its ~hundreds of KB out of the initial bundle;
     // the footer logo loads in parallel (light-mode file: the PDF page is always white).
-    const [{ jsPDF }, logoDataUrl, fonts] = await Promise.all([
+    const [{ jsPDF }, logoDataUrl, fonts, typographyFonts] = await Promise.all([
       import('jspdf'),
       loadImageDataUrl('/FrameSet_Logo.png'),
       loadPdfFonts(),
+      loadSpecimenFonts(activeProject.typographyNorms),
     ]);
 
     const doc = buildStyleGuidePdf(new jsPDF(), {
@@ -265,6 +317,7 @@ export default function ProjectExport() {
       userName: user?.name,
       logoDataUrl,
       fonts,
+      typographyFonts,
     });
 
     // Save with the same filesystem-safe base name as every other export.

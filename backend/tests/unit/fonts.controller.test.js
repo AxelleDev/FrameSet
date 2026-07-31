@@ -6,6 +6,7 @@
 
 jest.mock('../../src/services/fonts.service', () => ({
   getGoogleFontsCatalog: jest.fn(),
+  getGoogleFontFiles: jest.fn(),
 }));
 
 const fontsService = require('../../src/services/fonts.service');
@@ -40,5 +41,42 @@ describe('fonts controller', () => {
     expect(res.status).toHaveBeenCalledWith(502);
     // The upstream error text must never leak to the client.
     expect(res.json).toHaveBeenCalledWith({ error: 'Could not load the font catalog.' });
+  });
+
+  it("returns one family's file URLs", async () => {
+    const files = { regular: 'https://fonts.gstatic.com/s/parisienne/x.ttf' };
+    fontsService.getGoogleFontFiles.mockResolvedValueOnce(files);
+
+    const req = { id: 'req-3', query: { family: 'Parisienne' } };
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+    await fontsController.getFontFiles(req, res);
+
+    expect(fontsService.getGoogleFontFiles).toHaveBeenCalledWith('Parisienne');
+    expect(res.json).toHaveBeenCalledWith({ files });
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it('answers 404 for an unknown family (service resolves null)', async () => {
+    fontsService.getGoogleFontFiles.mockResolvedValueOnce(null);
+
+    const req = { id: 'req-4', query: { family: 'Not A Font' } };
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+    await fontsController.getFontFiles(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Unknown font family.' });
+  });
+
+  it('answers 502 with a generic message when the files fetch fails', async () => {
+    fontsService.getGoogleFontFiles.mockRejectedValueOnce(
+      new Error('Google Fonts API responded with 503'),
+    );
+
+    const req = { id: 'req-5', query: { family: 'Parisienne' } };
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+    await fontsController.getFontFiles(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(502);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Could not load the font files.' });
   });
 });

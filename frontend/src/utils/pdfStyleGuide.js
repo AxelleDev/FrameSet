@@ -50,6 +50,7 @@ export function buildStyleGuidePdf(
     logoDataUrl,
     generatedOn = new Date().toLocaleDateString(),
     fonts,
+    typographyFonts,
   },
 ) {
   let y = MARGIN;
@@ -79,6 +80,20 @@ export function buildStyleGuidePdf(
   };
   const setF = (style) =>
     doc.setFont(family, family === 'Figtree' ? style : HELVETICA_STYLES[style] || 'normal');
+
+  // The actual face of each typography norm (fetched from Google Fonts by the
+  // page), so a specimen reads in ITS font — like the site's live previews.
+  // Families that failed to load just fall back to the app font.
+  const specimenFamilies = new Set();
+  Object.entries(typographyFonts || {}).forEach(([specimenFamily, file]) => {
+    try {
+      doc.addFileToVFS(file.vfsName, file.base64);
+      doc.addFont(file.vfsName, specimenFamily, 'normal');
+      specimenFamilies.add(specimenFamily);
+    } catch {
+      /* fall back to the app font for this family */
+    }
+  });
 
   // Truncates `text` (at the currently active font/size) with an ellipsis so
   // it fits within `maxWidth`. jsPDF's own `maxWidth` option wraps to a new
@@ -279,7 +294,7 @@ export function buildStyleGuidePdf(
       value: n.fontFamily,
       unit: n.fontWeight ? `${n.fontWeight}` : '',
       detail: n.fontStyle || null,
-      preview: { kind: 'typography', fontStyle: n.fontStyle || '' },
+      preview: { kind: 'typography', fontStyle: n.fontStyle || '', fontFamily: n.fontFamily },
     })),
   ];
 
@@ -413,7 +428,12 @@ export function buildStyleGuidePdf(
         // The AaBbCc specimen. Helvetica stands in for the actual family
         // (jsPDF can't load arbitrary web fonts), but the style carries over.
         doc.setFontSize(13);
-        setF(card.preview.fontStyle ? 'italic' : 'normal');
+        if (specimenFamilies.has(card.preview.fontFamily)) {
+          // The fetched file already matches the norm's weight/style.
+          doc.setFont(card.preview.fontFamily, 'normal');
+        } else {
+          setF(card.preview.fontStyle ? 'italic' : 'normal');
+        }
         doc.setTextColor(...PRIMARY);
         doc.text('AaBbCc', x + cellW / 2, stripY + stripH / 2 + 2, { align: 'center' });
       }
