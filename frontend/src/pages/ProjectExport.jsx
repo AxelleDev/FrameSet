@@ -220,6 +220,15 @@ export default function ProjectExport() {
   const PDF_BLUE = [137, 148, 223];
   const PDF_SECONDARY = [107, 107, 107];
   const PDF_LIGHT_RULE = [225, 226, 235];
+  // The site's canvas tint: on the PDF's white page it plays the surface
+  // cards' role, so the document reads like the Shared reference sheet.
+  const PDF_CANVAS = [242, 243, 255];
+
+  // Flattens an rgb color at `alpha` over `base` — jsPDF has no opacity in
+  // its stable API, so the site's translucent fills (bg-blue/10, bg-primary/10,
+  // the preview strip's bg-blue/5) are pre-blended into solid colors.
+  const blendPdfColor = (rgb, alpha, base = [255, 255, 255]) =>
+    rgb.map((channel, i) => Math.round(base[i] + (channel - base[i]) * alpha));
 
   // Build and download the style-guide PDF. Drawn imperatively with jsPDF: `y`
   // is the running vertical cursor (mm), advanced per section/row, with a page
@@ -253,46 +262,56 @@ export default function ProjectExport() {
       return `${truncated}…`;
     };
 
-    // Header: project name + generation date, then a divider rule.
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...PDF_PRIMARY);
-    doc.text(activeProject.name, 20, y);
-    y += 8;
+    // The footer is stamped on EVERY page (see drawFooters at the end), so all
+    // content must stop above it: this is the page-break threshold.
+    const CONTENT_BOTTOM = 268;
 
-    // Same "Made by <name>" credit as the Shared reference sheet, then the
-    // generation date.
-    doc.setFontSize(12);
+    // Header, mirroring the Shared reference sheet's: a small blue uppercase
+    // eyebrow, the project name big and light, then the "Made by" credit
+    // (generation date right-aligned on the same line — the one PDF-only bit,
+    // since a printed document has no "last edited" to lean on).
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...PDF_BLUE);
+    doc.text('REFERENCE SHEET', 20, y, { charSpace: 0.6 });
+    y += 9;
+
+    doc.setFontSize(25);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...PDF_PRIMARY);
+    const titleLines = doc.splitTextToSize(activeProject.name, 170).slice(0, 2);
+    titleLines.forEach((line) => {
+      doc.text(line, 20, y);
+      y += 11;
+    });
+    y += 1;
+
+    doc.setFontSize(9.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...PDF_SECONDARY);
     if (user?.name) {
       doc.text(`Made by ${user.name}`, 20, y);
-      y += 6;
     }
-    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 20, y);
-    y += 14;
-
-    doc.setDrawColor(...PDF_LIGHT_RULE);
-    doc.line(20, y, 190, y);
-    y += 14;
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 190, y, { align: 'right' });
+    y += 16;
 
     // Section: color palette — a grid of SQUARE flat color tiles (name + hex
     // centered below), matching the ColorTile component used everywhere else
     // a palette shows up (Landing, ProjectPalette, the Shared reference sheet).
     if (activeProject.palette.length > 0) {
-      if (y > 250) {
+      if (y > CONTENT_BOTTOM - 60) {
         doc.addPage();
         y = 20;
       }
-      doc.setFontSize(16);
+      doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...PDF_PRIMARY);
       doc.text('Color palette', 20, y);
-      y += 12;
+      y += 10;
 
       const cols = 4;
       const cellW = 42.5;
-      const squareSize = 34;
+      const squareSize = 36;
       const nameLineH = 4.2;
       // Fixed row height reserves room for up to 2 wrapped name lines + the hex
       // line, so a long name (wrapped) can never overlap the hex line below it.
@@ -300,16 +319,17 @@ export default function ProjectExport() {
       activeProject.palette.forEach((color, i) => {
         const col = i % cols;
         if (col === 0 && i > 0) y += rowH;
-        if (y + rowH > 280) {
+        if (y + rowH > CONTENT_BOTTOM) {
           doc.addPage();
           y = 20;
         }
         const x = 20 + col * cellW;
 
+        // Generous radius, like ColorTile's rounded-3xl swatches.
         doc.setFillColor(color.hex);
-        doc.roundedRect(x, y, squareSize, squareSize, 3, 3, 'F');
+        doc.roundedRect(x, y, squareSize, squareSize, 6, 6, 'F');
 
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...PDF_PRIMARY);
         let nameLines = doc.splitTextToSize(color.name, squareSize);
@@ -351,6 +371,14 @@ export default function ProjectExport() {
         value: `${n.value}`,
         unit: n.unit || '',
         detail: n.opacity !== undefined && n.opacity !== null ? `Opacity: ${n.opacity}` : null,
+        // Raw fields for the preview strip (see below), same inputs as BrushPreview.
+        preview: {
+          kind: 'brush',
+          size: parseFloat(n.value),
+          opacity:
+            typeof n.opacity === 'number' ? n.opacity : n.opacity ? parseFloat(n.opacity) : 1,
+          brushName: n.brushName || 'Brush',
+        },
       })),
       ...(activeProject.typographyNorms || []).map((n) => ({
         category: 'Typography',
@@ -358,46 +386,64 @@ export default function ProjectExport() {
         value: n.fontFamily,
         unit: n.fontWeight || '',
         detail: n.fontStyle || null,
+        preview: { kind: 'typography', fontStyle: n.fontStyle || '' },
       })),
     ];
 
     if (standardCards.length > 0) {
-      if (y > 250) {
+      if (y > CONTENT_BOTTOM - 60) {
         doc.addPage();
         y = 20;
       }
-      doc.setFontSize(16);
+      doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...PDF_PRIMARY);
       doc.text('Graphic standards', 20, y);
-      y += 12;
+      y += 10;
 
+      // StandardCard, transposed: a soft canvas-tinted card (no hairline box)
+      // with a category badge pill, the uppercase usage title, the big light
+      // value + blue unit, a detail line, and the same preview strip the site
+      // renders — a real brush bar sized/faded to the norm, or an AaBbCc
+      // specimen for typography.
       const cols = 2;
-      const cellW = 85;
-      const cardH = 30;
+      const cellW = 82.5;
+      const cardH = 47;
       const gap = 5;
-      const textMaxWidth = cellW - 10;
+      const pad = 6;
+      const textMaxWidth = cellW - pad * 2;
       standardCards.forEach((card, i) => {
         const col = i % cols;
         if (col === 0 && i > 0) y += cardH + gap;
-        if (y + cardH > 280) {
+        if (y + cardH > CONTENT_BOTTOM) {
           doc.addPage();
           y = 20;
         }
         const x = 20 + col * (cellW + gap);
 
-        doc.setDrawColor(...PDF_LIGHT_RULE);
-        doc.roundedRect(x, y, cellW, cardH, 3, 3, 'S');
+        doc.setFillColor(...PDF_CANVAS);
+        doc.roundedRect(x, y, cellW, cardH, 5, 5, 'F');
 
-        doc.setFontSize(7);
+        // Category badge, as the site's pill: tinted fill + matching text
+        // (blue for Typography, neutral for Brush — same mapping as the pages).
+        const isTypography = card.category === 'Typography';
+        const badgeTone = isTypography ? PDF_BLUE : PDF_PRIMARY;
+        doc.setFontSize(6.5);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...PDF_BLUE);
-        doc.text(card.category.toUpperCase(), x + 5, y + 7);
+        const badgeLabel = card.category.toUpperCase();
+        const badgeTextW = doc.getTextWidth(badgeLabel);
+        doc.setFillColor(...blendPdfColor(badgeTone, 0.1, PDF_CANVAS));
+        doc.roundedRect(x + pad, y + pad - 3.5, badgeTextW + 7, 5.2, 2.6, 2.6, 'F');
+        doc.setTextColor(...badgeTone);
+        doc.text(badgeLabel, x + pad + 3.5, y + pad, { charSpace: 0.4 });
 
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
+        // Usage title: small caps feel (uppercase + tracking), like the cards'.
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'bold');
         doc.setTextColor(...PDF_PRIMARY);
-        doc.text(truncateToWidth(card.name, textMaxWidth), x + 5, y + 13);
+        doc.text(truncateToWidth(card.name.toUpperCase(), textMaxWidth), x + pad, y + pad + 9, {
+          charSpace: 0.3,
+        });
 
         // Measure the unit first, at its own font, so the value can be
         // truncated to leave it exactly enough room. jsPDF has no CSS-style
@@ -409,55 +455,97 @@ export default function ProjectExport() {
           unitWidth = doc.getTextWidth(card.unit);
         }
 
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(15);
+        doc.setFont('helvetica', 'normal');
         doc.setTextColor(...PDF_PRIMARY);
         const valueMaxWidth = textMaxWidth - (card.unit ? unitWidth + 2 : 0);
         const valueText = truncateToWidth(`${card.value}`, valueMaxWidth);
-        doc.text(valueText, x + 5, y + 21);
+        doc.text(valueText, x + pad, y + pad + 17);
         const valueWidth = doc.getTextWidth(valueText);
 
         if (card.unit) {
           doc.setFontSize(9);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(...PDF_BLUE);
-          doc.text(card.unit, x + 5 + valueWidth + 2, y + 21);
+          doc.text(card.unit, x + pad + valueWidth + 2, y + pad + 17);
         }
 
         if (card.detail) {
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+          // The site renders a typography style ("Italic") in italics — do too.
+          doc.setFont('helvetica', isTypography ? 'italic' : 'normal');
           doc.setTextColor(...PDF_SECONDARY);
-          doc.text(truncateToWidth(card.detail, textMaxWidth), x + 5, y + 27);
+          doc.text(truncateToWidth(card.detail, textMaxWidth), x + pad, y + pad + 22.5);
+        }
+
+        // Preview strip (the h-16 bg-blue/5 rounded box on the site).
+        const stripH = 13;
+        const stripY = y + cardH - pad - stripH;
+        doc.setFillColor(...blendPdfColor(PDF_BLUE, 0.05, PDF_CANVAS));
+        doc.roundedRect(x + pad, stripY, cellW - pad * 2, stripH, 3, 3, 'F');
+
+        if (card.preview.kind === 'brush') {
+          // The brush bar: 16mm wide (the site's w-16), as thick as the norm's
+          // size (px→mm), opacity flattened into the color since jsPDF's
+          // stable API has none. Then the brush name in blue, like BrushPreview.
+          const barW = 16;
+          const barH = Math.min(
+            Math.max((Number.isFinite(card.preview.size) ? card.preview.size : 2) * 0.26, 0.6),
+            6.5,
+          );
+          const opacity = Math.min(Math.max(card.preview.opacity, 0), 1);
+          const stripBg = blendPdfColor(PDF_BLUE, 0.05, PDF_CANVAS);
+          doc.setFillColor(...blendPdfColor(PDF_PRIMARY, opacity, stripBg));
+          doc.roundedRect(
+            x + cellW / 2 - barW / 2,
+            stripY + stripH / 2 - barH / 2 - 1.5,
+            barW,
+            barH,
+            barH / 2,
+            barH / 2,
+            'F',
+          );
+          doc.setFontSize(6);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...PDF_BLUE);
+          doc.text(
+            truncateToWidth(card.preview.brushName.toUpperCase(), cellW - pad * 2 - 4),
+            x + cellW / 2,
+            stripY + stripH - 2.5,
+            { align: 'center', charSpace: 0.4 },
+          );
+        } else {
+          // The AaBbCc specimen. Helvetica stands in for the actual family
+          // (jsPDF can't load arbitrary web fonts), but the style carries over.
+          doc.setFontSize(12);
+          doc.setFont('helvetica', card.preview.fontStyle ? 'italic' : 'normal');
+          doc.setTextColor(...PDF_PRIMARY);
+          doc.text('AaBbCc', x + cellW / 2, stripY + stripH / 2 + 1.5, { align: 'center' });
         }
       });
       y += cardH + 10;
     }
 
-    // Footer: same "Made with FrameSet" credit (logo + line) as the Shared
-    // reference sheet's footer — no CTA button here, this is the owner's own copy.
-    const footerH = 16;
-    if (y + footerH > 285) {
-      doc.addPage();
-      y = 20;
+    // Footer on EVERY page, pinned to the bottom (content stops at
+    // CONTENT_BOTTOM): the Shared reference sheet's footer — a hairline, the
+    // logo on the left, the credit line on the right.
+    const pageCount = doc.getNumberOfPages();
+    for (let page = 1; page <= pageCount; page += 1) {
+      doc.setPage(page);
+      doc.setDrawColor(...PDF_LIGHT_RULE);
+      doc.line(20, 278, 190, 278);
+      if (logoDataUrl) {
+        const logoH = 6;
+        const logoW = logoH * (2244 / 1148); // the source PNG's aspect ratio
+        doc.addImage(logoDataUrl, 'PNG', 20, 281, logoW, logoH);
+      }
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...PDF_SECONDARY);
+      doc.text('Made with FrameSet — the graphic reference for your projects.', 190, 284.5, {
+        align: 'right',
+      });
     }
-    doc.setDrawColor(...PDF_LIGHT_RULE);
-    doc.line(20, y, 190, y);
-    y += 10;
-
-    if (logoDataUrl) {
-      const logoH = 7;
-      const logoW = logoH * (2244 / 1148); // the source PNG's aspect ratio
-      doc.addImage(logoDataUrl, 'PNG', 20, y - 5, logoW, logoH);
-    }
-    // Right-aligned against the page's right margin, same side as the
-    // "Create your own" button on the Shared reference sheet's footer.
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...PDF_SECONDARY);
-    doc.text('Made with FrameSet — the graphic reference for your projects.', 190, y, {
-      align: 'right',
-    });
 
     // Save with the same filesystem-safe base name as every other export.
     doc.save(`${fileSlug}_style_guide.pdf`);

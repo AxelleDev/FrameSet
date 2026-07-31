@@ -22,6 +22,8 @@ const { projectState, pdfDoc } = vi.hoisted(() => ({
     addImage: vi.fn(),
     splitTextToSize: vi.fn((value) => [String(value)]),
     getTextWidth: vi.fn(() => 10),
+    getNumberOfPages: vi.fn(() => 1),
+    setPage: vi.fn(),
     save: vi.fn(),
   },
 }));
@@ -198,6 +200,10 @@ describe('ProjectExport', () => {
     expect(drawnText).toContain('Color palette');
     expect(drawnText).toContain('Graphic standards');
     expect(drawnText).toContain('Made by Jane Doe');
+    // The "Made with FrameSet" credit is stamped per page (see the setPage
+    // loop), not just once at the end of the content.
+    expect(drawnText).toContain('Made with FrameSet — the graphic reference for your projects.');
+    expect(pdfDoc.setPage).toHaveBeenCalledWith(1);
     // No logo loaded -> no image embedded, and that must not block the export.
     expect(pdfDoc.addImage).not.toHaveBeenCalled();
 
