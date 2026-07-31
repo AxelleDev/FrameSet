@@ -305,7 +305,7 @@ export function buildStyleGuidePdf(
     // renders — a real brush bar sized/faded to the norm, or an AaBbCc
     // specimen for typography.
     const cols = 2;
-    const gap = 5;
+    const gap = 6;
     const cellW = (CONTENT_WIDTH - gap) / cols;
     const cardH = 54;
     const pad = 6;
@@ -408,7 +408,7 @@ export function buildStyleGuidePdf(
         doc.setFillColor(...blend(PRIMARY, opacity, stripBg));
         doc.roundedRect(
           x + cellW / 2 - barW / 2,
-          stripY + stripH / 2 - barH / 2 - 1.5,
+          stripY + 4.7 - barH / 2,
           barW,
           barH,
           barH / 2,
@@ -421,7 +421,7 @@ export function buildStyleGuidePdf(
         doc.text(
           truncateToWidth(card.preview.brushName.toUpperCase(), cellW - pad * 2 - 8, 0.4),
           x + cellW / 2,
-          stripY + stripH - 2.5,
+          stripY + stripH - 2.6,
           { align: 'center', charSpace: 0.4 },
         );
       } else {
