@@ -75,13 +75,16 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      # TEMPORARILY relaxed from --audit-level=high: react-router-dom is flagged
-      # by GHSA-qwww-vcr4-c8h2 (RSC-mode CSRF bypass) and no patched release
-      # exists yet. The app is not affected (classic BrowserRouter, no RSC or
-      # server actions), so failing every CI run over it would only mask real
-      # regressions. Restore --audit-level=high once Dependabot brings the fix.
-      - name: Audit frontend dependencies (production, critical severity)
-        run: npm audit --omit=dev --audit-level=critical
+      # High-severity gate with a SCOPED allowlist (scripts/audit-gate.mjs)
+      # instead of a blanket audit-level drop: each waived advisory carries its
+      # justification and an expiry date, and the gate fails when an entry
+      # expires or becomes stale — so a "temporary" exception can never
+      # silently become permanent, and any NEW high/critical advisory still
+      # fails the build. Currently waived: GHSA-qwww-vcr4-c8h2 (react-router
+      # RSC-mode CSRF bypass — app uses classic BrowserRouter, not affected;
+      # entry expires 2026-09-30).
+      - name: Audit frontend dependencies (production, high severity, allowlisted)
+        run: node scripts/audit-gate.mjs
 
       - name: Lint frontend
         run: npm run lint

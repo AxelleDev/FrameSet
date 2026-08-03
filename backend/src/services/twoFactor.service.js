@@ -44,15 +44,32 @@ const generateRecoveryCode = () => {
 // far more entropy than any bcrypt work factor meaningfully adds to).
 const hashRecoveryCode = (code) => hashOtp(code.toUpperCase());
 
-/** Mints RECOVERY_CODE_COUNT fresh codes and stores only their hashes. */
+/**
+ * Mints RECOVERY_CODE_COUNT fresh codes and stores only their hashes.
+ * Delete + insert run in one transaction (same pattern as
+ * replaceProjectPalette): a crash between the two must never leave a 2FA
+ * account with zero recovery codes — either the old set is still intact or
+ * the new one is fully in place.
+ */
 const storeRecoveryCodes = async (userId) => {
   const codes = Array.from({ length: RECOVERY_CODE_COUNT }, generateRecoveryCode);
-  await db.query('DELETE FROM user_recovery_codes WHERE user_id = ?', [userId]);
-  await db.query(
-    `INSERT INTO user_recovery_codes (user_id, code_hash) VALUES ${codes.map(() => '(?, ?)').join(', ')}`,
-    codes.flatMap((code) => [userId, hashRecoveryCode(code)]),
-  );
-  return codes;
+  let connection;
+  try {
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+    await connection.query('DELETE FROM user_recovery_codes WHERE user_id = ?', [userId]);
+    await connection.query(
+      `INSERT INTO user_recovery_codes (user_id, code_hash) VALUES ${codes.map(() => '(?, ?)').join(', ')}`,
+      codes.flatMap((code) => [userId, hashRecoveryCode(code)]),
+    );
+    await connection.commit();
+    return codes;
+  } catch (error) {
+    if (connection) await connection.rollback();
+    throw error;
+  } finally {
+    if (connection) connection.release();
+  }
 };
 
 // Starts enrollment: generates a fresh secret, stages it (not yet active) so
