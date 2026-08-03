@@ -9,7 +9,7 @@ export default function Privacy() {
       title="Privacy Policy"
       path="/privacy"
       description="What data FrameSet collects, why, and how it is protected."
-      lastUpdated="July 28, 2026"
+      lastUpdated="August 3, 2026"
     >
       <section>
         <h2>1. What we collect</h2>
@@ -20,7 +20,9 @@ export default function Privacy() {
           account identifier and the name and email address Google shares with us; we never see your
           Google password. If you turn on two-factor authentication, we store your authenticator
           secret encrypted (never in clear text) and your recovery codes hashed, the same way
-          passwords are.
+          passwords are. Some features never send us anything at all: palette files you import,
+          images you extract colors from and the screen eyedropper are processed entirely in your
+          browser — none of it is uploaded to our servers.
         </p>
       </section>
 
@@ -58,15 +60,17 @@ export default function Privacy() {
       <section>
         <h2>5. Third-party services</h2>
         <p>
-          A few external services are involved: Google Fonts (to list and preview typefaces you pick
-          for your projects) and Google Sign-In (only if you choose to continue with Google, under{' '}
+          A few external services are involved: Google Fonts (to list and preview the typefaces you
+          pick for your projects, and to fetch them again when embedding them in your PDF exports)
+          and Google Sign-In (only if you choose to continue with Google, under{' '}
           <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">
             Google&apos;s privacy policy
           </a>
           ). Transactional emails are delivered through our email provider. To keep the service
           reliable, technical error reports (an error message, a request identifier and technical
           context — never your password or the content of your projects) may be processed by our
-          error-monitoring provider, Sentry.
+          error-monitoring provider, Sentry. Like most services, our servers also keep short-lived
+          technical logs (including IP addresses) used solely for security and rate limiting.
         </p>
       </section>
 
@@ -76,9 +80,9 @@ export default function Privacy() {
           Passwords are hashed with bcrypt, one-time codes and recovery codes are stored hashed,
           sessions use HttpOnly cookies with short lifetimes and server-side revocation, and every
           sensitive action (password or email change, new sign-in method, enabling or disabling
-          two-factor authentication) triggers a security alert email. You can add an optional second
-          authentication factor (a code from an authenticator app) from your profile at any time.
-          All traffic is encrypted in transit (HTTPS).
+          two-factor authentication, regenerating recovery codes) triggers a security alert email.
+          You can add an optional second authentication factor (a code from an authenticator app)
+          from your profile at any time. All traffic is encrypted in transit (HTTPS).
         </p>
       </section>
 
