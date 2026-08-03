@@ -126,6 +126,27 @@ test.describe('critical path: register, verify, project, share, export', () => {
     await guestContext.close();
   });
 
+  test('the share link serves a real social-preview image and crawler tags', async ({
+    request,
+  }) => {
+    const shareUrl = await page.getByTestId('share-url').innerText();
+    const token = shareUrl.split('/s/')[1];
+
+    // The og:image endpoint answers a genuine PNG (magic bytes checked).
+    const image = await request.get(`${BACKEND_URL}/api/share/${token}/preview.png`);
+    expect(image.status()).toBe(200);
+    expect(image.headers()['content-type']).toBe('image/png');
+    const body = await image.body();
+    expect(body.subarray(0, 4)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+
+    // The crawler-facing embed carries the Open Graph tags.
+    const embed = await request.get(`${BACKEND_URL}/api/share/${token}/embed`);
+    expect(embed.status()).toBe(200);
+    const html = await embed.text();
+    expect(html).toContain('property="og:image"');
+    expect(html).toContain(`/api/share/${token}/preview.png`);
+  });
+
   test('exports a real PDF file', async () => {
     const [download] = await Promise.all([
       page.waitForEvent('download'),

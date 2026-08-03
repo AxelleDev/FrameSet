@@ -229,7 +229,7 @@ const FEATURES = [
   },
   {
     title: 'Export & share',
-    text: 'Turn your standards and palette into a clean PDF or a JSON file, import the palette straight into Photoshop, Clip Studio Paint, Krita or Procreate — or share a live read-only link that clients and collaborators can open without an account.',
+    text: 'Turn your standards and palette into a clean PDF or a JSON file, import the palette straight into Photoshop, Clip Studio Paint, Krita or Procreate — or share a live read-only link that clients and collaborators can open without an account, and that unfurls with a preview of your actual palette when pasted in a chat.',
     Mock: ExportMock,
   },
 ];

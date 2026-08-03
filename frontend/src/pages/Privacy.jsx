@@ -51,9 +51,12 @@ export default function Privacy() {
         <p>
           You may generate a public share link for a project. Anyone with that link can view the
           project&apos;s reference sheet — its colors, typography and brush specifications — without
-          an account, along with your display name shown as a &quot;Made by&quot; credit. Your email
-          address and account details are never exposed. You can revoke a share link at any time
-          from the project; once revoked, the link stops working immediately.
+          an account, along with your display name shown as a &quot;Made by&quot; credit. When a
+          share link is pasted into a chat or social platform, that platform is also served a small
+          preview image of the project (its name, your display name and its palette) — the same
+          information as the page itself, nothing more. Your email address and account details are
+          never exposed. You can revoke a share link at any time from the project; once revoked, the
+          link — and its preview image — stops working immediately.
         </p>
       </section>
 

@@ -20,6 +20,9 @@ const shareViewLimiter = rateLimit({
   handler: jsonLimitHandler('Too many requests, please try again in a minute.'),
 });
 
+// Specific paths first, then the bare token read.
+router.get('/:token/preview.png', shareViewLimiter, projectsController.getSharedProjectPreview);
+router.get('/:token/embed', shareViewLimiter, projectsController.getSharedProjectEmbed);
 router.get('/:token', shareViewLimiter, projectsController.getSharedProject);
 
 module.exports = router;
