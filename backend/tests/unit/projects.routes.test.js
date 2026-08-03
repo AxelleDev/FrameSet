@@ -48,13 +48,20 @@ const buildTestApp = () => {
     next();
   });
 
+  const shareEventsMock = { notifyProjectChanged: jest.fn() };
+  jest.doMock('../../src/services/shareEvents.service', () => shareEventsMock);
+
   const projectsRoutes = require('../../src/routes/projects.routes');
   const app = express();
   app.use(express.json());
   app.use('/projects', projectsRoutes);
 
-  return { app, controllerMocks };
+  return { app, controllerMocks, shareEventsMock };
 };
+
+// The 'finish' event fires as the response is flushed; one macrotask tick
+// guarantees it ran before we assert.
+const flushFinishHandlers = () => new Promise((resolve) => setImmediate(resolve));
 
 describe('projects routes', () => {
   afterEach(() => {
@@ -149,5 +156,33 @@ describe('projects routes', () => {
     expect(controllerMocks.listTrashedProjects).toHaveBeenCalledTimes(1);
     expect(controllerMocks.searchProjects).toHaveBeenCalledTimes(1);
     expect(controllerMocks.getProject).toHaveBeenCalledTimes(1);
+  });
+
+  describe('live-share notify middleware', () => {
+    it('pings the project subscribers after any successful mutation under /:id', async () => {
+      const { app, shareEventsMock } = buildTestApp();
+
+      await request(app).delete('/projects/123');
+      await flushFinishHandlers();
+
+      expect(shareEventsMock.notifyProjectChanged).toHaveBeenCalledWith(123);
+    });
+
+    it('stays silent for reads, failures and id-less routes', async () => {
+      const { app, controllerMocks, shareEventsMock } = buildTestApp();
+
+      // Read: no notify.
+      await request(app).get('/projects/123');
+      // Failed mutation: no notify.
+      controllerMocks.deleteProject.mockImplementationOnce((req, res) =>
+        res.status(404).json({ error: 'nope' }),
+      );
+      await request(app).delete('/projects/123');
+      // Mutation without a project id (creation): no notify.
+      await request(app).post('/projects').send({ name: 'x' });
+      await flushFinishHandlers();
+
+      expect(shareEventsMock.notifyProjectChanged).not.toHaveBeenCalled();
+    });
   });
 });

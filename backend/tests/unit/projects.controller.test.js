@@ -865,6 +865,10 @@ describe('projects controller', () => {
 
   describe('shared project social preview (public)', () => {
     const token = 'a'.repeat(32);
+
+    afterEach(() => {
+      require('../../src/services/shareEvents.service').resetForTests();
+    });
     const mockSharedProjectQueries = () => {
       db.query
         .mockResolvedValueOnce([[{ id: 7, name: 'Neo-Tokyo', owner_name: 'Axelle' }]])
@@ -930,6 +934,53 @@ describe('projects controller', () => {
       // Markup in the project name never lands unescaped in the HTML.
       expect(html).not.toContain('Neo <b>');
       expect(html).toContain('Neo &lt;b&gt;');
+    });
+
+    it('events opens an SSE stream, subscribes the project and cleans up on close', async () => {
+      const shareEvents = require('../../src/services/shareEvents.service');
+      db.query.mockResolvedValueOnce([[{ id: 7 }]]);
+      const closeHandlers = {};
+      const req = { params: { token }, on: jest.fn((event, cb) => (closeHandlers[event] = cb)) };
+      const res = {
+        set: jest.fn(),
+        flushHeaders: jest.fn(),
+        write: jest.fn(),
+        end: jest.fn(),
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+      };
+      await projectsController.getSharedProjectEvents(req, res);
+
+      expect(res.set).toHaveBeenCalledWith(
+        expect.objectContaining({ 'Content-Type': 'text/event-stream' }),
+      );
+      expect(res.flushHeaders).toHaveBeenCalled();
+      expect(res.write).toHaveBeenCalledWith('retry: 3000\n\n');
+
+      // The stream is genuinely registered: a notify reaches it…
+      shareEvents.notifyProjectChanged(7);
+      expect(res.write).toHaveBeenCalledWith('event: changed\ndata: {}\n\n');
+
+      // …and closing the request unsubscribes it.
+      closeHandlers.close();
+      res.write.mockClear();
+      shareEvents.notifyProjectChanged(7);
+      expect(res.write).not.toHaveBeenCalled();
+    });
+
+    it('events returns 404 for an unknown token without opening a stream', async () => {
+      db.query.mockResolvedValueOnce([[]]);
+      const req = { params: { token }, on: jest.fn() };
+      const res = {
+        set: jest.fn(),
+        flushHeaders: jest.fn(),
+        write: jest.fn(),
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+      };
+      await projectsController.getSharedProjectEvents(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.flushHeaders).not.toHaveBeenCalled();
     });
 
     it('embed returns 404 for an unknown token', async () => {

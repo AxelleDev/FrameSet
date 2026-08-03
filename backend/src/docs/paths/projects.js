@@ -488,6 +488,28 @@ module.exports = {
       },
     },
   },
+  '/api/share/{token}/events': {
+    get: {
+      tags: ['Projects'],
+      summary: 'PUBLIC: live-update stream for a shared page (no auth, SSE)',
+      description:
+        'A Server-Sent Events stream (`text/event-stream`). Subscribers receive a bare ' +
+        '`changed` event whenever the owner mutates the project (palette, standards, name, ' +
+        'trash/restore, revocation) and are expected to refetch `/api/share/{token}` — no ' +
+        'content flows through the stream itself. Heartbeat comments keep proxies from ' +
+        'reaping the connection; when a project reaches its viewer cap the server sends a ' +
+        '`full` event and ends the stream.',
+      parameters: [{ name: 'token', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: {
+        200: {
+          description: 'The event stream.',
+          content: { 'text/event-stream': { schema: { type: 'string' } } },
+        },
+        404: { $ref: '#/components/responses/NotFound' },
+        429: { $ref: '#/components/responses/RateLimited' },
+      },
+    },
+  },
   '/api/projects/{id}/brush-norms': {
     post: {
       tags: ['Projects'],

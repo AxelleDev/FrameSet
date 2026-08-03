@@ -37,6 +37,7 @@ const {
   enableProjectSharing,
   disableProjectSharing,
   getSharedProjectByToken,
+  getSharedProjectIdByToken,
 } = require('./projectSharing.service');
 
 // Upper bound on palette size to cap per-request work and storage.
@@ -1011,6 +1012,7 @@ module.exports = {
   enableProjectSharing,
   disableProjectSharing,
   getSharedProjectByToken,
+  getSharedProjectIdByToken,
   TRASH_RETENTION_DAYS,
   addBrushNormToProject,
   addTypographyNormToProject,

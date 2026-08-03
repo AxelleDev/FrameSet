@@ -126,6 +126,35 @@ test.describe('critical path: register, verify, project, share, export', () => {
     await guestContext.close();
   });
 
+  test('the shared page updates live while the owner edits', async ({ browser }) => {
+    const shareUrl = await page.getByTestId('share-url').innerText();
+
+    // A guest keeps the shared page open…
+    const guestContext = await browser.newContext();
+    const guestPage = await guestContext.newPage();
+    await guestPage.goto(shareUrl);
+    await expect(guestPage.getByText(colorName)).toBeVisible();
+    // …and the SSE stream is connected (the Live badge is up).
+    await expect(guestPage.getByText('Live', { exact: true })).toBeVisible();
+
+    // Meanwhile the owner adds a color from their own session.
+    await page.getByRole('link', { name: 'Palette' }).click();
+    await page.getByRole('button', { name: 'New color' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Color usage').fill('Live Lime');
+    await dialog.getByLabel('Color', { exact: true }).fill('#32CD32');
+    await dialog.getByRole('button', { name: 'Add' }).click();
+    await expect(page.getByText('Live Lime')).toBeVisible();
+
+    // The guest page catches it without any reload.
+    await expect(guestPage.getByText('Live Lime')).toBeVisible({ timeout: 10_000 });
+    await guestContext.close();
+
+    // Back to the export page for the following tests.
+    await page.getByRole('link', { name: 'Export' }).click();
+    await expect(page).toHaveURL(/\/export$/);
+  });
+
   test('the share link serves a real social-preview image and crawler tags', async ({
     request,
   }) => {

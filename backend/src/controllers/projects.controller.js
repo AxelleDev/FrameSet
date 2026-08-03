@@ -6,6 +6,7 @@
 const { getAuthenticatedUserId, createControllerLogger } = require('../utils/auth.utils');
 const projectsService = require('../services/projects.service');
 const sharePreviewService = require('../services/sharePreview.service');
+const shareEventsService = require('../services/shareEvents.service');
 
 const logProjectsControllerError = createControllerLogger('projects');
 
@@ -299,6 +300,42 @@ const getSharedProjectEmbed = async (req, res) => {
     logProjectsControllerError(req, 'get_shared_embed', error);
     res.status(500).json({ error: 'Server error.' });
   }
+};
+
+// PUBLIC (no auth): the live-update stream behind a shared page. Long-lived
+// SSE response; subscribers get a bare `changed` ping whenever the owner
+// mutates the project (see the notify middleware in projects.routes) and
+// refetch the share endpoint themselves — no content ever flows through here.
+const getSharedProjectEvents = async (req, res) => {
+  let projectId;
+  try {
+    projectId = await projectsService.getSharedProjectIdByToken(req.params.token);
+  } catch (error) {
+    if (error.code === 'not_found') {
+      return res.status(404).json({ error: 'This link is no longer active.' });
+    }
+    logProjectsControllerError(req, 'get_shared_events', error);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    // Tells nginx-style proxies not to buffer the stream.
+    'X-Accel-Buffering': 'no',
+  });
+  res.flushHeaders();
+  // EventSource reconnect delay after a drop (proxies do reap long requests).
+  res.write('retry: 3000\n\n');
+
+  if (!shareEventsService.subscribe(projectId, res)) {
+    // Per-project cap reached: end politely, the page just isn't live.
+    res.write('event: full\ndata: {}\n\n');
+    return res.end();
+  }
+
+  req.on('close', () => shareEventsService.unsubscribe(projectId, res));
 };
 
 // Rename a project owned by the user and refresh its last_edited timestamp.
@@ -755,6 +792,7 @@ module.exports = {
   getSharedProject,
   getSharedProjectPreview,
   getSharedProjectEmbed,
+  getSharedProjectEvents,
   addBrushNorm,
   addTypographyNorm,
   updatePalette,

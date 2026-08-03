@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import SharedProject from '../../src/pages/SharedProject';
@@ -74,5 +74,90 @@ describe('SharedProject (public page)', () => {
 
     expect(await screen.findByText(/this link is no longer active/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /discover frameset/i })).toBeInTheDocument();
+  });
+
+  describe('live updates (SSE)', () => {
+    // Minimal EventSource stand-in: captures the connected URL and lets the
+    // test drive open/changed events by hand.
+    let sources;
+    class FakeEventSource {
+      constructor(url) {
+        this.url = url;
+        this.listeners = {};
+        this.closed = false;
+        sources.push(this);
+      }
+
+      addEventListener(type, cb) {
+        this.listeners[type] = cb;
+      }
+
+      close() {
+        this.closed = true;
+      }
+
+      emitOpen() {
+        this.onopen?.();
+      }
+
+      emit(type) {
+        this.listeners[type]?.();
+      }
+    }
+
+    beforeEach(() => {
+      sources = [];
+      vi.stubGlobal('EventSource', FakeEventSource);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    const sheet = (overrides = {}) => ({
+      name: 'Neo-Tokyo Editorial',
+      ownerName: 'Axelle',
+      palette: [{ id: 1, name: 'Ink', hex: '#112233' }],
+      typographyNorms: [],
+      brushNorms: [],
+      ...overrides,
+    });
+
+    it('subscribes once loaded, shows the Live badge and applies edits in place', async () => {
+      apiMock.get.mockResolvedValueOnce(sheet());
+      renderPage();
+      expect(await screen.findByText('Ink')).toBeInTheDocument();
+
+      // The stream targets the share events endpoint for this token.
+      expect(sources).toHaveLength(1);
+      expect(sources[0].url).toContain(`/share/${'a'.repeat(32)}/events`);
+
+      await act(async () => sources[0].emitOpen());
+      expect(screen.getByText('Live')).toBeInTheDocument();
+
+      // Owner edits: a changed ping makes the page refetch and swap the sheet
+      // in place — no loading state in between.
+      apiMock.get.mockResolvedValueOnce(
+        sheet({ palette: [{ id: 1, name: 'Ink Renamed', hex: '#112233' }] }),
+      );
+      await act(async () => sources[0].emit('changed'));
+
+      expect(await screen.findByText('Ink Renamed')).toBeInTheDocument();
+      expect(screen.queryByText('Ink')).not.toBeInTheDocument();
+      expect(apiMock.get).toHaveBeenCalledTimes(2);
+    });
+
+    it('a live revocation flips the page to the inactive state', async () => {
+      apiMock.get.mockResolvedValueOnce(sheet());
+      renderPage();
+      expect(await screen.findByText('Ink')).toBeInTheDocument();
+
+      const notFound = new Error('gone');
+      notFound.status = 404;
+      apiMock.get.mockRejectedValueOnce(notFound);
+      await act(async () => sources[0].emit('changed'));
+
+      expect(await screen.findByText(/this link is no longer active/i)).toBeInTheDocument();
+    });
   });
 });

@@ -8,8 +8,25 @@ const express = require('express');
 const projectsController = require('../controllers/projects.controller');
 const authenticateToken = require('../middleware/authenticateToken');
 const { projectCreateLimiter, paletteWriteLimiter } = require('../middleware/projectCreateLimiter');
+const shareEvents = require('../services/shareEvents.service');
 
 const router = express.Router();
+
+// Live share: after ANY successful mutation under /projects/:id/…, ping the
+// SSE subscribers of that project's shared page (see shareEvents.service).
+// One hook for every current and future mutating route, so a new endpoint can
+// never forget to notify. The id is parsed from the path because Express
+// resets req.params once the route layer unwinds (before 'finish' fires).
+router.use((req, res, next) => {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+  const match = req.path.match(/^\/(\d+)(?:\/|$)/);
+  if (!match) return next();
+  const projectId = Number(match[1]);
+  res.on('finish', () => {
+    if (res.statusCode < 300) shareEvents.notifyProjectChanged(projectId);
+  });
+  next();
+});
 
 router.get('/', authenticateToken, projectsController.listProjects);
 // Global search (Ctrl+K): one term across project names, palette colors and
