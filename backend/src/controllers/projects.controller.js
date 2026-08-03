@@ -5,6 +5,7 @@
 
 const { getAuthenticatedUserId, createControllerLogger } = require('../utils/auth.utils');
 const projectsService = require('../services/projects.service');
+const sharePreviewService = require('../services/sharePreview.service');
 
 const logProjectsControllerError = createControllerLogger('projects');
 
@@ -217,6 +218,86 @@ const getSharedProject = async (req, res) => {
     }
     logProjectsControllerError(req, 'get_shared', error);
     res.status(500).json({ error: 'Database error.' });
+  }
+};
+
+// PUBLIC (no auth): the social-preview PNG behind a share link's og:image.
+// Same 404 contract as the JSON share read for unknown/revoked tokens.
+const getSharedProjectPreview = async (req, res) => {
+  try {
+    const png = await sharePreviewService.getSharePreviewPngByToken(req.params.token);
+    res.set('Content-Type', 'image/png');
+    // Scrapers cache aggressively anyway; a short TTL keeps repeat unfurls
+    // cheap without pinning a stale palette for long.
+    res.set('Cache-Control', 'public, max-age=600');
+    res.send(png);
+  } catch (error) {
+    if (error.code === 'not_found') {
+      return res.status(404).json({ error: 'This link is no longer active.' });
+    }
+    logProjectsControllerError(req, 'get_shared_preview', error);
+    res.status(500).json({ error: 'Server error.' });
+  }
+};
+
+// PUBLIC (no auth): the crawler-facing HTML for a share link. Social scrapers
+// don't run the SPA's JavaScript, so Vercel rewrites their requests for
+// /s/:token here; this page carries the Open Graph tags (including the
+// preview image above) and bounces any human who lands on it back to the SPA.
+const getSharedProjectEmbed = async (req, res) => {
+  const escapeHtml = (value) =>
+    String(value).replace(
+      /[&<>"']/g,
+      (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+    );
+
+  try {
+    const project = await projectsService.getSharedProjectByToken(req.params.token);
+    const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+    const pageUrl = `${frontendOrigin}/s/${encodeURIComponent(req.params.token)}`;
+    const imageUrl = `${frontendOrigin}/api/share/${encodeURIComponent(req.params.token)}/preview.png`;
+    const title = escapeHtml(`${project.name} — FrameSet`);
+    const description = escapeHtml(
+      `The graphic reference sheet for ${project.name}, by ${project.ownerName}. Colors, typography and brush specs in one place.`,
+    );
+
+    res.set('Content-Type', 'text/html; charset=utf-8');
+    res.set('Cache-Control', 'public, max-age=600');
+    // Keep the raw backend URL out of search indexes; the canonical below
+    // points crawlers at the real SPA page instead.
+    res.set('X-Robots-Tag', 'noindex');
+    // Crawlers read the tags; the <meta refresh> sends everyone else to the SPA.
+    res.send(`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${title}</title>
+<meta name="description" content="${description}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FrameSet">
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="${description}">
+<meta property="og:url" content="${escapeHtml(pageUrl)}">
+<meta property="og:image" content="${escapeHtml(imageUrl)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${title}">
+<meta name="twitter:description" content="${description}">
+<meta name="twitter:image" content="${escapeHtml(imageUrl)}">
+<meta http-equiv="refresh" content="0;url=${escapeHtml(pageUrl)}">
+<link rel="canonical" href="${escapeHtml(pageUrl)}">
+</head>
+<body>
+<p><a href="${escapeHtml(pageUrl)}">View this reference sheet on FrameSet</a></p>
+</body>
+</html>`);
+  } catch (error) {
+    if (error.code === 'not_found') {
+      return res.status(404).json({ error: 'This link is no longer active.' });
+    }
+    logProjectsControllerError(req, 'get_shared_embed', error);
+    res.status(500).json({ error: 'Server error.' });
   }
 };
 
@@ -672,6 +753,8 @@ module.exports = {
   enableSharing,
   disableSharing,
   getSharedProject,
+  getSharedProjectPreview,
+  getSharedProjectEmbed,
   addBrushNorm,
   addTypographyNorm,
   updatePalette,

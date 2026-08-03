@@ -17,6 +17,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@sentry/node": "^10.68.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",

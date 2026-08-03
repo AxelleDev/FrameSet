@@ -863,6 +863,89 @@ describe('projects controller', () => {
     });
   });
 
+  describe('shared project social preview (public)', () => {
+    const token = 'a'.repeat(32);
+    const mockSharedProjectQueries = () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 7, name: 'Neo-Tokyo', owner_name: 'Axelle' }]])
+        .mockResolvedValueOnce([[]]) // brush norms
+        .mockResolvedValueOnce([[]]) // typography norms
+        .mockResolvedValueOnce([[{ id: 9, name: 'Ink', hex: '#112233' }]]);
+    };
+
+    it('serves the preview as a cacheable PNG', async () => {
+      mockSharedProjectQueries();
+      const req = { params: { token } };
+      const res = {
+        set: jest.fn(),
+        send: jest.fn(),
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+      };
+      await projectsController.getSharedProjectPreview(req, res);
+
+      expect(res.set).toHaveBeenCalledWith('Content-Type', 'image/png');
+      expect(res.set).toHaveBeenCalledWith('Cache-Control', 'public, max-age=600');
+      const body = res.send.mock.calls[0][0];
+      expect(body.subarray(0, 4)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    });
+
+    it('preview returns 404 for an unknown token', async () => {
+      db.query.mockResolvedValueOnce([[]]);
+      const req = { params: { token } };
+      const res = {
+        set: jest.fn(),
+        send: jest.fn(),
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+      };
+      await projectsController.getSharedProjectPreview(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.send).not.toHaveBeenCalled();
+    });
+
+    it('embed serves the Open Graph tags with escaped content and the SPA redirect', async () => {
+      db.query
+        .mockResolvedValueOnce([[{ id: 7, name: 'Neo <b>&</b> Tokyo', owner_name: 'Axelle' }]])
+        .mockResolvedValueOnce([[]])
+        .mockResolvedValueOnce([[]])
+        .mockResolvedValueOnce([[]]);
+      const req = { params: { token } };
+      const res = {
+        set: jest.fn(),
+        send: jest.fn(),
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+      };
+      await projectsController.getSharedProjectEmbed(req, res);
+
+      expect(res.set).toHaveBeenCalledWith('Content-Type', 'text/html; charset=utf-8');
+      expect(res.set).toHaveBeenCalledWith('X-Robots-Tag', 'noindex');
+      const html = res.send.mock.calls[0][0];
+      expect(html).toContain(
+        `property="og:image" content="http://localhost:5173/api/share/${token}/preview.png"`,
+      );
+      expect(html).toContain(`url=http://localhost:5173/s/${token}`);
+      expect(html).toContain('summary_large_image');
+      // Markup in the project name never lands unescaped in the HTML.
+      expect(html).not.toContain('Neo <b>');
+      expect(html).toContain('Neo &lt;b&gt;');
+    });
+
+    it('embed returns 404 for an unknown token', async () => {
+      db.query.mockResolvedValueOnce([[]]);
+      const req = { params: { token } };
+      const res = {
+        set: jest.fn(),
+        send: jest.fn(),
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+      };
+      await projectsController.getSharedProjectEmbed(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+  });
+
   describe('delete norms', () => {
     it('deletes a brush norm when it exists', async () => {
       db.query

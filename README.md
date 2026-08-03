@@ -72,7 +72,10 @@ from one drawing to the next.
   `.gpl`, Procreate `.swatches` — all generated client-side, no dependency,
   and re-importable the same way), or share a public read-only link
   (revocable anytime) that anyone can open without an account — with a
-  scannable, downloadable QR code for showing the sheet on a phone.
+  scannable, downloadable QR code for showing the sheet on a phone. Shared
+  links **unfurl with a live preview image** of the project's actual palette
+  (rendered server-side) on WhatsApp, LinkedIn, Discord, Slack and the like,
+  instead of a generic logo card.
 - **Accessible & resilient** — keyboard-operable throughout (including drag-and-drop,
   which always has a keyboard alternative), a warning before leaving a page with
   unsaved changes, a heads-up before your session expires, and clear rate-limit

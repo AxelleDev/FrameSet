@@ -2,6 +2,17 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
+      "source": "/s/:token",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Discordbot|TelegramBot|Pinterestbot|redditbot|SkypeUriPreview|vkShare|Iframely|Embedly).*"
+        }
+      ],
+      "destination": "https://frameset-production.up.railway.app/api/share/:token/embed"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://frameset-production.up.railway.app/api/:path*"
     },

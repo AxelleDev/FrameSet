@@ -62,10 +62,13 @@ export default function SharedProject() {
 
   return (
     <div className="min-h-dvh bg-canvas text-primary">
-      {/* Tokens are private links: keep them out of search engines. */}
+      {/* Tokens are private links: keep them out of search engines. The
+          og:image mirrors what social crawlers get served (they hit the
+          backend embed page via a Vercel rewrite, since they don't run JS). */}
       <Seo
         title={sheet ? `${sheet.name} — shared reference` : 'Shared reference'}
         path={`/s/${token}`}
+        image={`${window.location.origin}/api/share/${token}/preview.png`}
         noindex
       />
       <PublicTopBar />

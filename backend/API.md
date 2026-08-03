@@ -165,11 +165,13 @@ Pinned projects sort before unpinned ones on `GET /projects`.
 
 ### Sharing
 
-| Method   | Path                  | Auth | Success                                                                                                                                                                                                    |
-| -------- | --------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST`   | `/projects/:id/share` | ✓    | `{ shareToken }` — mints (or returns the existing) public share token                                                                                                                                      |
-| `DELETE` | `/projects/:id/share` | ✓    | `{ success }` — revokes the link immediately                                                                                                                                                               |
-| `GET`    | `/share/:token`       | –    | the read-only reference sheet: `{ name, brushNorms[], typographyNorms[], palette[], ownerName }` — public, rate limited per IP (60/min); `404` if the token is invalid, revoked, or the project is trashed |
+| Method   | Path                        | Auth | Success                                                                                                                                                                                                    |
+| -------- | --------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST`   | `/projects/:id/share`       | ✓    | `{ shareToken }` — mints (or returns the existing) public share token                                                                                                                                      |
+| `DELETE` | `/projects/:id/share`       | ✓    | `{ success }` — revokes the link immediately                                                                                                                                                               |
+| `GET`    | `/share/:token`             | –    | the read-only reference sheet: `{ name, brushNorms[], typographyNorms[], palette[], ownerName }` — public, rate limited per IP (60/min); `404` if the token is invalid, revoked, or the project is trashed |
+| `GET`    | `/share/:token/preview.png` | –    | a 1200×630 PNG of the project (name, owner credit, palette swatches) rendered server-side — the og:image behind share links; same rate limit and 404 contract                                              |
+| `GET`    | `/share/:token/embed`       | –    | minimal HTML carrying the Open Graph/Twitter tags for the share link — social crawlers are rewritten here by the frontend (they don't run the SPA); humans get redirected to the real page                 |
 
 `ownerName` is the owner's display name only — never their id or email — shown
 as a "Made by …" credit on the public page and in the exported PDF.

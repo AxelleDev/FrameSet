@@ -449,6 +449,45 @@ module.exports = {
       },
     },
   },
+  '/api/share/{token}/preview.png': {
+    get: {
+      tags: ['Projects'],
+      summary: 'PUBLIC: social-preview image for a share link (no auth)',
+      description:
+        'A 1200x630 PNG of the shared project — its name, owner credit and actual palette ' +
+        'swatches — rendered server-side. Used as the og:image behind share links so they ' +
+        'unfurl with a real preview on social platforms. Same 404 contract as the share read.',
+      parameters: [{ name: 'token', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: {
+        200: {
+          description: 'The preview image.',
+          content: { 'image/png': { schema: { type: 'string', format: 'binary' } } },
+        },
+        404: { $ref: '#/components/responses/NotFound' },
+        429: { $ref: '#/components/responses/RateLimited' },
+      },
+    },
+  },
+  '/api/share/{token}/embed': {
+    get: {
+      tags: ['Projects'],
+      summary: 'PUBLIC: crawler-facing HTML for a share link (no auth)',
+      description:
+        'A minimal HTML document carrying the Open Graph / Twitter Card tags (including the ' +
+        'preview image) for a shared project. Social scrapers do not execute the SPA, so the ' +
+        'frontend rewrites their requests for /s/:token here; humans landing on it are ' +
+        'redirected to the real page.',
+      parameters: [{ name: 'token', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: {
+        200: {
+          description: 'The embed HTML.',
+          content: { 'text/html': { schema: { type: 'string' } } },
+        },
+        404: { $ref: '#/components/responses/NotFound' },
+        429: { $ref: '#/components/responses/RateLimited' },
+      },
+    },
+  },
   '/api/projects/{id}/brush-norms': {
     post: {
       tags: ['Projects'],
