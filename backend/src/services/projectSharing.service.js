@@ -109,9 +109,28 @@ const getSharedProjectByToken = async (rawToken) => {
   };
 };
 
+// Resolves a share token to just the project id (for the live-events stream,
+// which subscribes by project and never sends content itself). Same token
+// validation and same 'not_found' contract as the full read.
+const getSharedProjectIdByToken = async (rawToken) => {
+  const token = typeof rawToken === 'string' ? rawToken.trim() : '';
+  if (!SHARE_TOKEN_PATTERN.test(token)) {
+    throw new ProjectServiceError('not_found');
+  }
+  const [rows] = await db.query(
+    'SELECT id FROM projects WHERE share_token = ? AND deleted_at IS NULL',
+    [token],
+  );
+  if (rows.length === 0) {
+    throw new ProjectServiceError('not_found');
+  }
+  return rows[0].id;
+};
+
 module.exports = {
   fetchLiveProjectChildren,
   enableProjectSharing,
   disableProjectSharing,
   getSharedProjectByToken,
+  getSharedProjectIdByToken,
 };

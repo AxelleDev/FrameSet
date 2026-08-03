@@ -75,7 +75,9 @@ from one drawing to the next.
   scannable, downloadable QR code for showing the sheet on a phone. Shared
   links **unfurl with a live preview image** of the project's actual palette
   (rendered server-side) on WhatsApp, LinkedIn, Discord, Slack and the like,
-  instead of a generic logo card.
+  instead of a generic logo card. And the shared page is **live**: anyone
+  viewing it sees your edits appear in real time (Server-Sent Events under
+  the hood), including the link being revoked.
 - **Accessible & resilient** — keyboard-operable throughout (including drag-and-drop,
   which always has a keyboard alternative), a warning before leaving a page with
   unsaved changes, a heads-up before your session expires, and clear rate-limit

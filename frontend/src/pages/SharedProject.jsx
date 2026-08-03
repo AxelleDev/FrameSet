@@ -7,9 +7,10 @@
 // authenticated ProjectPalette and ProjectNorms pages (same shapes, radii,
 // badges and typography), so a shared link and the in-app editor never look
 // like two different products.
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
+import useShareLiveUpdates from '../hooks/useShareLiveUpdates';
 import Card from '../components/Card';
 import Seo from '../components/Seo';
 import PublicTopBar from '../components/PublicTopBar';
@@ -30,26 +31,34 @@ export default function SharedProject() {
   const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'not-found' | 'error'
   const { copy, copiedValue } = useClipboard({ timeout: 1200 });
 
+  // One fetch path for the initial load AND the live refreshes: a silent
+  // refetch swaps the sheet in place (no loading flash), and a 404 flips the
+  // page to "link inactive" — which is exactly what a live revocation does.
+  const loadSheet = useCallback(
+    (options = {}) => {
+      if (!options.silent) setStatus('loading');
+      return api
+        .get(`/share/${token}`, { skipTokenRefresh: true })
+        .then((data) => {
+          setSheet(data);
+          setStatus('ready');
+        })
+        .catch((error) => {
+          setStatus(error?.status === 404 ? 'not-found' : 'error');
+        });
+    },
+    [token],
+  );
+
   useEffect(() => {
-    let cancelled = false;
-    setStatus('loading');
+    loadSheet();
+  }, [loadSheet]);
 
-    api
-      .get(`/share/${token}`, { skipTokenRefresh: true })
-      .then((data) => {
-        if (cancelled) return;
-        setSheet(data);
-        setStatus('ready');
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        setStatus(error?.status === 404 ? 'not-found' : 'error');
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
+  // Server-sent events: the owner edits, this page refetches — live.
+  const isLive = useShareLiveUpdates(token, {
+    enabled: status === 'ready',
+    onChanged: () => loadSheet({ silent: true }),
+  });
 
   const palette = sheet?.palette || [];
   const typographyNorms = sheet?.typographyNorms || [];
@@ -103,9 +112,23 @@ export default function SharedProject() {
         {status === 'ready' && sheet && (
           <div className="animate-fade-in">
             <header className="pb-10 sm:pb-14">
-              <p className="text-xs uppercase tracking-widest text-blue font-semibold mb-3">
-                Shared reference sheet
-              </p>
+              <div className="mb-3 flex items-center gap-3">
+                <p className="text-xs uppercase tracking-widest text-blue font-semibold">
+                  Shared reference sheet
+                </p>
+                {isLive && (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success"
+                    title="This page updates automatically as the owner edits the project."
+                  >
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-success animate-pulse"
+                      aria-hidden="true"
+                    />
+                    Live
+                  </span>
+                )}
+              </div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight break-words">
                 {sheet.name}
               </h1>

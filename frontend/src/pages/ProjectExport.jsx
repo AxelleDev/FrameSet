@@ -488,8 +488,8 @@ export default function ProjectExport() {
               <h2 className="text-lg font-medium text-primary mb-2">Public share link</h2>
               <p className="text-sm text-primary mb-6">
                 A read-only web page of this reference sheet — palette, typography and brush
-                standards. Anyone with the link can view it, no account needed. Disable it anytime
-                to revoke access.
+                standards. Anyone with the link can view it, no account needed, and the page updates
+                live as you edit the project. Disable it anytime to revoke access.
               </p>
 
               {shareUrl ? (
