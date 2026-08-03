@@ -58,4 +58,20 @@ describe('ForgotPassword', () => {
     expect(mockReset).toHaveBeenCalledWith('axelle@example.com', '654321', 'Pass1234');
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/login'));
   });
+
+  it('goes back from the reset step to fix the email, keeping it typed', async () => {
+    const user = userEvent.setup();
+    mockRequest.mockResolvedValue({ success: true });
+    renderPage();
+
+    await user.type(screen.getByPlaceholderText(/email@example/i), 'axelle@example.com');
+    await user.click(screen.getByRole('button', { name: /send code/i }));
+    await screen.findByPlaceholderText('123456');
+
+    await user.click(screen.getByRole('button', { name: /back to email/i }));
+
+    // Step 1 again, email preserved and editable.
+    expect(screen.getByText(/step 1 of 2/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/email@example/i)).toHaveValue('axelle@example.com');
+  });
 });
