@@ -54,4 +54,47 @@ describe('ColorInput', () => {
     expect(onChange).toHaveBeenLastCalledWith(null);
     expect(screen.getByText(/enter a valid rgb color/i)).toBeInTheDocument();
   });
+
+  describe('screen eyedropper', () => {
+    afterEach(() => {
+      delete window.EyeDropper;
+    });
+
+    it('is hidden when the browser has no EyeDropper API', () => {
+      render(<ColorInput onChange={vi.fn()} />);
+      expect(
+        screen.queryByRole('button', { name: /pick a color from the screen/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('samples the screen and feeds the picked color through, in the active format', async () => {
+      const open = vi.fn().mockResolvedValue({ sRGBHex: '#ff8000' });
+      window.EyeDropper = class {
+        open = open;
+      };
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<ColorInput onChange={onChange} />);
+
+      await user.click(screen.getByRole('button', { name: /pick a color from the screen/i }));
+
+      expect(open).toHaveBeenCalledTimes(1);
+      expect(screen.getByLabelText(/color value/i)).toHaveValue('#FF8000');
+      expect(onChange).toHaveBeenLastCalledWith('#FF8000');
+    });
+
+    it('keeps the current value when the pick is cancelled (Esc)', async () => {
+      window.EyeDropper = class {
+        open = vi.fn().mockRejectedValue(new DOMException('aborted', 'AbortError'));
+      };
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<ColorInput initialHex="#123456" onChange={onChange} />);
+
+      await user.click(screen.getByRole('button', { name: /pick a color from the screen/i }));
+
+      expect(screen.getByLabelText(/color value/i)).toHaveValue('#123456');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+  });
 });

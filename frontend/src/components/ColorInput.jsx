@@ -2,6 +2,7 @@ import React, { useId, useState } from 'react';
 import PropTypes from 'prop-types';
 import ColorFormatToggle from './ColorFormatToggle';
 import TextInput from './TextInput';
+import { EyedropperIcon } from './icons';
 import { formatColor, isColorFormat } from '../utils/colorFormats';
 import { parseColorInput } from '../utils/colorParse';
 import { normalizeHexInput, handleHexKeyDown } from '../utils/hex';
@@ -83,6 +84,20 @@ export default function ColorInput({
     emit(nextText, format);
   };
 
+  // Screen eyedropper (Chromium only — the button hides itself elsewhere):
+  // the OS-level picker samples ANY pixel on screen, other windows included.
+  const supportsEyeDropper = typeof window !== 'undefined' && 'EyeDropper' in window;
+  const handleEyeDropper = async () => {
+    try {
+      const { sRGBHex } = await new window.EyeDropper().open();
+      const nextText = hexToFieldText(sRGBHex.toUpperCase(), format);
+      setText(nextText);
+      emit(nextText, format);
+    } catch {
+      /* the user pressed Esc — nothing to do */
+    }
+  };
+
   const parsedHex = parseColorInput(text, format);
   const trimmed = text.trim();
   const showError = trimmed !== '' && trimmed !== '#' && !parsedHex;
@@ -107,6 +122,17 @@ export default function ColorInput({
           aria-label="Pick a color"
           className="h-12 w-12 flex-shrink-0 cursor-pointer rounded-xl border border-blue/30 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-lg [&::-moz-color-swatch]:border-0 focus-ring"
         />
+        {supportsEyeDropper && (
+          <button
+            type="button"
+            onClick={handleEyeDropper}
+            aria-label="Pick a color from the screen"
+            title="Pick a color from the screen"
+            className="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-xl border border-blue/30 text-primary hover:bg-blue/10 transition-colors focus-ring"
+          >
+            <EyedropperIcon className="w-5 h-5" />
+          </button>
+        )}
         <TextInput
           id={fieldId}
           type="text"

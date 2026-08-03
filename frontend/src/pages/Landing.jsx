@@ -224,7 +224,7 @@ const FEATURES = [
   },
   {
     title: 'Color palette',
-    text: "Build each project's reference palette by hand, extract it straight from an image, generate harmonies from a base color, or import the .ase, .gpl or Procreate .swatches palette you already have. Reorder, tweak, and view or copy any color — as HEX, RGB, HSL or HSB — in a click.",
+    text: "Build each project's reference palette by hand, pick any pixel on your screen with the system eyedropper, extract it straight from an image, generate harmonies from a base color, or import the .ase, .gpl or Procreate .swatches palette you already have. Reorder, tweak, and view or copy any color — as HEX, RGB, HSL or HSB — in a click.",
     Mock: PaletteMock,
   },
   {

@@ -9,7 +9,7 @@ export default function Terms() {
       title="Terms of Service"
       path="/terms"
       description="The terms that govern your use of FrameSet."
-      lastUpdated="July 28, 2026"
+      lastUpdated="August 3, 2026"
     >
       <section>
         <h2>1. About FrameSet</h2>
@@ -17,7 +17,9 @@ export default function Terms() {
           FrameSet is a web application that lets illustrators and creatives centralize the graphic
           references of their projects — color palettes, typography and brush specifications — and
           export them as reference sheets. By creating an account or using FrameSet, you agree to
-          these terms.
+          these terms. A read-only demo account is also available to explore FrameSet without
+          registering: its content is shared between all visitors, nothing you do in it is saved,
+          and it may be reset at any time.
         </p>
       </section>
 
@@ -29,7 +31,9 @@ export default function Terms() {
           that happens under your account. You must provide accurate information and be legally able
           to enter into this agreement. You may optionally enable two-factor authentication for
           extra security; if you do, you are responsible for keeping your recovery codes safe — they
-          are the only way back into your account if you lose access to your authenticator app.
+          are the only way back into your account if you lose access to your authenticator app. You
+          can regenerate a fresh set of recovery codes from your profile at any time; the previous
+          ones stop working immediately.
         </p>
       </section>
 
