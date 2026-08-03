@@ -1,0 +1,29 @@
+# FrameSet
+
+> FrameSet is a web app for illustrators and creatives that centralizes the
+> graphic references of their projects — color palettes, typography and brush
+> specifications — and turns them into shareable, exportable reference sheets.
+
+## What you can do
+
+- Build per-project color palettes by hand, with the system eyedropper, by
+  extracting colors from an image, by generating harmonies, or by importing
+  Adobe .ase, GIMP/Krita .gpl or Procreate .swatches files.
+- Record typography standards (Google Fonts picker) and brush standards
+  (size, opacity, usage).
+- Export a PDF style guide, JSON data, or palette files for drawing apps
+  (.ase, .gpl, .swatches), and share a public read-only link that updates
+  live as the project is edited.
+- Accounts support email/password or Google sign-in, email verification,
+  optional TOTP two-factor authentication with recovery codes, and a
+  read-only demo account to try everything without registering.
+
+## Pages
+
+- [Home](/): product overview and features.
+- [Register](/register): create an account (a demo is available without one).
+- [Terms of Service](/terms) and [Privacy Policy](/privacy).
+
+Shared reference sheets live under /s/<token> and are intentionally private
+links (not indexed); the REST API under /api is documented for account
+holders in the repository.

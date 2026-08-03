@@ -27,6 +27,34 @@ export const AuthContext = createContext(null);
 const SESSION_WARNING_BEFORE_MS = 10 * 60 * 1000;
 const SESSION_CHECK_INTERVAL_MS = 60 * 1000;
 
+// localStorage flag marking that a session was opened on this browser, so the
+// mount-time profile probe can be skipped for plain visitors (who would only
+// get a 401). Purely an optimization hint — never trusted as authentication;
+// localStorage may be unavailable (private mode), hence the try/catch shells.
+const SESSION_HINT_KEY = 'frameset-session';
+const hasSessionHint = () => {
+  try {
+    return localStorage.getItem(SESSION_HINT_KEY) === '1';
+  } catch {
+    // Can't read the hint: fall back to always probing, like before.
+    return true;
+  }
+};
+const setSessionHint = () => {
+  try {
+    localStorage.setItem(SESSION_HINT_KEY, '1');
+  } catch {
+    /* cosmetic only */
+  }
+};
+const clearSessionHint = () => {
+  try {
+    localStorage.removeItem(SESSION_HINT_KEY);
+  } catch {
+    /* cosmetic only */
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   // Authenticated user (null when logged out). authLoading is true until the
   // initial session hydration completes, so guards can avoid flashing.
@@ -69,6 +97,12 @@ export const AuthProvider = ({ children }) => {
   // On mount, restore the session from the auth cookies by fetching the profile.
   // Handles three cases: valid session, no session (401), and expired access
   // token (403 -> attempt one refresh, then retry the profile fetch once).
+  //
+  // The probe only runs when a session hint is present (set below whenever a
+  // session actually opens): first-time visitors on public pages get zero
+  // profile request instead of a guaranteed 401 — faster, and no error noise
+  // in the console. The hint is only ever an optimization signal; the cookies
+  // remain the single source of truth.
   useEffect(() => {
     let isMounted = true;
 
@@ -85,14 +119,25 @@ export const AuthProvider = ({ children }) => {
     };
 
     const hydrateSession = async () => {
+      // No hint of a previous session on this browser: skip the probe, the
+      // visitor is signed out (a stale-cookie edge would just require signing
+      // in again, exactly like an expired session).
+      if (!hasSessionHint()) {
+        setHydratedUser(null);
+        if (isMounted) setAuthLoading(false);
+        return;
+      }
+
       try {
         // skipTokenRefresh: we handle the 403/refresh flow explicitly below.
         const profile = await api.get('/users/profile', { skipTokenRefresh: true });
         setHydratedUser(profile || null);
         return;
       } catch (error) {
-        // 401: no session at all -> remain logged out.
+        // 401: no session at all -> remain logged out (and drop the stale hint
+        // so the next visit skips the probe again).
         if (error?.status === 401) {
+          clearSessionHint();
           setHydratedUser(null);
           return;
         }
@@ -147,6 +192,12 @@ export const AuthProvider = ({ children }) => {
     });
     return () => setSessionExpiredHandler(null);
   }, [setGlobalError]);
+
+  // Any signed-in state (fresh login of any kind, or a successful hydration)
+  // marks the browser as having a session, so the next visit probes for it.
+  useEffect(() => {
+    if (user) setSessionHint();
+  }, [user]);
 
   // Whenever the session is renewed anywhere (this provider's own refresh calls,
   // or the reactive silent refresh inside services/api.js triggered by a random
@@ -334,6 +385,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       setGlobalError(null);
+      clearSessionHint();
       sessionExpiresAtRef.current = null;
       setSessionExpiringSoon(false);
     }
