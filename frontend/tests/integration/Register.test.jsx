@@ -59,8 +59,14 @@ describe('Register', () => {
 
       renderPage();
 
+      // Step 1: identity.
+      expect(screen.getByText(/step 1 of 2/i)).toBeInTheDocument();
       await user.type(screen.getByLabelText(/username/i), 'AxelleDev');
       await user.type(screen.getByPlaceholderText(/email@example.com/i), 'axelle@example.com');
+      await user.click(screen.getByRole('button', { name: /continue/i }));
+
+      // Step 2: password.
+      expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
       await user.type(screen.getByPlaceholderText('Your password'), 'Pass1234');
       await user.type(screen.getByPlaceholderText(/confirm your password/i), 'Pass1234');
       await user.click(screen.getByRole('button', { name: /create account/i }));
@@ -75,4 +81,42 @@ describe('Register', () => {
       });
     },
   );
+
+  it('gates the Continue button until the identity step is valid', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const continueButton = screen.getByRole('button', { name: /continue/i });
+    expect(continueButton).toBeDisabled();
+
+    await user.type(screen.getByLabelText(/username/i), 'AxelleDev');
+    await user.type(screen.getByPlaceholderText(/email@example.com/i), 'not-an-email');
+    expect(continueButton).toBeDisabled();
+    expect(screen.getByText(/invalid email format/i)).toBeInTheDocument();
+
+    await user.clear(screen.getByPlaceholderText(/email@example.com/i));
+    await user.type(screen.getByPlaceholderText(/email@example.com/i), 'axelle@example.com');
+    expect(continueButton).toBeEnabled();
+  });
+
+  it('goes back from the password step without losing what was typed', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText(/username/i), 'AxelleDev');
+    await user.type(screen.getByPlaceholderText(/email@example.com/i), 'axelle@example.com');
+    await user.click(screen.getByRole('button', { name: /continue/i }));
+
+    await user.type(screen.getByPlaceholderText('Your password'), 'Pass1234');
+    await user.click(screen.getByRole('button', { name: /back to username and email/i }));
+
+    // Step 1 again, values preserved.
+    expect(screen.getByText(/step 1 of 2/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/username/i)).toHaveValue('AxelleDev');
+    expect(screen.getByPlaceholderText(/email@example.com/i)).toHaveValue('axelle@example.com');
+
+    // And the password survives the round trip too.
+    await user.click(screen.getByRole('button', { name: /continue/i }));
+    expect(screen.getByPlaceholderText('Your password')).toHaveValue('Pass1234');
+  });
 });

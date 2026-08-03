@@ -37,8 +37,10 @@ test.describe('critical path: register, verify, project, share, export', () => {
 
   test('registers a new account', async () => {
     await page.goto('/register');
+    // Two-step form: identity first, then password.
     await page.getByLabel('Username').fill(name);
     await page.getByLabel('Email').fill(email);
+    await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByLabel('Password', { exact: true }).fill(password);
     await page.getByLabel('Confirm password').fill(password);
     await page.getByRole('button', { name: 'Create account' }).click();

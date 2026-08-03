@@ -1,5 +1,6 @@
-// Registration page (/register): collect name/email/password, validate on the
-// client, create the account, then redirect to email verification.
+// Registration page (/register): a two-step flow — identity (username + email)
+// first, then password — validated on the client at each step; creating the
+// account redirects to email verification.
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +24,9 @@ export default function Register() {
   const navigate = useNavigate();
   const { register, loginWithGoogle } = useAuth();
 
+  // 'identity' (username + email) then 'password' — splitting the form keeps
+  // the card short without shrinking any field or spacing.
+  const [step, setStep] = useState('identity');
   const { values: formData, setField } = useFormState({
     name: '',
     email: '',
@@ -41,7 +45,24 @@ export default function Register() {
   const emailValid = isValidEmail(formData.email);
   const passwordValid = isPasswordValid(formData.password);
   const passwordsMatch = formData.password === formData.confirmPassword;
-  const canSubmit = formData.name.trim() !== '' && emailValid && passwordValid && passwordsMatch;
+  const canContinue = formData.name.trim() !== '' && emailValid;
+  const canSubmit = canContinue && passwordValid && passwordsMatch;
+
+  // Step 1 → step 2 (Enter in either identity field lands here too).
+  const handleContinue = (e) => {
+    e.preventDefault();
+    if (!canContinue || submitting) return;
+    setError('');
+    setStep('password');
+  };
+
+  // Step 2 back to step 1, keeping everything already typed.
+  const handleBack = () => {
+    if (submitting) return;
+    setError('');
+    setRetryAfterSeconds(undefined);
+    setStep('identity');
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -134,97 +155,121 @@ export default function Register() {
         />
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-medium text-primary">Create your account</h2>
-          <p className="text-primary text-sm mt-2">Your graphic reference starts here.</p>
+          <p className="text-primary text-sm mt-2">
+            {step === 'identity'
+              ? 'Step 1 of 2 — choose your username and email.'
+              : 'Step 2 of 2 — secure your account with a password.'}
+          </p>
         </div>
 
         {error && (
           <RateLimitAlert message={error} retryAfterSeconds={retryAfterSeconds} className="mb-4" />
         )}
 
-        <form className="space-y-4" onSubmit={handleRegister} noValidate>
-          <FormField label="Username" required>
-            <TextInput
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Your username"
-              autoComplete="nickname"
-            />
-          </FormField>
+        {step === 'identity' ? (
+          <>
+            <form className="space-y-4" onSubmit={handleContinue} noValidate>
+              <FormField label="Username" required>
+                <TextInput
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Your username"
+                  autoComplete="nickname"
+                />
+              </FormField>
 
-          <FormField
-            label="Email"
-            required
-            error={formData.email !== '' && !emailValid ? 'Invalid email format.' : undefined}
-          >
-            <TextInput
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="email@example.com"
-              autoComplete="email"
-            />
-          </FormField>
+              <FormField
+                label="Email"
+                required
+                error={formData.email !== '' && !emailValid ? 'Invalid email format.' : undefined}
+              >
+                <TextInput
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="email@example.com"
+                  autoComplete="email"
+                />
+              </FormField>
 
-          <div>
-            <FormField label="Password" required>
+              <Button type="submit" fullWidth className="mt-2" disabled={!canContinue}>
+                Continue
+              </Button>
+            </form>
+
+            <Divider className="my-6" />
+
+            <GoogleSignInButton onCredential={handleGoogleCredential} disabled={submitting} />
+
+            <TermsNotice />
+
+            <div className="mt-8 text-center">
+              <span className="text-sm text-primary">Already have an account? </span>
+              <Link
+                to="/login"
+                className="text-sm font-medium text-blue hover:text-primary transition-colors rounded focus-ring"
+              >
+                Sign in
+              </Link>
+            </div>
+          </>
+        ) : (
+          <form className="space-y-4" onSubmit={handleRegister} noValidate>
+            <div>
+              <FormField label="Password" required>
+                <PasswordInput
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Your password"
+                  autoComplete="new-password"
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- focus belongs in the first password field when this step opens
+                  autoFocus
+                />
+              </FormField>
+              <PasswordChecklist password={formData.password} />
+            </div>
+
+            <FormField
+              label="Confirm password"
+              required
+              error={
+                formData.confirmPassword !== '' && !passwordsMatch
+                  ? "Passwords don't match."
+                  : undefined
+              }
+            >
               <PasswordInput
-                name="password"
-                value={formData.password}
+                name="confirmPassword"
+                value={formData.confirmPassword}
                 onChange={handleChange}
-                placeholder="Your password"
+                placeholder="Confirm your password"
                 autoComplete="new-password"
               />
             </FormField>
-            <PasswordChecklist password={formData.password} />
-          </div>
 
-          <FormField
-            label="Confirm password"
-            required
-            error={
-              formData.confirmPassword !== '' && !passwordsMatch
-                ? "Passwords don't match."
-                : undefined
-            }
-          >
-            <PasswordInput
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm your password"
-              autoComplete="new-password"
-            />
-          </FormField>
+            <Button
+              type="submit"
+              fullWidth
+              className="mt-2"
+              disabled={!canSubmit}
+              loading={submitting}
+            >
+              Create account
+            </Button>
 
-          <Button
-            type="submit"
-            fullWidth
-            className="mt-2"
-            disabled={!canSubmit}
-            loading={submitting}
-          >
-            Create account
-          </Button>
-        </form>
-
-        <Divider className="my-6" />
-
-        <GoogleSignInButton onCredential={handleGoogleCredential} disabled={submitting} />
-
-        <TermsNotice />
-
-        <div className="mt-8 text-center">
-          <span className="text-sm text-primary">Already have an account? </span>
-          <Link
-            to="/login"
-            className="text-sm font-medium text-blue hover:text-primary transition-colors rounded focus-ring"
-          >
-            Sign in
-          </Link>
-        </div>
+            <button
+              type="button"
+              onClick={handleBack}
+              className="block w-full text-center text-xs text-primary/60 hover:text-primary transition-colors rounded focus-ring"
+            >
+              Back to username and email
+            </button>
+          </form>
+        )}
       </AuthCard>
     </AuthLayout>
   );
