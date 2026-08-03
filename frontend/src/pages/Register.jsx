@@ -22,7 +22,7 @@ import { isPasswordValid, isValidEmail } from '../utils/passwordRules';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register, loginWithGoogle } = useAuth();
+  const { register, loginWithGoogle, loginAsDemo } = useAuth();
 
   // 'identity' (username + email) then 'password' — splitting the form keeps
   // the card short without shrinking any field or spacing.
@@ -111,6 +111,25 @@ export default function Register() {
     }
   };
 
+  // Same instant, read-only demo entry as the login page: lets a visitor
+  // explore without creating an account at all.
+  const handleDemoLogin = async () => {
+    if (submitting) return;
+
+    setSubmitting(true);
+    const result = await loginAsDemo();
+    setSubmitting(false);
+
+    if (result.success) {
+      setError('');
+      setRetryAfterSeconds(undefined);
+      navigate('/app/dashboard');
+    } else if (result.message) {
+      setError(result.message);
+      setRetryAfterSeconds(result.retryAfterSeconds);
+    }
+  };
+
   const userCount = useUserCount();
 
   return (
@@ -143,6 +162,14 @@ export default function Register() {
                 ? `Joined by ${userCount} illustrator${userCount > 1 ? 's' : ''}`
                 : ' '}
             </p>
+          </div>
+
+          {/* Discovery path lives with the marketing column, not in the
+              sign-up card: it invites visitors, it doesn't authenticate them. */}
+          <div className="pt-2">
+            <Button type="button" variant="outline" onClick={handleDemoLogin} disabled={submitting}>
+              Try the demo — no account needed
+            </Button>
           </div>
         </>
       }

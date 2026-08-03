@@ -1,14 +1,15 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthContext } from '../../src/context/AuthContext';
 import Register from '../../src/pages/Register';
 
-const { mockNavigate, mockRegister } = vi.hoisted(() => ({
+const { mockNavigate, mockRegister, mockLoginAsDemo } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockRegister: vi.fn(),
+  mockLoginAsDemo: vi.fn(),
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -26,7 +27,7 @@ vi.mock('../../src/hooks/useUserCount', () => ({
 const renderPage = () => {
   render(
     <HelmetProvider>
-      <AuthContext.Provider value={{ register: mockRegister }}>
+      <AuthContext.Provider value={{ register: mockRegister, loginAsDemo: mockLoginAsDemo }}>
         <MemoryRouter>
           <Register />
         </MemoryRouter>
@@ -39,6 +40,18 @@ describe('Register', () => {
   beforeEach(() => {
     mockNavigate.mockReset();
     mockRegister.mockReset();
+    mockLoginAsDemo.mockReset();
+  });
+
+  it('"Try the demo" logs in as the demo account and redirects to the dashboard', async () => {
+    const user = userEvent.setup();
+    mockLoginAsDemo.mockResolvedValue({ success: true });
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /try the demo/i }));
+
+    expect(mockLoginAsDemo).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/app/dashboard'));
   });
 
   // 10s budget: four userEvent.type() calls add up, and under a fully parallel
