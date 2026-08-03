@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor, act, renderHook } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { AuthProvider, useAuth } from '../../src/context/AuthContext';
 
 const {
@@ -76,6 +77,15 @@ const buildHttpError = (status, message = 'HTTP error') => {
   return error;
 };
 
+// The mount-time profile probe only runs when the session hint is present:
+// unless a test says otherwise, simulate a browser that had a session.
+beforeEach(() => {
+  localStorage.setItem('frameset-session', '1');
+});
+afterEach(() => {
+  localStorage.clear();
+});
+
 describe('AuthContext session hydration', () => {
   beforeEach(() => {
     mockApiGet.mockReset();
@@ -85,6 +95,57 @@ describe('AuthContext session hydration', () => {
     mockApiDelete.mockReset();
     mockSetSessionExpiredHandler.mockClear();
     mockSetSessionRefreshedHandler.mockClear();
+  });
+
+  it('skips the profile probe entirely on a browser with no session hint', async () => {
+    localStorage.clear();
+    renderProvider();
+
+    await waitFor(() => expect(screen.getByTestId('auth-loading')).toHaveTextContent('false'));
+
+    expect(mockApiGet).not.toHaveBeenCalled();
+    expect(screen.getByTestId('user-email')).toHaveTextContent('');
+  });
+
+  it('drops the hint after a hard 401 so the next visit skips the probe too', async () => {
+    mockApiGet.mockRejectedValueOnce(buildHttpError(401));
+    renderProvider();
+
+    await waitFor(() => expect(screen.getByTestId('auth-loading')).toHaveTextContent('false'));
+
+    expect(mockApiGet).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem('frameset-session')).toBeNull();
+  });
+
+  it('sets the hint when a session opens and clears it on logout', async () => {
+    localStorage.clear();
+    const Actions = () => {
+      const { login, logout } = useAuth();
+      return (
+        <div>
+          <button type="button" onClick={() => login('axelle@example.com', 'Pass1234')}>
+            do-login
+          </button>
+          <button type="button" onClick={() => logout()}>
+            do-logout
+          </button>
+        </div>
+      );
+    };
+    render(
+      <AuthProvider>
+        <Actions />
+      </AuthProvider>,
+    );
+    const user = userEvent.setup();
+
+    mockApiPost.mockResolvedValueOnce({ success: true, id: 1, name: 'Axelle' });
+    await user.click(screen.getByRole('button', { name: 'do-login' }));
+    await waitFor(() => expect(localStorage.getItem('frameset-session')).toBe('1'));
+
+    mockApiPost.mockResolvedValueOnce({ success: true });
+    await user.click(screen.getByRole('button', { name: 'do-logout' }));
+    await waitFor(() => expect(localStorage.getItem('frameset-session')).toBeNull());
   });
 
   it('hydrates the user when /profile returns 200', async () => {

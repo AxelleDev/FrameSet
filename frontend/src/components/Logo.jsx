@@ -10,12 +10,15 @@ export default function Logo({ className = '', style }) {
         alt="FrameSet"
         className={`${className} dark:hidden`.trim()}
         style={style}
+        // Often the page's LCP element (public top bar): fetch it eagerly.
+        fetchpriority="high"
       />
       <img
         src="/FrameSet_Logo_Reversed.png"
         alt="FrameSet"
         className={`${className} hidden dark:block`.trim()}
         style={style}
+        fetchpriority="high"
       />
     </>
   );
