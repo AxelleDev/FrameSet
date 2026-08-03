@@ -37,6 +37,16 @@ export default function ForgotPassword() {
 
   const handleChange = (e) => setField(e.target.name, e.target.value);
 
+  // Step 2 back to step 1 (e.g. a typo in the email), keeping what was typed;
+  // resubmitting simply sends a fresh code.
+  const handleBack = () => {
+    if (submitting) return;
+    setError('');
+    setInfo('');
+    setRetryAfterSeconds(undefined);
+    setStep('request');
+  };
+
   const emailValid = isValidEmail(form.email);
   const passwordValid = isPasswordValid(form.newPassword);
   const passwordsMatch = form.newPassword === form.confirmPassword;
@@ -205,6 +215,14 @@ export default function ForgotPassword() {
             >
               Reset password
             </Button>
+
+            <button
+              type="button"
+              onClick={handleBack}
+              className="block w-full text-center text-xs text-primary/60 hover:text-primary transition-colors rounded focus-ring"
+            >
+              Back to email
+            </button>
           </form>
         )}
 

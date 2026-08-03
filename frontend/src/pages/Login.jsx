@@ -184,6 +184,14 @@ export default function Login() {
                 : ' '}
             </span>
           </div>
+
+          {/* Discovery path lives with the marketing column, not in the
+              sign-in card: it invites visitors, it doesn't authenticate them. */}
+          <div className="pt-2">
+            <Button type="button" variant="outline" onClick={handleDemoLogin} disabled={submitting}>
+              Try the demo — no account needed
+            </Button>
+          </div>
         </>
       }
     >
@@ -298,17 +306,6 @@ export default function Login() {
             <Divider className="my-6" />
 
             <GoogleSignInButton onCredential={handleGoogleCredential} disabled={submitting} />
-
-            <Button
-              type="button"
-              variant="outline"
-              fullWidth
-              className="mt-3"
-              onClick={handleDemoLogin}
-              disabled={submitting}
-            >
-              Try the demo — no account needed
-            </Button>
 
             <TermsNotice />
 
