@@ -11,6 +11,13 @@ human-readable summary; the spec is the machine-readable source of truth.
 
 ## Conventions
 
+### Versioning
+
+Every `/api/*` endpoint below is also mounted, identically, under `/api/v1/*`.
+The unversioned prefix is the canonical one used by the frontend; external
+integrations should pin `/api/v1` so a future breaking change (shipped as
+`/api/v2`) never affects them.
+
 ### Authentication
 
 The session is carried by **HttpOnly cookies** set on login (`frameset_access_token`,

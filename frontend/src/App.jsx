@@ -15,9 +15,17 @@ import CursorDot from './components/CursorDot';
 import { captureException } from './utils/monitoring';
 import MainLayout from './layouts/MainLayout';
 
-// Pages are code-split via React.lazy so each route's JS (and heavy deps like
-// jsPDF / react-select) is only downloaded when that route is first visited.
-const Landing = lazy(() => import('./pages/Landing'));
+// Prerendered routes (see scripts/prerender.mjs) are imported EAGERLY: the
+// server-side renderToString can't await a lazy chunk, and an eager import
+// also guarantees hydration never suspends on them. They are light,
+// markup-heavy pages, so the main bundle barely grows.
+import Landing from './pages/Landing';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
+
+// Every other page stays code-split via React.lazy so each route's JS (and
+// heavy deps like jsPDF / react-select) is only downloaded when that route is
+// first visited.
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
@@ -27,8 +35,6 @@ const ProjectPalette = lazy(() => import('./pages/ProjectPalette'));
 const ProjectExport = lazy(() => import('./pages/ProjectExport'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Verify = lazy(() => import('./pages/Verify'));
-const Terms = lazy(() => import('./pages/Terms'));
-const Privacy = lazy(() => import('./pages/Privacy'));
 const SharedProject = lazy(() => import('./pages/SharedProject'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -38,7 +44,6 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 function prefetchRouteChunks() {
   const prefetch = () => {
     [
-      import('./pages/Landing'),
       import('./pages/Login'),
       import('./pages/Register'),
       import('./pages/ForgotPassword'),
@@ -139,79 +144,96 @@ function AppRoutes() {
   }, []);
 
   return (
+    <BrowserRouter>
+      <AppRouteTree />
+    </BrowserRouter>
+  );
+}
+
+// The routed UI without any router: shared verbatim by the browser entry
+// (BrowserRouter, above) and the build-time prerenderer (StaticRouter, see
+// src/entry-server.jsx), so the prerendered HTML and the hydrating client
+// render exactly the same tree.
+export function AppRouteTree() {
+  return (
     <>
       {/* Site-wide decorative cursor follower (self-disables for touch and
           reduced-motion users — see the component). */}
       <CursorDot />
-      <BrowserRouter>
-        <RouteFocus />
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route path="/" element={<Landing />} />
+      <RouteFocus />
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route
+            path="/login"
+            element={
+              <RedirectIfAuthenticated>
+                <Login />
+              </RedirectIfAuthenticated>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <RedirectIfAuthenticated>
+                <Register />
+              </RedirectIfAuthenticated>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <RedirectIfAuthenticated>
+                <ForgotPassword />
+              </RedirectIfAuthenticated>
+            }
+          />
+          <Route path="/verify" element={<Verify />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/s/:token" element={<SharedProject />} />
+          <Route path="/app" element={<MainLayout />}>
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="profile" element={<Profile />} />
             <Route
-              path="/login"
+              path="project/:id"
               element={
-                <RedirectIfAuthenticated>
-                  <Login />
-                </RedirectIfAuthenticated>
+                <ErrorBoundary onError={captureException}>
+                  <Outlet />
+                </ErrorBoundary>
               }
-            />
-            <Route
-              path="/register"
-              element={
-                <RedirectIfAuthenticated>
-                  <Register />
-                </RedirectIfAuthenticated>
-              }
-            />
-            <Route
-              path="/forgot-password"
-              element={
-                <RedirectIfAuthenticated>
-                  <ForgotPassword />
-                </RedirectIfAuthenticated>
-              }
-            />
-            <Route path="/verify" element={<Verify />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/s/:token" element={<SharedProject />} />
-            <Route path="/app" element={<MainLayout />}>
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="profile" element={<Profile />} />
-              <Route
-                path="project/:id"
-                element={
-                  <ErrorBoundary onError={captureException}>
-                    <Outlet />
-                  </ErrorBoundary>
-                }
-              >
-                <Route index element={<Navigate to="norms" replace />} />
-                <Route path="norms" element={<ProjectNorms />} />
-                <Route path="palette" element={<ProjectPalette />} />
-                <Route path="export" element={<ProjectExport />} />
-              </Route>
+            >
+              <Route index element={<Navigate to="norms" replace />} />
+              <Route path="norms" element={<ProjectNorms />} />
+              <Route path="palette" element={<ProjectPalette />} />
+              <Route path="export" element={<ProjectExport />} />
             </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </>
   );
 }
 
-// Establishes the provider hierarchy (auth first, then projects).
-export default function App() {
+// Establishes the provider hierarchy (auth first, then projects). Exported so
+// the build-time prerenderer wraps the exact same providers around the tree.
+export function AppProviders({ children }) {
   return (
     <HelmetProvider>
       <AuthProvider>
         <ProjectProvider>
-          <ToastProvider>
-            <AppRoutes />
-          </ToastProvider>
+          <ToastProvider>{children}</ToastProvider>
         </ProjectProvider>
       </AuthProvider>
     </HelmetProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProviders>
+      <AppRoutes />
+    </AppProviders>
   );
 }

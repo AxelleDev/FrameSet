@@ -46,6 +46,23 @@ describe('application middleware', () => {
     });
   });
 
+  describe('versioned API alias', () => {
+    it('serves the same surface under /api/v1, CSRF protection included', async () => {
+      // Same endpoint, both prefixes.
+      const unversioned = await request(app).get('/api/auth/csrf-token');
+      const versioned = await request(app).get('/api/v1/auth/csrf-token');
+      expect(unversioned.status).toBe(200);
+      expect(versioned.status).toBe(200);
+      expect(versioned.body).toEqual(expect.objectContaining({ csrfToken: expect.any(String) }));
+
+      // The '/api'-mounted CSRF guard covers the alias too: an unprotected
+      // mutation is rejected exactly like on the canonical prefix.
+      const rejected = await request(app).post('/api/v1/auth/logout');
+      expect(rejected.status).toBe(403);
+      expect(rejected.body.error).toMatch(/csrf/i);
+    });
+  });
+
   describe('security headers', () => {
     it('exposes an explicit Content-Security-Policy header', async () => {
       const res = await request(app).get('/api/auth/csrf-token');

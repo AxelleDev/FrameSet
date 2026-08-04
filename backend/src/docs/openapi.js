@@ -26,7 +26,10 @@ const openapiSpec = {
       '(`POST`/`PUT`/`PATCH`/`DELETE`) use the double-submit CSRF pattern: send the ' +
       '`frameset_csrf_token` cookie value back in the `x-csrf-token` header ' +
       '(fetch one via `GET /api/auth/csrf-token`). The JSON body is capped at 10 kB ' +
-      'and sensitive endpoints are rate limited.',
+      'and sensitive endpoints are rate limited.\n\n' +
+      '**Versioning**: every `/api/*` path documented here is also mounted, identically, ' +
+      'under `/api/v1/*` — pin the versioned prefix for external integrations; a breaking ' +
+      'change would ship as `/api/v2` while `/api/v1` keeps serving existing clients.',
     contact: { name: 'Axelle Tempier', email: 'axelle.tempier@gmail.com' },
   },
   servers: [{ url: '/', description: 'Same origin as the app' }],

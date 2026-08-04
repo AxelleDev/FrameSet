@@ -54,11 +54,17 @@ describe('OpenAPI spec stays in sync with the mounted routes', () => {
       .map(normalizeRoutePath)
       // The comparison covers the documented surface: /health and /api/*.
       // Swagger's own endpoints (/api-docs*) and the E2E-only /api/_test
-      // routes (not mounted here) are intentionally undocumented.
+      // routes (not mounted here) are intentionally undocumented. /api/v1/*
+      // is a mount-level ALIAS of the same routers (see app.js): its surface
+      // is identical by construction, so it is documented once via the spec's
+      // servers list rather than duplicating every path entry.
       .filter(
         (route) =>
           / \/health$/.test(route) ||
-          (/ \/api\//.test(route) && !/ \/api-docs/.test(route) && !/ \/api\/_test/.test(route)),
+          (/ \/api\//.test(route) &&
+            !/ \/api-docs/.test(route) &&
+            !/ \/api\/_test/.test(route) &&
+            !/ \/api\/v1\//.test(route)),
       );
 
     const documented = Object.entries(openapiSpec.paths).flatMap(([specPath, operations]) =>

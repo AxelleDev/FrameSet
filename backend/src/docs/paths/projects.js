@@ -436,9 +436,18 @@ module.exports = {
                 properties: {
                   name: { type: 'string' },
                   ownerName: { type: 'string' },
-                  brushNorms: { type: 'array', items: { type: 'object' } },
-                  typographyNorms: { type: 'array', items: { type: 'object' } },
-                  palette: { type: 'array', items: { type: 'object' } },
+                  brushNorms: {
+                    type: 'array',
+                    items: { $ref: '#/components/schemas/BrushNorm' },
+                  },
+                  typographyNorms: {
+                    type: 'array',
+                    items: { $ref: '#/components/schemas/TypographyNorm' },
+                  },
+                  palette: {
+                    type: 'array',
+                    items: { $ref: '#/components/schemas/PaletteColor' },
+                  },
                 },
               },
             },

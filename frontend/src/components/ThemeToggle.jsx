@@ -1,21 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import useTheme from '../hooks/useTheme';
 
 // Button that switches between light and dark themes (sun/moon icon).
 export default function ThemeToggle({ className = '' }) {
   const { theme, toggleTheme } = useTheme();
+  // The icon depends on localStorage, which build-time prerendering can't
+  // know: render it only once mounted so the server HTML and the client's
+  // first render agree (the button keeps its size, so nothing shifts).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const isDark = theme === 'dark';
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-      title={isDark ? 'Light theme' : 'Dark theme'}
+      aria-label={mounted && isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+      title={mounted && isDark ? 'Light theme' : 'Dark theme'}
       className={`inline-flex items-center justify-center w-11 h-11 rounded-xl text-primary hover:bg-blue/10 transition-colors focus-ring ${className}`.trim()}
     >
-      {isDark ? (
+      {!mounted ? (
+        <span className="w-5 h-5" aria-hidden="true" />
+      ) : isDark ? (
         <svg
           className="w-5 h-5"
           fill="none"
