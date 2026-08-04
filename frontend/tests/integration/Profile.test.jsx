@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -344,5 +344,98 @@ describe('Profile (demo account)', () => {
     renderPage();
     await user.click(screen.getByRole('button', { name: /sign out/i }));
     expect(await screen.findByText(/you'll need to sign in again/i)).toBeInTheDocument();
+  });
+});
+
+describe('Profile — password change', () => {
+  beforeEach(() => {
+    mockNavigate.mockReset();
+    Object.assign(authState, {
+      user: {
+        name: 'Jane Doe',
+        email: 'axelle@example.com',
+        avatarInitials: 'JD',
+        passwordUpdatedAt: null,
+        totpEnabled: false,
+      },
+      updateUserProfile: vi.fn().mockResolvedValue({ success: true }),
+      logout: vi.fn().mockResolvedValue(),
+      changePassword: vi.fn().mockResolvedValue({ success: true }),
+      deleteAccount: vi.fn(),
+      setupTotp: vi.fn(),
+      confirmTotpSetup: vi.fn(),
+      disableTotp: vi.fn(),
+    });
+  });
+
+  const openModal = async (user) => {
+    await user.click(screen.getByRole('button', { name: /change password/i }));
+    return screen.getByRole('dialog', { name: /change password/i });
+  };
+
+  it('validates locally: empty fields, then mismatched confirmation', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openModal(user);
+
+    await user.click(within(dialog).getByRole('button', { name: /^save$/i }));
+    expect(within(dialog).getByText(/fill in all fields/i)).toBeInTheDocument();
+    expect(authState.changePassword).not.toHaveBeenCalled();
+
+    await user.type(within(dialog).getByLabelText('Current password'), 'Old1234!');
+    await user.type(within(dialog).getByLabelText('New password'), 'NewPass1!');
+    await user.type(within(dialog).getByLabelText('Confirm new password'), 'Different1!');
+    await user.click(within(dialog).getByRole('button', { name: /^save$/i }));
+    expect(within(dialog).getByText(/don't match/i)).toBeInTheDocument();
+    expect(authState.changePassword).not.toHaveBeenCalled();
+  });
+
+  it('keeps the modal open with the inline business error on failure', async () => {
+    authState.changePassword = vi.fn().mockResolvedValue({
+      success: false,
+      message: 'Current password is incorrect.',
+    });
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openModal(user);
+
+    await user.type(within(dialog).getByLabelText('Current password'), 'Wrong1!');
+    await user.type(within(dialog).getByLabelText('New password'), 'NewPass1!');
+    await user.type(within(dialog).getByLabelText('Confirm new password'), 'NewPass1!');
+    await user.click(within(dialog).getByRole('button', { name: /^save$/i }));
+
+    expect(await within(dialog).findByText(/incorrect/i)).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /change password/i })).toBeInTheDocument();
+  });
+
+  it('closes the modal and resets the form after a successful change', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openModal(user);
+
+    await user.type(within(dialog).getByLabelText('Current password'), 'Old1234!');
+    await user.type(within(dialog).getByLabelText('New password'), 'NewPass1!');
+    await user.type(within(dialog).getByLabelText('Confirm new password'), 'NewPass1!');
+    await user.click(within(dialog).getByRole('button', { name: /^save$/i }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: /change password/i })).not.toBeInTheDocument(),
+    );
+    expect(authState.changePassword).toHaveBeenCalledWith({
+      currentPassword: 'Old1234!',
+      newPassword: 'NewPass1!',
+    });
+  });
+
+  it('signs out after confirming, and navigates to the login page', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /sign out/i }));
+    const dialog = screen.getByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: /sign out/i }));
+
+    await waitFor(() => expect(authState.logout).toHaveBeenCalledTimes(1));
+    expect(mockNavigate).toHaveBeenCalledWith('/login');
   });
 });

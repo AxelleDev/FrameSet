@@ -110,3 +110,25 @@ describe('Modal', () => {
     expect(opener).toHaveFocus();
   });
 });
+
+describe('Modal focus trap', () => {
+  it('wraps Tab from the last focusable back to the first, and Shift+Tab the other way', async () => {
+    const user = userEvent.setup();
+    render(
+      <Modal isOpen onClose={() => {}} title="Trap" showClose={false}>
+        <button type="button">first</button>
+        <button type="button">last</button>
+      </Modal>,
+    );
+    const first = screen.getByRole('button', { name: 'first' });
+    const last = screen.getByRole('button', { name: 'last' });
+
+    last.focus();
+    await user.tab();
+    expect(first).toHaveFocus();
+
+    first.focus();
+    await user.tab({ shift: true });
+    expect(last).toHaveFocus();
+  });
+});
