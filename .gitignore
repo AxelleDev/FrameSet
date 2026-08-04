@@ -27,3 +27,4 @@ playwright-report/
 
 # Browser-tooling session artifacts (screenshots/snapshots from MCP-driven runs)
 .playwright-mcp/
+dist-ssr

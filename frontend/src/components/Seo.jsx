@@ -15,9 +15,10 @@ const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://frameset-taupe.verce
 );
 const DEFAULT_DESCRIPTION =
   "FrameSet keeps every project's graphic standards and color palette in one place.";
-// Brand logo as a safe default that always exists; swap for a dedicated
-// 1200×630 `og-cover.png` for richer link previews.
-const DEFAULT_IMAGE = `${SITE_URL}/FrameSet_Logo.png`;
+// Dedicated 1200×630 cover (brand lockup + tagline + palette strip) so links
+// to any page unfurl with a proper card; shared projects override this with
+// their own server-rendered preview.
+const DEFAULT_IMAGE = `${SITE_URL}/og-cover.png`;
 
 export default function Seo({
   title,

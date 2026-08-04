@@ -20,7 +20,7 @@ const vitestGlobals = {
 
 export default [
   // Build output, dependencies and coverage reports are never linted.
-  { ignores: ['dist', 'node_modules', 'coverage'] },
+  { ignores: ['dist', 'dist-ssr', 'node_modules', 'coverage'] },
 
   // Application and test source: browser environment, React component rules.
   {

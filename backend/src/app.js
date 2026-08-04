@@ -243,6 +243,18 @@ app.use('/api/fonts', fontsRoutes);
 // exemption applies; rate limited inside the router).
 app.use('/api/share', shareRoutes);
 
+// Versioned alias: the exact same routers, additionally reachable under
+// /api/v1/* so an external integration can pin a version from day one. The
+// unversioned /api remains the canonical path used by the SPA; a future
+// breaking change would fork new routers under /api/v2 while these keep
+// serving v1 clients unchanged. The CSRF middlewares above are mounted on
+// '/api' and therefore already cover this prefix.
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/projects', projectsRoutes);
+app.use('/api/v1/fonts', fontsRoutes);
+app.use('/api/v1/share', shareRoutes);
+
 // E2E test mode only: lets a Playwright run read a verification code without
 // a real inbox. Never mounted otherwise — see utils/testMode.js.
 if (isE2ETestMode) {
