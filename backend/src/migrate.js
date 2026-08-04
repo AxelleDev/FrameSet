@@ -25,6 +25,10 @@ const migrationLogger = logger.child({ component: 'migrations' });
 const getPool = () =>
   mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
+    // Same DB_PORT support as src/database.js: remote databases (e.g. the
+    // Railway public proxy) listen on non-3306 ports, and production
+    // migrations run against exactly those.
+    port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'frameset_db',
