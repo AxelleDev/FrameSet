@@ -22,6 +22,21 @@ jest.mock('../../src/database');
 jest.mock('../../src/services/mail.service');
 jest.mock('../../src/services/googleIdentity.service');
 
+// The recovery-code rotation runs on a dedicated pooled connection inside a
+// transaction (see twoFactor.service.js); this stands in for it with a
+// connection whose queries all succeed.
+const mockRecoveryCodesConnection = () => {
+  const connection = {
+    beginTransaction: jest.fn(),
+    commit: jest.fn(),
+    rollback: jest.fn(),
+    release: jest.fn(),
+    query: jest.fn().mockResolvedValue([{}]),
+  };
+  db.getConnection.mockResolvedValue(connection);
+  return connection;
+};
+
 describe('user controller', () => {
   beforeEach(() => {
     jest.resetAllMocks();
@@ -383,9 +398,8 @@ describe('user controller', () => {
         .mockResolvedValueOnce([
           [{ email: 'axelle@example.com', totp_pending_secret_encrypted: encryptSecret(secret) }],
         ])
-        .mockResolvedValueOnce([{}])
-        .mockResolvedValueOnce([{}])
-        .mockResolvedValueOnce([{}]);
+        .mockResolvedValueOnce([{}]); // activate UPDATE
+      mockRecoveryCodesConnection(); // transactional delete+insert of the codes
       const req = { user: { id: 1 }, body: { code } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 
@@ -441,12 +455,10 @@ describe('user controller', () => {
 
     it('regenerateRecoveryCodes returns a fresh set after a correct current password', async () => {
       const hashedPassword = await bcrypt.hash('Password1', 4);
-      db.query
-        .mockResolvedValueOnce([
-          [{ email: 'a@b.com', password: hashedPassword, google_id: null, totp_enabled: 1 }],
-        ])
-        .mockResolvedValueOnce([{}]) // DELETE old codes
-        .mockResolvedValueOnce([{}]); // INSERT new codes
+      db.query.mockResolvedValueOnce([
+        [{ email: 'a@b.com', password: hashedPassword, google_id: null, totp_enabled: 1 }],
+      ]);
+      mockRecoveryCodesConnection(); // transactional delete+insert of the codes
       const req = { user: { id: 1 }, body: { currentPassword: 'Password1' } };
       const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 

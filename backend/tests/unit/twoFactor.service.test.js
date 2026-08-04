@@ -21,6 +21,21 @@ jest.mock('../../src/services/user.service', () => ({
   verifyUserIdentity: jest.fn(),
 }));
 
+// The recovery-code rotation runs on a dedicated pooled connection inside a
+// transaction; this wires db.getConnection to a fully-mocked connection whose
+// queries all succeed, and returns it for per-test assertions/overrides.
+const mockRecoveryCodesConnection = () => {
+  const connection = {
+    beginTransaction: jest.fn(),
+    commit: jest.fn(),
+    rollback: jest.fn(),
+    release: jest.fn(),
+    query: jest.fn().mockResolvedValue([{}]),
+  };
+  db.getConnection.mockResolvedValue(connection);
+  return connection;
+};
+
 describe('twoFactor service', () => {
   beforeEach(() => {
     jest.resetAllMocks();
@@ -62,12 +77,12 @@ describe('twoFactor service', () => {
         .mockResolvedValueOnce([
           [{ email: 'axelle@example.com', totp_pending_secret_encrypted: encryptSecret(secret) }],
         ]) // lookup
-        .mockResolvedValueOnce([{}]) // activate UPDATE
-        .mockResolvedValueOnce([{}]) // DELETE old recovery codes
-        .mockResolvedValueOnce([{}]); // INSERT new recovery codes
+        .mockResolvedValueOnce([{}]); // activate UPDATE
+      const connection = mockRecoveryCodesConnection();
 
       const result = await twoFactorService.confirmTotpSetup(1, code);
 
+      expect(connection.commit).toHaveBeenCalled();
       expect(result.recoveryCodes).toHaveLength(twoFactorService.RECOVERY_CODE_COUNT);
       // Each code is unique and shaped like XXXXX-XXXXX-XXXXX-XXXXX.
       expect(new Set(result.recoveryCodes).size).toBe(twoFactorService.RECOVERY_CODE_COUNT);
@@ -112,9 +127,8 @@ describe('twoFactor service', () => {
         .mockResolvedValueOnce([
           [{ email: 'a@b.com', totp_pending_secret_encrypted: encryptSecret(secret) }],
         ])
-        .mockResolvedValueOnce([{}])
-        .mockResolvedValueOnce([{}])
         .mockResolvedValueOnce([{}]);
+      mockRecoveryCodesConnection();
       mailService.sendMail.mockRejectedValueOnce(new Error('smtp down'));
       const onMailError = jest.fn();
 
@@ -169,12 +183,10 @@ describe('twoFactor service', () => {
 
   describe('regenerateRecoveryCodes', () => {
     it('mints a fresh set after re-auth, wiping the previous codes first', async () => {
-      db.query
-        .mockResolvedValueOnce([
-          [{ email: 'axelle@example.com', password: 'hashed', google_id: null, totp_enabled: 1 }],
-        ]) // lookup
-        .mockResolvedValueOnce([{}]) // DELETE old recovery codes
-        .mockResolvedValueOnce([{}]); // INSERT new recovery codes
+      db.query.mockResolvedValueOnce([
+        [{ email: 'axelle@example.com', password: 'hashed', google_id: null, totp_enabled: 1 }],
+      ]); // lookup
+      const connection = mockRecoveryCodesConnection();
       userService.verifyUserIdentity.mockResolvedValueOnce(undefined);
 
       const { recoveryCodes } = await twoFactorService.regenerateRecoveryCodes(1, {
@@ -183,14 +195,40 @@ describe('twoFactor service', () => {
 
       expect(recoveryCodes).toHaveLength(twoFactorService.RECOVERY_CODE_COUNT);
       expect(new Set(recoveryCodes).size).toBe(twoFactorService.RECOVERY_CODE_COUNT);
-      expect(db.query.mock.calls[1][0]).toMatch(/DELETE FROM user_recovery_codes/);
-      expect(db.query.mock.calls[2][0]).toMatch(/INSERT INTO user_recovery_codes/);
+      // Delete-then-insert, inside one transaction.
+      expect(connection.beginTransaction).toHaveBeenCalled();
+      expect(connection.query.mock.calls[0][0]).toMatch(/DELETE FROM user_recovery_codes/);
+      expect(connection.query.mock.calls[1][0]).toMatch(/INSERT INTO user_recovery_codes/);
+      expect(connection.commit).toHaveBeenCalled();
+      expect(connection.release).toHaveBeenCalled();
       expect(mailService.sendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'axelle@example.com',
           subject: expect.stringContaining('regenerated'),
         }),
       );
+    });
+
+    it('rolls back (keeping the old codes) when the insert fails mid-rotation', async () => {
+      db.query.mockResolvedValueOnce([
+        [{ email: 'axelle@example.com', password: 'hashed', google_id: null, totp_enabled: 1 }],
+      ]); // lookup
+      const connection = mockRecoveryCodesConnection();
+      connection.query
+        .mockReset()
+        .mockResolvedValueOnce([{}]) // DELETE succeeds
+        .mockRejectedValueOnce(new Error('db down')); // INSERT fails
+      userService.verifyUserIdentity.mockResolvedValueOnce(undefined);
+
+      await expect(
+        twoFactorService.regenerateRecoveryCodes(1, { currentPassword: 'Password1' }),
+      ).rejects.toThrow('db down');
+
+      expect(connection.rollback).toHaveBeenCalled();
+      expect(connection.commit).not.toHaveBeenCalled();
+      expect(connection.release).toHaveBeenCalled();
+      // No "regenerated" alert goes out for a rotation that didn't happen.
+      expect(mailService.sendMail).not.toHaveBeenCalled();
     });
 
     it('refuses when 2FA is not enabled', async () => {
