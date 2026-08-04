@@ -133,3 +133,36 @@ describe('Register', () => {
     expect(screen.getByPlaceholderText('Your password')).toHaveValue('Pass1234');
   });
 });
+
+describe('Register — failure and Google branches', () => {
+  beforeEach(() => {
+    mockNavigate.mockReset();
+    mockRegister.mockReset();
+    mockLoginAsDemo.mockReset();
+  });
+
+  const fillBothSteps = async (user) => {
+    await user.type(screen.getByLabelText(/username/i), 'AxelleDev');
+    await user.type(screen.getByPlaceholderText(/email@example.com/i), 'axelle@example.com');
+    await user.click(screen.getByRole('button', { name: /continue/i }));
+    await user.type(screen.getByPlaceholderText('Your password'), 'Pass1234');
+    await user.type(screen.getByPlaceholderText(/confirm your password/i), 'Pass1234');
+  };
+
+  it('shows the API failure message at step 2 and stays there', async () => {
+    const user = userEvent.setup();
+    mockRegister.mockResolvedValue({
+      success: false,
+      message: 'Too many attempts, try again in 10 minutes.',
+      retryAfterSeconds: 600,
+    });
+    renderPage();
+
+    await fillBothSteps(user);
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    expect(await screen.findByText(/too many attempts/i)).toBeInTheDocument();
+    expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+});

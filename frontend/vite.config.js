@@ -93,10 +93,10 @@ export default defineConfig({
       // is the format Codecov's upload action expects.
       reporter: ['text', 'lcov'],
       thresholds: {
-        statements: 80,
-        branches: 68,
-        functions: 80,
-        lines: 82,
+        statements: 83.5,
+        branches: 71.5,
+        functions: 84.5,
+        lines: 85.5,
       },
     },
   },

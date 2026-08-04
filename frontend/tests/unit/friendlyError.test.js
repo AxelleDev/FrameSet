@@ -25,4 +25,18 @@ describe('getFriendlyMessage', () => {
       /something went wrong/i,
     );
   });
+
+  it('handles a non-string input defensively', () => {
+    expect(getFriendlyMessage({ weird: true })).toBe('Something went wrong.');
+  });
+
+  it.each([
+    ['404 Not Found', /unavailable/i],
+    ['401 Unauthorized', /sign in again/i],
+    ['403 Forbidden', /access denied/i],
+    ['Request timed out', /taking too long/i],
+    ['Not Found', /unavailable/i],
+  ])('maps "%s" to friendly wording', (input, expected) => {
+    expect(getFriendlyMessage(input)).toMatch(expected);
+  });
 });
