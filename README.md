@@ -1,23 +1,31 @@
 <div align="center">
-	<p><b>FRAMESET — The graphic reference, built for digital illustration.</b></p>
-	<p>
-		<a href="https://frameset-taupe.vercel.app/">
-			<img src="https://img.shields.io/badge/website-frameset--taupe.vercel.app-black?logo=vercel&logoColor=white" alt="Website" />
-		</a>
-		<a href="https://github.com/AxelleDev/FrameSet/actions/workflows/ci.yml">
-			<img src="https://img.shields.io/github/actions/workflow/status/AxelleDev/FrameSet/ci.yml?branch=main&label=CI&logo=github" alt="CI status" />
-		</a>
-		<a href="https://codecov.io/gh/AxelleDev/FrameSet">
-			<img src="https://img.shields.io/codecov/c/github/AxelleDev/FrameSet?label=coverage&logo=codecov&logoColor=white" alt="Coverage" />
-		</a>
-		<a href="LICENSE">
-			<img src="https://img.shields.io/badge/license-proprietary-blue" alt="License" />
-		</a>
-		<a href=".nvmrc">
-			<img src="https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white" alt="Node version" />
-		</a>
-	</p>
-	<img src="docs/demo.gif" alt="FrameSet demo: entering the read-only demo, browsing a project's palette, adding a color, and the public shared reference sheet" width="820" />
+
+# FrameSet
+
+**The graphic reference, built for digital illustration.**
+
+Keep every project's color palettes, typography and brush standards in one place —<br/>
+then export them anywhere, or share them as a live, always-up-to-date page.
+
+**[✧ Open the live app](https://frameset-taupe.vercel.app/)** — one-click read-only demo, no account needed
+
+<a href="https://github.com/AxelleDev/FrameSet/actions/workflows/ci.yml">
+	<img src="https://img.shields.io/github/actions/workflow/status/AxelleDev/FrameSet/ci.yml?branch=main&style=flat-square&label=ci&labelColor=3C3D48" alt="CI status" />
+</a>
+<a href="https://codecov.io/gh/AxelleDev/FrameSet">
+	<img src="https://img.shields.io/codecov/c/github/AxelleDev/FrameSet?style=flat-square&label=coverage&labelColor=3C3D48" alt="Coverage" />
+</a>
+<a href=".nvmrc">
+	<img src="https://img.shields.io/badge/node-%E2%89%A5%2020-8994DF?style=flat-square&labelColor=3C3D48" alt="Node version" />
+</a>
+<a href="LICENSE">
+	<img src="https://img.shields.io/badge/license-proprietary-8994DF?style=flat-square&labelColor=3C3D48" alt="License" />
+</a>
+
+<br/>
+
+<img src="docs/demo.gif" alt="FrameSet demo: entering the read-only demo, browsing a project's palette, adding a color, creating a share link with its QR code, and the public shared reference sheet" width="820" />
+
 </div>
 
 ---
