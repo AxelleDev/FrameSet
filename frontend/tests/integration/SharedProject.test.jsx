@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import SharedProject from '../../src/pages/SharedProject';
@@ -129,7 +129,7 @@ describe('SharedProject (public page)', () => {
       expect(await screen.findByText('Ink')).toBeInTheDocument();
 
       // The stream targets the share events endpoint for this token.
-      expect(sources).toHaveLength(1);
+      await waitFor(() => expect(sources).toHaveLength(1));
       expect(sources[0].url).toContain(`/share/${'a'.repeat(32)}/events`);
 
       await act(async () => sources[0].emitOpen());
@@ -152,6 +152,7 @@ describe('SharedProject (public page)', () => {
       renderPage();
       expect(await screen.findByText('Ink')).toBeInTheDocument();
 
+      await waitFor(() => expect(sources).toHaveLength(1));
       const notFound = new Error('gone');
       notFound.status = 404;
       apiMock.get.mockRejectedValueOnce(notFound);
