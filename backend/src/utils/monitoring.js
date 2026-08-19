@@ -1,10 +1,3 @@
-/**
- * Optional server-side error monitoring (Sentry). Active only when SENTRY_DSN
- * is set: initMonitoring() then loads and configures the SDK, and the other
- * exports forward to it. Without a DSN everything here is a safe no-op, so the
- * app runs identically with monitoring off (dev, tests, minimal deployments).
- */
-
 const { logger } = require('./logger');
 
 let sentry = null;

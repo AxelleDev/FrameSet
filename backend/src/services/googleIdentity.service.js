@@ -1,10 +1,3 @@
-/**
- * Google ID-token verification, shared by sign-in (auth.service) and the
- * re-authentication of critical account actions (user.service). Returns a
- * status object instead of throwing, so each caller maps failures to its own
- * error type.
- */
-
 const { OAuth2Client } = require('google-auth-library');
 const { GOOGLE_CLIENT_ID } = require('../config/google.config');
 

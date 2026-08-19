@@ -1,8 +1,3 @@
-/**
- * JWT secrets and token lifetimes. Secrets are validated at import time so the
- * app fails fast on boot rather than start with a missing or weak signing key.
- */
-
 // Enforce a minimum secret length only in production: dev/test can use short,
 // throwaway secrets, but a real deployment must not ship a guessable signing key.
 const MIN_SECRET_LENGTH = 32;

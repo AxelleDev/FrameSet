@@ -1,8 +1,3 @@
-/**
- * Fetches the Google Fonts catalog for the typography-norm font picker, via the
- * backend proxy (`GET /api/fonts`) so the Google API key stays server-side and
- * never ships in the client bundle. Exposes { fonts, loading, error }.
- */
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 

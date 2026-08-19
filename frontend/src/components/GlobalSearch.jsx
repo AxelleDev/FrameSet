@@ -1,9 +1,3 @@
-/**
- * Global search (Ctrl+K): one field matched server-side against the user's
- * project names, palette colors (name or hex) and standards, grouped results,
- * keyboard-first. Selecting a match navigates to the page that owns it —
- * respecting the unsaved-changes guard like every other in-app navigation.
- */
 import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';

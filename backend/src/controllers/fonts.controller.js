@@ -1,8 +1,3 @@
-/**
- * Google Fonts proxy controller: returns the catalog (fetched server-side) so
- * the API key is never present in the client.
- */
-
 const fontsService = require('../services/fonts.service');
 const { createControllerLogger } = require('../utils/auth.utils');
 

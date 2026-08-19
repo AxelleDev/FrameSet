@@ -1,10 +1,3 @@
-/**
- * Social-preview image for a shared project (the og:image behind a share
- * link): a 1200x630 PNG of the project's actual palette, rendered fully
- * server-side. The image is composed as an SVG string and rasterized with
- * resvg, with the site's Figtree faces loaded explicitly so text renders
- * identically no matter what fonts the host machine has.
- */
 const path = require('path');
 const fs = require('fs');
 const { Resvg } = require('@resvg/resvg-js');

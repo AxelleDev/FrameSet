@@ -1,10 +1,3 @@
-/**
- * Re-authentication modal shown before critical account actions (email change,
- * account deletion): a session alone must not be enough. Accounts with a
- * password confirm with it; Google-only accounts confirm with a fresh Google
- * sign-in. onConfirm receives { currentPassword } or { googleCredential } and
- * may return { success: false, message } to surface an inline error.
- */
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import AppModal from './AppModal';

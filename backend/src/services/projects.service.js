@@ -1,8 +1,3 @@
-/**
- * Projects service: business logic and SQL for projects and their nested style
- * references (palettes, brush norms, typography norms). Never touches req/res.
- */
-
 const db = require('../database');
 const validator = require('validator');
 const { logger } = require('../utils/logger');

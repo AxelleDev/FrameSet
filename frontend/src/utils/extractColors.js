@@ -1,9 +1,3 @@
-/**
- * Client-side dominant-color extraction from an image (no dependency). Draws it
- * onto a downscaled canvas, groups pixels into coarse RGB buckets, and returns
- * the most frequent (skipping transparent and near-duplicate colors) as averaged
- * #RRGGBB hexes ordered by prominence. Resolves to at most maxColors (default 8).
- */
 export function extractColorsFromImage(file, maxColors = 8) {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);

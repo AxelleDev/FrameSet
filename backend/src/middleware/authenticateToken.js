@@ -1,8 +1,3 @@
-/**
- * Auth middleware: validates the access token (Bearer header or httpOnly cookie)
- * and attaches the decoded user + raw token to the request on success.
- */
-
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../config/jwt.config');
 const {

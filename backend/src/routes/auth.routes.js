@@ -1,8 +1,3 @@
-/**
- * Auth routes. Each sensitive endpoint is fronted by a dedicated rate limiter
- * sized to its abuse profile (credential stuffing, code brute-forcing, email spam).
- */
-
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');

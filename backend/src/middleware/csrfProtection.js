@@ -1,10 +1,3 @@
-/**
- * CSRF protection via double-submit cookie: the client must echo the non-httpOnly
- * CSRF cookie in the x-csrf-token header. A cross-site attacker can trigger a
- * request but cannot read the cookie to match the header, so forgeries fail.
- * Comparison is constant-time to avoid leaking the token via timing.
- */
-
 const { randomBytes, timingSafeEqual } = require('crypto');
 const {
   CSRF_TOKEN_COOKIE_NAME,

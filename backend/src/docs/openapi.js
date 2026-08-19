@@ -1,8 +1,3 @@
-/**
- * OpenAPI 3.0 spec for the FrameSet API; plain object (no build step), served at /api-docs.
- * Paths are written from the server root: feature routers under /api, health probe at /health.
- */
-
 // Path docs live in one module per tag (see ./paths) so each API area stays
 // independently reviewable; the openapiSync test still validates the
 // assembled whole against the actually mounted routes.

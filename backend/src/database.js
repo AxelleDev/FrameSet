@@ -1,8 +1,3 @@
-/**
- * MySQL access: app-wide promise-based connection pool with ping() (health
- * checks) and closePool() (graceful shutdown) attached.
- */
-
 const mysql = require('mysql2');
 
 const pool = mysql.createPool({

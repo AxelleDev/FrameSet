@@ -1,10 +1,3 @@
-/**
- * Official "Continue with Google" button (Google Identity Services).
- * Renders nothing when VITE_GOOGLE_CLIENT_ID is not configured or the GIS
- * script cannot load, so the classic email/password flow is never blocked.
- * On success, the Google ID token is passed to onCredential; the backend
- * verifies it and issues the usual session cookies.
- */
 import React, { useEffect, useRef, useState } from 'react';
 import logger from '../utils/logger';
 

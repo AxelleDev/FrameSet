@@ -1,11 +1,3 @@
-/**
- * Optional client-side error monitoring (Sentry). Active only when
- * VITE_SENTRY_DSN is set at build time; without it, initMonitoring returns
- * immediately and captureException is a no-op, so the app (and its bundle
- * size) is unaffected. The SDK is loaded with a dynamic import so it never
- * lands in the initial chunk — errors thrown before it resolves are missed,
- * an accepted trade-off for keeping first paint lean.
- */
 import logger from './logger';
 
 let sentryClient = null;

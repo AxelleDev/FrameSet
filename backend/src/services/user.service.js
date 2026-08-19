@@ -1,9 +1,3 @@
-/**
- * User service: business logic and SQL for the account lifecycle (profile read/update,
- * password change, deletion, and the pending-email change flow). Never touches req/res;
- * functions return data or throw UserServiceError(code[, message]) for the controller.
- */
-
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
 const db = require('../database');

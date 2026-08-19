@@ -1,10 +1,3 @@
-/**
- * Helpers for one-time codes (email verification, password reset, email change).
- * Codes are stored **hashed** (SHA-256), never in clear text: read access to the
- * database (dump, stolen backup…) therefore reveals no usable code. The comparison
- * is constant-time so nothing leaks through timing.
- */
-
 const { createHash, timingSafeEqual } = require('crypto');
 
 // Past this number of wrong attempts the code is invalidated (on top of the per-IP

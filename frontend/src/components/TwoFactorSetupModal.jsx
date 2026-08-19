@@ -1,11 +1,3 @@
-/**
- * Two-factor enrollment: fetches a fresh secret on open, renders it as a QR
- * code (scannable by any TOTP authenticator app) plus a manual-entry
- * fallback, then a confirm step and — once the code checks out — the
- * one-time recovery codes, shown exactly once and never retrievable again.
- * A mid-setup close just abandons the attempt; nothing is enabled until the
- * recovery codes step is acknowledged.
- */
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useAuth } from '../context/AuthContext';

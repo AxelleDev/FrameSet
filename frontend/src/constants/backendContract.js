@@ -1,11 +1,3 @@
-/**
- * Frontend-side mirrors of backend business rules. The backend is always the
- * source of truth and enforces every one of these independently — nothing
- * here relaxes or replaces server-side validation. This file exists only so
- * that changing one of these rules is "these two files", not "grep the
- * codebase for a magic number and hope nothing was missed".
- */
-
 // Mirrors MAX_PALETTE_SIZE in backend/src/services/projects.service.js.
 export const MAX_PALETTE_SIZE = 50;
 

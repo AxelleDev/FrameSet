@@ -1,15 +1,3 @@
-/**
- * Palette exporters for the formats drawing tools actually import — pure
- * builders (bytes in, bytes out), kept out of the view for unit testing:
- *
- * - .gpl       GIMP palette (text) — Krita, GIMP, Inkscape, Aseprite.
- * - .ase       Adobe Swatch Exchange (binary, big-endian) — Photoshop,
- *              Illustrator, Affinity, Clip Studio Paint.
- * - .swatches  Procreate palette — a ZIP archive holding a Swatches.json of
- *              HSB entries. Built with a dependency-free STORE-only ZIP writer
- *              (same spirit as extractColors: ~60 lines beat a whole library).
- */
-
 // Procreate palettes are a fixed 30-slot grid; extra colors don't import.
 export const PROCREATE_MAX_SWATCHES = 30;
 

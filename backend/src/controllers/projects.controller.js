@@ -1,8 +1,3 @@
-/**
- * Projects controller: thin HTTP layer for projects and their nested style refs
- * (palettes, brush/typography norms). Business logic and SQL live in projects.service.
- */
-
 const { getAuthenticatedUserId, createControllerLogger } = require('../utils/auth.utils');
 const projectsService = require('../services/projects.service');
 const sharePreviewService = require('../services/sharePreview.service');

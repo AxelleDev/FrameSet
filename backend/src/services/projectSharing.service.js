@@ -1,11 +1,3 @@
-/**
- * Public sharing of a project's reference sheet: minting/revoking the share
- * token and the unauthenticated shared read. Also home of
- * fetchLiveProjectChildren, the content reader both the owner's single-project
- * read and the public share read return verbatim. Split out of
- * projects.service.js (which re-exports everything here).
- */
-
 const { randomBytes } = require('crypto');
 const db = require('../database');
 const { ProjectServiceError } = require('./projects.errors');

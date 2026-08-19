@@ -1,15 +1,3 @@
-/**
- * Live-share event hub: an in-memory registry of SSE subscribers per project,
- * so an open shared page can refetch the sheet the moment the owner edits it.
- *
- * Deliberately minimal: events carry NO data — subscribers just get a
- * `changed` ping and re-read the public share endpoint, so the shared page
- * has exactly one code path for content (and revocation naturally surfaces
- * as the refetch 404ing). Single-process by design, which matches the one
- * Railway instance; if the API ever scales out, this is the seam where a
- * pub/sub backend (e.g. Redis) would slot in.
- */
-
 // projectId -> Set<res> of open SSE responses.
 const subscribersByProject = new Map();
 

@@ -1,7 +1,3 @@
-/**
- * Console logger silenced outside development, so log calls can be left in place
- * without leaking to the browser console in production builds.
- */
 const isDev = import.meta.env.DEV;
 
 // Forwards to the matching console method, but only in development.

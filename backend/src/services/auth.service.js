@@ -1,8 +1,3 @@
-/**
- * Auth service: business logic and SQL for the auth lifecycle.
- * Functions return data or throw AuthServiceError(code[, message]); HTTP concerns stay in the controller.
- */
-
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
 const db = require('../database');

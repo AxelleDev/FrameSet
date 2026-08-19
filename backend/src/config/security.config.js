@@ -1,8 +1,3 @@
-/**
- * Password security policy: bcrypt work factor plus min length and complexity,
- * centralized so every credential-handling controller applies the same rules.
- */
-
 // 12 rounds balances brute-force resistance against login latency.
 const DEFAULT_BCRYPT_SALT_ROUNDS = 12;
 const PASSWORD_MIN_LENGTH = 8;

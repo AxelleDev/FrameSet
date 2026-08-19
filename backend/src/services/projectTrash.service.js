@@ -1,10 +1,3 @@
-/**
- * Project trash lifecycle: soft delete, restore, permanent delete and the
- * scheduled purges — for projects and for their colors/standards. Split out of
- * projects.service.js (which re-exports everything here, so the controller
- * keeps a single import surface).
- */
-
 const db = require('../database');
 const { ProjectServiceError } = require('./projects.errors');
 

@@ -1,8 +1,3 @@
-/**
- * Auth controller: thin HTTP layer for the auth lifecycle (tokens, cookies, logging).
- * Business logic and SQL live in auth.service.
- */
-
 const jwt = require('jsonwebtoken');
 const authService = require('../services/auth.service');
 const twoFactorService = require('../services/twoFactor.service');

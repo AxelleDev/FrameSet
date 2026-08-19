@@ -1,8 +1,3 @@
-/**
- * Express app setup: middleware stack + API routers. Ordering is
- * security-significant (see per-middleware notes). HTTP server starts in server.js.
- */
-
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');

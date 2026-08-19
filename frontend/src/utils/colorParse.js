@@ -1,14 +1,3 @@
-/**
- * Parses a user-typed color in any supported format (HEX / RGB / HSL / HSB)
- * into a canonical `#RRGGBB` hex — the single form the app stores. The mirror of
- * colorFormats.js (which formats a hex OUT); this reads a value IN.
- *
- * Deliberately tolerant: it accepts the wrapped CSS form ("rgb(255, 85, 0)"),
- * bare numbers ("255, 85, 0" / "255 85 0"), and stray units ("20°, 100%, 90%").
- * Anything it can't turn into a valid, in-range color yields null, so callers
- * can show an error and block saving.
- */
-
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 export const rgbToHex = ({ r, g, b }) => {

@@ -1,8 +1,3 @@
-/**
- * Server entry point: starts the HTTP server, schedules revoked-token cleanup,
- * and wires graceful shutdown (drain connections + close DB pool) on SIGTERM/SIGINT.
- */
-
 require('dotenv').config();
 
 // Initialize (optional) error monitoring before anything else can fail, so

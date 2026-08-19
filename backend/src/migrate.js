@@ -1,9 +1,3 @@
-/**
- * Migration runner: applies pending .sql files in filename order, tracked in
- * schema_migrations so each runs at most once. "Already reflected" errors are
- * tolerated for idempotency. Run via `node migrate.js` or import for tests.
- */
-
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');

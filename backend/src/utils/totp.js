@@ -1,14 +1,3 @@
-/**
- * TOTP (RFC 6238, built on the HOTP counter algorithm of RFC 4226) implemented
- * directly on Node's crypto module — HMAC-SHA1 and a fixed-size counter are
- * all the primitives it needs, so pulling in a dependency for this would just
- * be trading a few dozen lines of well-specified math for supply-chain risk.
- *
- * Secrets are generated and exchanged as Base32 (RFC 4648, unpadded): that is
- * the encoding every authenticator app (Google Authenticator, Authy, 1Password…)
- * expects in an otpauth:// URI or a manually-typed setup key.
- */
-
 const { randomBytes, createHmac, timingSafeEqual } = require('crypto');
 
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';

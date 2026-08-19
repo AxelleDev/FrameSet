@@ -1,12 +1,3 @@
-/**
- * Color-harmony suggestions from a base color, by rotating its hue on the color
- * wheel (saturation and lightness kept). Pure logic — reuses the app's existing
- * RGB↔HSL conversions so there's a single source of truth for the color math.
- *
- *   - Complementary: the opposite hue (+180°).
- *   - Analogous: the two neighbours (±30°).
- *   - Triad: the two colors evenly spaced around the wheel (+120°, +240°).
- */
 import { hexToRgb } from './paletteExport';
 import { rgbToHsl } from './colorFormats';
 import { hslToRgb, rgbToHex } from './colorParse';

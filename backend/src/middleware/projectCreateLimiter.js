@@ -1,8 +1,3 @@
-/**
- * Rate limiters: caps project/norm creation per user (or anon IP) per hour to
- * curb write floods, plus a per-IP cap on the public /health probe.
- */
-
 const rateLimit = require('express-rate-limit');
 const { ipKeyGenerator } = rateLimit;
 const { getAuthenticatedUserId } = require('../utils/auth.utils');

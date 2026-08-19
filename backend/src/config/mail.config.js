@@ -1,14 +1,3 @@
-/**
- * Mail config. Two delivery paths are supported:
- *   1. Brevo HTTP API (BREVO_API_KEY) — sends over HTTPS (443), so it works on
- *      hosts that block outbound SMTP ports (Railway, many PaaS). Preferred in
- *      production. Needs a validated sender address (MAIL_FROM_ADDRESS).
- *   2. SMTP (MAIL_HOST/PORT/SECURE/USER/PASS) — for hosts where SMTP is open.
- * In production at least one of the two must be fully configured (validated at
- * import time, fail fast). In dev/test both may be absent: mail.service.js then
- * falls back to an Ethereal test account.
- */
-
 const isProduction = (process.env.NODE_ENV || 'development') === 'production';
 
 const MAIL_HOST = process.env.MAIL_HOST || '';

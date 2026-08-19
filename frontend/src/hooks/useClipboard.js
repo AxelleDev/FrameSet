@@ -1,7 +1,3 @@
-/**
- * Copies text to the clipboard with transient "copied" feedback. Exposes copy()
- * (returns success) and copiedValue (auto-cleared after `timeout` ms).
- */
 import { useEffect, useRef, useState } from 'react';
 import logger from '../utils/logger';
 

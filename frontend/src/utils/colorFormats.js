@@ -1,9 +1,3 @@
-/**
- * A palette color's copyable representations, derived from its hex value.
- * HEX/RGB/HSL use CSS syntax (pasteable straight into code); HSB is plain
- * readable values, matching the sliders drawing apps like Procreate expose.
- * Reuses the conversions the palette exporters already ship.
- */
 import { hexToRgb, rgbToHsb } from './paletteExport';
 
 // '#0f0' / 'ff8800' -> '#00FF00' / '#FF8800'. Input is assumed already

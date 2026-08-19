@@ -1,8 +1,3 @@
-/**
- * Root component and route tree. Provider order (Auth then Project) lets project
- * data depend on the authenticated user. SPA fallback rewrites (vercel.json /
- * public/_redirects) serve index.html so clean URLs work on static hosting.
- */
 import React, { Suspense, lazy, useEffect, useRef } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';

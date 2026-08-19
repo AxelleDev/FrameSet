@@ -1,15 +1,3 @@
-/**
- * Symmetric encryption for values that must be recoverable in plaintext
- * server-side (unlike passwords/OTP codes, which are one-way hashed). Used
- * for the TOTP shared secret: the server must read it back to compute the
- * current code, so hashing it — as we do for every other credential in this
- * app — is not an option.
- *
- * AES-256-GCM: authenticated encryption, so a tampered ciphertext (e.g. a
- * flipped bit from disk corruption or a deliberate attack) fails to decrypt
- * instead of silently producing garbage that gets used as a live secret.
- */
-
 const { createCipheriv, createDecipheriv, randomBytes } = require('crypto');
 const { TOTP_ENCRYPTION_KEY } = require('../config/totp.config');
 

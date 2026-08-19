@@ -1,11 +1,3 @@
-/**
- * Network layer: per-verb helpers over a single `request`. The session rides in
- * HttpOnly cookies (credentials: 'include'), so this module never stores the
- * access token — it only manages the CSRF token and transparently handles:
- *   1. CSRF protection for mutating requests (token caching + retry).
- *   2. Silent access-token refresh on 403, then a single replay.
- *   3. Retrying transient failures (network, 5xx, timeouts) within a time budget.
- */
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 const RETRY_WINDOW_MS = 5000; // window (from the first attempt) during which transient failures may be retried
 // Hard cap on a single attempt. Deliberately much longer than the retry

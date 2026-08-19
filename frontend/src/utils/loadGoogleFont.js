@@ -1,8 +1,3 @@
-/**
- * Injects a Google Fonts stylesheet <link> for a family/weight to preview
- * typography norms. De-duplicated by href, so repeat calls are a no-op;
- * display=swap avoids invisible text while the font loads.
- */
 export function loadGoogleFont(family, weight = '400') {
   if (!family) return;
   const familyParam = encodeURIComponent(family.trim());

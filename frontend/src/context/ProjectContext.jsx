@@ -1,8 +1,3 @@
-/**
- * Project context: holds the user's projects and the active project, exposing
- * CRUD for projects, palette and norms via useProjects(). Mutations optimistically
- * update local state (no refetch); failures go to the global error banner.
- */
 import React, {
   createContext,
   useCallback,

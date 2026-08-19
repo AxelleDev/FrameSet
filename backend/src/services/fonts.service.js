@@ -1,10 +1,3 @@
-/**
- * Fetches the Google Fonts catalog server-side (key held in an environment
- * variable) so the key is never exposed in the client bundle. The catalog is
- * stable, so it is cached in memory to avoid re-calling the Google API on every
- * request.
- */
-
 // 24 h: the Google Fonts catalog changes very slowly.
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 

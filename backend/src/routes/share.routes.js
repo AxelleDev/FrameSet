@@ -1,9 +1,3 @@
-/**
- * Public share route: resolves a share token to its read-only reference sheet.
- * No authentication (that is the point), so it is rate limited per IP; the
- * 128-bit tokens make brute-force enumeration impractical anyway.
- */
-
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const projectsController = require('../controllers/projects.controller');

@@ -1,18 +1,3 @@
-/**
- * The style-guide PDF, drawn imperatively on a jsPDF document: `y` is the
- * running vertical cursor (mm), advanced per section/row, with row-atomic
- * page breaks above the footer zone. Section order and hierarchy (eyebrow +
- * light title header, palette tiles with centered name/hex, standards as
- * soft cards with a badge, a big value line, a detail line and a preview
- * strip, a logo + credit footer on every page) mirror the Shared reference
- * sheet and the in-app Palette/Standards pages, so the PDF, the public share
- * link and the editor all read as the same document.
- *
- * Dependency-free on purpose: the page hands in the jsPDF instance and the
- * data, and the PDF design lab renders this very module — what is previewed
- * is exactly what ships.
- */
-
 const PRIMARY = [60, 61, 72];
 const BLUE = [137, 148, 223];
 const SECONDARY = [107, 107, 107];

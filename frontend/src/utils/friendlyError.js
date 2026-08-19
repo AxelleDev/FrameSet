@@ -1,8 +1,3 @@
-/**
- * Maps a raw/technical error message to friendly, user-facing English for the
- * global-error toast, so internal wording never reaches the user. Returns null
- * when there is nothing to show.
- */
 export function getFriendlyMessage(message) {
   if (!message) return null;
   if (typeof message !== 'string') return 'Something went wrong.';

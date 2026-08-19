@@ -1,9 +1,3 @@
-/**
- * User account routes: user count, profile read/update, password change, pending
- * email confirmation, account deletion. Mutating endpoints are individually rate
- * limited (password guessing, email spam, repeated deletion attempts).
- */
-
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const userController = require('../controllers/user.controller');

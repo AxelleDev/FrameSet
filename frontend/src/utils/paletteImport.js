@@ -1,18 +1,3 @@
-/**
- * Palette importers — the exact mirror of the exporters in paletteExport.js:
- *
- * - .gpl       GIMP palette (text) — Krita, GIMP, Inkscape, Aseprite.
- * - .ase       Adobe Swatch Exchange (binary, big-endian) — Photoshop,
- *              Illustrator, Affinity, Clip Studio Paint.
- * - .swatches  Procreate palette — a ZIP holding a Swatches.json of HSB
- *              entries (STORE or DEFLATE, both handled).
- *
- * All parsing happens client-side on user-picked files. Defensive by design:
- * a hard size cap before any bytes are read, bounds checks on every offset,
- * unrecognized entries counted as `skipped` rather than failing the import,
- * and clear user-facing errors for files that aren't palettes at all.
- */
-
 // A real palette file is a few KB; anything above this is not a palette.
 export const MAX_IMPORT_FILE_BYTES = 1024 * 1024;
 

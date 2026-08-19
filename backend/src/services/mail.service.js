@@ -1,13 +1,3 @@
-/**
- * Mail service: sends the branded transactional emails (verification codes,
- * security alerts). Two delivery paths, chosen by config (see mail.config.js):
- *   - Brevo HTTP API (BREVO_API_KEY): over HTTPS, so it works where outbound
- *     SMTP is blocked (Railway and many PaaS block ports 25/465/587).
- *   - SMTP transport (nodemailer): for hosts where SMTP is open, plus the
- *     Ethereal fallback in development.
- * The reusable branded HTML template is shared by both paths.
- */
-
 const path = require('path');
 const nodemailer = require('nodemailer');
 const {

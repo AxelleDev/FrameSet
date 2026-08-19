@@ -1,13 +1,3 @@
-/**
- * Encryption key for the TOTP shared secret at rest (see utils/encryption.js).
- * Validated at import time so the app fails fast on boot rather than start
- * with a missing or wrong-length key. Required unconditionally (not just in
- * production) because once a real secret is encrypted with a given key,
- * there is no way to recover it under a different one — this can never be
- * configured retroactively the way an optional feature (e.g. Google sign-in)
- * can.
- */
-
 const KEY_LENGTH_BYTES = 32; // AES-256 key size.
 
 const rawKey = process.env.TOTP_ENCRYPTION_KEY;

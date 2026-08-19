@@ -1,7 +1,3 @@
-/**
- * Auth context: mirrors the user session (which lives in backend HttpOnly
- * cookies) and exposes the auth actions via useAuth(). Also drives globalError.
- */
 import React, {
   createContext,
   useCallback,

@@ -1,9 +1,3 @@
-/**
- * User account controller: thin HTTP layer for the account lifecycle (profile
- * read/update, password change, deletion, pending-email flow). Business logic and
- * SQL live in user.service; all mutating ops are scoped to the authenticated user id.
- */
-
 const userService = require('../services/user.service');
 const twoFactorService = require('../services/twoFactor.service');
 const { getAuthenticatedUserId, createControllerLogger } = require('../utils/auth.utils');

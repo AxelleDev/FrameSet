@@ -1,8 +1,3 @@
-/**
- * Token service: refresh-token issuance and a stateful revocation layer over stateless JWTs.
- * Revoked tokens are stored hashed in revoked_tokens so logout/rotation can invalidate before JWT expiry.
- */
-
 const jwt = require('jsonwebtoken');
 const { createHash, randomUUID } = require('crypto');
 const db = require('../database');

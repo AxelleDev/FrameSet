@@ -1,12 +1,3 @@
-/**
- * Two-factor authentication (TOTP) service: enrollment, confirmation,
- * disabling, and the login-time challenge. Recovery codes are single-use,
- * hashed like every other one-time code in this app (see utils/otp.js).
- * Never touches req/res; functions return data or throw
- * TwoFactorServiceError(code[, message]) for the controller, exactly like
- * every other service in this codebase.
- */
-
 const { randomBytes } = require('crypto');
 const db = require('../database');
 const mailService = require('./mail.service');
